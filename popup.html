@@ -54,6 +54,15 @@ button:disabled{opacity:.6;cursor:default;}
 header .gi.brand-gi{width:18px;height:18px;vertical-align:-4px;margin-right:4px;}
 #disclaimer{padding:6px 14px;font-size:11px;color:var(--text-dim);text-align:center;border-top:1px solid var(--border);}
 #disclaimer a{color:var(--accent2);}
+@keyframes updPop{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.update-overlay{position:fixed;inset:0;z-index:50;background:rgba(8,9,11,.94);display:flex;align-items:center;justify-content:center;}
+.update-overlay.hidden{display:none;}
+.update-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;max-width:300px;text-align:center;animation:updPop .25s ease both;}
+.update-box img.gi{width:36px;height:36px;border-radius:9px;margin-bottom:8px;}
+.update-box h2{font-size:14px;margin:4px 0 8px;}
+.update-box p{font-size:12px;color:var(--text-dim);line-height:1.5;margin:0 0 14px;}
+.update-box button.primary{width:100%;padding:9px;font-size:13px;font-weight:700;margin-bottom:8px;}
+.update-box a{font-size:12px;color:var(--accent2);text-decoration:none;}
 </style>
 </head>
 <body>
@@ -69,6 +78,15 @@ header .gi.brand-gi{width:18px;height:18px;vertical-align:-4px;margin-right:4px;
 <div id="lastSync">Jamais synchronisé</div>
 <div id="list"></div>
 <div id="disclaimer">Outil non officiel, non affilié à l'UCA. Tes données restent dans ton navigateur. <a href="confidentialite.html" target="_blank" rel="noopener">Confidentialité</a></div>
+<div id="updateOverlay" class="update-overlay hidden">
+  <div class="update-box">
+    <img class="gi" src="gif/rocket.gif" alt="">
+    <h2>Nouvelle version</h2>
+    <p>Installée : <strong id="updCurrent">—</strong><br>Dernière : <strong id="updLatest">—</strong></p>
+    <button class="primary" id="updApplyBtn">Mettre à jour</button>
+    <a href="https://github.com/kiricoucou/uca-extension/commits/main" target="_blank" rel="noopener">Voir les changements ↗</a>
+  </div>
+</div>
 <script src="popup.js"></script>
 </body>
 </html>

@@ -85,6 +85,18 @@ main{flex:1;position:relative;overflow:hidden;}
 .notes-table td.note{color:#ff3b3b;font-weight:700;}
 .notes-avg-badge{font-size:12px;font-weight:800;color:var(--accent2);background:var(--accent-light);border:1px solid var(--accent);border-radius:999px;padding:3px 9px;margin-left:4px;white-space:nowrap;}
 .notes-avg-badge.hidden{display:none;}
+
+@keyframes updFadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes updPop{from{opacity:0;transform:translateY(14px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.update-overlay{position:fixed;inset:0;z-index:5000;background:rgba(8,9,11,.92);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;animation:updFadeIn .25s ease both;}
+.update-overlay.hidden{display:none;}
+.update-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px 36px;max-width:360px;text-align:center;box-shadow:var(--shadow-lg);animation:updPop .3s ease both;}
+.update-box img.gi.lg{width:48px;height:48px;border-radius:12px;margin-bottom:10px;}
+.update-box h2{font-size:17px;margin:4px 0 10px;}
+.update-box p{font-size:12.5px;color:var(--text-dim);line-height:1.6;margin:0 0 18px;}
+.update-box button.primary{width:100%;padding:11px;font-size:14px;font-weight:700;margin-bottom:10px;}
+.update-box a{font-size:11.5px;color:var(--accent2);text-decoration:none;}
+.update-box a:hover{text-decoration:underline;}
 .notes-table tr.ue-row td{font-weight:800;background:rgba(127,127,127,.08);}
 .notes-table tr.matiere-row td.lbl{padding-left:16px;font-weight:600;}
 .notes-table tr.eval-row td.lbl{padding-left:30px;color:var(--text-dim);font-weight:400;}
@@ -233,6 +245,15 @@ main{flex:1;position:relative;overflow:hidden;}
 
 <div id="sessionBubble" class="session-bubble"><img class="gi" src="gif/security.gif" alt="">Session UCA expirée<br>Appuie sur Synchroniser pour te reconnecter.</div>
 <div id="toast-wrap"></div>
+<div id="updateOverlay" class="update-overlay hidden">
+  <div class="update-box">
+    <img class="gi lg" src="gif/rocket.gif" alt="">
+    <h2>Nouvelle version disponible</h2>
+    <p>Version installée : <strong id="updCurrent">—</strong><br>Dernière version : <strong id="updLatest">—</strong></p>
+    <button class="primary" id="updApplyBtn">Mettre à jour</button>
+    <a id="updChangesLink" href="https://github.com/kiricoucou/uca-extension/commits/main" target="_blank" rel="noopener">Voir les changements sur GitHub ↗</a>
+  </div>
+</div>
 <script src="agenda.js"></script>
 </body>
 </html>

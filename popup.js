@@ -96,8 +96,27 @@ chrome.runtime.onMessage.addListener((msg) => {
     setStatus(msg.silent ? "✅ Resynchronisé automatiquement" : "✅ Connecté et synchronisé");
     setTimeout(() => setStatus(null), 3000);
     loadFromStorage();
+  } else if (msg.type === "UCA_UPDATE_STATE") {
+    renderUpdateOverlay(msg.updateAvailable, msg.current, msg.latest);
   }
 });
+
+/* ============================= Mise à jour (dépôt GitHub) ============================= */
+function renderUpdateOverlay(available, current, latest) {
+  const overlay = document.getElementById("updateOverlay");
+  overlay.classList.toggle("hidden", !available);
+  if (available) {
+    document.getElementById("updCurrent").textContent = current || "?";
+    document.getElementById("updLatest").textContent = latest || "?";
+  }
+}
+document.getElementById("updApplyBtn").addEventListener("click", () => {
+  chrome.runtime.sendMessage({ type: "UCA_APPLY_UPDATE" });
+});
+chrome.storage.local.get(["uca_update_available", "uca_current_version", "uca_latest_version"], (data) => {
+  renderUpdateOverlay(!!data.uca_update_available, data.uca_current_version, data.uca_latest_version);
+});
+chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
 
 loadFromStorage();
 })();

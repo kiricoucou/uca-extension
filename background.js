@@ -9,6 +9,56 @@ function broadcast(msg) {
   try { chrome.runtime.sendMessage(msg).catch(() => {}); } catch (e) { /* no listener open, fine */ }
 }
 
+/* ============ Vérification de mise à jour (dépôt GitHub) ============
+   Compare la version chargée (chrome.runtime.getManifest().version, figée en mémoire
+   depuis le dernier chargement/reload de l'extension) au manifest.json de la branche
+   main sur GitHub. Vérifié au démarrage puis toutes les 20 min via chrome.alarms.
+   Important : une extension chargée "non empaquetée" ne peut pas se réécrire elle-même
+   depuis du JS (aucune API Chrome ne le permet, et ce serait de l'exécution de code
+   distant non vérifié). "Mettre à jour" ne peut donc que recharger l'extension depuis
+   les fichiers déjà présents sur le disque (chrome.runtime.reload()) — si le dossier
+   local n'a pas été mis à jour (git pull / nouveau téléchargement), le reload seul ne
+   suffit pas. Voir UPDATES.md à la racine du dépôt. */
+const MANIFEST_RAW_URL = "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/manifest.json";
+const UPDATE_ALARM = "uca_update_check";
+
+function compareVersions(a, b) {
+  const pa = String(a).split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const x = pa[i] || 0, y = pb[i] || 0;
+    if (x !== y) return x - y;
+  }
+  return 0;
+}
+
+async function checkForUpdate() {
+  const current = chrome.runtime.getManifest().version;
+  try {
+    const res = await fetch(MANIFEST_RAW_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) return;
+    const remote = await res.json();
+    const latest = remote && remote.version;
+    if (!latest) return;
+    const updateAvailable = compareVersions(current, latest) < 0;
+    await chrome.storage.local.set({
+      uca_current_version: current,
+      uca_latest_version: latest,
+      uca_update_available: updateAvailable,
+      uca_update_checked_at: new Date().toISOString(),
+    });
+    broadcast({ type: "UCA_UPDATE_STATE", current, latest, updateAvailable });
+  } catch (e) {
+    /* Pas de réseau / GitHub injoignable : on ne bloque rien sur une erreur réseau. */
+  }
+}
+
+chrome.alarms.create(UPDATE_ALARM, { periodInMinutes: 20 });
+chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === UPDATE_ALARM) checkForUpdate(); });
+chrome.runtime.onStartup.addListener(checkForUpdate);
+chrome.runtime.onInstalled.addListener(checkForUpdate);
+checkForUpdate();
+
 function hostOf(url) {
   try { return new URL(url).hostname; } catch (e) { return ""; }
 }
@@ -361,5 +411,12 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
       broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: String((err && err.message) || err) });
     })
     .finally(() => { syncInProgress = false; });
+  return false;
+});
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (!msg) return false;
+  if (msg.type === "UCA_FORCE_UPDATE_CHECK") { checkForUpdate(); return false; }
+  if (msg.type === "UCA_APPLY_UPDATE") { chrome.runtime.reload(); return false; }
   return false;
 });

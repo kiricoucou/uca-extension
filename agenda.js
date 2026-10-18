@@ -248,6 +248,13 @@ function buildMobileMenu() {
   abs.onclick = () => { window.open("https://odin.iut.uca.fr/etudiants/?p=absences", "_blank", "noopener"); };
   m.appendChild(abs);
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
+  const moodle = document.createElement("button"); moodle.className = "mi"; moodle.innerHTML = `<img class="gi" src="gif/link.gif" alt="">Moodle`;
+  moodle.onclick = () => { closeMobileMenu(); window.open("https://moodle.uca.fr/", "_blank", "noopener"); };
+  m.appendChild(moodle);
+  const mail = document.createElement("button"); mail.className = "mi"; mail.innerHTML = `<img class="gi" src="gif/notification.gif" alt="">Messagerie (Zimbra)`;
+  mail.onclick = () => { closeMobileMenu(); window.open("https://mail.uca.fr/zimbra/", "_blank", "noopener"); };
+  m.appendChild(mail);
+  m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   const sync = document.createElement("button"); sync.className = "mi msync primary"; sync.innerHTML = `<img class="gi" src="gif/loading.gif" alt="">Synchroniser`;
   sync.onclick = () => { closeMobileMenu(); triggerSync(); };
   m.appendChild(sync);

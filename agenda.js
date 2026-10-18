@@ -346,13 +346,26 @@ function ntRow(cls, label, labelCls, row) {
   tr.appendChild(ntCell(fmtNote(row.mini), "num"));
   return tr;
 }
+// Odin ne remplit souvent la note d'UE qu'au jury de semestre (colonne "-" avant ça),
+// alors que les matières en dessous ont déjà leur note calculée (moyenne de leurs évals).
+// On prend la note d'UE si dispo, sinon on la reconstruit depuis ses matières notées.
+function ueEffectiveNote(ue) {
+  if (ue.note != null) return ue.note;
+  const mats = (ue.matieres || []).filter((m) => m.note != null);
+  if (!mats.length) return null;
+  let sw = 0, sc = 0;
+  mats.forEach((m) => { const c = m.coeff != null ? m.coeff : 1; sw += m.note * c; sc += c; });
+  return sc ? sw / sc : null;
+}
 function generalAverage() {
   if (!releveNotes || !releveNotes.ue || !releveNotes.ue.length) return null;
   let sumWeighted = 0, sumCoeff = 0;
   releveNotes.ue.forEach((ue) => {
-    if (ue.note == null || ue.coeff == null) return;
-    sumWeighted += ue.note * ue.coeff;
-    sumCoeff += ue.coeff;
+    const note = ueEffectiveNote(ue);
+    if (note == null) return;
+    const coeff = ue.coeff != null ? ue.coeff : 1;
+    sumWeighted += note * coeff;
+    sumCoeff += coeff;
   });
   if (sumCoeff === 0) return null;
   return sumWeighted / sumCoeff;

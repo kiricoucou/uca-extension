@@ -83,6 +83,8 @@ main{flex:1;position:relative;overflow:hidden;}
 .notes-table th.num,.notes-table td.num{text-align:right;width:40px;}
 .notes-table td{padding:4px 6px;border-bottom:1px solid var(--border);vertical-align:top;color:#fff;}
 .notes-table td.note{color:#ff3b3b;font-weight:700;}
+.notes-avg-badge{font-size:12px;font-weight:800;color:var(--accent2);background:var(--accent-light);border:1px solid var(--accent);border-radius:999px;padding:3px 9px;margin-left:4px;white-space:nowrap;}
+.notes-avg-badge.hidden{display:none;}
 .notes-table tr.ue-row td{font-weight:800;background:rgba(127,127,127,.08);}
 .notes-table tr.matiere-row td.lbl{padding-left:16px;font-weight:600;}
 .notes-table tr.eval-row td.lbl{padding-left:30px;color:var(--text-dim);font-weight:400;}
@@ -198,6 +200,7 @@ main{flex:1;position:relative;overflow:hidden;}
   </div>
   <div class="absences-wrap mobile-hide-zoom" id="notesWrap">
     <button id="notesBtn" title="Voir mon relevé de notes"><img class="gi" src="gif/Learning.gif" alt="">Notes</button>
+    <span id="notesAvg" class="notes-avg-badge hidden" title="Moyenne générale (UE notées, pondérée par coefficient)"></span>
     <div class="absences-panel notes-panel" id="notesPanel">
       <div id="npContent"></div>
       <a class="ap-link" href="https://odin.iut.uca.fr/etudiants/?p=notes" target="_blank" rel="noopener noreferrer">Voir le détail sur Odin ↗</a>

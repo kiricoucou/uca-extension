@@ -346,7 +346,26 @@ function ntRow(cls, label, labelCls, row) {
   tr.appendChild(ntCell(fmtNote(row.mini), "num"));
   return tr;
 }
+function generalAverage() {
+  if (!releveNotes || !releveNotes.ue || !releveNotes.ue.length) return null;
+  let sumWeighted = 0, sumCoeff = 0;
+  releveNotes.ue.forEach((ue) => {
+    if (ue.note == null || ue.coeff == null) return;
+    sumWeighted += ue.note * ue.coeff;
+    sumCoeff += ue.coeff;
+  });
+  if (sumCoeff === 0) return null;
+  return sumWeighted / sumCoeff;
+}
+function renderNotesAvg() {
+  const badge = document.getElementById("notesAvg");
+  const avg = generalAverage();
+  if (avg == null) { badge.classList.add("hidden"); badge.textContent = ""; return; }
+  badge.textContent = avg.toFixed(2).replace(".", ",");
+  badge.classList.remove("hidden");
+}
 function renderNotesPanel() {
+  renderNotesAvg();
   const content = document.getElementById("npContent");
   content.innerHTML = "";
   if (!releveNotes || !releveNotes.ue || !releveNotes.ue.length) {

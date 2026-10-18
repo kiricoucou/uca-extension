@@ -9,9 +9,10 @@ let currentView = "week";
 let refDate = new Date(); refDate.setHours(0, 0, 0, 0);
 let pendingEventKey = null;
 let zoomLevel = Math.max(0.6, Math.min(1.8, parseFloat(localStorage.getItem("uca_zoom_v1")) || 1));
+let autoViewApplied = false;
 
 const DAY_NAMES_SHORT = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
-const VIEW_ITEMS = [["day", "☀️ Jour"], ["3day", "📆 3 jours"], ["5day", "🗓️ 5 jours"], ["week", "📅 Semaine"], ["month", "🗓️ Mois"]];
+const VIEW_ITEMS = [["day", "☀️ Jour"], ["3day", "📆 3 jours"], ["5day", "🗓️ 5 jours"], ["6day", "🗓️ 6 jours"], ["week", "📅 Semaine"], ["month", "🗓️ Mois"]];
 
 function pad(n) { return String(n).padStart(2, "0"); }
 function dateKey(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
@@ -45,12 +46,17 @@ function getFiveDayDays() {
   if (eventsOnDate(sun).length > 0) days.push(sun);
   return days;
 }
+function getSixDayDays() {
+  const start = startOfWeek(refDate);
+  return Array.from({ length: 6 }, (_, i) => addDays(start, i));
+}
 
 function fmtPeriodLabel() {
   if (currentView === "month") return capitalize(refDate.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }));
   if (currentView === "day") return capitalize(refDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
   if (currentView === "3day") { const end = addDays(refDate, 2); return `${refDate.getDate()} ${monthShort(refDate)} – ${end.getDate()} ${monthShort(end)} ${end.getFullYear()}`; }
   if (currentView === "5day") { const days = getFiveDayDays(); const s = days[0], e = days[days.length - 1]; return `${s.getDate()} ${monthShort(s)} – ${e.getDate()} ${monthShort(e)} ${e.getFullYear()}`; }
+  if (currentView === "6day") { const days = getSixDayDays(); const s = days[0], e = days[days.length - 1]; return `${s.getDate()} ${monthShort(s)} – ${e.getDate()} ${monthShort(e)} ${e.getFullYear()}`; }
   if (currentView === "week") { const s = startOfWeek(refDate), e = addDays(s, 6); return `${s.getDate()} ${monthShort(s)} – ${e.getDate()} ${monthShort(e)} ${e.getFullYear()}`; }
   return "";
 }
@@ -64,6 +70,7 @@ function navigate(dir) {
   else if (currentView === "week") refDate = addDays(refDate, 7 * dir);
   else if (currentView === "3day") refDate = addDays(refDate, 3 * dir);
   else if (currentView === "5day") refDate = addDays(refDate, 7 * dir);
+  else if (currentView === "6day") refDate = addDays(refDate, 7 * dir);
   else if (currentView === "day") refDate = addDays(refDate, dir);
   render();
 }
@@ -226,6 +233,7 @@ function render() {
   else if (currentView === "week") { renderTimeGrid("weekView", Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(refDate), i))); target = "weekView"; }
   else if (currentView === "3day") { renderTimeGrid("threeDayView", Array.from({ length: 3 }, (_, i) => addDays(refDate, i))); target = "threeDayView"; }
   else if (currentView === "5day") { renderTimeGrid("fiveDayView", getFiveDayDays()); target = "fiveDayView"; }
+  else if (currentView === "6day") { renderTimeGrid("sixDayView", getSixDayDays()); target = "sixDayView"; }
   else if (currentView === "day") { renderDay(); target = "dayView"; }
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === target));
 }
@@ -290,6 +298,10 @@ function loadFromStorage() {
     renderSessionState(!!data.uca_session_expired);
     renderAbsencesPanel();
     renderNotesPanel();
+    if (!autoViewApplied) {
+      autoViewApplied = true;
+      if (eventsOnDate(refDate).length === 0) currentView = "5day";
+    }
     render();
   });
 }
@@ -390,6 +402,17 @@ document.getElementById("viewTabs").addEventListener("click", (e) => { const btn
 document.getElementById("prevBtn").addEventListener("click", () => navigate(-1));
 document.getElementById("nextBtn").addEventListener("click", () => navigate(1));
 document.getElementById("todayBtn").addEventListener("click", () => { refDate = new Date(); refDate.setHours(0, 0, 0, 0); render(); });
+
+/* Vue mois : scroller la molette change de mois (la grille ne défile pas elle-même,
+   42 cases fixes), avec un cooldown pour qu'un seul cran de molette = un seul mois. */
+let monthWheelLock = false;
+document.getElementById("monthView").addEventListener("wheel", (e) => {
+  if (currentView !== "month" || monthWheelLock) return;
+  e.preventDefault();
+  monthWheelLock = true;
+  navigate(e.deltaY > 0 ? 1 : -1);
+  setTimeout(() => { monthWheelLock = false; }, 350);
+}, { passive: false });
 
 function setZoom(z) {
   zoomLevel = Math.max(0.6, Math.min(1.8, z));

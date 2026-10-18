@@ -346,29 +346,32 @@ function ntRow(cls, label, labelCls, row) {
   tr.appendChild(ntCell(fmtNote(row.mini), "num"));
   return tr;
 }
-// Odin ne remplit souvent la note d'UE qu'au jury de semestre (colonne "-" avant ça),
-// alors que les matières en dessous ont déjà leur note calculée (moyenne de leurs évals).
-// On prend la note d'UE si dispo, sinon on la reconstruit depuis ses matières notées.
+// Odin ne remplit souvent la note de matière/UE qu'au jury de semestre (colonne "-"
+// avant ça). On reconstruit depuis le niveau en dessous en appliquant le Coeff de
+// chaque ligne du tableau (éval -> matière -> UE), jamais un poids par défaut inventé.
+function weightedAvg(items, noteOf, coeffOf) {
+  let sw = 0, sc = 0;
+  items.forEach((it) => {
+    const note = noteOf(it);
+    const coeff = coeffOf(it);
+    if (note == null || coeff == null) return;
+    sw += note * coeff; sc += coeff;
+  });
+  return sc ? sw / sc : null;
+}
+function matiereEffectiveNote(m) {
+  if (m.note != null) return m.note;
+  return weightedAvg((m.evals || []).filter((e) => e.note != null), (e) => e.note, (e) => e.coeff);
+}
 function ueEffectiveNote(ue) {
   if (ue.note != null) return ue.note;
-  const mats = (ue.matieres || []).filter((m) => m.note != null);
-  if (!mats.length) return null;
-  let sw = 0, sc = 0;
-  mats.forEach((m) => { const c = m.coeff != null ? m.coeff : 1; sw += m.note * c; sc += c; });
-  return sc ? sw / sc : null;
+  const mats = (ue.matieres || []).map((m) => ({ note: matiereEffectiveNote(m), coeff: m.coeff })).filter((m) => m.note != null);
+  return weightedAvg(mats, (m) => m.note, (m) => m.coeff);
 }
 function generalAverage() {
   if (!releveNotes || !releveNotes.ue || !releveNotes.ue.length) return null;
-  let sumWeighted = 0, sumCoeff = 0;
-  releveNotes.ue.forEach((ue) => {
-    const note = ueEffectiveNote(ue);
-    if (note == null) return;
-    const coeff = ue.coeff != null ? ue.coeff : 1;
-    sumWeighted += note * coeff;
-    sumCoeff += coeff;
-  });
-  if (sumCoeff === 0) return null;
-  return sumWeighted / sumCoeff;
+  const ues = releveNotes.ue.map((ue) => ({ note: ueEffectiveNote(ue), coeff: ue.coeff })).filter((u) => u.note != null);
+  return weightedAvg(ues, (u) => u.note, (u) => u.coeff);
 }
 function renderNotesAvg() {
   const badge = document.getElementById("notesAvg");

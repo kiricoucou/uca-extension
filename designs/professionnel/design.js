@@ -12,7 +12,7 @@ UCA_defineDesign({
   noteBadge(context) {
     return context === "grid"
       ? `<div class="ev-note">${NOTE_BADGE}</div>`
-      : `<div style="position:absolute;bottom:0;right:0;">${NOTE_BADGE}</div>`;
+      : `<div class="day-note">${NOTE_BADGE}</div>`;
   },
   emptyHtml(kind) {
     if (kind === "notes") return `<svg class="sticker" style="width:56px;height:56px;display:block;margin:0 auto 8px" aria-hidden="true"><use href="#s-empty-notes"/></svg>`;

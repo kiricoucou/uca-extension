@@ -134,8 +134,14 @@ function renderMonth() {
     if (sameDay(d, today)) cell.classList.add("today");
     const num = document.createElement("div"); num.className = "month-daynum"; num.textContent = d.getDate(); cell.appendChild(num);
     const evs = eventsOnDate(d);
-    evs.slice(0, 3).forEach(ev => { const pill = document.createElement("div"); pill.className = "month-pill"; pill.style.background = ev.color; pill.textContent = `${pad(ev.startH)}:${pad(ev.startM)} ${ev.title}`; pill.addEventListener("click", (e) => { e.stopPropagation(); openDetail(ev); }); cell.appendChild(pill); });
-    if (evs.length > 3) { const more = document.createElement("div"); more.className = "month-more"; more.textContent = `+${evs.length - 3} autre${evs.length - 3 > 1 ? "s" : ""}`; cell.appendChild(more); }
+    if (isMobileUI()) {
+      if (evs.length) {
+        const dots = document.createElement("div"); dots.className = "month-dots";
+        evs.slice(0, 6).forEach(ev => { const dot = document.createElement("i"); dot.className = "month-dot"; dot.style.background = ev.color; dots.appendChild(dot); });
+        cell.appendChild(dots);
+      }
+    } else evs.slice(0, 3).forEach(ev => { const pill = document.createElement("div"); pill.className = "month-pill"; pill.style.background = ev.color; pill.textContent = `${pad(ev.startH)}:${pad(ev.startM)} ${ev.title}`; pill.addEventListener("click", (e) => { e.stopPropagation(); openDetail(ev); }); cell.appendChild(pill); });
+    if (evs.length > 3 && !isMobileUI()) { const more = document.createElement("div"); more.className = "month-more"; more.textContent = `+${evs.length - 3} autre${evs.length - 3 > 1 ? "s" : ""}`; cell.appendChild(more); }
     cell.addEventListener("click", (e) => { if (e.target.classList.contains("month-pill")) return; refDate = d; switchView("day"); });
     grid.appendChild(cell);
   }
@@ -205,7 +211,8 @@ function renderTimeGrid(containerId, days) {
       const top = topFor(ev.startH, ev.startM);
       let durMin = (ev.endH * 60 + ev.endM) - (ev.startH * 60 + ev.startM); if (durMin <= 0) durMin = 30;
       const height = (durMin / 60) * pxPerHour;
-      const scale = D.grid.fontScale ? Math.max(0.42, Math.min(1.8, height / MIN_CARD_HEIGHT)) : 1;
+      const mobile = isMobileUI();
+      const scale = D.grid.fontScale && !mobile ? Math.max(0.42, Math.min(1.8, height / MIN_CARD_HEIGHT)) : 1;
       const card = document.createElement("div"); card.className = "event-card" + (height < 26 ? " tiny" : "");
       if (sameDay(d, today)) { const nm = new Date().getHours() * 60 + new Date().getMinutes(), sm = ev.startH * 60 + ev.startM, em = ev.endH * 60 + ev.endM; if (nm >= em) card.classList.add("past"); else if (nm >= sm) card.classList.add("current"); } else if (d < today) card.classList.add("past");
       card.style.top = top + "px"; card.style.height = height + "px"; card.style.setProperty("--s", scale);
@@ -213,7 +220,10 @@ function renderTimeGrid(containerId, days) {
       else { card.style.left = `calc(${(colIdx / cols) * 100}% + 2px)`; card.style.width = `calc(${100 / cols}% - 4px)`; }
       card.style.background = ev.color; card.style.setProperty("--evc", ev.color);
       const badge = notes[eventKey(ev)] ? D.noteBadge("grid") : "";
-      card.innerHTML = `${badge}<div class="ev-time">${pad(ev.startH)}:${pad(ev.startM)}–${pad(ev.endH)}:${pad(ev.endM)}</div><div class="ev-title" title="${escapeHtml(ev.title)}">${escapeHtml(ev.title)}</div>${metaHtml(ev, "div")}`;
+      if (mobile) {
+        card.classList.add("m");
+        card.innerHTML = `${badge}<div class="ev-title" title="${escapeHtml(ev.title)}">${escapeHtml(shortTitle(ev.title))}</div>${ev.room ? `<div class="ev-sub">${escapeHtml(ev.room)}</div>` : ""}`;
+      } else card.innerHTML = `${badge}<div class="ev-time">${pad(ev.startH)}:${pad(ev.startM)}–${pad(ev.endH)}:${pad(ev.endM)}</div><div class="ev-title" title="${escapeHtml(ev.title)}">${escapeHtml(ev.title)}</div>${metaHtml(ev, "div")}`;
       card.addEventListener("click", (e) => { e.stopPropagation(); openDetail(ev); });
       col.appendChild(card);
     });
@@ -227,6 +237,83 @@ function renderTimeGrid(containerId, days) {
     body.appendChild(col);
   });
 }
+
+/* ============================= Vue Jour mobile =============================
+   Bandeau de la semaine (points = cours) + cartes lisibles, pauses entre cours. */
+function shortTitle(title) {
+  const m = title.match(/^(SAE|R)\s?\d+(?:\.\d+)*/i);
+  return m ? m[0].replace(/\s/g, "") : title.split(/\s+/).slice(0, 2).join(" ");
+}
+function fmtGap(min) { const h = Math.floor(min / 60), m = min % 60; return h ? `${h} h${m ? " " + pad(m) : ""}` : `${m} min`; }
+function nextCourseAfter(d) {
+  const key = dateKey(d);
+  return events.filter(e => e.date > key).sort((a, b) => a.date.localeCompare(b.date) || (a.startH * 60 + a.startM) - (b.startH * 60 + b.startM))[0];
+}
+function renderMobileDay() {
+  const el = $("dayView"); el.innerHTML = "";
+  const view = document.createElement("div"); view.className = "m-day-view";
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const strip = document.createElement("div"); strip.className = "m-strip";
+  const start = startOfWeek(refDate);
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(start, i); const evs = eventsOnDate(d);
+    if (i >= 5 && !evs.length && !sameDay(d, refDate)) continue;
+    const b = document.createElement("button");
+    b.className = "m-strip-day" + (sameDay(d, refDate) ? " selected" : "") + (sameDay(d, today) ? " today" : "");
+    b.innerHTML = `<span class="m-dn">${DAY_NAMES_SHORT[d.getDay()]}</span><span class="m-dd">${d.getDate()}</span><span class="m-dots">${evs.slice(0, 4).map(e => `<i style="background:${e.color}"></i>`).join("")}</span>`;
+    b.addEventListener("click", () => { refDate = d; render(); });
+    strip.appendChild(b);
+  }
+  view.appendChild(strip);
+  const list = document.createElement("div"); list.className = "m-list";
+  const head = document.createElement("div"); head.className = "m-date";
+  head.textContent = capitalize(refDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }));
+  list.appendChild(head);
+  const evs = eventsOnDate(refDate);
+  if (!evs.length) {
+    const empty = document.createElement("div"); empty.className = "m-empty";
+    empty.innerHTML = `<div class="big">${D.emptyHtml("day")}</div><div>${escapeHtml(T("noCourse"))}</div>`;
+    const next = nextCourseAfter(refDate);
+    if (next) {
+      const btn = document.createElement("button"); btn.className = "m-next";
+      const nd = new Date(next.year, next.month, next.day);
+      btn.textContent = `Prochain cours : ${DAY_NAMES_SHORT[nd.getDay()]} ${nd.getDate()} ${monthShort(nd)} · ${pad(next.startH)}:${pad(next.startM)}`;
+      btn.addEventListener("click", () => { refDate = nd; render(); });
+      empty.appendChild(btn);
+    }
+    list.appendChild(empty);
+  }
+  const nowMin = new Date().getHours() * 60 + new Date().getMinutes();
+  const isToday = sameDay(refDate, today);
+  evs.forEach((ev, i) => {
+    const sm = ev.startH * 60 + ev.startM, em = ev.endH * 60 + ev.endM;
+    if (i > 0) {
+      const prevEnd = evs[i - 1].endH * 60 + evs[i - 1].endM;
+      if (sm - prevEnd >= 30) { const gap = document.createElement("div"); gap.className = "m-gap"; gap.textContent = "Pause · " + fmtGap(sm - prevEnd); list.appendChild(gap); }
+    }
+    const state = (isToday && nowMin >= em) || refDate < today ? "past" : (isToday && nowMin >= sm ? "current" : "");
+    const card = document.createElement("div"); card.className = "m-card" + (state ? " " + state : "");
+    card.style.setProperty("--evc", ev.color);
+    card.innerHTML = `<div class="m-time"><b>${pad(ev.startH)}:${pad(ev.startM)}</b><span>${pad(ev.endH)}:${pad(ev.endM)}</span></div>
+      <div class="m-body">${state === "current" ? `<span class="m-badge">${escapeHtml(T("current"))}</span>` : ""}<div class="m-title">${escapeHtml(ev.title)}</div>
+      ${ev.teacher ? `<div class="m-meta">${D.icon("user")}<span>${escapeHtml(ev.teacher)}</span></div>` : ""}
+      ${ev.room ? `<div class="m-meta">${D.icon("pin")}<span>${escapeHtml(ev.room)}</span></div>` : ""}</div>
+      ${notes[eventKey(ev)] ? D.noteBadge("day") : ""}`;
+    card.addEventListener("click", () => openDetail(ev));
+    list.appendChild(card);
+  });
+  view.appendChild(list);
+  el.appendChild(view);
+  const sel = strip.querySelector(".selected"); if (sel) sel.scrollIntoView({ inline: "center", block: "nearest" });
+}
+let touchStart = null;
+$("dayView").addEventListener("touchstart", (e) => { touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }, { passive: true });
+$("dayView").addEventListener("touchend", (e) => {
+  if (!touchStart || currentView !== "day" || !isMobileUI()) return;
+  const dx = e.changedTouches[0].clientX - touchStart.x, dy = e.changedTouches[0].clientY - touchStart.y;
+  touchStart = null;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) navigate(dx < 0 ? 1 : -1);
+}, { passive: true });
 
 function renderDayList() {
   const el = $("dayView"); el.innerHTML = "";
@@ -255,7 +342,7 @@ function render() {
   else if (currentView === "3day") renderTimeGrid("threeDayView", Array.from({ length: 3 }, (_, i) => addDays(refDate, i)));
   else if (currentView === "5day") renderTimeGrid("fiveDayView", getFiveDayDays());
   else if (currentView === "6day") renderTimeGrid("sixDayView", getSixDayDays());
-  else if (currentView === "day") { if (D.dayView === "list") renderDayList(); else renderTimeGrid("dayView", [new Date(refDate)]); }
+  else if (currentView === "day") { if (isMobileUI()) renderMobileDay(); else if (D.dayView === "list") renderDayList(); else renderTimeGrid("dayView", [new Date(refDate)]); }
   const target = VIEW_CONTAINERS[currentView];
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === target));
 }
@@ -311,7 +398,8 @@ function loadFromStorage() {
     releveNotes = data.uca_releve_notes || null;
     if (!autoViewApplied) {
       autoViewApplied = true;
-      if (eventsOnDate(refDate).length === 0 && availableViews().includes("5day")) currentView = "5day";
+      if (isMobileUI()) currentView = "day";
+      else if (eventsOnDate(refDate).length === 0 && availableViews().includes("5day")) currentView = "5day";
     }
     renderSyncInfo(data.uca_last_sync);
     renderSessionState(!!data.uca_session_expired);

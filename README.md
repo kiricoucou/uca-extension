@@ -7,12 +7,16 @@ Non officielle, non affiliée à l'Université Clermont Auvergne. Aucune donnée
 ## Fonctionnalités
 
 - **Synchronisation** : connexion CAS (fenêtre dédiée, 15 min pour valider la double authentification) puis reconnexion silencieuse tant que la session Odin reste valide. Détection automatique de session expirée.
-- **Emploi du temps** : vues Jour / 3 jours / 5 jours / Semaine / Mois, zoom réglable, grille horaire.
+- **Emploi du temps** : vues Jour / 3 jours / 5 jours / 6 jours / Semaine / Mois, zoom réglable, grille horaire (la journée la plus longue tient à l'écran sans scroll à 100 %).
 - **Absences** : déclarées, justifiées, non justifiées, avec motif présenté, journées non justifiées — synchronisées en même temps que l'emploi du temps.
-- **Relevé de notes** : tableau UE → matière → évaluation (Coeff / Note / Moy / Maxi / Mini), copié depuis Odin, en-tête fixé au scroll.
-- **Notes personnelles** : un champ texte par cours (rappel, révisions...), sauvegardé localement.
+- **Relevé de notes** : tableau UE → matière → évaluation (Coeff / Note / Moy / Maxi / Mini), copié depuis Odin, avec **moyenne générale** pondérée par les coefficients.
+- **Notes personnelles** : un champ texte par cours, signalé par un petit indicateur sur le cours.
+- **Déconnexion** depuis le popup, avec la durée de validité restante de la session.
+- **Liens rapides** Moodle et messagerie Zimbra.
+- **Mise à jour** : vérification de la version sur GitHub (voir [`UPDATES.md`](UPDATES.md)).
 - **Page d'aide intégrée** (`aide.html`, bouton ❓) qui explique chaque fonctionnalité.
-- Responsive (menu hamburger sous 820px), thème sombre turquoise.
+- Responsive (menu hamburger sous 820px).
+- **Plusieurs designs au choix** : au premier lancement l'extension demande quel design utiliser (changeable ensuite). Les fonctionnalités sont identiques, seul l'affichage change.
 
 ## Installation (mode développeur)
 
@@ -20,24 +24,37 @@ Non officielle, non affiliée à l'Université Clermont Auvergne. Aucune donnée
 2. Ouvre `chrome://extensions`.
 3. Active le **Mode développeur** (coin supérieur droit).
 4. Clique **Charger l'extension non empaquetée**, sélectionne le dossier du dépôt.
-5. Clique l'icône de l'extension → **Se connecter**, connecte-toi sur le CAS UCA quand la fenêtre s'ouvre.
+5. Choisis ton design (page ouverte automatiquement, ou au premier clic sur l'icône).
+6. Clique l'icône de l'extension → **Se connecter**, connecte-toi sur le CAS UCA quand la fenêtre s'ouvre.
 
 Firefox : utiliser `manifest.firefox.json` (renommer en `manifest.json` ou charger via `about:debugging` → *Ce Firefox* → *Charger un module complémentaire temporaire*).
 
 ## Structure
 
+Une seule extension (la racine du dépôt). La logique est commune ; chaque dossier de `designs/` ne contient que l'affichage.
+
 | Fichier | Rôle |
 |---|---|
-| `background.js` | Service worker : connexion CAS, scraping (emploi du temps/absences/notes), synchronisation silencieuse |
-| `popup.html` / `popup.js` | Popup barre d'outils (aperçu rapide) |
-| `agenda.html` / `agenda.js` | Agenda complet (nouvel onglet) : grille, absences, notes, notes perso |
+| `manifest.json` | Manifest unique (popup par défaut : `choose.html`) |
+| `background.js` | Service worker : connexion CAS, scraping, synchro, déconnexion, mise à jour GitHub, application du design choisi (`chrome.action.setPopup` / `setIcon`) |
+| `choose.html` / `choose.js` | Sélecteur de design (premier lancement, puis bouton « Design ») |
+| `core/shared.js` | API de design (`UCA_defineDesign`) + briques communes (mise à jour, changement de design) |
+| `core/popup.js` / `core/agenda.js` | Logique du popup et de l'agenda, identique pour tous les designs |
+| `designs/designs.json` | Registre des designs disponibles |
+| `designs/<id>/` | Un design : `popup.html`, `agenda.html`, `aide.html`, `confidentialite.html`, `design.js`, `icons/`, assets |
 | `content-bridge.js` | Relais de messages vers le site web (localhost/file) |
-| `aide.html` | Page d'aide |
-| `confidentialite.html` | Politique de confidentialité |
+
+### Ajouter un design
+
+1. Copier un dossier existant de `designs/` sous un nouveau nom et modifier ses HTML/CSS/assets (garder les `id` des éléments utilisés par le core).
+2. Adapter son `design.js` : `UCA_defineDesign({...})` ne définit que ce qui change (icônes, textes, couleurs des cours, variantes d'affichage) ; tout le reste prend les valeurs par défaut de `core/shared.js`.
+3. Ajouter une entrée dans `designs/designs.json` (`id`, `name`, `description`, `folder`, `preview`).
+
+Le sélecteur et le service worker lisent le registre : aucun autre fichier à toucher.
 
 ## Confidentialité
 
-Voir [`confidentialite.html`](confidentialite.html) : l'extension utilise uniquement ta session existante sur `odin.iut.uca.fr` et `ent.uca.fr`, ne transmet rien à un tiers, tout reste local.
+Voir `confidentialite.html` dans le dossier de chaque design : l'extension utilise uniquement ta session existante sur `odin.iut.uca.fr` et `ent.uca.fr`, ne transmet rien à un tiers, tout reste local.
 
 ## Licence
 

@@ -53,6 +53,51 @@ async function checkForUpdate() {
   }
 }
 
+/* ============ Design choisi (registre designs/designs.json) ============
+   Chaque design est un dossier (HTML/CSS/assets + design.js) ; la logique est dans core/.
+   L'id choisi est stocké dans uca_design ; un id absent du registre renvoie au sélecteur. */
+const ICON_SIZES = [16, 32, 48, 128];
+function iconPaths(dir) {
+  const out = {};
+  ICON_SIZES.forEach((s) => { out[s] = `${dir}/icon${s}.png`; });
+  return out;
+}
+async function loadDesigns() {
+  const res = await fetch(chrome.runtime.getURL("designs/designs.json"));
+  return res.json();
+}
+async function applyDesign() {
+  const [{ uca_design }, designs] = await Promise.all([chrome.storage.local.get("uca_design"), loadDesigns()]);
+  const design = designs.find((d) => d.id === uca_design);
+  if (!design) {
+    await chrome.action.setPopup({ popup: "choose.html" });
+    await chrome.action.setIcon({ path: iconPaths("icons") });
+    return null;
+  }
+  await chrome.action.setPopup({ popup: `${design.folder}/popup.html` });
+  await chrome.action.setIcon({ path: iconPaths(`${design.folder}/icons`) });
+  return design;
+}
+async function setDesign(id) {
+  const designs = await loadDesigns();
+  if (!designs.some((d) => d.id === id)) throw new Error("Design inconnu : " + id);
+  await chrome.storage.local.set({ uca_design: id });
+  return applyDesign();
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || msg.type !== "UCA_SET_DESIGN") return false;
+  setDesign(msg.id)
+    .then((design) => sendResponse({ ok: true, folder: design.folder }))
+    .catch((err) => sendResponse({ ok: false, error: String((err && err.message) || err) }));
+  return true;
+});
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === "install") chrome.tabs.create({ url: chrome.runtime.getURL("choose.html?tab=1") });
+});
+chrome.runtime.onStartup.addListener(applyDesign);
+applyDesign();
+
 chrome.alarms.create(UPDATE_ALARM, { periodInMinutes: 20 });
 chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === UPDATE_ALARM) checkForUpdate(); });
 chrome.runtime.onStartup.addListener(checkForUpdate);
@@ -294,7 +339,8 @@ const MONTH_INDEX = {
 };
 function pad(n) { return String(n).padStart(2, "0"); }
 function dateKey(y, mo, d) { return y + "-" + pad(mo + 1) + "-" + pad(d); }
-function colorFor(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return `hsl(${h % 360},68%,40%)`; }
+const EVENT_PALETTE = ["#1967d2","#0b8043","#8e24aa","#c5221f","#b06000","#3f51b5","#00796b","#ad1457","#5f6368","#795548"];
+function colorFor(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return EVENT_PALETTE[h % EVENT_PALETTE.length]; }
 function parseScheduleText(raw) {
   const text = raw.replace(/\?\?/g, "é").replace(/[ \t]+/g, " ").replace(/ /g, " ");
   const dayNamesAlt = "lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche";
@@ -384,6 +430,50 @@ async function handleSync(mode) {
   await syncNotesQuietly();
 }
 
+/* ============ Session cookie (durée restante / déconnexion) ============ */
+const SESSION_DOMAINS = ["ent.uca.fr", "odin.iut.uca.fr"];
+async function getSessionCookies() {
+  const all = [];
+  for (const domain of SESSION_DOMAINS) {
+    const cookies = await chrome.cookies.getAll({ domain });
+    all.push(...cookies);
+  }
+  return all;
+}
+async function getSessionMsRemaining() {
+  const cookies = await getSessionCookies();
+  if (!cookies.length) return null;
+  let maxExp = null;
+  cookies.forEach((c) => { if (c.expirationDate) maxExp = Math.max(maxExp || 0, c.expirationDate); });
+  if (!maxExp) return null;
+  return Math.max(0, Math.round(maxExp * 1000 - Date.now()));
+}
+async function doLogout() {
+  const cookies = await getSessionCookies();
+  for (const c of cookies) {
+    const url = (c.secure ? "https://" : "http://") + c.domain.replace(/^\./, "") + c.path;
+    try { await chrome.cookies.remove({ url, name: c.name }); } catch (e) { /* cookie déjà parti */ }
+  }
+  await chrome.storage.local.set({ uca_session_expired: true });
+}
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || msg.type !== "UCA_SESSION_INFO_REQUEST") return false;
+  getSessionMsRemaining().then((ms) => sendResponse({ ms })).catch(() => sendResponse({ ms: null }));
+  return true;
+});
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || msg.type !== "UCA_LOGOUT_REQUEST") return false;
+  doLogout().then(() => sendResponse({ ok: true })).catch((err) => sendResponse({ ok: false, error: String((err && err.message) || err) }));
+  return true;
+});
+chrome.runtime.onMessage.addListener((msg) => {
+  if (!msg) return false;
+  if (msg.type === "UCA_FORCE_UPDATE_CHECK") { checkForUpdate(); return false; }
+  if (msg.type === "UCA_APPLY_UPDATE") { chrome.runtime.reload(); return false; }
+  return false;
+});
+
 let syncInProgress = false;
 let lastSyncRequestAt = 0;
 const ALLOWED_SYNC_MODES = new Set(["resync", "login"]);
@@ -411,12 +501,5 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
       broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: String((err && err.message) || err) });
     })
     .finally(() => { syncInProgress = false; });
-  return false;
-});
-
-chrome.runtime.onMessage.addListener((msg) => {
-  if (!msg) return false;
-  if (msg.type === "UCA_FORCE_UPDATE_CHECK") { checkForUpdate(); return false; }
-  if (msg.type === "UCA_APPLY_UPDATE") { chrome.runtime.reload(); return false; }
   return false;
 });

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Politique de confidentialité — Emploi du temps UCA (non officiel)</title>
+<style>
+  :root{--bg:#ffffff;--surface:#ffffff;--border:#dadce0;--text:#1f1f1f;--text-dim:#5f6368;--accent:#0b57d0;}@media (prefers-color-scheme:dark){:root{--bg:#131314;--surface:#1e1f20;--border:#444746;--text:#e3e3e3;--text-dim:#a8acb0;--accent:#a8c7fa;}}
+  body{font-family:Roboto,'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);
+    max-width:760px;margin:0 auto;padding:32px 20px 64px;line-height:1.6;}
+  h1{font-size:22px;}
+  h2{font-size:16px;margin-top:32px;color:var(--accent);}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin:16px 0;}
+  .warn{border-color:#e0a030;background:#fff8ec;}
+  code{background:var(--border);padding:1px 5px;border-radius:4px;font-size:.92em;}
+  footer{margin-top:40px;color:var(--text-dim);font-size:12.5px;}
+</style>
+</head>
+<body>
+
+<h1>Politique de confidentialité</h1>
+<p><strong>Emploi du temps UCA (non officiel)</strong> — site, extension de navigateur et application Android.</p>
+
+<div class="card warn">
+  <strong>Outil non officiel, non affilié à l'Université Clermont Auvergne (UCA).</strong>
+  Développé de façon indépendante pour faciliter la lecture de son propre emploi du temps,
+  de ses absences et de ses notes déjà accessibles sur Odin (ent.uca.fr / odin.iut.uca.fr).
+</div>
+
+<h2>Aucun serveur, aucune collecte</h2>
+<div class="card">
+  <p>Il n'existe aucun serveur derrière ces outils. Rien n'est envoyé à un tiers, à l'éditeur de
+  cet outil, ni à qui que ce soit d'autre que l'UCA elle-même (dont tu es déjà le correspondant
+  direct via ta propre session Odin).</p>
+  <ul>
+    <li><strong>Site :</strong> les données (cours, notes personnelles, absences, relevé de
+      notes) sont stockées uniquement dans le <code>localStorage</code> de ton navigateur, sur
+      ton appareil. Rien ne quitte ton navigateur.</li>
+    <li><strong>Extension de navigateur :</strong> les mêmes données sont stockées dans
+      <code>chrome.storage.local</code> (ou l'équivalent Firefox), propre à ton profil
+      navigateur. Aucune télémétrie, aucun tracker, aucune requête vers un domaine qui ne soit
+      pas <code>ent.uca.fr</code> ou <code>odin.iut.uca.fr</code>.</li>
+    <li><strong>Application Android :</strong> les données sont stockées localement sur ton
+      téléphone (préférences de l'application, et si tu l'actives, un calendrier local
+      "Emploi du temps UCA" créé sur ton téléphone). Rien n'est envoyé à un serveur distant.</li>
+  </ul>
+</div>
+
+<h2>Connexion UCA (CAS / Odin)</h2>
+<div class="card">
+  <p>Pour récupérer ton emploi du temps, tes absences et tes notes, ces outils te font ouvrir
+  une page de connexion CAS officielle de l'UCA (<code>ent.uca.fr</code>), exactement comme si
+  tu allais directement sur Odin. Ton identifiant et ton mot de passe sont saisis directement sur
+  le site de l'UCA — jamais transmis à l'extension, à l'application ni à qui que ce soit d'autre.</p>
+  <p>Une fois connecté, ces outils lisent le contenu des pages que ta propre session a le droit
+  de voir (ton emploi du temps, tes absences, tes notes) et l'affichent dans une interface plus
+  pratique. C'est l'équivalent automatisé de ce que tu ferais toi-même en copiant-collant le
+  contenu de ces pages.</p>
+</div>
+
+<h2>Permissions demandées</h2>
+<div class="card">
+  <ul>
+    <li><strong>Extension :</strong> accès à <code>ent.uca.fr</code> et <code>odin.iut.uca.fr</code>
+      uniquement (pour ouvrir ces pages en arrière-plan et lire leur contenu), stockage local.</li>
+    <li><strong>Application Android :</strong> Internet (charger les pages Odin), calendrier
+      (uniquement si tu actives la synchronisation avec ton calendrier téléphone),
+      notifications (uniquement si tu actives les rappels de cours).</li>
+  </ul>
+</div>
+
+<h2>Suppression de tes données</h2>
+<div class="card">
+  <p>Désinstalle l'extension ou l'application, ou efface les données du site via les réglages de
+  ton navigateur (<code>localStorage</code>) — tout disparaît immédiatement, rien n'est conservé
+  ailleurs.</p>
+</div>
+
+<h2>Code source</h2>
+<div class="card">
+  <p>Ces outils sont développés pour un usage personnel et partagés tels quels, sans garantie.
+  Utilisation à tes propres risques vis-à-vis des conditions d'utilisation des services UCA.</p>
+</div>
+
+<footer>Dernière mise à jour : 2026-10-17.</footer>
+</body>
+</html>

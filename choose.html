@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choisis ton design — Emploi du temps UCA</title>
+<link rel="icon" type="image/png" href="icons/icon32.png">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#ffffff;--surface:#f6f7f9;--border:#dfe1e5;--text:#1f1f1f;--text-dim:#5f6368;--focus:#0b57d0;
+  --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;}
+}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;}
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.45;}
+body.popup{width:380px;}
+main{padding:20px 16px 18px;}
+body.page main{max-width:640px;margin:48px auto;padding:0 16px;}
+h1{font-size:17px;font-weight:600;margin:0 0 4px;}
+body.page h1{font-size:24px;}
+.lead{color:var(--text-dim);font-size:13px;margin:0 0 16px;}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+.card{display:flex;flex-direction:column;gap:10px;text-align:left;padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:inherit;font:inherit;cursor:pointer;transition:border-color .15s,transform .1s;}
+.card:hover{border-color:var(--text-dim);}
+.card:active{transform:scale(.98);}
+.card:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+.card.current{border-color:var(--focus);box-shadow:0 0 0 1px var(--focus) inset;}
+.preview{height:72px;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;border:1px solid rgba(127,127,127,.25);}
+.preview .bar{height:10px;border-radius:5px;width:70%;}
+.preview .row{display:flex;gap:6px;align-items:center;}
+.preview .dot{width:14px;height:14px;border-radius:50%;}
+.preview .line{height:8px;border-radius:4px;flex:1;opacity:.5;}
+.name{font-weight:600;font-size:14px;}
+.desc{color:var(--text-dim);font-size:12px;}
+.tag{font-size:11px;color:var(--focus);font-weight:600;}
+.error{color:#c5221f;font-size:13px;margin-top:12px;}
+.hint{color:var(--text-dim);font-size:12px;margin-top:14px;}
+</style>
+</head>
+<body>
+<main>
+  <h1>Choisis ton design</h1>
+  <p class="lead">Même extension, mêmes fonctionnalités : seul l'affichage change. Tu pourras en changer plus tard depuis le popup.</p>
+  <div class="cards" id="cards"></div>
+  <div class="error" id="error" hidden></div>
+</main>
+<script src="choose.js"></script>
+</body>
+</html>

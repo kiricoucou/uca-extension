@@ -6,7 +6,7 @@ const GIFS = {
   book: "Learning.gif", clock: "time.gif", calendar: "calendar.gif", user: "cat_gun.gif",
   pin: "ping.gif", note: "a_hand_writing.gif", chart: "stat.gif", link: "link.gif",
   mail: "notification.gif", sync: "loading.gif", alert: "security.gif", key: "security.gif",
-  logout: "eclair.gif", design: "rocket.gif",
+  logout: "eclair.gif", design: "rocket.gif", settings: "user.gif",
 };
 
 UCA_defineDesign({

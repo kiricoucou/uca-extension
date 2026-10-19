@@ -79,6 +79,11 @@ window.UCA_CORE = {
     refresh();
     chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
   },
+  /* Bouton #settingsBtn : ouvre la page Paramètres (commune à tous les designs). */
+  openSettings() { chrome.tabs.create({ url: chrome.runtime.getURL("settings.html") }); },
+  initSettings() {
+    if ($("settingsBtn")) $("settingsBtn").addEventListener("click", UCA_CORE.openSettings);
+  },
   /* Bouton #designBtn : rouvre le sélecteur. tabMode : page plein onglet (agenda). */
   initDesignSwitch(tabMode) {
     const btn = $("designBtn");

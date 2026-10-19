@@ -12,6 +12,7 @@ let notes = {};
 let absences = null;
 let releveNotes = null;
 let notesSeen = {};
+let settings = Object.assign({}, UCA_SETTINGS_DEFAULTS);
 let currentView = "week";
 let autoViewApplied = false;
 let refDate = new Date(); refDate.setHours(0, 0, 0, 0);
@@ -368,7 +369,8 @@ function renderDayList() {
 function render() {
   if (!availableViews().includes(currentView)) currentView = availableViews().includes("week") ? "week" : availableViews()[0];
   updateHeader();
-  const week = () => Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(refDate), i));
+  const week = () => Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(refDate), i))
+    .filter((d, i) => !settings.hideWeekend || i < 5 || eventsOnDate(d).length > 0);
   if (currentView === "month") renderMonth();
   else if (currentView === "week") renderTimeGrid("weekView", week());
   else if (currentView === "3day") renderTimeGrid("threeDayView", Array.from({ length: 3 }, (_, i) => addDays(refDate, i)));
@@ -399,6 +401,9 @@ function buildMobileMenu() {
   m.appendChild(menuButton("mi", D.icon("link") + "Moodle", () => window.open(MOODLE_URL, "_blank", "noopener")));
   m.appendChild(menuButton("mi", D.icon("mail") + "Messagerie (Zimbra)", () => window.open(MAIL_URL, "_blank", "noopener")));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
+  m.appendChild(menuButton("mi", D.icon("settings") + "Paramètres", UCA_CORE.openSettings));
+  m.appendChild(menuButton("mi", D.icon("design") + "Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
+  m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   m.appendChild(menuButton("mi msync primary", D.icon("sync") + "Synchroniser", triggerSync));
   const r = $("menuBtn").getBoundingClientRect();
   m.style.top = (r.bottom + 6) + "px"; m.style.left = r.left + "px";
@@ -423,7 +428,8 @@ function renderSyncInfo(iso) {
   $("syncInfo").textContent = iso ? "Dernière synchro : " + new Date(iso).toLocaleString("fr-FR") : "Jamais synchronisé";
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings"], (data) => {
+    settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, data.uca_settings);
     events = (data.uca_events || []).map(ev => ({ ...ev, color: D.eventColor(eventColorKey(ev.title)) }));
     notes = data.uca_notes || {};
     absences = data.uca_absences || null;
@@ -431,7 +437,8 @@ function loadFromStorage() {
     notesSeen = data.uca_notes_seen || {};
     if (!autoViewApplied) {
       autoViewApplied = true;
-      if (isMobileUI()) currentView = "day";
+      if (settings.startView !== "auto" && availableViews().includes(settings.startView)) currentView = settings.startView;
+      else if (isMobileUI()) currentView = "day";
       else if (eventsOnDate(refDate).length === 0 && availableViews().includes("5day")) currentView = "5day";
     }
     renderSyncInfo(data.uca_last_sync);
@@ -650,5 +657,9 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 UCA_CORE.initUpdate();
 UCA_CORE.initDesignSwitch(true);
+UCA_CORE.initSettings();
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === "local" && changes.uca_settings) { settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, changes.uca_settings.newValue); render(); }
+});
 loadFromStorage();
 })();

@@ -153,5 +153,6 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 UCA_CORE.initUpdate();
 UCA_CORE.initDesignSwitch(false);
+UCA_CORE.initSettings();
 loadFromStorage();
 })();

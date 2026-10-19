@@ -15,6 +15,7 @@ Non officielle, non affiliée à l'Université Clermont Auvergne. Aucune donnée
 - **Liens rapides** Moodle et messagerie Zimbra.
 - **Mise à jour** : vérification de la version sur GitHub (voir [`UPDATES.md`](UPDATES.md)).
 - **Page d'aide intégrée** (`aide.html`, bouton ❓) qui explique chaque fonctionnalité.
+- **Paramètres** communs à tous les designs (`settings.html`) : vue à l'ouverture, masquer le week-end.
 - Responsive (menu hamburger sous 820px).
 - **Plusieurs designs au choix** : au premier lancement l'extension demande quel design utiliser (changeable ensuite). Les fonctionnalités sont identiques, seul l'affichage change.
 
@@ -38,6 +39,7 @@ Une seule extension (la racine du dépôt). La logique est commune ; chaque doss
 | `manifest.json` | Manifest unique (popup par défaut : `choose.html`) |
 | `background.js` | Service worker : connexion CAS, scraping, synchro, déconnexion, mise à jour GitHub, application du design choisi (`chrome.action.setPopup` / `setIcon`) |
 | `choose.html` / `choose.js` | Sélecteur de design (premier lancement, puis bouton « Design ») |
+| `settings.html` / `settings.js`, `core/settings.js` | Page Paramètres et valeurs par défaut des réglages (partagées avec le service worker) |
 | `core/shared.js` | API de design (`UCA_defineDesign`) + briques communes (mise à jour, changement de design) |
 | `core/popup.js` / `core/agenda.js` | Logique du popup et de l'agenda, identique pour tous les designs |
 | `designs/designs.json` | Registre des designs disponibles |
@@ -51,6 +53,16 @@ Une seule extension (la racine du dépôt). La logique est commune ; chaque doss
 3. Ajouter une entrée dans `designs/designs.json` (`id`, `name`, `description`, `folder`, `preview`, `screenshots`). Les captures (`previews/` du dossier du design) défilent dans le sélecteur.
 
 Le sélecteur et le service worker lisent le registre : aucun autre fichier à toucher.
+
+## Tests
+
+Prérequis : Python 3 + Playwright (`pip install playwright` puis `playwright install chromium`).
+
+| Commande | Rôle |
+|---|---|
+| `python -I -X utf8 tests/check_design.py` | Chaque design du registre fournit tous les éléments utilisés par le core et ses captures |
+| `python -I -X utf8 tests/e2e.py [dossier]` | Charge l'extension dans Chromium avec des données factices et vérifie chaque design : pas de scroll, aucun bloc coupé, barre sur 2 étages dans le même ordre, moyenne, notes récentes, réglages, vue téléphone, 0 erreur JS (captures dans `dossier` si fourni) |
+| `python -I -X utf8 tests/gen_previews.py [id ...]` | Régénère les 6 captures du sélecteur (`designs/<id>/previews/`) |
 
 ## Confidentialité
 

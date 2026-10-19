@@ -54,6 +54,8 @@ button:disabled{opacity:.6;cursor:default;}
 header .gi.brand-gi{width:18px;height:18px;vertical-align:-4px;margin-right:4px;}
 #disclaimer{padding:6px 14px;font-size:11px;color:var(--text-dim);text-align:center;border-top:1px solid var(--border);}
 #disclaimer a{color:var(--accent2);}
+#disclaimer .link-btn{border:none;background:none;padding:0;font-size:11px;color:var(--accent2);cursor:pointer;}
+#disclaimer .link-btn:hover{text-decoration:underline;}
 @keyframes updPop{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 .update-overlay{position:fixed;inset:0;z-index:50;background:rgba(8,9,11,.94);display:flex;align-items:center;justify-content:center;}
 .update-overlay.hidden{display:none;}
@@ -78,7 +80,6 @@ button.danger{background:var(--danger);color:#1b0b0b;border-color:transparent;fo
   <div class="spacer"></div>
   <button id="agendaBtn"><img class="gi" src="gif/calendar.gif" alt="">Voir l'agenda</button>
   <a href="aide.html" target="_blank" rel="noopener" title="Aide" style="text-decoration:none;font-family:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:7px 11px;font-size:12.5px;">❓</a>
-  <button id="designBtn" title="Changer de design" aria-label="Changer de design">🎨</button>
   <button id="loginBtn">🔑 Se connecter</button>
   <button id="logoutBtn" class="hidden">🚪 Déconnexion</button>
   <button id="syncBtn" class="primary"><img class="gi" src="gif/loading.gif" alt="">Sync</button>
@@ -86,7 +87,7 @@ button.danger{background:var(--danger);color:#1b0b0b;border-color:transparent;fo
 <div id="status"></div>
 <div id="lastSync">Jamais synchronisé</div>
 <div id="list"></div>
-<div id="disclaimer">Outil non officiel, non affilié à l'UCA. Tes données restent dans ton navigateur. <a href="confidentialite.html" target="_blank" rel="noopener">Confidentialité</a></div>
+<div id="disclaimer">Outil non officiel, non affilié à l'UCA. Tes données restent dans ton navigateur. <a href="confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <button id="designBtn" class="link-btn">🎨 Changer de design</button></div>
 <div id="updateOverlay" class="update-overlay hidden">
   <div class="update-box">
     <img class="gi" src="gif/rocket.gif" alt="">

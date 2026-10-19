@@ -322,6 +322,17 @@ function loadFromStorage() {
 }
 function eventColorKey(title) { return title.replace(/\b(CM|TD|TDA|TP|TPA)\b/gi, "").trim() || title; }
 
+/* Un panneau ancré à droite de son bouton peut sortir de l'écran si le header passe
+   sur plusieurs lignes : on le recale dans la fenêtre à l'ouverture. */
+function togglePanel(panel) {
+  panel.style.left = ""; panel.style.right = "";
+  panel.classList.toggle("open");
+  if (!panel.classList.contains("open")) return;
+  const r = panel.getBoundingClientRect();
+  if (r.left < 8) { panel.style.left = "0"; panel.style.right = "auto"; }
+  else if (r.right > window.innerWidth - 8) { panel.style.right = "0"; panel.style.left = "auto"; }
+}
+
 /* ============================= Absences ============================= */
 function plural(n, w) { if (n === null || n === undefined) return "? " + w; return n + " " + w + (n > 1 ? "s" : ""); }
 function renderAbsencesPanel() {
@@ -334,7 +345,7 @@ function renderAbsencesPanel() {
 $("absencesBtn").addEventListener("click", (e) => {
   e.stopPropagation();
   $("notesPanel").classList.remove("open");
-  $("absencesPanel").classList.toggle("open");
+  togglePanel($("absencesPanel"));
 });
 document.addEventListener("click", (e) => {
   const panel = $("absencesPanel");
@@ -438,7 +449,7 @@ function renderNotesPanel() {
 $("notesBtn").addEventListener("click", (e) => {
   e.stopPropagation();
   $("absencesPanel").classList.remove("open");
-  $("notesPanel").classList.toggle("open");
+  togglePanel($("notesPanel"));
 });
 document.addEventListener("click", (e) => {
   const panel = $("notesPanel");
@@ -447,7 +458,7 @@ document.addEventListener("click", (e) => {
 
 /* Menu "plus" optionnel (#moreBtn / #morePanel) fourni par certains designs. */
 if ($("moreBtn")) {
-  $("moreBtn").addEventListener("click", (e) => { e.stopPropagation(); $("morePanel").classList.toggle("open"); });
+  $("moreBtn").addEventListener("click", (e) => { e.stopPropagation(); togglePanel($("morePanel")); });
   document.addEventListener("click", (e) => { if (!$("moreWrap").contains(e.target)) $("morePanel").classList.remove("open"); });
 }
 

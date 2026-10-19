@@ -1,4 +1,4 @@
-/* Design IA : sombre turquoise, icônes GIF animées, libellés avec emoji. */
+/* Design animé : sombre turquoise, icônes GIF animées, libellés avec emoji. */
 (function () {
 "use strict";
 

@@ -1,16 +1,16 @@
 [
   {
-    "id": "ia",
-    "name": "Design IA",
+    "id": "anime",
+    "name": "Design animé",
     "description": "Sombre turquoise, icônes animées",
-    "folder": "designs/ia",
+    "folder": "designs/anime",
     "preview": { "background": "#121418", "surface": "#1b1e24", "accent": "#18b7b0" }
   },
   {
-    "id": "non-ia",
-    "name": "Design non IA",
+    "id": "professionnel",
+    "name": "Design professionnel",
     "description": "Clair et épuré, icônes vectorielles",
-    "folder": "designs/non-ia",
+    "folder": "designs/professionnel",
     "preview": { "background": "#ffffff", "surface": "#f1f3f4", "accent": "#0b57d0" }
   }
 ]

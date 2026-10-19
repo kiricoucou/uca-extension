@@ -1,4 +1,4 @@
-/* Design non IA : clair et épuré, icônes SVG (sprite #i-* / #s-* dans chaque page). */
+/* Design professionnel : clair et épuré, icônes SVG (sprite #i-* / #s-* dans chaque page). */
 (function () {
 "use strict";
 

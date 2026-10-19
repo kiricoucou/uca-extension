@@ -232,6 +232,52 @@ function parseAbsencesText(text) {
   }
   return out;
 }
+/* Liste des déclarations d'absence (bloc caché #id_liste_justifications d'Odin, format
+   confirmé) : « • Du JJ/MM/AAAA à HHhMM au JJ/MM/AAAA à HHhMM (Déposée le JJ/MM/AAAA à HHhMM)
+   [icône de statut, texte dans alt/title] Motif : … ». Odin ne détaille pas les absences
+   relevées sans déclaration (seulement leur nombre). */
+const DECLARATION_RE = /Du\s+(\d{2}\/\d{2}\/\d{4})\s+à\s+(\d{1,2})h(\d{2})\s+au\s+(\d{2}\/\d{2}\/\d{4})\s+à\s+(\d{1,2})h(\d{2})\s*\(\s*Déposée le\s+(\d{2}\/\d{2}\/\d{4})\s+à\s+(\d{1,2})h(\d{2})\s*\)\s*(?:Motif\s*:\s*(.*))?/i;
+function isoFromFr(d, h, m) { const [dd, mm, yy] = d.split("/"); return `${yy}-${mm}-${dd}T${String(h).padStart(2, "0")}:${m}`; }
+function declarationStatus(label) {
+  const l = (label || "").toLowerCase();
+  if (/refus|rejet/.test(l)) return "refusee";
+  if (/attente|cours d'examen|à traiter/.test(l)) return "attente";
+  if (/justifi|valid/.test(l)) return "justifiee";
+  return label ? "autre" : "inconnu";
+}
+function parseDeclarations(entries) {
+  return (entries || []).map((e) => {
+    const m = e.text.match(DECLARATION_RE);
+    if (!m) return null;
+    return {
+      debut: isoFromFr(m[1], m[2], m[3]), fin: isoFromFr(m[4], m[5], m[6]), depose: isoFromFr(m[7], m[8], m[9]),
+      motif: (m[10] || "").trim().slice(0, 300), statut: declarationStatus(e.status), statutLibelle: (e.status || "").slice(0, 200),
+    };
+  }).filter(Boolean).sort((a, b) => b.debut.localeCompare(a.debut));
+}
+async function extractDeclarations(tabId) {
+  try {
+    const [res] = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        const box = document.getElementById("id_liste_justifications");
+        if (!box) return null;
+        const entries = []; let cur = null;
+        box.childNodes.forEach((n) => {
+          if (n.nodeType === 3 && n.textContent.includes("•")) { cur = { parts: [], status: "" }; entries.push(cur); }
+          if (!cur) return;
+          if (n.nodeType === 1 && n.tagName === "IMG") cur.status = n.alt || n.title || "";
+          else cur.parts.push(n.textContent);
+        });
+        return entries.map((e) => ({ text: e.parts.join(" ").replace(/\s+/g, " ").trim(), status: e.status }));
+      },
+    });
+    return res && res.result ? parseDeclarations(res.result) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function scrapeAbsences() {
   let tab;
   try {
@@ -245,8 +291,11 @@ async function scrapeAbsences() {
       if (/absences?/i.test(text)) break;
       await sleep(500);
     }
+    const declarations = await extractDeclarations(tab.id);
     await chrome.tabs.remove(tab.id);
-    return parseAbsencesText(text);
+    const out = parseAbsencesText(text);
+    if (declarations) out.declarations = declarations;
+    return out;
   } catch (e) {
     if (tab) { try { await chrome.tabs.remove(tab.id); } catch (_) {} }
     return null;

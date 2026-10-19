@@ -97,6 +97,12 @@ def main():
             check(f"{did} : note < 2 j orange, < 4 j jaune", sum("note-new" in c for c in cls) == 1 and sum("note-recent" in c for c in cls) == 1)
             check(f"{did} : légende notes récentes", ag.locator(".notes-legend").is_visible())
             ag.locator("#notesBtn").click()
+            ag.locator("#absencesBtn").click(); ag.wait_for_timeout(300)
+            decl = ag.locator("#absencesPanel .ap-decl").count()
+            statuses = ag.evaluate("() => [...document.querySelectorAll('#absencesPanel .ap-status')].map(e => e.textContent).join(',')")
+            check(f"{did} : détail des déclarations d'absence", decl == 2 and statuses == "Justifiée,En attente", f"{decl} {statuses}")
+            shot(ag, f"{did}-absences")
+            ag.locator("#absencesBtn").click()
             for w in (1100, 1400, 1920):
                 ag.set_viewport_size({"width": w, "height": 860}); ag.wait_for_timeout(300)
                 h = ag.evaluate(JS_HEADER)

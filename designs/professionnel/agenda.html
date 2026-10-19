@@ -492,6 +492,23 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:18px;hei
   .event-card .ev-title,.event-card .ev-sub{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;flex-shrink:0;}
   .event-card .ev-time{flex-shrink:0;}
 }
+
+/* ---------- Déclarations d'absence ---------- */
+#absencesPanel{min-width:340px;}
+.ap-details{max-height:330px;overflow-y:auto;border-top:1px solid var(--border);margin-top:4px;}
+.ap-details:empty{display:none;}
+.ap-dh{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);padding:10px 16px 4px;}
+.ap-decl{padding:8px 16px;border-bottom:1px solid var(--border);}
+.ap-decl-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.ap-decl-when{font-weight:500;font-size:13.5px;}
+.ap-decl-motif{font-size:13px;color:var(--text);margin-top:2px;}
+.ap-decl-dep,.ap-decl-note,.ap-decl-empty{font-size:12px;color:var(--text-dim);}
+.ap-decl-note,.ap-decl-empty{padding:8px 16px;}
+.ap-status{flex-shrink:0;font-size:11.5px;font-weight:600;padding:2px 9px;border-radius:10px;background:var(--surface-2);color:var(--text-dim);}
+.ap-status.justifiee{background:var(--success-bg);color:var(--success);}
+.ap-status.refusee{background:var(--danger-bg);color:var(--danger);}
+.ap-status.attente{background:color-mix(in srgb,#f29900 18%,transparent);color:#b06000;}
+.mobile-menu .m-decl{padding:6px 16px 6px 52px;border-bottom:none;}
 /* ---------- Notes récentes ---------- */
 .notes-table td.note.note-new{color:#ff8c1a!important;font-weight:800;}
 .notes-table td.note.note-recent{color:#ffd23f!important;font-weight:800;}

@@ -52,7 +52,12 @@ def seed():
             "R1.02 : Web|": {"note": 12, "at": 0},
         },
         "uca_releve_notes": releve,
-        "uca_absences": {"declarees": 3, "justifiees": 2, "nonJustifiees": 1, "avecMotifs": 0, "journeesNonJustifiees": 0},
+        "uca_absences": {"declarees": 3, "justifiees": 2, "nonJustifiees": 1, "avecMotifs": 0, "journeesNonJustifiees": 0,
+                         "declarations": [
+                             {"debut": "2026-10-08T08:00", "fin": "2026-10-08T12:00", "depose": "2026-10-12T14:33",
+                              "motif": "Rendez-vous médical", "statut": "justifiee", "statutLibelle": "Justifiée par le responsable de la formation"},
+                             {"debut": "2026-09-22T13:30", "fin": "2026-09-23T17:30", "depose": "2026-09-24T09:10",
+                              "motif": "Transport en panne", "statut": "attente", "statutLibelle": "En attente de validation"}]},
     }
 
 

@@ -397,6 +397,7 @@ function buildMobileMenu() {
   abs.innerHTML = D.icon("chart") + escapeHtml(absences ? `Absences : ${plural(absences.declarees, "déclarée")}, ${plural(absences.nonJustifiees, "non justifiée")}` : "Absences : synchronise pour voir");
   abs.onclick = () => { window.open("https://odin.iut.uca.fr/etudiants/?p=absences", "_blank", "noopener"); };
   m.appendChild(abs);
+  ((absences && absences.declarations) || []).slice(0, 3).forEach(d => { const n = declarationNode(d); n.classList.add("m-decl"); m.appendChild(n); });
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   m.appendChild(menuButton("mi", D.icon("link") + "Moodle", () => window.open(MOODLE_URL, "_blank", "noopener")));
   m.appendChild(menuButton("mi", D.icon("mail") + "Messagerie (Zimbra)", () => window.open(MAIL_URL, "_blank", "noopener")));
@@ -463,11 +464,51 @@ function togglePanel(panel) {
 
 /* ============================= Absences ============================= */
 function plural(n, w) { if (n === null || n === undefined) return "? " + w; return n + " " + w + (n > 1 ? "s" : ""); }
+/* Déclarations d'absence (dates, horaires, motif, statut) sous les compteurs. */
+const DECL_STATUS = { justifiee: "Justifiée", refusee: "Refusée", attente: "En attente" };
+function fmtDeclWhen(d) {
+  const a = new Date(d.debut), b = new Date(d.fin);
+  const day = (x) => capitalize(x.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }));
+  const hm = (x) => pad(x.getHours()) + ":" + pad(x.getMinutes());
+  return sameDay(a, b) ? `${day(a)}, ${hm(a)} → ${hm(b)}` : `${day(a)} ${hm(a)} → ${day(b)} ${hm(b)}`;
+}
+function declarationNode(d) {
+  const item = document.createElement("div"); item.className = "ap-decl";
+  const top = document.createElement("div"); top.className = "ap-decl-top";
+  const when = document.createElement("span"); when.className = "ap-decl-when"; when.textContent = fmtDeclWhen(d);
+  const st = document.createElement("span"); st.className = "ap-status " + d.statut;
+  st.textContent = DECL_STATUS[d.statut] || d.statutLibelle || "Statut inconnu";
+  if (d.statutLibelle) st.title = d.statutLibelle;
+  top.append(when, st);
+  item.appendChild(top);
+  if (d.motif) { const m = document.createElement("div"); m.className = "ap-decl-motif"; m.textContent = d.motif; item.appendChild(m); }
+  const dep = document.createElement("div"); dep.className = "ap-decl-dep";
+  dep.textContent = "Déposée le " + new Date(d.depose).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  item.appendChild(dep);
+  return item;
+}
+function renderDeclarations() {
+  const panel = $("absencesPanel");
+  let box = panel.querySelector(".ap-details");
+  if (!box) { box = document.createElement("div"); box.className = "ap-details"; panel.insertBefore(box, panel.querySelector(".ap-link")); }
+  box.innerHTML = "";
+  const list = absences && absences.declarations;
+  if (!list) return;
+  const head = document.createElement("div"); head.className = "ap-dh"; head.textContent = `Mes déclarations (${list.length})`;
+  box.appendChild(head);
+  if (!list.length) { const e = document.createElement("div"); e.className = "ap-decl-empty"; e.textContent = "Aucune déclaration."; box.appendChild(e); }
+  list.forEach(d => box.appendChild(declarationNode(d)));
+  const note = document.createElement("div"); note.className = "ap-decl-note";
+  note.textContent = "Odin ne détaille pas les absences relevées sans déclaration (seulement leur nombre).";
+  box.appendChild(note);
+}
+
 function renderAbsencesPanel() {
   const fmt = (v) => (v === null || v === undefined ? "—" : v);
   const set = (id, key) => { document.querySelector(`#${id} .ap-val`).textContent = absences ? fmt(absences[key]) : "—"; };
   set("apDeclarees", "declarees"); set("apJustifiees", "justifiees"); set("apNonJustifiees", "nonJustifiees");
   set("apMotifs", "avecMotifs"); set("apJourneesNJ", "journeesNonJustifiees");
+  renderDeclarations();
   $("absencesBtn").innerHTML = D.icon("chart") + '<span class="btn-label">Absences</span>' + (absences && absences.nonJustifiees ? ` (${absences.nonJustifiees})` : "");
 }
 $("absencesBtn").addEventListener("click", (e) => {

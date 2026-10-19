@@ -8,46 +8,75 @@
 <style>
 :root{
   color-scheme:light;
-  --bg:#ffffff;--surface:#f6f7f9;--border:#dfe1e5;--text:#1f1f1f;--text-dim:#5f6368;--focus:#0b57d0;
+  --bg:#ffffff;--surface:#f6f7f9;--border:#dfe1e5;--text:#1f1f1f;--text-dim:#5f6368;--focus:#0b57d0;--on-focus:#ffffff;
   --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;}
+  :root:not([data-theme="light"]){color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;--on-focus:#0b1d3a;}
 }
-:root[data-theme="dark"]{color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;--on-focus:#0b1d3a;}
 *{box-sizing:border-box;}
 body{margin:0;font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.45;}
-body.popup{width:380px;}
-main{padding:20px 16px 18px;}
-body.page main{max-width:640px;margin:48px auto;padding:0 16px;}
+body.popup{width:400px;}
+main{padding:18px 16px 18px;}
+body.page main{max-width:1180px;margin:40px auto;padding:0 20px;}
 h1{font-size:17px;font-weight:600;margin:0 0 4px;}
-body.page h1{font-size:24px;}
+body.page h1{font-size:26px;}
 .lead{color:var(--text-dim);font-size:13px;margin:0 0 16px;}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
-.card{display:flex;flex-direction:column;gap:10px;text-align:left;padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:inherit;font:inherit;cursor:pointer;transition:border-color .15s,transform .1s;}
-.card:hover{border-color:var(--text-dim);}
-.card:active{transform:scale(.98);}
-.card:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+body.page .lead{font-size:15px;margin-bottom:24px;}
+.cards{display:grid;grid-template-columns:1fr;gap:16px;}
+body.page .cards{grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:24px;}
+.card{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:16px;background:var(--surface);overflow:hidden;}
 .card.current{border-color:var(--focus);box-shadow:0 0 0 1px var(--focus) inset;}
-.preview{height:72px;border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;border:1px solid rgba(127,127,127,.25);}
-.preview .bar{height:10px;border-radius:5px;width:70%;}
-.preview .row{display:flex;gap:6px;align-items:center;}
-.preview .dot{width:14px;height:14px;border-radius:50%;}
-.preview .line{height:8px;border-radius:4px;flex:1;opacity:.5;}
-.name{font-weight:600;font-size:14px;}
-.desc{color:var(--text-dim);font-size:12px;}
-.tag{font-size:11px;color:var(--focus);font-weight:600;}
+
+/* Galerie */
+.gallery{position:relative;background:#0e0f11;}
+.track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;aspect-ratio:16/10;}
+.track::-webkit-scrollbar{display:none;}
+.slide{flex:0 0 100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;margin:0;cursor:zoom-in;}
+.slide img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
+.nav{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,opacity .15s;}
+.nav:hover{background:rgba(0,0,0,.8);}
+.nav:disabled{opacity:0;pointer-events:none;}
+.nav.prev{left:8px;}
+.nav.next{right:8px;}
+.nav:focus-visible,.dot:focus-visible,.choose-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+.caption{position:absolute;left:10px;bottom:10px;padding:3px 10px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;}
+.dots{position:absolute;right:10px;bottom:10px;display:flex;align-items:center;gap:5px;padding:6px 8px;border-radius:999px;background:rgba(0,0,0,.55);}
+.dot{width:7px;height:7px;border-radius:50%;border:none;padding:0;background:rgba(255,255,255,.45);cursor:pointer;}
+.dot.on{background:#fff;width:18px;border-radius:4px;}
+
+.info{display:flex;align-items:center;gap:12px;padding:12px 14px;}
+.info .txt{flex:1;min-width:0;}
+.name{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px;}
+.tag{font-size:11px;color:var(--focus);font-weight:600;border:1px solid var(--focus);border-radius:999px;padding:0 7px;}
+.desc{color:var(--text-dim);font-size:12.5px;}
+.choose-btn{flex-shrink:0;height:36px;padding:0 16px;border-radius:18px;border:none;background:var(--focus);color:var(--on-focus);font:inherit;font-weight:600;cursor:pointer;}
+.choose-btn:hover{filter:brightness(1.08);}
 .error{color:#c5221f;font-size:13px;margin-top:12px;}
-.hint{color:var(--text-dim);font-size:12px;margin-top:14px;}
+
+/* Agrandissement */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:10;cursor:zoom-out;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:94vw;max-height:88vh;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.6);}
+.lightbox .lb-cap{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#ddd;font-size:13px;}
+.lightbox .nav{width:44px;height:44px;font-size:22px;background:rgba(255,255,255,.14);}
+.lightbox .nav.prev{left:16px;}
+.lightbox .nav.next{right:16px;}
 </style>
 </head>
 <body>
 <main>
   <h1>Choisis ton design</h1>
-  <p class="lead">Même extension, mêmes fonctionnalités : seul l'affichage change. Tu pourras en changer plus tard depuis le popup.</p>
+  <p class="lead">Même extension, mêmes fonctionnalités : seul l'affichage change. Fais défiler les captures, puis choisis. Tu pourras changer plus tard avec le bouton « Design ».</p>
   <div class="cards" id="cards"></div>
   <div class="error" id="error" hidden></div>
 </main>
+<div class="lightbox" id="lightbox" role="dialog" aria-label="Capture agrandie">
+  <button class="nav prev" id="lbPrev" aria-label="Capture précédente">‹</button>
+  <button class="nav next" id="lbNext" aria-label="Capture suivante">›</button>
+  <div class="lb-cap" id="lbCap"></div>
+</div>
 <script src="choose.js"></script>
 </body>
 </html>

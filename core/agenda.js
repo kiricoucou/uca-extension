@@ -11,6 +11,7 @@ let events = [];
 let notes = {};
 let absences = null;
 let releveNotes = null;
+let notesSeen = {};
 let currentView = "week";
 let autoViewApplied = false;
 let refDate = new Date(); refDate.setHours(0, 0, 0, 0);
@@ -165,6 +166,29 @@ function metaHtml(ev, tag) {
     + (ev.room ? `<${tag} class="ev-sub">${escapeHtml(T("roomPrefix") + ev.room)}</${tag}>` : "");
 }
 
+/* Bloc trop court pour tout afficher (cours d'1h...) : l'horaire passe sur la ligne du
+   titre, puis la police réduit par petits pas jusqu'à ce que tout tienne. */
+function fitCard(card) {
+  // Hauteur réelle du texte (scrollHeight : une ligne compressée par flex garde sa vraie
+  // hauteur). Les badges positionnés en absolu ne comptent pas.
+  const overflows = () => {
+    const cs = getComputedStyle(card);
+    const room = card.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+    let used = 0;
+    for (const k of card.children) {
+      const ks = getComputedStyle(k);
+      if (ks.position === "absolute" || ks.display === "none") continue;
+      used += k.scrollHeight + (parseFloat(ks.marginTop) || 0) + (parseFloat(ks.marginBottom) || 0);
+    }
+    return used > room + 1;
+  };
+  if (!overflows()) return;
+  const time = card.querySelector(".ev-time"), title = card.querySelector(".ev-title");
+  if (time && title) { title.textContent = time.textContent + " · " + title.textContent; time.remove(); }
+  let s = parseFloat(card.style.getPropertyValue("--s")) || 1;
+  while (overflows() && s > 0.66) { s = Math.round((s - 0.04) * 100) / 100; card.style.setProperty("--s", s); }
+}
+
 /* Hauteur de référence pour l'échelle de police (designs avec grid.fontScale). */
 const MIN_CARD_HEIGHT = 72;
 
@@ -212,7 +236,7 @@ function renderTimeGrid(containerId, days) {
       let durMin = (ev.endH * 60 + ev.endM) - (ev.startH * 60 + ev.startM); if (durMin <= 0) durMin = 30;
       const height = (durMin / 60) * pxPerHour;
       const mobile = isMobileUI();
-      const scale = D.grid.fontScale && !mobile ? Math.max(0.42, Math.min(1.8, height / MIN_CARD_HEIGHT)) : 1;
+      const scale = D.grid.fontScale && !mobile ? Math.max(0.9, Math.min(1.8, height / MIN_CARD_HEIGHT)) : 1;
       const card = document.createElement("div"); card.className = "event-card" + (height < 26 ? " tiny" : "");
       if (sameDay(d, today)) { const nm = new Date().getHours() * 60 + new Date().getMinutes(), sm = ev.startH * 60 + ev.startM, em = ev.endH * 60 + ev.endM; if (nm >= em) card.classList.add("past"); else if (nm >= sm) card.classList.add("current"); } else if (d < today) card.classList.add("past");
       card.style.top = top + "px"; card.style.height = height + "px"; card.style.setProperty("--s", scale);
@@ -236,6 +260,14 @@ function renderTimeGrid(containerId, days) {
     }
     body.appendChild(col);
   });
+  if (!isMobileUI()) {
+    // Deux passes : tout de suite, puis une fois polices et images du header chargées.
+    const fitAll = () => body.querySelectorAll(".event-card").forEach(fitCard);
+    fitAll();
+    requestAnimationFrame(fitAll);
+    if (document.fonts) document.fonts.ready.then(fitAll);
+    window.addEventListener("load", fitAll, { once: true });
+  }
 }
 
 /* ============================= Vue Jour mobile =============================
@@ -391,11 +423,12 @@ function renderSyncInfo(iso) {
   $("syncInfo").textContent = iso ? "Dernière synchro : " + new Date(iso).toLocaleString("fr-FR") : "Jamais synchronisé";
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen"], (data) => {
     events = (data.uca_events || []).map(ev => ({ ...ev, color: D.eventColor(eventColorKey(ev.title)) }));
     notes = data.uca_notes || {};
     absences = data.uca_absences || null;
     releveNotes = data.uca_releve_notes || null;
+    notesSeen = data.uca_notes_seen || {};
     if (!autoViewApplied) {
       autoViewApplied = true;
       if (isMobileUI()) currentView = "day";
@@ -450,12 +483,23 @@ function ntCell(text, cls) {
   td.textContent = text;
   return td;
 }
-function ntRow(cls, label, row) {
+// Note apparue il y a moins de 2 jours : orange ; moins de 4 jours : jaune ; ensuite normale.
+const NOTE_NEW_MS = 2 * 86400000, NOTE_RECENT_MS = 4 * 86400000;
+function noteAgeClass(seenKey, note) {
+  const seen = seenKey && notesSeen[seenKey];
+  if (note == null || !seen || seen.note !== note || !seen.at) return "";
+  const age = Date.now() - seen.at;
+  return age < NOTE_NEW_MS ? " note-new" : age < NOTE_RECENT_MS ? " note-recent" : "";
+}
+function ntRow(cls, label, row, seenKey) {
   const tr = document.createElement("tr");
   tr.className = cls;
   tr.appendChild(ntCell(label, "lbl"));
   tr.appendChild(ntCell(fmtNote(row.coeff), "num"));
-  tr.appendChild(ntCell(fmtNote(row.note), "num note note-val"));
+  const ageCls = noteAgeClass(seenKey, row.note);
+  const noteTd = ntCell(fmtNote(row.note), "num note note-val" + ageCls);
+  if (ageCls) noteTd.title = ageCls === " note-new" ? "Nouvelle note (moins de 2 jours)" : "Note récente (moins de 4 jours)";
+  tr.appendChild(noteTd);
   tr.appendChild(ntCell(fmtNote(row.moy), "num"));
   tr.appendChild(ntCell(fmtNote(row.maxi), "num"));
   tr.appendChild(ntCell(fmtNote(row.mini), "num"));
@@ -513,12 +557,12 @@ function renderNotesPanel() {
       if (!matieres.length) return;
       tbody.appendChild(ntRow("ue-row", ue.label, ue));
       matieres.forEach((m) => {
-        tbody.appendChild(ntRow("matiere-row" + (m.note == null ? " no-grade" : ""), m.label, m));
+        tbody.appendChild(ntRow("matiere-row" + (m.note == null ? " no-grade" : ""), m.label, m, m.label + "|"));
         const seenEvals = new Set();
         (m.evals || []).forEach((ev) => {
           if (seenEvals.has(ev.label)) return;
           seenEvals.add(ev.label);
-          tbody.appendChild(ntRow("eval-row", ev.label, ev));
+          tbody.appendChild(ntRow("eval-row", ev.label, ev, m.label + "|" + ev.label));
         });
       });
     });
@@ -598,7 +642,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   } else if (msg.type === "UCA_ABSENCES_RESULT") {
     if (msg.ok) { absences = msg.absences; renderAbsencesPanel(); }
   } else if (msg.type === "UCA_NOTES_RESULT") {
-    if (msg.ok) { releveNotes = msg.releve; renderNotesPanel(); }
+    if (msg.ok) chrome.storage.local.get("uca_notes_seen", (data) => { releveNotes = msg.releve; notesSeen = data.uca_notes_seen || {}; renderNotesPanel(); });
   } else if (msg.type === "UCA_UPDATE_STATE") {
     UCA_CORE.renderUpdate(msg.updateAvailable, msg.current, msg.latest);
   }

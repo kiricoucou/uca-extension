@@ -4,13 +4,73 @@
     "name": "Design animé",
     "description": "Sombre turquoise, icônes animées",
     "folder": "designs/anime",
-    "preview": { "background": "#121418", "surface": "#1b1e24", "accent": "#18b7b0" }
+    "preview": {
+      "background": "#121418",
+      "surface": "#1b1e24",
+      "accent": "#18b7b0"
+    },
+    "screenshots": [
+      {
+        "src": "designs/anime/previews/1-semaine.jpg",
+        "label": "Agenda de la semaine"
+      },
+      {
+        "src": "designs/anime/previews/2-notes.jpg",
+        "label": "Relevé de notes et moyenne"
+      },
+      {
+        "src": "designs/anime/previews/3-popup.jpg",
+        "label": "Popup de la barre d'outils"
+      },
+      {
+        "src": "designs/anime/previews/4-mobile.jpg",
+        "label": "Vue Jour sur téléphone"
+      },
+      {
+        "src": "designs/anime/previews/5-mois.jpg",
+        "label": "Vue Mois"
+      },
+      {
+        "src": "designs/anime/previews/6-detail.jpg",
+        "label": "Détail d'un cours et note perso"
+      }
+    ]
   },
   {
     "id": "professionnel",
     "name": "Design professionnel",
     "description": "Clair et épuré, icônes vectorielles",
     "folder": "designs/professionnel",
-    "preview": { "background": "#ffffff", "surface": "#f1f3f4", "accent": "#0b57d0" }
+    "preview": {
+      "background": "#ffffff",
+      "surface": "#f1f3f4",
+      "accent": "#0b57d0"
+    },
+    "screenshots": [
+      {
+        "src": "designs/professionnel/previews/1-semaine.jpg",
+        "label": "Agenda de la semaine"
+      },
+      {
+        "src": "designs/professionnel/previews/2-notes.jpg",
+        "label": "Relevé de notes et moyenne"
+      },
+      {
+        "src": "designs/professionnel/previews/3-popup.jpg",
+        "label": "Popup de la barre d'outils"
+      },
+      {
+        "src": "designs/professionnel/previews/4-mobile.jpg",
+        "label": "Vue Jour sur téléphone"
+      },
+      {
+        "src": "designs/professionnel/previews/5-mois.jpg",
+        "label": "Vue Mois"
+      },
+      {
+        "src": "designs/professionnel/previews/6-detail.jpg",
+        "label": "Détail d'un cours et note perso"
+      }
+    ]
   }
 ]

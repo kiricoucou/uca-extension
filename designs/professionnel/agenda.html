@@ -67,14 +67,6 @@
 .notes-avg-inline{color:#34d168;font-weight:700;}
 .view-tabs{flex-shrink:0;}
 .period-label{min-width:0;overflow:hidden;text-overflow:ellipsis;}
-.more-panel{min-width:230px;}
-.more-item{display:flex;align-items:center;gap:12px;width:100%;height:40px;padding:0 16px;border:none;border-radius:0;justify-content:flex-start;font-size:14px;font-weight:400;color:var(--text);text-decoration:none;background:transparent;}
-.more-item:hover{background:var(--surface-2);}
-.more-item .ic{color:var(--text-dim);}
-@media (max-width:1600px){ .brand-name{display:none;} .brand{margin-right:8px;} }
-@media (max-width:1400px){ #absencesBtn .btn-label,#notesBtn .btn-label{display:none;} #absencesBtn,#notesBtn{padding:0 12px;} }
-@media (max-width:1050px){ #zoomCtrl{display:none;} }
-@media (max-width:1250px){ #syncBtn .btn-label,#todayBtn .today-txt{display:none;} #syncBtn,#todayBtn{padding:0 10px;} .view-tabs button{padding:0 10px;} .period-label{font-size:18px;} }
 .update-bar{display:flex;align-items:center;gap:12px;padding:8px 16px;font-size:13px;background:var(--accent-tint);color:var(--text);border-bottom:1px solid var(--border);}
 .update-bar span{flex:1;}
 .update-bar .ic{color:var(--accent);}
@@ -412,7 +404,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:18px;hei
 .notes-empty{color:#9aa0a6;font-size:14px;text-align:center;padding:24px 16px;}
 #syncInfo{font-size:12px;color:var(--text-dim);padding:6px 16px;background:var(--surface);border-bottom:1px solid var(--border);}
 .event-card{display:flex;flex-direction:column;}
-.event-card .ev-note{position:absolute;bottom:3px;right:4px;top:auto;}
+.event-card .ev-note{position:absolute;bottom:3px;right:4px;top:auto;line-height:0;}
 .ev-note-badge{width:16px;height:16px;display:block;border-radius:50%;background:#f2a600;box-shadow:0 0 0 1px rgba(0,0,0,.25);}
 .ev-note-badge .ic{width:11px;height:11px;stroke:#fff;stroke-width:2.4;vertical-align:1px;margin:2.5px;}
 .note-label{font-size:13px;font-weight:500;color:var(--text-dim);margin:16px 0 8px;display:flex;align-items:center;}
@@ -475,6 +467,40 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:18px;hei
 #ucaLoginBtn .ic,.mobile-menu .mi#ucaLoginBtn .ic{color:#8e24aa;}
 .toast.ok{background:#0b8043;}
 
+
+/* ---------- Barre en deux étages (même ordre que le design animé) ---------- */
+@media (min-width:821px){
+  header{height:auto;min-height:64px;flex-wrap:wrap;row-gap:10px;padding:10px 16px 10px 12px;}
+  .hdr-break{flex-basis:100%;height:0;}
+}
+@media (max-width:820px){ .hdr-break{display:none;} }
+@media (max-width:1500px){ .brand-name{display:none;} .brand{margin-right:8px;} }
+@media (max-width:1300px){ #todayBtn .today-txt{display:none;} #todayBtn{padding:0 10px;} }
+@media (max-width:1150px){ #zoomCtrl{display:none;} }
+.hdr-link{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border:1px solid var(--border-strong);border-radius:18px;color:var(--text);text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap;}
+.hdr-link:hover{background:color-mix(in srgb,var(--text) 6%,transparent);}
+.hdr-link.icon{width:36px;padding:0;justify-content:center;}
+.hdr-link .ic,#designBtn .ic{color:var(--text-dim);}
+.notes-avg-badge{font-size:13px;font-weight:700;color:#1e8e3e;background:color-mix(in srgb,#34d168 16%,transparent);border:1px solid color-mix(in srgb,#34d168 50%,transparent);border-radius:16px;padding:5px 11px;margin-left:-4px;white-space:nowrap;}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .notes-avg-badge{color:#34d168;} }
+:root[data-theme="dark"] .notes-avg-badge{color:#34d168;}
+
+
+/* Blocs de cours : tout le texte visible (retour à la ligne, pas de « … ») ; le core
+   réduit la police si le bloc est trop court. */
+@media (min-width:821px){
+  .event-card .ev-title,.event-card .ev-sub{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;flex-shrink:0;}
+  .event-card .ev-time{flex-shrink:0;}
+}
+/* ---------- Notes récentes ---------- */
+.notes-table td.note.note-new{color:#ff8c1a!important;font-weight:800;}
+.notes-table td.note.note-recent{color:#ffd23f!important;font-weight:800;}
+.np-foot{display:flex;align-items:center;justify-content:space-between;gap:8px 14px;flex-wrap:wrap;padding-right:14px;}
+.notes-legend{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:#a8acb0;white-space:nowrap;margin:8px 0 4px 14px;}
+.lg-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-left:6px;}
+.lg-dot:first-child{margin-left:0;}
+.lg-new{background:#ff8c1a;}
+.lg-recent{background:#ffd23f;}
 /* ---------- Téléphone : vue jour en cartes, semaine compacte, mois en points ---------- */
 .day-note{position:absolute;bottom:0;right:0;}
 @media (max-width:820px){
@@ -527,16 +553,24 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:18px;hei
   <button id="menuBtn" class="icon-btn mobile-only" title="Menu" aria-label="Menu"><svg class="ic" aria-hidden="true"><use href="#i-menu"/></svg></button>
   <div class="mobile-menu" id="mobileMenu"></div>
   <div class="brand"><span class="brand-mark" aria-hidden="true"><svg class="ic" aria-hidden="true"><use href="#i-calendar"/></svg></span><span class="brand-name">Emploi du temps UCA</span></div>
-  <button id="todayBtn"><svg class="ic sm today-ic" aria-hidden="true"><use href="#i-today"/></svg><span class="today-txt">Aujourd'hui</span></button>
+  <div class="view-tabs" id="viewTabs">
+    <button data-view="day">Jour</button>
+    <button data-view="3day">3 jours</button>
+    <button data-view="5day">5 jours</button>
+    <button data-view="6day">6 jours</button>
+    <button data-view="week">Semaine</button>
+    <button data-view="month">Mois</button>
+  </div>
   <button class="icon-btn nav-arrow" id="prevBtn" title="Précédent" aria-label="Précédent"><svg class="ic" aria-hidden="true"><use href="#i-chev-left"/></svg></button>
-  <button class="icon-btn nav-arrow" id="nextBtn" title="Suivant" aria-label="Suivant"><svg class="ic" aria-hidden="true"><use href="#i-chev-right"/></svg></button>
   <div class="period-label" id="periodLabel">—</div>
-  <div class="spacer"></div>
+  <button class="icon-btn nav-arrow" id="nextBtn" title="Suivant" aria-label="Suivant"><svg class="ic" aria-hidden="true"><use href="#i-chev-right"/></svg></button>
+  <button id="todayBtn"><svg class="ic sm today-ic" aria-hidden="true"><use href="#i-today"/></svg><span class="today-txt">Aujourd'hui</span></button>
   <div class="zoom-ctrl mobile-hide-zoom" id="zoomCtrl" title="Dézoomer / zoomer la grille">
     <button id="zoomOutBtn" aria-label="Dézoomer"><svg class="ic" aria-hidden="true"><use href="#i-minus"/></svg></button>
     <span class="zoom-pct" id="zoomPct">100%</span>
     <button id="zoomInBtn" aria-label="Zoomer"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button>
   </div>
+  <div class="spacer"></div>
   <div class="absences-wrap mobile-hide-zoom" id="absencesWrap">
     <button id="absencesBtn" title="Voir mes absences"><svg class="ic sm" aria-hidden="true"><use href="#i-chart"/></svg>Absences</button>
     <div class="absences-panel" id="absencesPanel">
@@ -548,31 +582,20 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:18px;hei
       <a class="ap-link" href="https://odin.iut.uca.fr/etudiants/?p=absences" target="_blank" rel="noopener noreferrer">Voir le détail sur Odin ↗</a>
     </div>
   </div>
+  <div class="hdr-break" aria-hidden="true"></div>
   <div class="absences-wrap mobile-hide-zoom" id="notesWrap">
     <button id="notesBtn" title="Voir mon relevé de notes"><svg class="ic sm" aria-hidden="true"><use href="#i-book"/></svg>Notes</button>
+    <span id="notesAvg" class="notes-avg-badge hidden" title="Moyenne générale (pondérée par coefficient)"></span>
     <div class="absences-panel notes-panel" id="notesPanel">
       <div id="npContent"></div>
-      <a class="ap-link" href="https://odin.iut.uca.fr/etudiants/?p=notes" target="_blank" rel="noopener noreferrer">Voir le détail sur Odin ↗</a>
+      <div class="np-foot"><a class="ap-link" href="https://odin.iut.uca.fr/etudiants/?p=notes" target="_blank" rel="noopener noreferrer">Voir le détail sur Odin ↗</a><span class="notes-legend"><span class="lg-dot lg-new"></span>Nouvelle (&lt; 2 j)<span class="lg-dot lg-recent"></span>Récente (&lt; 4 j)</span></div>
     </div>
   </div>
-  <div class="view-tabs" id="viewTabs">
-    <button data-view="day">Jour</button>
-    <button data-view="3day">3 jours</button>
-    <button data-view="5day">5 jours</button>
-    <button data-view="6day">6 jours</button>
-    <button data-view="week">Semaine</button>
-    <button data-view="month">Mois</button>
-  </div>
-  <div class="absences-wrap mobile-hide-zoom" id="moreWrap">
-    <button class="icon-btn" id="moreBtn" title="Plus" aria-label="Plus"><svg class="ic" aria-hidden="true"><use href="#i-more"/></svg></button>
-    <div class="absences-panel more-panel" id="morePanel">
-      <a class="more-item" href="https://moodle.uca.fr/" target="_blank" rel="noopener"><svg class="ic sm" aria-hidden="true"><use href="#i-link"/></svg>Moodle</a>
-      <a class="more-item" href="https://mail.uca.fr/zimbra/" target="_blank" rel="noopener"><svg class="ic sm" aria-hidden="true"><use href="#i-mail"/></svg>Messagerie (Zimbra)</a>
-      <a class="more-item" href="aide.html" target="_blank" rel="noopener"><svg class="ic sm" aria-hidden="true"><use href="#i-help"/></svg>Aide</a>
-      <button class="more-item" id="designBtn"><svg class="ic sm" aria-hidden="true"><use href="#i-gear"/></svg>Changer de design</button>
-    </div>
-  </div>
+  <a class="hdr-link mobile-hide-zoom" href="https://moodle.uca.fr/" target="_blank" rel="noopener" title="Moodle"><svg class="ic sm" aria-hidden="true"><use href="#i-link"/></svg>Moodle</a>
+  <a class="hdr-link mobile-hide-zoom" href="https://mail.uca.fr/zimbra/" target="_blank" rel="noopener" title="Messagerie UCA"><svg class="ic sm" aria-hidden="true"><use href="#i-mail"/></svg>Mail</a>
   <span id="sessionWarn" class="session-warn hidden"><svg class="ic sm" aria-hidden="true"><use href="#i-alert"/></svg>Session expirée</span>
+  <a class="hdr-link icon mobile-hide-zoom" href="aide.html" target="_blank" rel="noopener" title="Aide" aria-label="Aide"><svg class="ic sm" aria-hidden="true"><use href="#i-help"/></svg></a>
+  <button class="mobile-hide-zoom" id="designBtn" title="Changer de design"><svg class="ic sm" aria-hidden="true"><use href="#i-gear"/></svg>Design</button>
   <button class="primary" id="syncBtn"><svg class="ic" aria-hidden="true"><use href="#i-sync"/></svg><span class="btn-label">Synchroniser</span></button>
 </header>
 <div class="update-bar hidden" id="updateBar">

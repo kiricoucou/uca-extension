@@ -9,7 +9,7 @@ Non officielle, non affiliée à l'Université Clermont Auvergne. Aucune donnée
 - **Synchronisation** : connexion CAS (fenêtre dédiée, 15 min pour valider la double authentification) puis reconnexion silencieuse tant que la session Odin reste valide. Détection automatique de session expirée.
 - **Emploi du temps** : vues Jour / 3 jours / 5 jours / 6 jours / Semaine / Mois, zoom réglable, grille horaire (la journée la plus longue tient à l'écran sans scroll à 100 %).
 - **Absences** : déclarées, justifiées, non justifiées, avec motif présenté, journées non justifiées — synchronisées en même temps que l'emploi du temps.
-- **Relevé de notes** : tableau UE → matière → évaluation (Coeff / Note / Moy / Maxi / Mini), copié depuis Odin, avec **moyenne générale** pondérée par les coefficients.
+- **Relevé de notes** : tableau UE → matière → évaluation (Coeff / Note / Moy / Maxi / Mini), copié depuis Odin, avec **moyenne générale** pondérée par les coefficients. Les notes apparues depuis moins de 2 jours sont en orange, depuis moins de 4 jours en jaune (Odin ne datant pas les notes, l'extension retient le moment où elle voit chaque note pour la première fois).
 - **Notes personnelles** : un champ texte par cours, signalé par un petit indicateur sur le cours.
 - **Déconnexion** depuis le popup, avec la durée de validité restante de la session.
 - **Liens rapides** Moodle et messagerie Zimbra.
@@ -48,7 +48,7 @@ Une seule extension (la racine du dépôt). La logique est commune ; chaque doss
 
 1. Copier un dossier existant de `designs/` sous un nouveau nom et modifier ses HTML/CSS/assets (garder les `id` des éléments utilisés par le core).
 2. Adapter son `design.js` : `UCA_defineDesign({...})` ne définit que ce qui change (icônes, textes, couleurs des cours, variantes d'affichage) ; tout le reste prend les valeurs par défaut de `core/shared.js`.
-3. Ajouter une entrée dans `designs/designs.json` (`id`, `name`, `description`, `folder`, `preview`).
+3. Ajouter une entrée dans `designs/designs.json` (`id`, `name`, `description`, `folder`, `preview`, `screenshots`). Les captures (`previews/` du dossier du design) défilent dans le sélecteur.
 
 Le sélecteur et le service worker lisent le registre : aucun autre fichier à toucher.
 

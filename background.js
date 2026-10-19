@@ -397,9 +397,28 @@ async function syncAbsencesQuietly() {
   }
 }
 
+/* Odin ne date pas les notes : on retient quand chaque note est vue pour la première fois
+   (ou quand sa valeur change) pour signaler les notes récentes. Clé : "matière|évaluation"
+   ("matière|" pour la note de matière). Au tout premier relevé, tout compte comme ancien. */
+async function recordNotesSeen(releve) {
+  const { uca_notes_seen } = await chrome.storage.local.get("uca_notes_seen");
+  const seen = uca_notes_seen || {};
+  const at = uca_notes_seen ? Date.now() : 0;
+  const mark = (key, note) => {
+    if (note === null || note === undefined) return;
+    if (!seen[key] || seen[key].note !== note) seen[key] = { note, at };
+  };
+  releve.ue.forEach((ue) => (ue.matieres || []).forEach((m) => {
+    mark(m.label + "|", m.note);
+    (m.evals || []).forEach((e) => mark(m.label + "|" + e.label, e.note));
+  }));
+  await chrome.storage.local.set({ uca_notes_seen: seen });
+}
+
 async function syncNotesQuietly() {
   const releve = await scrapeNotes();
   if (releve) {
+    await recordNotesSeen(releve);
     await chrome.storage.local.set({ uca_releve_notes: releve, uca_releve_notes_sync: new Date().toISOString() });
     broadcast({ type: "UCA_NOTES_RESULT", ok: true, releve });
   }

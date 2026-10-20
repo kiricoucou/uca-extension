@@ -32,12 +32,12 @@ header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px
 header .brand{font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px;}
 header .brand img{width:22px;height:22px;border-radius:5px;animation:floatY 2.6s ease-in-out infinite;}
 header .spacer{flex:1;}
-header a.back{font-family:inherit;text-decoration:none;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:var(--radius-sm);padding:8px 13px;font-size:13px;}
+header a.back{white-space:nowrap;font-family:inherit;text-decoration:none;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:var(--radius-sm);padding:8px 13px;font-size:13px;}
 header a.back:hover{background:var(--accent-light);border-color:var(--accent);}
 
 .hero{text-align:center;padding:46px 20px 36px;position:relative;overflow:hidden;}
 .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% -10%,var(--accent-light),transparent 60%);pointer-events:none;}
-.hero img{width:74px;height:74px;border-radius:16px;box-shadow:var(--shadow-lg);animation:floatY 2.8s ease-in-out infinite,pulseGlow 2.8s ease-in-out infinite;}
+.hero img{position:relative;width:74px;height:74px;border-radius:16px;box-shadow:var(--shadow-lg);animation:floatY 2.8s ease-in-out infinite,pulseGlow 2.8s ease-in-out infinite;}
 .hero h1{font-size:26px;margin:18px 0 6px;animation:fadeUp .5s ease both;}
 .hero p{color:var(--text-dim);font-size:14px;max-width:460px;margin:0 auto;animation:fadeUp .6s .05s ease both;}
 
@@ -66,17 +66,26 @@ footer a{color:var(--accent2);}
 
 .i0{animation-delay:.05s;} .i1{animation-delay:.1s;} .i2{animation-delay:.15s;} .i3{animation-delay:.2s;}
 .i4{animation-delay:.25s;} .i5{animation-delay:.3s;} .i6{animation-delay:.35s;} .i7{animation-delay:.4s;}
+
+/* Palette du design professionnel (clair par défaut, sombre selon le système). */
+:root{--bg:#f8fafd;--surface:#ffffff;--border:#dde3ea;--text:#1f1f1f;--text-dim:#5f6368;
+  --accent:#0b57d0;--accent2:#0b57d0;--accent-light:#e8f0fe;--on-accent:#ffffff;--shadow-lg:0 4px 16px rgba(60,64,67,.12);}
+@media (prefers-color-scheme:dark){:root{--bg:#131314;--surface:#1e1f20;--border:#333537;--text:#e3e3e3;--text-dim:#a8abaf;
+  --accent:#a8c7fa;--accent2:#a8c7fa;--accent-light:#182638;--on-accent:#062e6f;--shadow-lg:0 4px 16px rgba(0,0,0,.4);}}
+body{font-family:'Google Sans','Segoe UI',Roboto,system-ui,sans-serif;}
+header .brand img,.hero img{animation:none;}
+.hero img{box-shadow:none;}
 </style>
 </head>
 <body>
 <header>
-  <div class="brand"><img src="gif/calendar.gif" alt="">Emploi du temps UCA</div>
+  <div class="brand"><img src="svg/calendar.svg" alt="">Emploi du temps UCA</div>
   <div class="spacer"></div>
   <a class="back" href="agenda.html">← Retour à l'agenda</a>
 </header>
 
 <div class="hero">
-  <img src="gif/rocket.gif" alt="">
+  <img src="svg/rocket.svg" alt="">
   <h1>Comment ça marche ?</h1>
   <p>Petit guide des fonctionnalités de l'extension — tout reste dans ton navigateur, rien n'est envoyé ailleurs.</p>
 </div>
@@ -85,27 +94,27 @@ footer a{color:var(--accent2);}
   <h2 class="section-title">Fonctionnalités</h2>
   <div class="grid">
     <div class="card i0">
-      <div class="ch"><img class="gi" src="gif/loading.gif" alt=""><h3>Synchroniser</h3></div>
+      <div class="ch"><img class="gi" src="svg/sync.svg" alt=""><h3>Synchroniser</h3></div>
       <p>Clique <strong>Synchroniser</strong> pour récupérer ton emploi du temps depuis Odin. La session reste ouverte en silence tant que possible ; si elle a expiré, une fenêtre de connexion CAS s'ouvre (15 min pour valider la double authentification).</p>
     </div>
     <div class="card i1">
-      <div class="ch"><img class="gi" src="gif/calendar.gif" alt=""><h3>Vues & zoom</h3></div>
+      <div class="ch"><img class="gi" src="svg/calendar.svg" alt=""><h3>Vues & zoom</h3></div>
       <p>Jour, 3 jours, 5 jours, semaine ou mois — bascule avec les onglets en haut. Les boutons − / + ajustent la hauteur des créneaux dans la grille.</p>
     </div>
     <div class="card i2">
-      <div class="ch"><img class="gi" src="gif/stat.gif" alt=""><h3>Absences</h3></div>
+      <div class="ch"><img class="gi" src="svg/stats.svg" alt=""><h3>Absences</h3></div>
       <p>Le bouton <strong>Absences</strong> affiche déclarées, justifiées, non justifiées, avec motif présenté et journées non justifiées — synchronisé automatiquement en même temps que l'emploi du temps.</p>
     </div>
     <div class="card i3">
-      <div class="ch"><img class="gi" src="gif/Learning.gif" alt=""><h3>Relevé de notes</h3></div>
+      <div class="ch"><img class="gi" src="svg/notes.svg" alt=""><h3>Relevé de notes</h3></div>
       <p>Le bouton <strong>Notes</strong> montre le tableau UE → matière → évaluation (Coeff / Note / Moy / Maxi / Mini), copié tel quel depuis Odin. La colonne Note ressort en rouge pour la repérer d'un coup d'œil. L'en-tête du tableau reste fixé en haut quand tu scrolles.</p>
     </div>
     <div class="card i4">
-      <div class="ch"><img class="gi" src="gif/a_hand_writing.gif" alt=""><h3>Notes personnelles</h3></div>
+      <div class="ch"><img class="gi" src="svg/pen.svg" alt=""><h3>Notes personnelles</h3></div>
       <p>Clique un cours dans la grille pour ouvrir son détail : un champ texte permet d'y laisser une note perso (révisions, rappel...), sauvegardée automatiquement et liée à ce cours précis.</p>
     </div>
     <div class="card i5">
-      <div class="ch"><img class="gi" src="gif/security.gif" alt=""><h3>Session expirée</h3></div>
+      <div class="ch"><img class="gi" src="svg/lock.svg" alt=""><h3>Session expirée</h3></div>
       <p>Si ta session Odin/CAS a expiré, un message "Session expirée" apparaît (bulle en bas à gauche sur mobile) — reclique Synchroniser pour te reconnecter.</p>
     </div>
   </div>
@@ -113,19 +122,19 @@ footer a{color:var(--accent2);}
   <h2 class="section-title">Questions fréquentes</h2>
   <div class="faq">
     <details>
-      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="gif/user.gif" alt="">Mes données partent-elles vers un serveur ?</summary>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/user.svg" alt="">Mes données partent-elles vers un serveur ?</summary>
       <p>Non. Tout reste stocké localement dans ton navigateur (<code>chrome.storage.local</code>). L'extension parle uniquement à <code>odin.iut.uca.fr</code> et <code>ent.uca.fr</code> avec ta propre session.</p>
     </details>
     <details>
-      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="gif/time.gif" alt="">La synchro silencieuse échoue parfois, pourquoi ?</summary>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/time.svg" alt="">La synchro silencieuse échoue parfois, pourquoi ?</summary>
       <p>Odin déconnecte la session après un certain temps d'inactivité. Dans ce cas l'extension détecte la redirection vers la page de connexion et te le signale au lieu d'afficher de fausses données.</p>
     </details>
     <details>
-      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="gif/search.gif" alt="">Le relevé de notes affiche "Aucun relevé", que faire ?</summary>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/search.svg" alt="">Le relevé de notes affiche "Aucun relevé", que faire ?</summary>
       <p>Clique Synchroniser une fois — le relevé n'est récupéré qu'au moment d'une synchro, pas automatiquement à l'ouverture.</p>
     </details>
     <details>
-      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="gif/trash.gif" alt="">Comment effacer mes notes personnelles ?</summary>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/trash.svg" alt="">Comment effacer mes notes personnelles ?</summary>
       <p>Ouvre le détail du cours concerné, vide le champ texte : la note est supprimée au prochain enregistrement.</p>
     </details>
   </div>

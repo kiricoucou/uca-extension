@@ -73,6 +73,15 @@ def tool_checks(ag, did):
     ok = ics.startswith("BEGIN:VCALENDAR") and "TZID:Europe/Paris" in ics and n == total and "TRIGGER:-PT15M" in ics and "\r\n" in ics
     check(f"{did} : export .ics (semaine, fuseau, rappels)", ok, f"{n} événements / {total}")
     shot(ag, f"{did}-export")
+    ag.locator("#exportPanel .xp-phone").click(); ag.wait_for_timeout(800)
+    qr_w = ag.evaluate("() => { const c = document.getElementById('phoneQrApp'); return c ? c.width : 0; }")
+    check(f"{did} : envoi téléphone → QR de l'app", ag.locator("#phoneOverlay").is_visible() and qr_w > 100, str(qr_w))
+    ag.locator("#phoneStart").click(); ag.wait_for_timeout(900)
+    counter = ag.locator("#phoneCounter").inner_text()
+    check(f"{did} : envoi téléphone → QR animé", counter.startswith("Trame ") and " / " in counter, counter)
+    shot(ag, f"{did}-telephone")
+    ag.keyboard.press("Escape"); ag.wait_for_timeout(200)
+    check(f"{did} : fenêtre téléphone fermée par Échap", ag.locator("#phoneOverlay").count() == 0)
     ag.mouse.click(700, 500); ag.wait_for_timeout(200)
 
 

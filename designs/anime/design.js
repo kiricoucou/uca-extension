@@ -1,18 +1,18 @@
-/* Design animé : sombre turquoise, icônes GIF animées, libellés avec emoji. */
+/* Design animé : sombre turquoise, icônes SVG animées (svg/, tests/gen_help_icons.py), libellés avec emoji. */
 (function () {
 "use strict";
 
-const GIFS = {
-  book: "Learning.gif", clock: "time.gif", calendar: "calendar.gif", user: "cat_gun.gif",
-  pin: "ping.gif", note: "a_hand_writing.gif", chart: "stat.gif", link: "link.gif",
-  mail: "notification.gif", sync: "loading.gif", alert: "security.gif", key: "security.gif",
-  logout: "eclair.gif", design: "rocket.gif", settings: "user.gif", filter: "search.gif", export: "calendar.gif",
+const ICONS = {
+  book: "notes", clock: "time", calendar: "calendar", user: "user",
+  pin: "pin", note: "pen", chart: "stats", link: "link",
+  mail: "mail", sync: "sync", alert: "lock", key: "lock",
+  logout: "bolt", design: "rocket", settings: "gear", filter: "search", export: "calendar", phone: "phone",
 };
 
 UCA_defineDesign({
   icon(name, variant) {
-    const file = GIFS[name];
-    return file ? `<img class="gi${variant === "title" ? " lg" : ""}" src="gif/${file}" alt="">` : "";
+    const file = ICONS[name];
+    return file ? `<img class="gi${variant === "title" ? " lg" : ""}" src="svg/${file}.svg" alt="">` : "";
   },
   eventColor(key) {
     return `hsl(${UCA_DESIGN.hashString(key) % 360},68%,40%)`;

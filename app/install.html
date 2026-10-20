@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installer l'app — Emploi du temps UCA</title>
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<main>
+  <img class="app-logo" src="icons/icon-192.png" alt="">
+  <h1>Emploi du temps UCA</h1>
+  <p class="lead">Ton emploi du temps, tes notes et tes absences sur ton téléphone, même hors ligne.</p>
+
+  <section class="card" id="androidCard">
+    <h2><span class="step-num">1</span>Installer l'application</h2>
+    <p>Elle s'ajoute à ton écran d'accueil comme une vraie app, avec son icône, en plein écran.</p>
+    <button class="btn primary" id="installBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>Installer l'application
+    </button>
+    <p class="muted hidden" id="installHint">Si le bouton ne réagit pas : menu ⋮ du navigateur → « Installer l'application » ou « Ajouter à l'écran d'accueil ».</p>
+  </section>
+
+  <section class="card hidden" id="iosCard">
+    <h2><span class="step-num">1</span>Ajouter à l'écran d'accueil</h2>
+    <p>Dans Safari :</p>
+    <ol class="ios-steps">
+      <li><span class="ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg></span>Appuie sur <b>Partager</b>, en bas de l'écran.</li>
+      <li><span class="ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8v8M8 12h8"/></svg></span>Choisis <b>Sur l'écran d'accueil</b> (fais défiler si besoin).</li>
+      <li><span class="ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Appuie sur <b>Ajouter</b>, puis ouvre l'app depuis son icône.</li>
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2><span class="step-num">2</span>Récupérer tes données</h2>
+    <p>Sur ton ordinateur, dans l'extension : <b>Exporter → Envoyer vers l'app téléphone</b>. Ensuite, dans l'app, scanne le code animé.</p>
+  </section>
+
+  <p class="center"><button class="link" id="continueBtn" type="button">Continuer dans le navigateur</button></p>
+</main>
+<script src="../core/env.js"></script>
+<script>
+(function () {
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  if (standalone) { location.replace("index.html"); return; }
+  document.getElementById("iosCard").classList.toggle("hidden", !ios);
+  document.getElementById("androidCard").classList.toggle("hidden", ios);
+  let deferred = null;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; });
+  window.addEventListener("appinstalled", () => { localStorage.setItem("uca_install_seen", "1"); });
+  document.getElementById("installBtn").addEventListener("click", async () => {
+    if (!deferred) { document.getElementById("installHint").classList.remove("hidden"); return; }
+    deferred.prompt();
+    const choice = await deferred.userChoice;
+    if (choice.outcome === "accepted") localStorage.setItem("uca_install_seen", "1");
+    deferred = null;
+  });
+  document.getElementById("continueBtn").addEventListener("click", () => { localStorage.setItem("uca_install_seen", "1"); location.href = "index.html"; });
+})();
+</script>
+</body>
+</html>

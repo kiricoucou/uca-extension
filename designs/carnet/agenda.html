@@ -514,7 +514,23 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:18px;hei
 #filterBtn.active{background:var(--accent-light);border-color:transparent;}
 .filter-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--accent);color:var(--on-accent);font-size:11px;font-weight:700;}
 #filterBtn .ic,#exportBtn .ic{color:var(--text-dim);}
-.tool-panel.as-sheet{position:fixed;left:0;right:0;bottom:0;top:auto;max-width:none;width:100%;border-radius:20px 20px 0 0;max-height:80vh;overflow-y:auto;padding:16px 0 24px;z-index:140;}
+.absences-panel.as-sheet{position:fixed;left:0;right:0;bottom:0;top:auto;max-width:none;min-width:0;width:100%;border-radius:20px 20px 0 0;max-height:80vh;overflow-y:auto;padding:16px 0 24px;z-index:140;}
+
+/* ---------- Envoi vers le téléphone / app téléphone ---------- */
+.phone-modal{width:440px;}
+.phone-qr{display:flex;flex-direction:column;align-items:center;margin:10px 0 4px;}
+.phone-qr canvas{border-radius:10px;max-width:100%;height:auto;box-shadow:0 1px 4px rgba(0,0,0,.18);}
+.phone-url{font-size:12px;text-align:center;color:var(--text-dim);word-break:break-all;margin:4px 0 10px;}
+.phone-step{font-size:14px;line-height:1.45;}
+.phone-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:10px 0 4px;}
+.phone-counter{font-size:12.5px;color:var(--text-dim);margin-top:8px;font-variant-numeric:tabular-nums;}
+.xp-phone{display:flex;margin:2px 16px 8px;width:calc(100% - 32px);justify-content:center;}
+html.uca-app,html.uca-app body{overscroll-behavior:none;}
+html.uca-app header{padding-top:max(8px,env(safe-area-inset-top));padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));height:auto;min-height:56px;}
+html.uca-app .m-list,html.uca-app .day-list{padding-bottom:calc(96px + env(safe-area-inset-bottom));}
+html.uca-app #toast-wrap{bottom:calc(12px + env(safe-area-inset-bottom));}
+html.uca-app .absences-panel.as-sheet{padding-bottom:calc(24px + env(safe-area-inset-bottom));}
+html.uca-app .footer-link{display:none;}
 /* ---------- Notes récentes ---------- */
 .notes-table td.note.note-new{color:#ff8c1a!important;font-weight:800;}
 .notes-table td.note.note-recent{color:#ffd23f!important;font-weight:800;}
@@ -780,9 +796,12 @@ button.primary:hover{background:#26418a;box-shadow:2px 2px 0 var(--highlight);}
 
 <div id="sessionBubble" class="session-bubble"><svg class="ic sm" aria-hidden="true"><use href="#i-alert"/></svg>Session UCA expirée<br>Appuie sur Synchroniser pour te reconnecter.</div>
 <div id="toast-wrap"></div>
+<script src="../../core/env.js"></script>
 <script src="../../core/settings.js"></script>
 <script src="../../core/shared.js"></script>
 <script src="../../core/tools.js"></script>
+<script src="../../vendor/qrcode.js"></script>
+<script src="../../core/transfer.js"></script>
 <script src="design.js"></script>
 <script src="../../core/agenda.js"></script>
 </body>

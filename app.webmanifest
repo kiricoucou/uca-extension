@@ -1,0 +1,32 @@
+{
+  "id": "app/",
+  "name": "Emploi du temps UCA",
+  "short_name": "EDT UCA",
+  "description": "Ton emploi du temps, tes notes et tes absences de l'IUT, sur ton téléphone et hors ligne (non officiel).",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "app/index.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b57d0",
+  "theme_color": "#0b57d0",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "app/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "app/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "app/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Aujourd'hui", "url": "app/index.html?view=day", "icons": [{ "src": "app/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Mes notes", "url": "app/index.html?open=notes", "icons": [{ "src": "app/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Mes absences", "url": "app/index.html?open=absences", "icons": [{ "src": "app/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Importer mes données", "url": "app/import.html", "icons": [{ "src": "app/icons/icon-192.png", "sizes": "192x192" }] }
+  ],
+  "share_target": {
+    "action": "app/import.html",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": { "files": [{ "name": "file", "accept": [".ucasync", "application/json"] }] }
+  }
+}

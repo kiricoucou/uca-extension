@@ -157,5 +157,6 @@ chrome.runtime.onMessage.addListener((msg) => {
 UCA_CORE.initUpdate();
 UCA_CORE.initDesignSwitch(false);
 UCA_CORE.initSettings();
+if ($("phoneBtn")) $("phoneBtn").addEventListener("click", () => chrome.tabs.create({ url: new URL("agenda.html#phone", location.href).href }));
 UCA_TOOLS.load(loadFromStorage);
 })();

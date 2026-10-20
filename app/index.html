@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emploi du temps UCA</title>
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<main class="center">
+  <img class="app-logo" src="icons/icon-192.png" alt="">
+  <p class="muted">Ouverture…</p>
+</main>
+<script src="../core/env.js"></script>
+<script>
+/* Aiguillage : guide d'installation (première visite dans le navigateur), choix du design,
+   puis agenda du design choisi (les paramètres de raccourci sont transmis). */
+(async function () {
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  if (!standalone && !localStorage.getItem("uca_install_seen")) { location.replace("install.html"); return; }
+  const [{ uca_design }, designs] = await Promise.all([chrome.storage.local.get("uca_design"), fetch(chrome.runtime.getURL("designs/designs.json")).then((r) => r.json())]);
+  const design = designs.find((d) => d.id === uca_design);
+  if (!design) { location.replace(chrome.runtime.getURL("choose.html?tab=1")); return; }
+  location.replace(chrome.runtime.getURL(`${design.folder}/agenda.html`) + location.search.replace(/[?&]source=pwa/, "").replace(/^&/, "?"));
+})();
+</script>
+</body>
+</html>

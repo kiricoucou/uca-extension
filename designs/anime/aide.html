@@ -70,13 +70,13 @@ footer a{color:var(--accent2);}
 </head>
 <body>
 <header>
-  <div class="brand"><img src="gif/calendar.gif" alt="">Emploi du temps UCA</div>
+  <div class="brand"><img src="svg/calendar.svg" alt="">Emploi du temps UCA</div>
   <div class="spacer"></div>
   <a class="back" href="agenda.html">← Retour à l'agenda</a>
 </header>
 
 <div class="hero">
-  <img src="gif/rocket.gif" alt="">
+  <img src="svg/rocket.svg" alt="">
   <h1>Comment ça marche ?</h1>
   <p>Petit guide des fonctionnalités de l'extension — tout reste dans ton navigateur, rien n'est envoyé ailleurs.</p>
 </div>
@@ -85,27 +85,27 @@ footer a{color:var(--accent2);}
   <h2 class="section-title">Fonctionnalités</h2>
   <div class="grid">
     <div class="card i0">
-      <div class="ch"><img class="gi" src="gif/loading.gif" alt=""><h3>Synchroniser</h3></div>
+      <div class="ch"><img class="gi" src="svg/sync.svg" alt=""><h3>Synchroniser</h3></div>
       <p>Clique <strong>Synchroniser</strong> pour récupérer ton emploi du temps depuis Odin. La session reste ouverte en silence tant que possible ; si elle a expiré, une fenêtre de connexion CAS s'ouvre (15 min pour valider la double authentification).</p>
     </div>
     <div class="card i1">
-      <div class="ch"><img class="gi" src="gif/calendar.gif" alt=""><h3>Vues & zoom</h3></div>
+      <div class="ch"><img class="gi" src="svg/calendar.svg" alt=""><h3>Vues & zoom</h3></div>
       <p>Jour, 3 jours, 5 jours, semaine ou mois — bascule avec les onglets en haut. Les boutons − / + ajustent la hauteur des créneaux dans la grille.</p>
     </div>
     <div class="card i2">
-      <div class="ch"><img class="gi" src="gif/stat.gif" alt=""><h3>Absences</h3></div>
+      <div class="ch"><img class="gi" src="svg/stats.svg" alt=""><h3>Absences</h3></div>
       <p>Le bouton <strong>Absences</strong> affiche déclarées, justifiées, non justifiées, avec motif présenté et journées non justifiées — synchronisé automatiquement en même temps que l'emploi du temps.</p>
     </div>
     <div class="card i3">
-      <div class="ch"><img class="gi" src="gif/Learning.gif" alt=""><h3>Relevé de notes</h3></div>
+      <div class="ch"><img class="gi" src="svg/notes.svg" alt=""><h3>Relevé de notes</h3></div>
       <p>Le bouton <strong>Notes</strong> montre le tableau UE → matière → évaluation (Coeff / Note / Moy / Maxi / Mini), copié tel quel depuis Odin. La colonne Note ressort en rouge pour la repérer d'un coup d'œil. L'en-tête du tableau reste fixé en haut quand tu scrolles.</p>
     </div>
     <div class="card i4">
-      <div class="ch"><img class="gi" src="gif/a_hand_writing.gif" alt=""><h3>Notes personnelles</h3></div>
+      <div class="ch"><img class="gi" src="svg/pen.svg" alt=""><h3>Notes personnelles</h3></div>
       <p>Clique un cours dans la grille pour ouvrir son détail : un champ texte permet d'y laisser une note perso (révisions, rappel...), sauvegardée automatiquement et liée à ce cours précis.</p>
     </div>
     <div class="card i5">
-      <div class="ch"><img class="gi" src="gif/security.gif" alt=""><h3>Session expirée</h3></div>
+      <div class="ch"><img class="gi" src="svg/lock.svg" alt=""><h3>Session expirée</h3></div>
       <p>Si ta session Odin/CAS a expiré, un message "Session expirée" apparaît (bulle en bas à gauche sur mobile) — reclique Synchroniser pour te reconnecter.</p>
     </div>
   </div>
@@ -113,19 +113,19 @@ footer a{color:var(--accent2);}
   <h2 class="section-title">Questions fréquentes</h2>
   <div class="faq">
     <details>
-      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="gif/user.gif" alt="">Mes données partent-elles vers un serveur ?</summary>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/user.svg" alt="">Mes données partent-elles vers un serveur ?</summary>
       <p>Non. Tout reste stocké localement dans ton navigateur (<code>chrome.storage.local</code>). L'extension parle uniquement à <code>odin.iut.uca.fr</code> et <code>ent.uca.fr</code> avec ta propre session.</p>
     </details>
     <details>
-      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="gif/time.gif" alt="">La synchro silencieuse échoue parfois, pourquoi ?</summary>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/time.svg" alt="">La synchro silencieuse échoue parfois, pourquoi ?</summary>
       <p>Odin déconnecte la session après un certain temps d'inactivité. Dans ce cas l'extension détecte la redirection vers la page de connexion et te le signale au lieu d'afficher de fausses données.</p>
     </details>
     <details>
-      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="gif/search.gif" alt="">Le relevé de notes affiche "Aucun relevé", que faire ?</summary>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/search.svg" alt="">Le relevé de notes affiche "Aucun relevé", que faire ?</summary>
       <p>Clique Synchroniser une fois — le relevé n'est récupéré qu'au moment d'une synchro, pas automatiquement à l'ouverture.</p>
     </details>
     <details>
-      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="gif/trash.gif" alt="">Comment effacer mes notes personnelles ?</summary>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/trash.svg" alt="">Comment effacer mes notes personnelles ?</summary>
       <p>Ouvre le détail du cours concerné, vide le champ texte : la note est supprimée au prochain enregistrement.</p>
     </details>
   </div>

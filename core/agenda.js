@@ -418,10 +418,9 @@ function buildMobileMenu() {
   availableViews().forEach(v => m.appendChild(menuButton("mi" + (v === currentView ? " active" : ""), escapeHtml(T("view_" + v)), () => switchView(v))));
   m.appendChild(menuButton("mi", escapeHtml(T("today")), () => { refDate = new Date(); refDate.setHours(0, 0, 0, 0); render(); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
-  const abs = document.createElement("div"); abs.className = "mabs";
-  abs.innerHTML = D.icon("chart") + escapeHtml(absences ? `Absences : ${plural(absences.declarees, "déclarée")}, ${plural(absences.nonJustifiees, "non justifiée")}` : "Absences : synchronise pour voir");
-  abs.onclick = () => { window.open("https://odin.iut.uca.fr/etudiants/?p=absences", "_blank", "noopener"); };
-  m.appendChild(abs);
+  const avg = generalAverage();
+  m.appendChild(menuButton("mi", D.icon("book") + "Notes" + (avg != null ? ` — moyenne ${fmtNote(avg)}` : ""), () => openToolPanel("notesPanel", true)));
+  m.appendChild(menuButton("mi", D.icon("chart") + escapeHtml(absences ? `Absences : ${plural(absences.declarees, "déclarée")}, ${plural(absences.nonJustifiees, "non justifiée")}` : "Absences"), () => openToolPanel("absencesPanel", true)));
   ((absences && absences.declarations) || []).slice(0, 3).forEach(d => { const n = declarationNode(d); n.classList.add("m-decl"); m.appendChild(n); });
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   m.appendChild(menuButton("mi", D.icon("link") + "Moodle", () => window.open(MOODLE_URL, "_blank", "noopener")));
@@ -432,7 +431,7 @@ function buildMobileMenu() {
   m.appendChild(menuButton("mi", D.icon("settings") + "Paramètres", UCA_CORE.openSettings));
   m.appendChild(menuButton("mi", D.icon("design") + "Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
-  m.appendChild(menuButton("mi msync primary", D.icon("sync") + "Synchroniser", triggerSync));
+  m.appendChild(menuButton("mi msync primary", D.icon("sync") + (window.UCA_APP ? "Importer mes données" : "Synchroniser"), triggerSync));
   const r = $("menuBtn").getBoundingClientRect();
   m.style.top = (r.bottom + 6) + "px"; m.style.left = r.left + "px";
 }
@@ -459,11 +458,17 @@ function renderSessionState(expired) {
 }
 
 /* ============================= Sync & chargement ============================= */
-function renderSyncInfo(iso) {
+function renderSyncInfo(iso, importedAt) {
+  const fmt = (d) => new Date(d).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  if (window.UCA_APP) {
+    $("syncInfo").textContent = importedAt ? `Données de l'ordinateur du ${fmt(iso || importedAt)} — refais un transfert après une synchro` : "Aucune donnée : importe-les depuis l'extension";
+    return;
+  }
   $("syncInfo").textContent = iso ? "Dernière synchro : " + new Date(iso).toLocaleString("fr-FR") : "Jamais synchronisé";
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at"], (data) => {
+    if (window.UCA_APP && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) { location.href = chrome.runtime.getURL("app/import.html"); return; }
     settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, data.uca_settings);
     events = (data.uca_events || []).map(ev => ({ ...ev, color: D.eventColor(eventColorKey(ev.title)) }));
     notes = data.uca_notes || {};
@@ -473,11 +478,15 @@ function loadFromStorage() {
     setEdtChanges(data.uca_edt_changes);
     if (!autoViewApplied) {
       autoViewApplied = true;
+      const params = new URLSearchParams(location.search);
+      if (params.get("view") && availableViews().includes(params.get("view"))) { settings = Object.assign({}, settings, { startView: params.get("view") }); }
+      if (params.get("open")) setTimeout(() => openToolPanel(params.get("open") + "Panel", isMobileUI()), 300);
+      if (location.hash === "#phone" && !window.UCA_APP) setTimeout(openPhoneModal, 300);
       if (settings.startView !== "auto" && availableViews().includes(settings.startView)) currentView = settings.startView;
       else if (isMobileUI()) currentView = "day";
       else if (eventsOnDate(refDate).length === 0 && availableViews().includes("5day")) currentView = "5day";
     }
-    renderSyncInfo(data.uca_last_sync);
+    renderSyncInfo(data.uca_last_sync, data.uca_app_imported_at);
     renderSessionState(!!data.uca_session_expired);
     renderAbsencesPanel();
     renderNotesPanel();
@@ -551,10 +560,18 @@ $("absencesBtn").addEventListener("click", (e) => {
   $("notesPanel").classList.remove("open");
   togglePanel($("absencesPanel"));
 });
-document.addEventListener("click", (e) => {
-  const panel = $("absencesPanel");
-  if (panel.classList.contains("open") && !$("absencesWrap").contains(e.target)) panel.classList.remove("open");
-});
+// Ferme le panneau sur un clic dehors. Le panneau peut être déplacé en feuille (téléphone) :
+// un clic dedans, dans le menu qui l'ouvre ou sur un élément qu'il vient de reconstruire ne compte pas.
+function closeOnOutsideClick(panelId, wrapId) {
+  document.addEventListener("click", (e) => {
+    const p = $(panelId);
+    if (!p.classList.contains("open") || !document.contains(e.target)) return;
+    if (p.contains(e.target) || $(wrapId).contains(e.target) || e.target.closest("#mobileMenu")) return;
+    p.classList.remove("open");
+    if ($("ucaSheetBackdrop")) $("ucaSheetBackdrop").hidden = true;
+  });
+}
+closeOnOutsideClick("absencesPanel", "absencesWrap");
 
 /* ============================= Relevé de notes =============================
    Tableau hiérarchique UE > matière > évaluation (format Odin, voir background.js
@@ -666,10 +683,7 @@ $("notesBtn").addEventListener("click", (e) => {
   $("absencesPanel").classList.remove("open");
   togglePanel($("notesPanel"));
 });
-document.addEventListener("click", (e) => {
-  const panel = $("notesPanel");
-  if (panel.classList.contains("open") && !$("notesWrap").contains(e.target)) panel.classList.remove("open");
-});
+closeOnOutsideClick("notesPanel", "notesWrap");
 
 /* ============================= Filtres / export =============================
    Panneau déroulant sur ordinateur ; sur téléphone, feuille en bas d'écran. */
@@ -683,13 +697,15 @@ function displayedDays() {
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 const TOOL_PANELS = {
+  notesPanel: { wrap: "notesWrap", build: () => {} },
+  absencesPanel: { wrap: "absencesWrap", build: () => {} },
   filterPanel: { wrap: "filterWrap", build: (p) => UCA_TOOLS.buildFilterPanel(p, events) },
-  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes }) },
+  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal }) },
 };
 function openToolPanel(id, asSheet) {
   const panel = $(id), conf = TOOL_PANELS[id];
   if (!panel) return;
-  ["absencesPanel", "notesPanel", ...Object.keys(TOOL_PANELS)].forEach(o => { if (o !== id && $(o)) $(o).classList.remove("open"); });
+  Object.keys(TOOL_PANELS).forEach(o => { if (o !== id && $(o)) $(o).classList.remove("open"); });
   if (asSheet) { document.body.appendChild(panel); panel.classList.add("as-sheet"); showSheetBackdrop(panel); }
   else if (panel.parentNode !== $(conf.wrap)) { $(conf.wrap).appendChild(panel); panel.classList.remove("as-sheet"); }
   if (!panel.classList.contains("open")) conf.build(panel);
@@ -712,16 +728,11 @@ function renderFilterButton() {
   $("filterBtn").innerHTML = D.icon("filter") + '<span class="btn-label">Filtres</span>' + (n ? ` <span class="filter-count">${n}</span>` : "");
   $("filterBtn").classList.toggle("active", n > 0);
 }
-Object.keys(TOOL_PANELS).forEach(id => {
+["filterPanel", "exportPanel"].forEach(id => {
   const btn = $(id.replace("Panel", "Btn"));
   if (!btn) return;
   btn.addEventListener("click", (e) => { e.stopPropagation(); openToolPanel(id, false); });
-  document.addEventListener("click", (e) => {
-    const p = $(id);
-    // Un clic sur un élément que le panneau vient de reconstruire n'est plus dans la page : ce n'est pas un clic dehors.
-    if (!document.contains(e.target)) return;
-    if (p.classList.contains("open") && !p.contains(e.target) && !$(TOOL_PANELS[id].wrap).contains(e.target) && !e.target.closest("#mobileMenu")) p.classList.remove("open");
-  });
+  closeOnOutsideClick(id, TOOL_PANELS[id].wrap);
 });
 UCA_TOOLS.onChange(() => { renderFilterButton(); render(); });
 
@@ -730,6 +741,44 @@ if ($("moreBtn")) {
   $("moreBtn").addEventListener("click", (e) => { e.stopPropagation(); togglePanel($("morePanel")); });
   document.addEventListener("click", (e) => { if (!$("moreWrap").contains(e.target)) $("morePanel").classList.remove("open"); });
 }
+
+/* ============================= Envoi vers le téléphone (extension) =============================
+   Fenêtre construite avec les classes de modale du design (.modal-overlay / .modal). */
+let phoneTimer = 0;
+function closePhoneModal() { clearInterval(phoneTimer); const o = $("phoneOverlay"); if (o) o.remove(); }
+async function openPhoneModal() {
+  closePhoneModal();
+  const T_ = UCA_TRANSFER;
+  const overlay = document.createElement("div"); overlay.className = "modal-overlay open"; overlay.id = "phoneOverlay";
+  overlay.innerHTML = `<div class="modal phone-modal">
+    <div class="modal-head"><h3>${D.icon("phone")}Envoyer vers mon téléphone</h3><button class="close-x" id="phoneClose" aria-label="Fermer">${D.icon("close") || "✕"}</button></div>
+    <div class="modal-body">
+      <p class="phone-step"><b>1.</b> Sur ton téléphone, scanne ce code pour ouvrir l'app (puis « Ajouter à l'écran d'accueil »). Déjà installée ? Passe à l'étape 2.</p>
+      <div class="phone-qr"><canvas id="phoneQrApp"></canvas></div>
+      <p class="phone-url">${escapeHtml(T_.APP_URL)}</p>
+      <p class="phone-step"><b>2.</b> Dans l'app : « Importer » puis « Scanner », et vise le code animé.</p>
+      <div class="phone-actions"><button class="primary" id="phoneStart">Afficher le code animé</button><button id="phoneFile">Fichier de secours (.ucasync)</button></div>
+    </div></div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) closePhoneModal(); });
+  $("phoneClose").addEventListener("click", closePhoneModal);
+  T_.drawQr($("phoneQrApp"), T_.APP_URL, 220);
+  const snap = await T_.snapshot();
+  $("phoneFile").addEventListener("click", () => T_.exportFile(snap));
+  $("phoneStart").addEventListener("click", async () => {
+    const frames = await T_.encodeFrames(snap);
+    const box = overlay.querySelector(".phone-qr");
+    box.innerHTML = `<canvas id="phoneQrData"></canvas><div class="phone-counter" id="phoneCounter"></div>`;
+    overlay.querySelectorAll(".phone-step, .phone-url").forEach((e, i) => { if (i < 2) e.remove(); });
+    $("phoneStart").textContent = "Le code tourne en boucle : garde le téléphone pointé dessus";
+    $("phoneStart").disabled = true;
+    let i = 0;
+    const show = () => { T_.drawQr($("phoneQrData"), frames[i], 300); $("phoneCounter").textContent = `Trame ${i + 1} / ${frames.length}`; i = (i + 1) % frames.length; };
+    show();
+    phoneTimer = setInterval(show, 280);
+  });
+}
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePhoneModal(); });
 
 /* ============================= Navigation / zoom ============================= */
 $("viewTabs").addEventListener("click", (e) => { const btn = e.target.closest("button[data-view]"); if (!btn) return; switchView(btn.dataset.view); });
@@ -759,6 +808,11 @@ $("zoomPct").textContent = Math.round(zoomLevel * 100) + "%";
 
 /* ============================= Synchronisation ============================= */
 const syncBtn = $("syncBtn");
+if (window.UCA_APP) {
+  const walker = document.createTreeWalker(syncBtn, NodeFilter.SHOW_TEXT);
+  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (/Synchroniser/.test(n.textContent)) n.textContent = n.textContent.replace("Synchroniser", "Importer");
+  syncBtn.title = "Importer les données depuis l'extension de l'ordinateur";
+}
 function triggerSync() {
   syncBtn.disabled = true;
   toast(T("syncing"));

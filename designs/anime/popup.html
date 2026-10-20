@@ -78,21 +78,21 @@ button.danger{background:var(--danger);color:#1b0b0b;border-color:transparent;fo
 </head>
 <body>
 <header>
-  <div class="brand"><img class="gi brand-gi" src="gif/calendar.gif" alt="">UCA</div>
+  <div class="brand"><img class="gi brand-gi" src="svg/calendar.svg" alt="">UCA</div>
   <div class="spacer"></div>
-  <button id="agendaBtn"><img class="gi" src="gif/calendar.gif" alt="">Voir l'agenda</button>
+  <button id="agendaBtn"><img class="gi" src="svg/calendar.svg" alt="">Voir l'agenda</button>
   <a href="aide.html" target="_blank" rel="noopener" title="Aide" style="text-decoration:none;font-family:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:7px 11px;font-size:12.5px;">❓</a>
   <button id="loginBtn">🔑 Se connecter</button>
   <button id="logoutBtn" class="hidden">🚪 Déconnexion</button>
-  <button id="syncBtn" class="primary"><img class="gi" src="gif/loading.gif" alt="">Sync</button>
+  <button id="syncBtn" class="primary"><img class="gi" src="svg/sync.svg" alt="">Sync</button>
 </header>
 <div id="status"></div>
 <div id="lastSync">Jamais synchronisé</div>
 <div id="list"></div>
-<div id="disclaimer">Outil non officiel, non affilié à l'UCA. Tes données restent dans ton navigateur. <a href="confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <button id="settingsBtn" class="link-btn">⚙️ Paramètres</button> · <button id="designBtn" class="link-btn">🎨 Changer de design</button></div>
+<div id="disclaimer">Outil non officiel, non affilié à l'UCA. Tes données restent dans ton navigateur. <a href="confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <button id="settingsBtn" class="link-btn">⚙️ Paramètres</button> · <button id="designBtn" class="link-btn">🎨 Changer de design</button> · <button id="phoneBtn" class="link-btn">📱 Téléphone</button></div>
 <div id="updateOverlay" class="update-overlay hidden">
   <div class="update-box">
-    <img class="gi" src="gif/rocket.gif" alt="">
+    <img class="gi" src="svg/rocket.svg" alt="">
     <h2>Nouvelle version</h2>
     <p>Installée : <strong id="updCurrent">—</strong><br>Dernière : <strong id="updLatest">—</strong></p>
     <button class="primary" id="updApplyBtn">Mettre à jour</button>
@@ -101,7 +101,7 @@ button.danger{background:var(--danger);color:#1b0b0b;border-color:transparent;fo
 </div>
 <div id="logoutOverlay" class="update-overlay hidden">
   <div class="update-box">
-    <img class="gi" src="gif/security.gif" alt="">
+    <img class="gi" src="svg/lock.svg" alt="">
     <h2>Se déconnecter ?</h2>
     <p id="logoutText">Voulez-vous vraiment vous déconnecter ?</p>
     <div class="logout-actions">

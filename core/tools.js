@@ -111,7 +111,8 @@ function buildIcs(evs, { alarmMinutes, eventKey }) {
 function download(name, text) {
   const url = URL.createObjectURL(new Blob([text], { type: "text/calendar;charset=utf-8" }));
   const a = el("a"); a.href = url; a.download = name;
-  document.body.appendChild(a); a.click(); a.remove();
+  // Clic sans propagation : sinon il passe pour un clic hors du panneau ouvert, qui se fermerait.
+  document.body.appendChild(a); a.dispatchEvent(new MouseEvent("click", { bubbles: false })); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
@@ -146,6 +147,12 @@ function buildExportPanel(panel, opts) {
     info.textContent = `${evs.length} cours exportés. Ouvre le fichier pour l'ajouter à ton agenda.`;
   });
   panel.append(btn, info);
+  if (opts.onPhone) {
+    panel.appendChild(el("div", "fp-h", "Sur ton téléphone"));
+    const phone = el("button", "xp-phone", "Envoyer vers l'app téléphone"); phone.type = "button";
+    phone.addEventListener("click", () => opts.onPhone());
+    panel.appendChild(phone);
+  }
 }
 
 window.UCA_TOOLS = {

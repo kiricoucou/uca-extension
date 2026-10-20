@@ -27,6 +27,15 @@ Non officielle, non affiliée à l'Université Clermont Auvergne. Aucune donnée
 - **Trois designs au choix** : animé (sombre turquoise), professionnel (clair épuré), carnet (papier crème, écriture manuscrite, post-it).
 - **Plusieurs designs au choix** : au premier lancement l'extension demande quel design utiliser (changeable ensuite). Les fonctionnalités sont identiques, seul l'affichage change.
 
+## App téléphone (Android et iPhone)
+
+Une app installable (PWA) est servie par GitHub Pages : <https://kiricoucou.github.io/uca-extension/app/>.
+
+- **Installation** : ouvre le lien sur ton téléphone. Android : bouton « Installer l'application ». iPhone (Safari) : Partager → « Sur l'écran d'accueil ». Icône, écran de démarrage et plein écran comme une vraie app ; fonctionne hors ligne.
+- **Données** : une app web ne peut pas se connecter à Odin elle-même (le navigateur interdit de lire un autre site avec ta session, et la double authentification passe par le CAS). Les données viennent donc de l'extension : sur l'ordinateur, **Exporter → Envoyer vers l'app téléphone**, puis dans l'app **Importer → Scanner** le code animé (aucun serveur, rien ne quitte tes appareils). Secours : fichier `.ucasync` (Drive, AirDrop, ou « Partager → EDT UCA » sur Android).
+- Les trois designs, les filtres, les notes, les absences et l'export `.ics` fonctionnent dans l'app. Les rappels passent par l'export `.ics` (avec alarmes) importé dans le calendrier du téléphone.
+- Refais un transfert après chaque synchro sur l'ordinateur pour mettre l'app à jour.
+
 ## Installation (mode développeur)
 
 1. Télécharge ou clone ce dépôt.
@@ -53,6 +62,10 @@ Une seule extension (la racine du dépôt). La logique est commune ; chaque doss
 | `core/popup.js` / `core/agenda.js` | Logique du popup et de l'agenda, identique pour tous les designs |
 | `designs/designs.json` | Registre des designs disponibles |
 | `designs/<id>/` | Un design : `popup.html`, `agenda.html`, `aide.html`, `confidentialite.html`, `design.js`, `icons/`, assets |
+| `core/env.js` | Dans l'app téléphone, remplace les API de l'extension (stockage, messages) ; ne fait rien dans l'extension |
+| `core/transfer.js` | Transfert vers l'app (QR animé, fichier `.ucasync`) |
+| `app/`, `app.webmanifest`, `sw.js` | App téléphone : accueil, import, guide d'installation, icônes, écrans de démarrage, hors ligne |
+| `vendor/` | Générateur et lecteur de QR codes (licences dans `vendor/README.md`) |
 | `content-bridge.js` | Relais de messages vers le site web (localhost/file) |
 
 ### Ajouter un design
@@ -72,6 +85,8 @@ Prérequis : Python 3 + Playwright (`pip install playwright` puis `playwright in
 | `python -I -X utf8 tests/check_design.py` | Chaque design du registre fournit tous les éléments utilisés par le core et ses captures |
 | `python -I -X utf8 tests/e2e.py [dossier]` | Charge l'extension dans Chromium avec des données factices et vérifie chaque design : pas de scroll, aucun bloc coupé, barre sur 2 étages dans le même ordre, moyenne, notes récentes, réglages, vue téléphone, 0 erreur JS (captures dans `dossier` si fourni) |
 | `python -I -X utf8 tests/gen_icons.py <id>` | Rend `designs/<id>/icons/icon.svg` en PNG 16/32/48/128 |
+| `python -I -X utf8 tests/pwa.py [dossier]` | Teste l'app téléphone servie en local (Android via Chromium, iPhone via WebKit) : installation, choix du design, import, hors ligne, raccourcis, aller-retour des QR codes |
+| `python -I -X utf8 tests/gen_app_assets.py` | Régénère icônes et écrans de démarrage de l'app depuis `app/icons/icon.svg` |
 | `python -I -X utf8 tests/gen_previews.py [id ...]` | Régénère les 6 captures du sélecteur (`designs/<id>/previews/`) |
 
 ## Confidentialité

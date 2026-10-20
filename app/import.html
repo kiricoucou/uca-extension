@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Importer mes données — Emploi du temps UCA</title>
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<main>
+  <img class="app-logo" src="icons/icon-192.png" alt="">
+  <h1>Importer mes données</h1>
+  <p class="lead">Sur ton ordinateur, dans l'extension : <b>Exporter → Envoyer vers l'app téléphone</b>, puis « Afficher le code animé ».</p>
+
+  <section class="card" id="chooseCard">
+    <button class="btn primary" id="scanBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 12h8"/></svg>Scanner le code animé
+    </button>
+    <label class="btn" for="fileInput">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"/><path d="M14 3.5V8h4M12 11v6M9.5 14.5 12 17l2.5-2.5"/></svg>Importer un fichier .ucasync
+    </label>
+    <input type="file" id="fileInput" accept=".ucasync,application/json" class="hidden">
+  </section>
+
+  <section class="card hidden" id="scanCard">
+    <div class="scan-box"><video id="video" playsinline muted></video><div class="scan-frame"></div></div>
+    <div class="progress"><div id="bar"></div></div>
+    <p class="muted" id="scanInfo">Vise le code animé affiché sur l'ordinateur.</p>
+    <button class="btn" id="stopBtn" type="button">Annuler</button>
+  </section>
+
+  <p class="status" id="status" role="status"></p>
+  <p class="center"><button class="link hidden" id="openBtn" type="button">Ouvrir mon emploi du temps</button></p>
+  <p class="center"><button class="link" id="skipBtn" type="button">Plus tard</button></p>
+</main>
+<canvas id="frame" class="hidden"></canvas>
+<script src="../core/env.js"></script>
+<script src="../vendor/jsQR.js"></script>
+<script src="../core/transfer.js"></script>
+<script src="import.js"></script>
+</body>
+</html>

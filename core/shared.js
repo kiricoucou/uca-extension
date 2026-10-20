@@ -83,6 +83,23 @@ window.UCA_CORE = {
     refresh();
     chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
   },
+  /* Pendant la connexion CAS : bandeau de secours si la détection automatique ne voit pas
+     qu'on est arrivé sur Odin. Le clic force la récupération de l'emploi du temps. */
+  loginHelp(show) {
+    let bar = $("ucaLoginHelp");
+    if (!show) { if (bar) bar.remove(); return; }
+    if (bar) return;
+    bar = document.createElement("div");
+    bar.id = "ucaLoginHelp";
+    bar.style.cssText = "position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:6000;max-width:min(520px,calc(100% - 32px));background:#1f2125;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.35);font:14px/1.4 system-ui,sans-serif;display:flex;gap:12px;align-items:center;";
+    bar.innerHTML = '<span style="flex:1">Connecté ? Va sur ton emploi du temps Odin dans la fenêtre de connexion, puis clique ici.</span>';
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.textContent = "C'est fait";
+    btn.style.cssText = "font:inherit;font-weight:600;border:0;border-radius:10px;padding:8px 14px;background:#8ab4f8;color:#0b1d3a;cursor:pointer;white-space:nowrap;";
+    btn.addEventListener("click", () => { btn.disabled = true; btn.textContent = "Récupération…"; chrome.runtime.sendMessage({ type: "UCA_LOGIN_DONE" }); });
+    bar.appendChild(btn);
+    document.body.appendChild(bar);
+  },
   /* Bouton #settingsBtn : ouvre la page Paramètres (commune à tous les designs). */
   openSettings() { chrome.tabs.create({ url: chrome.runtime.getURL("settings.html") }); },
   initSettings() {

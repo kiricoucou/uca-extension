@@ -113,37 +113,34 @@ function hostOf(url) {
 
 // Compare le hostname exact : CAS_URL contient "odin.iut.uca.fr" en clair dans ?service=,
 // une simple sous-chaîne se déclencherait dès la page de login.
-function waitForUrlContains(tabId, host, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    let done = false;
-    const timer = setTimeout(() => {
-      if (!done) { done = true; chrome.tabs.onUpdated.removeListener(listener); reject(new Error("timeout")); }
-    }, timeoutMs);
-    function listener(id, info, tab) {
-      if (id !== tabId) return;
-      const url = info.url || (tab && tab.url) || "";
-      if (hostOf(url) === host) {
-        if (!done) { done = true; clearTimeout(timer); chrome.tabs.onUpdated.removeListener(listener); resolve(url); }
-      }
+// Interroge l'onglet chaque seconde au lieu d'attendre un événement onUpdated : quand la session
+// CAS est déjà ouverte, la redirection vers Odin peut finir avant que l'écouteur soit posé, et
+// l'événement est alors perdu (la fenêtre restait sur Odin sans que rien ne se passe).
+// loginDone : l'utilisateur a cliqué "J'y suis" (UCA_LOGIN_DONE), on arrête d'attendre.
+let loginDone = null;
+async function waitForUrlContains(tabId, host, timeoutMs) {
+  const end = Date.now() + timeoutMs;
+  let manual = false;
+  loginDone = () => { manual = true; };
+  try {
+    while (Date.now() < end) {
+      const tab = await chrome.tabs.get(tabId);
+      if (hostOf(tab.url || tab.pendingUrl || "") === host || manual) return tab.url;
+      await sleep(1000);
     }
-    chrome.tabs.onUpdated.addListener(listener);
-  });
+    throw new Error("timeout");
+  } finally { loginDone = null; }
 }
 
-function waitForComplete(tabId, timeoutMs) {
-  return new Promise((resolve, reject) => {
-    let done = false;
-    const timer = setTimeout(() => {
-      if (!done) { done = true; chrome.tabs.onUpdated.removeListener(listener); reject(new Error("timeout")); }
-    }, timeoutMs);
-    function listener(id, info) {
-      if (id !== tabId) return;
-      if (info.status === "complete") {
-        if (!done) { done = true; clearTimeout(timer); chrome.tabs.onUpdated.removeListener(listener); resolve(); }
-      }
-    }
-    chrome.tabs.onUpdated.addListener(listener);
-  });
+async function waitForComplete(tabId, timeoutMs) {
+  const end = Date.now() + timeoutMs;
+  await sleep(300);
+  while (Date.now() < end) {
+    const tab = await chrome.tabs.get(tabId);
+    if (tab.status === "complete") return;
+    await sleep(500);
+  }
+  throw new Error("timeout");
 }
 
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
@@ -554,6 +551,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 chrome.runtime.onMessage.addListener((msg) => {
   if (!msg) return false;
   if (msg.type === "UCA_FORCE_UPDATE_CHECK") { checkForUpdate(); return false; }
+  if (msg.type === "UCA_LOGIN_DONE") { if (loginDone) loginDone(); return false; }
   if (msg.type === "UCA_APPLY_UPDATE") { chrome.runtime.reload(); return false; }
   return false;
 });

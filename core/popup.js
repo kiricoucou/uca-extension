@@ -143,7 +143,9 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "UCA_SYNC_PROGRESS") {
     const label = T("stage_" + msg.stage);
     if (label) setStatus(label);
+    UCA_CORE.loginHelp(msg.stage === "login-waiting");
   } else if (msg.type === "UCA_SYNC_RESULT") {
+    UCA_CORE.loginHelp(false);
     setBusy(false);
     if (!msg.ok) { setStatus(T("errorPrefix") + (msg.error || "Erreur")); return; }
     setStatus(msg.silent ? T("syncSilent") : T("syncOk"));

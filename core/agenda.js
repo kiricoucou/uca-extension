@@ -878,7 +878,9 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === "UCA_SYNC_PROGRESS") {
     const label = T("stage_" + msg.stage);
     if (label) toast(label);
+    UCA_CORE.loginHelp(msg.stage === "login-waiting");
   } else if (msg.type === "UCA_SYNC_RESULT") {
+    UCA_CORE.loginHelp(false);
     syncBtn.disabled = false;
     if (!msg.ok) { toast(T("errorPrefix") + (msg.error || "Erreur"), "warn"); return; }
     toast(msg.silent ? T("syncSilent") : T("syncOk"), "ok");

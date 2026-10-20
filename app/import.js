@@ -88,6 +88,15 @@ if (new URLSearchParams(location.search).has("shared") && "caches" in window) {
   });
 }
 
+/* Lien partagé (#d=…, voir core/transfer.js buildShareLink) : import direct, sans caméra ni fichier.
+   Efface le fragment aussitôt lu pour ne pas laisser les données dans l'historique du navigateur. */
+if (location.hash.startsWith("#d=")) {
+  const h = location.hash;
+  history.replaceState(null, "", location.pathname + location.search);
+  UCA_TRANSFER.fromLinkHash(h).then((snap) => finish(UCA_TRANSFER.validate(snap)))
+    .catch((e) => status(e instanceof SyntaxError ? "Lien illisible ou incomplet." : e.message, "err"));
+}
+
 $("scanBtn").addEventListener("click", startScan);
 $("stopBtn").addEventListener("click", stopScan);
 $("openBtn").addEventListener("click", () => location.replace("index.html"));

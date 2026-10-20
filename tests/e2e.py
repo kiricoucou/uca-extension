@@ -73,7 +73,11 @@ def tool_checks(ag, did):
     ok = ics.startswith("BEGIN:VCALENDAR") and "TZID:Europe/Paris" in ics and n == total and "TRIGGER:-PT15M" in ics and "\r\n" in ics
     check(f"{did} : export .ics (semaine, fuseau, rappels)", ok, f"{n} événements / {total}")
     shot(ag, f"{did}-export")
-    ag.locator("#exportPanel .xp-phone").click(); ag.wait_for_timeout(800)
+    ag.locator("#exportPanel .xp-phone", has_text="Copier un lien").click(); ag.wait_for_timeout(400)
+    link_val = ag.evaluate("() => { const b = document.querySelector('.xp-link-fallback'); return b ? b.value : ''; }")
+    link_info = ag.locator("#exportPanel .fp-empty").last.inner_text()
+    check(f"{did} : export → lien copié ou affiché", "/app/import.html#d=" in link_val or "copié" in link_info, link_val or link_info)
+    ag.locator("#exportPanel .xp-phone", has_text="QR code").click(); ag.wait_for_timeout(800)
     qr_w = ag.evaluate("() => { const c = document.getElementById('phoneQrApp'); return c ? c.width : 0; }")
     check(f"{did} : envoi téléphone → QR de l'app", ag.locator("#phoneOverlay").is_visible() and qr_w > 100, str(qr_w))
     ag.locator("#phoneStart").click(); ag.wait_for_timeout(900)

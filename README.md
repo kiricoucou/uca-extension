@@ -46,7 +46,10 @@ D'autres captures de chaque design (vue mois, détail d'un cours...) sont dans `
 Une app installable (PWA) est servie par GitHub Pages : <https://kiricoucou.github.io/uca-extension/app/>.
 
 - **Installation** : ouvre le lien sur ton téléphone. Android : bouton « Installer l'application ». iPhone (Safari) : Partager → « Sur l'écran d'accueil ». Icône, écran de démarrage et plein écran comme une vraie app ; fonctionne hors ligne.
-- **Données** : une app web ne peut pas se connecter à Odin elle-même (le navigateur interdit de lire un autre site avec ta session, et la double authentification passe par le CAS). Les données viennent donc de l'extension : sur l'ordinateur, **Exporter → Envoyer vers l'app téléphone**, puis dans l'app **Importer → Scanner** le code animé (aucun serveur, rien ne quitte tes appareils). Secours : fichier `.ucasync` (Drive, AirDrop, ou « Partager → EDT UCA » sur Android).
+- **Données** : une app web ne peut pas se connecter à Odin elle-même (le navigateur interdit de lire un autre site avec ta session, et la double authentification passe par le CAS). Les données viennent donc de l'extension, trois façons au choix dans **Exporter** (sur l'ordinateur) :
+  - **Copier un lien** — colle-le dans un SMS, un mail ou n'importe quelle appli, et ouvre-le sur ton téléphone : import automatique, sans caméra. Les données voyagent dans le lien lui-même (après le `#`), jamais envoyées à un serveur.
+  - **QR code animé** — pratique à la première installation : dans l'app, **Importer → Scanner**.
+  - **Fichier `.ucasync`** en secours (Drive, AirDrop, ou « Partager → EDT UCA » sur Android).
 - Les trois designs, les filtres, les notes, les absences et l'export `.ics` fonctionnent dans l'app. Les rappels passent par l'export `.ics` (avec alarmes) importé dans le calendrier du téléphone.
 - Refais un transfert après chaque synchro sur l'ordinateur pour mettre l'app à jour.
 

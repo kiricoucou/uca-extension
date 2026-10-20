@@ -700,7 +700,7 @@ const TOOL_PANELS = {
   notesPanel: { wrap: "notesWrap", build: () => {} },
   absencesPanel: { wrap: "absencesWrap", build: () => {} },
   filterPanel: { wrap: "filterWrap", build: (p) => UCA_TOOLS.buildFilterPanel(p, events) },
-  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal }) },
+  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.snapshot().then(UCA_TRANSFER.buildShareLink) }) },
 };
 function openToolPanel(id, asSheet) {
   const panel = $(id), conf = TOOL_PANELS[id];
@@ -756,8 +756,8 @@ async function openPhoneModal() {
       <p class="phone-step"><b>1.</b> Sur ton téléphone, scanne ce code pour ouvrir l'app (puis « Ajouter à l'écran d'accueil »). Déjà installée ? Passe à l'étape 2.</p>
       <div class="phone-qr"><canvas id="phoneQrApp"></canvas></div>
       <p class="phone-url">${escapeHtml(T_.APP_URL)}</p>
-      <p class="phone-step"><b>2.</b> Dans l'app : « Importer » puis « Scanner », et vise le code animé.</p>
-      <div class="phone-actions"><button class="primary" id="phoneStart">Afficher le code animé</button><button id="phoneFile">Fichier de secours (.ucasync)</button></div>
+      <p class="phone-step"><b>2.</b> Dans l'app : « Importer » puis « Scanner », et vise le code animé. Ou, plus simple, envoie-toi le lien ci-dessous (SMS, mail, messagerie...) et ouvre-le sur ton téléphone.</p>
+      <div class="phone-actions"><button class="primary" id="phoneStart">Afficher le code animé</button><button id="phoneLink">Copier un lien</button><button id="phoneFile">Fichier de secours (.ucasync)</button></div>
     </div></div>`;
   document.body.appendChild(overlay);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) closePhoneModal(); });
@@ -765,6 +765,24 @@ async function openPhoneModal() {
   T_.drawQr($("phoneQrApp"), T_.APP_URL, 220);
   const snap = await T_.snapshot();
   $("phoneFile").addEventListener("click", () => T_.exportFile(snap));
+  $("phoneLink").addEventListener("click", async () => {
+    const link = await T_.buildShareLink(snap);
+    try {
+      await navigator.clipboard.writeText(link);
+      toast("Lien copié — colle-le dans un SMS, un mail...", "ok");
+    } catch {
+      // Presse-papiers inaccessible (permission refusée, contexte non sécurisé...) : champ à copier à la main.
+      let box = $("phoneLinkFallback");
+      if (!box) {
+        box = document.createElement("input"); box.id = "phoneLinkFallback"; box.readOnly = true;
+        box.className = "phone-link-fallback";
+        overlay.querySelector(".phone-actions").after(box);
+      }
+      box.value = link;
+      box.hidden = false;
+      box.focus(); box.select();
+    }
+  });
   $("phoneStart").addEventListener("click", async () => {
     const frames = await T_.encodeFrames(snap);
     const box = overlay.querySelector(".phone-qr");

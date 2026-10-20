@@ -112,6 +112,32 @@ def qr_roundtrip(browser, base, errors):
     page.close()
 
 
+def link_roundtrip(browser, base, errors):
+    """Lien partageable (#d=…) : construit par l'extension, ouvert directement dans l'app."""
+    data = seed(); data["uca_design"] = "carnet"
+    page = browser.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[lien] {e}"))
+    page.goto(base + "app/import.html"); page.wait_for_timeout(300)
+    res = page.evaluate("""async (data) => {
+      const snap = { format: 'uca-sync', version: 1, exportedAt: new Date().toISOString(), data };
+      const link = await UCA_TRANSFER.buildShareLink(snap);
+      const back = await UCA_TRANSFER.fromLinkHash('#' + link.split('#')[1]);
+      return { link, same: JSON.stringify(back.data) === JSON.stringify(data) };
+    }""", data)
+    check("lien : pointe vers app/import.html#d=", "/app/import.html#d=" in res["link"], res["link"][:70])
+    check("lien : données reconstruites identiques", res["same"], str(res))
+    page.close()
+    # Ouvert directement (comme depuis un SMS) : import automatique, sans caméra ni fichier.
+    local_link = base + "app/import.html#" + res["link"].split("#", 1)[1]
+    page2 = browser.new_page()
+    page2.on("pageerror", lambda e: errors.append(f"[lien-ouverture] {e}"))
+    page2.goto(local_link); page2.wait_for_timeout(1600)
+    stored = page2.evaluate("() => new Promise(r => chrome.storage.local.get('uca_events', d => r((d.uca_events || []).length)))")
+    check("lien ouvert directement : cours importés dans le stockage", stored == len(data["uca_events"]), str(stored))
+    check("lien : fragment effacé de l'URL après lecture", "#d=" not in page2.url, page2.url)
+    page2.close()
+
+
 def main():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(ROOT)],
@@ -128,6 +154,7 @@ def main():
             check("manifeste : écran plein, raccourcis, partage", man["display"] == "standalone" and len(man["shortcuts"]) >= 3 and "share_target" in man)
             run_flow(chromium, p.devices["Pixel 7"], base, "android", errors, "carnet")
             qr_roundtrip(chromium, base, errors)
+            link_roundtrip(chromium, base, errors)
             chromium.close()
             try:
                 webkit = p.webkit.launch()

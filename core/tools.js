@@ -147,11 +147,31 @@ function buildExportPanel(panel, opts) {
     info.textContent = `${evs.length} cours exportés. Ouvre le fichier pour l'ajouter à ton agenda.`;
   });
   panel.append(btn, info);
-  if (opts.onPhone) {
+  // Lien direct : seulement en dehors de l'app (l'app n'a pas besoin de s'envoyer un lien à elle-même).
+  if (opts.shareLink) {
     panel.appendChild(el("div", "fp-h", "Sur ton téléphone"));
-    const phone = el("button", "xp-phone", "Envoyer vers l'app téléphone"); phone.type = "button";
-    phone.addEventListener("click", () => opts.onPhone());
-    panel.appendChild(phone);
+    const linkInfo = el("div", "fp-empty");
+    const link = el("button", "xp-phone", "Copier un lien pour l'app"); link.type = "button";
+    link.addEventListener("click", async () => {
+      // Le lien transporte tout l'emploi du temps synchronisé (comme le QR/fichier), pas seulement
+      // la période choisie ci-dessus : l'app applique ensuite ses propres filtres et vues.
+      const url = await opts.shareLink();
+      try {
+        await navigator.clipboard.writeText(url);
+        linkInfo.textContent = "Lien copié — colle-le dans un SMS, un mail, ou ouvre-le directement sur ton téléphone.";
+      } catch {
+        let box = panel.querySelector(".xp-link-fallback");
+        if (!box) { box = el("input", "xp-link-fallback"); box.readOnly = true; panel.insertBefore(box, linkInfo); }
+        box.value = url; box.hidden = false; box.focus(); box.select();
+        linkInfo.textContent = "Presse-papiers indisponible : copie le lien ci-dessus à la main.";
+      }
+    });
+    panel.append(link, linkInfo);
+  }
+  if (opts.onPhone) {
+    const qr = el("button", "xp-phone", "Afficher le QR code (première installation)"); qr.type = "button";
+    qr.addEventListener("click", () => opts.onPhone());
+    panel.appendChild(qr);
   }
 }
 

@@ -21,11 +21,26 @@ async function snapshot() {
   return { format: "uca-sync", version: 1, exportedAt: new Date().toISOString(), data };
 }
 
+async function pack(snap) {
+  return toB64(await pipe(new TextEncoder().encode(JSON.stringify(snap)), new CompressionStream("deflate")));
+}
+
 async function encodeFrames(snap) {
-  const packed = toB64(await pipe(new TextEncoder().encode(JSON.stringify(snap)), new CompressionStream("deflate")));
+  const packed = await pack(snap);
   const sid = hash(packed);
   const n = Math.ceil(packed.length / CHUNK);
   return Array.from({ length: n }, (_, i) => `${PREFIX}|${sid}|${i + 1}|${n}|${packed.slice(i * CHUNK, (i + 1) * CHUNK)}`);
+}
+
+/* Même instantané que le QR, mais en un seul lien (fragment #d=…, jamais envoyé au serveur qui
+   héberge la page) : à coller dans n'importe quelle appli de messagerie, pas besoin de caméra. */
+async function buildShareLink(snap) {
+  return `${APP_URL}import.html#d=${encodeURIComponent(await pack(snap))}`;
+}
+
+async function fromLinkHash(h) {
+  if (!h || !h.startsWith("#d=")) return null;
+  return JSON.parse(new TextDecoder().decode(await pipe(fromB64(decodeURIComponent(h.slice(3))), new DecompressionStream("deflate"))));
 }
 
 /* Accumule les trames lues ; repart de zéro si une autre session apparaît. */
@@ -90,5 +105,5 @@ function drawQr(canvas, text, sizePx) {
   for (let r = 0; r < count; r++) for (let c = 0; c < count; c++) if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
 }
 
-root.UCA_TRANSFER = { APP_URL, KEYS, snapshot, encodeFrames, collector, validate, applyImport, exportFile, drawQr };
+root.UCA_TRANSFER = { APP_URL, KEYS, snapshot, encodeFrames, buildShareLink, fromLinkHash, collector, validate, applyImport, exportFile, drawQr };
 })(self);

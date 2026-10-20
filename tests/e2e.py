@@ -190,6 +190,8 @@ def main():
             check(f"{did} : popup du design appliqué", sw.evaluate("chrome.action.getPopup({})").endswith(f"/{d['folder']}/popup.html"))
             check(f"{did} : connecté → bouton Déconnexion", pg.locator("#logoutBtn").is_visible() and pg.locator("#loginBtn").is_hidden())
             check(f"{did} : boutons Paramètres et Design dans le popup", pg.locator("#settingsBtn").count() == 1 and pg.locator("#designBtn").count() == 1)
+            right = pg.evaluate("() => Math.max(...[...document.querySelector('header').children].filter(e => e.offsetWidth).map(e => e.getBoundingClientRect().right))")
+            check(f"{did} : en-tête du popup sans débordement", right <= 400, f"{right:.0f}px")
             shot(pg, f"{did}-popup"); pg.close()
 
             ag = ctx.new_page(); watch(ag, f"{did}/agenda")

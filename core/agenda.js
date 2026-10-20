@@ -229,7 +229,11 @@ function renderTimeGrid(containerId, days) {
   const headH = headRow.offsetHeight || 0;
   // Les libellés d'heure sont centrés sur leur ligne : la moitié du premier et du dernier
   // dépasse du corps de grille. On réserve cette marge en haut et en bas.
-  const edge = Math.max(parseFloat(getComputedStyle(body).marginTop) || 0, 9);
+  const probe = document.createElement("div"); probe.className = "hour-label"; probe.textContent = "00:00"; probe.style.visibility = "hidden";
+  body.appendChild(probe);
+  const labelHalf = Math.ceil(probe.offsetHeight / 2) + 1;
+  probe.remove();
+  const edge = Math.max(parseFloat(getComputedStyle(body).marginTop) || 0, labelHalf);
   body.style.marginTop = edge + "px"; body.style.marginBottom = edge + "px";
   const containerH = Math.max((scroll.clientHeight - headH - 2 * edge) || 0, 200);
   const allEvs = [].concat(...days.map(d => eventsOnDate(d)));
@@ -440,6 +444,13 @@ $("menuBtn").addEventListener("click", (e) => {
 });
 document.addEventListener("click", (e) => { if (!e.target.closest("#mobileMenu") && !e.target.closest("#menuBtn")) closeMobileMenu(); });
 window.addEventListener("resize", () => { closeMobileMenu(); render(); });
+// La barre peut changer de hauteur sans redimensionner la fenêtre (police chargée après
+// coup, passage à la ligne) : la grille se recalcule pour que la journée tienne toujours.
+let lastMainHeight = 0;
+new ResizeObserver(() => {
+  const h = document.querySelector("main").clientHeight;
+  if (Math.abs(h - lastMainHeight) > 1) { lastMainHeight = h; render(); }
+}).observe(document.querySelector("main"));
 
 /* ============================= Session expirée ============================= */
 function renderSessionState(expired) {

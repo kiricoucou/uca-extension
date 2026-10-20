@@ -74,5 +74,43 @@
         "label": "Détail d'un cours et note perso"
       }
     ]
+  },
+  {
+    "id": "carnet",
+    "name": "Design carnet",
+    "description": "Papier crème, écriture manuscrite, cours en post-it",
+    "folder": "designs/carnet",
+    "badgeColor": "#2f4fa2",
+    "preview": {
+      "background": "#f6f0e1",
+      "surface": "#ffe58f",
+      "accent": "#2f4fa2"
+    },
+    "screenshots": [
+      {
+        "src": "designs/carnet/previews/1-semaine.jpg",
+        "label": "Agenda de la semaine"
+      },
+      {
+        "src": "designs/carnet/previews/2-notes.jpg",
+        "label": "Relevé de notes et moyenne"
+      },
+      {
+        "src": "designs/carnet/previews/3-popup.jpg",
+        "label": "Popup de la barre d'outils"
+      },
+      {
+        "src": "designs/carnet/previews/4-mobile.jpg",
+        "label": "Vue Jour sur téléphone"
+      },
+      {
+        "src": "designs/carnet/previews/5-mois.jpg",
+        "label": "Vue Mois"
+      },
+      {
+        "src": "designs/carnet/previews/6-detail.jpg",
+        "label": "Détail d'un cours et note perso"
+      }
+    ]
   }
 ]

@@ -24,6 +24,7 @@ Non officielle, non affiliée à l'Université Clermont Auvergne. Aucune donnée
 - **Pastille sur l'icône** : « 25m » avant un cours proche, sinon l'heure du prochain cours du jour, ou le nombre de cours restants.
 - **Paramètres** communs à tous les designs (`settings.html`) : vue à l'ouverture, masquer le week-end, rappels, synchro auto, pastille, alertes.
 - Responsive (menu hamburger sous 820px).
+- **Trois designs au choix** : animé (sombre turquoise), professionnel (clair épuré), carnet (papier crème, écriture manuscrite, post-it).
 - **Plusieurs designs au choix** : au premier lancement l'extension demande quel design utiliser (changeable ensuite). Les fonctionnalités sont identiques, seul l'affichage change.
 
 ## Installation (mode développeur)
@@ -70,6 +71,7 @@ Prérequis : Python 3 + Playwright (`pip install playwright` puis `playwright in
 |---|---|
 | `python -I -X utf8 tests/check_design.py` | Chaque design du registre fournit tous les éléments utilisés par le core et ses captures |
 | `python -I -X utf8 tests/e2e.py [dossier]` | Charge l'extension dans Chromium avec des données factices et vérifie chaque design : pas de scroll, aucun bloc coupé, barre sur 2 étages dans le même ordre, moyenne, notes récentes, réglages, vue téléphone, 0 erreur JS (captures dans `dossier` si fourni) |
+| `python -I -X utf8 tests/gen_icons.py <id>` | Rend `designs/<id>/icons/icon.svg` en PNG 16/32/48/128 |
 | `python -I -X utf8 tests/gen_previews.py [id ...]` | Régénère les 6 captures du sélecteur (`designs/<id>/previews/`) |
 
 ## Confidentialité
@@ -79,3 +81,7 @@ Voir `confidentialite.html` dans le dossier de chaque design : l'extension utili
 ## Licence
 
 Projet personnel, non affilié à l'UCA. Utilise à tes risques, l'UCA peut modifier Odin à tout moment et casser le scraping.
+
+## Polices du design carnet
+
+Caveat et Nunito, sous licence SIL Open Font License 1.1 (`designs/carnet/fonts/OFL-*.txt`), intégrées localement : aucune requête vers un service tiers.

@@ -11,7 +11,7 @@ from harness import ROOT, designs  # noqa: E402
 
 # id optionnels : le core vérifie leur présence avant de s'en servir.
 OPTIONAL = {"notesAvg", "moreBtn", "morePanel", "moreWrap", "updateOverlay", "updateBar", "updCurrent", "updLatest",
-            "updApplyBtn", "designBtn", "settingsBtn", "noteArea", "lbImg"}
+            "updApplyBtn", "designBtn", "settingsBtn", "noteArea", "lbImg", "ucaSheetBackdrop"}
 VIEW_IDS = {"dayView", "threeDayView", "fiveDayView", "sixDayView", "weekView", "monthView"}
 
 

@@ -8,6 +8,8 @@
   "start_url": "app/index.html?source=pwa",
   "scope": "./",
   "display": "standalone",
+  "prefer_related_applications": false,
+  "related_applications": [{ "platform": "webapp", "url": "https://kiricoucou.github.io/uca-extension/app.webmanifest", "id": "app/" }],
   "orientation": "any",
   "background_color": "#0b57d0",
   "theme_color": "#0b57d0",

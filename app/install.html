@@ -57,6 +57,25 @@
   // qu'il a déjà servi, donc jamais revoir ce guide — sinon l'app resterait bloquée dessus.
   const { uca_design } = await new Promise((r) => chrome.storage.local.get("uca_design", r));
   if (standalone || uca_design) { localStorage.setItem("uca_install_seen", "1"); location.replace("index.html"); return; }
+  // App déjà installée côté système (détecté sans passer par le stockage, ex. autre profil/onglet
+  // qui n'a pas ses données ici) : plus la peine de proposer d'installer, juste de vérifier la maj.
+  let alreadyInstalled = false;
+  if ("getInstalledRelatedApps" in navigator) {
+    try { alreadyInstalled = (await navigator.getInstalledRelatedApps()).length > 0; } catch (e) { /* ignore */ }
+  }
+  if (alreadyInstalled) {
+    const btn = document.getElementById("installBtn");
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 0 1-13.4 4.6M4.5 12a7.5 7.5 0 0 1 13.4-4.6"/><path d="M18.4 3.2v4.4H14M5.6 20.8v-4.4H10"/></svg>Vérifier les mises à jour';
+    const hint = document.getElementById("installHint");
+    hint.textContent = "App déjà installée sur cet appareil."; hint.classList.remove("hidden");
+    btn.addEventListener("click", async () => {
+      btn.disabled = true; btn.textContent = "Vérification…";
+      await chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
+      location.href = "index.html";
+    });
+    document.getElementById("iosCard").classList.add("hidden");
+    return;
+  }
   document.getElementById("iosCard").classList.toggle("hidden", !ios);
   document.getElementById("androidCard").classList.toggle("hidden", ios);
   let deferred = null;

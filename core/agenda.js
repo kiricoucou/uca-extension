@@ -847,7 +847,24 @@ if (window.UCA_APP) {
     syncBtn.title = importer ? "Importer les données depuis l'extension de l'ordinateur" : "Synchroniser avec Odin (extension détectée dans ce navigateur)";
   };
   setSyncLabel(!window.UCA_APP.extensionReady);
-  window.addEventListener("uca-extension-ready", () => setSyncLabel(false));
+  window.addEventListener("uca-extension-ready", () => {
+    setSyncLabel(false);
+    // "Synchroniser" passe par l'extension : on garde quand même un bouton Importer (lien/QR/fichier).
+    if (!$("appImportBtn")) {
+      const imp = document.createElement("button");
+      imp.id = "appImportBtn"; imp.type = "button"; imp.className = syncBtn.className.replace("primary", "").trim();
+      imp.innerHTML = D.icon("export") + "Importer";
+      imp.title = "Importer un lien, un QR ou un fichier .ucasync";
+      imp.addEventListener("click", () => { location.href = chrome.runtime.getURL("app/import.html"); });
+      syncBtn.before(imp);
+    }
+    // Synchro automatique si la dernière date de plus que le réglage "synchro auto" (0 = jamais).
+    chrome.storage.local.get("uca_last_sync", (d) => {
+      const hours = settings.autoSyncHours;
+      const age = d.uca_last_sync ? Date.now() - new Date(d.uca_last_sync).getTime() : Infinity;
+      if (hours > 0 && age > hours * 3600000) triggerSync();
+    });
+  });
 }
 function triggerSync() {
   syncBtn.disabled = true;

@@ -57,6 +57,9 @@ def main():
 
             label = page.locator("#syncBtn").inner_text()
             check("bouton redevenu « Synchroniser » (extension présente)", "Synchroniser" in label, label)
+            check("bouton Importer ajouté à côté", page.locator("#appImportBtn").count() == 1)
+            sync_sent = page.evaluate("() => !document.getElementById('syncBtn').disabled")
+            check("pas de synchro auto (dernière synchro récente)", sync_sent)
 
             fake_events = seed()["uca_events"]  # jeu complet, différent du jeu tronqué déposé plus haut
             page.evaluate("""(events) => {

@@ -179,6 +179,23 @@ def update_detection(browser, base, errors):
     vp = page.viewport_size
     check("maj app : bandeau plein écran, bloque l'usage", bool(box) and box["width"] >= vp["width"] - 2 and box["height"] >= vp["height"] - 2)
     check("maj app : un seul bouton (Mettre à jour)", page.locator("#updateOverlay button").count() == 1)
+
+    # Clique "Mettre à jour" : le cache (shell complet, stale-while-revalidate) doit être vidé —
+    # sinon la page rechargée réaffiche le contenu périmé malgré la "mise à jour".
+    page.evaluate("""async () => {
+      const cache = await caches.open('uca-app-v1');
+      await cache.put(UCA_APP.root + 'core/agenda.js', new Response('/* PERIME */', { headers: { 'content-type': 'text/javascript' } }));
+    }""")
+    page.locator("#updateOverlay button").click()
+    page.wait_for_load_state("load", timeout=10000)
+    page.wait_for_timeout(500)
+    poisoned_gone = page.evaluate("""async () => {
+      const c = await caches.open('uca-app-v1');
+      const r = await c.match(UCA_APP.root + 'core/agenda.js');
+      return !r || !(await r.text()).includes('PERIME');
+    }""")
+    check("maj app : cache vidé, contenu périmé disparu après Mettre à jour", poisoned_gone)
+    check("maj app : écran de blocage disparu après la mise à jour", page.locator("#updateOverlay:not(.hidden)").count() == 0)
     ctx.close()
 
 

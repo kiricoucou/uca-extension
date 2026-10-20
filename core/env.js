@@ -74,19 +74,21 @@ async function checkAppUpdate() {
     await local.set({ uca_current_version: current, uca_latest_version: latest, uca_update_available: compareVersions(current, latest) < 0 });
   } catch (e) { /* hors ligne ou GitHub injoignable : on ne change rien */ }
 }
-// Nouvelle version déjà détectée (déployée pendant que l'app était ouverte) : force une vraie
-// vérification réseau du service worker, lui fait prendre la main, puis recharge la page.
+// Nouvelle version détectée : il ne suffit PAS de recharger la page, le service worker sert le
+// shell en cache-first (stale-while-revalidate, sw.js) — un simple reload réaffiche donc l'ancienne
+// version tant que le cache n'est pas vidé. sw.js lui-même ne change presque jamais d'une version
+// à l'autre (seul le code des designs/core change), donc reg.update()/skipWaiting ne suffit pas non
+// plus : rien de neuf à installer de son point de vue. On vide directement le cache de l'app (tout
+// sauf "uca-share", le fichier .ucasync reçu par partage Android, pas encore consommé) avant de
+// recharger : chaque fichier repart d'une vraie requête réseau.
 async function applyAppUpdate() {
   try {
-    const reg = await navigator.serviceWorker.getRegistration(ROOT);
-    if (reg) {
-      await reg.update();
-      if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
-      await new Promise((resolve) => {
-        navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true });
-        setTimeout(resolve, 5000);
-      });
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter((k) => k !== "uca-share").map((k) => caches.delete(k)));
     }
+    const reg = await navigator.serviceWorker.getRegistration(ROOT);
+    if (reg) { await reg.update(); if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" }); }
   } catch (e) { /* on recharge quand même ci-dessous */ }
   location.reload();
 }

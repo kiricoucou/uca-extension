@@ -5,9 +5,12 @@
 (function (root) {
 "use strict";
 
-// Seule adresse publique affichée (QR « scanner pour ouvrir l'app », lien de téléchargement, lien
-// partageable) : la racine, qui route elle-même vers le guide d'installation ou l'import (index.html).
+// Racine publique : route elle-même vers le guide d'installation ou l'import (index.html). Base du
+// lien partageable (#d=…) uniquement — jamais affichée seule, voir DOWNLOAD_URL ci-dessous.
 const APP_URL = "https://kiricoucou.github.io/uca-extension/";
+// Lien affiché/scanné pour « ouvrir ou installer l'app » (modale téléphone, bouton Télécharger) :
+// toujours le guide d'installation, peu importe l'état de l'appareil qui scanne.
+const DOWNLOAD_URL = "https://kiricoucou.github.io/uca-extension/app/install.html";
 const KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_releve_notes", "uca_releve_notes_sync", "uca_absences",
   "uca_notes_seen", "uca_edt_changes", "uca_settings", "uca_filters", "uca_design"];
 const CHUNK = 480;
@@ -107,5 +110,5 @@ function drawQr(canvas, text, sizePx) {
   for (let r = 0; r < count; r++) for (let c = 0; c < count; c++) if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
 }
 
-root.UCA_TRANSFER = { APP_URL, KEYS, snapshot, encodeFrames, buildShareLink, fromLinkHash, collector, validate, applyImport, exportFile, drawQr };
+root.UCA_TRANSFER = { APP_URL, DOWNLOAD_URL, KEYS, snapshot, encodeFrames, buildShareLink, fromLinkHash, collector, validate, applyImport, exportFile, drawQr };
 })(self);

@@ -4,7 +4,7 @@
    - Android « Partager → EDT UCA » : le fichier .ucasync reçu est déposé en cache pour app/import.html. */
 const CACHE = "uca-app-v1";
 const SHELL = [
-  "app/index.html", "app/import.html", "app/install.html", "app/import.js", "app/app.css", "app.webmanifest", "manifest.json",
+  "index.html", "app/index.html", "app/import.html", "app/install.html", "app/import.js", "app/app.css", "app.webmanifest", "manifest.json",
   "app/icons/icon-192.png", "app/icons/icon-512.png",
   "core/env.js", "core/settings.js", "core/shared.js", "core/tools.js", "core/transfer.js", "core/agenda.js",
   "choose.html", "choose.js", "settings.html", "settings.js", "designs/designs.json", "vendor/jsQR.js", "vendor/qrcode.js",

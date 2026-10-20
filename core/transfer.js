@@ -5,7 +5,9 @@
 (function (root) {
 "use strict";
 
-const APP_URL = "https://kiricoucou.github.io/uca-extension/app/";
+// Seule adresse publique affichée (QR « scanner pour ouvrir l'app », lien de téléchargement, lien
+// partageable) : la racine, qui route elle-même vers le guide d'installation ou l'import (index.html).
+const APP_URL = "https://kiricoucou.github.io/uca-extension/";
 const KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_releve_notes", "uca_releve_notes_sync", "uca_absences",
   "uca_notes_seen", "uca_edt_changes", "uca_settings", "uca_filters", "uca_design"];
 const CHUNK = 480;
@@ -35,7 +37,7 @@ async function encodeFrames(snap) {
 /* Même instantané que le QR, mais en un seul lien (fragment #d=…, jamais envoyé au serveur qui
    héberge la page) : à coller dans n'importe quelle appli de messagerie, pas besoin de caméra. */
 async function buildShareLink(snap) {
-  return `${APP_URL}import.html#d=${encodeURIComponent(await pack(snap))}`;
+  return `${APP_URL}#d=${encodeURIComponent(await pack(snap))}`;
 }
 
 async function fromLinkHash(h) {

@@ -113,7 +113,8 @@ def qr_roundtrip(browser, base, errors):
 
 
 def link_roundtrip(browser, base, errors):
-    """Lien partageable (#d=…) : construit par l'extension, ouvert directement dans l'app."""
+    """Lien partageable (#d=…), adresse publique = la racine : construit par l'extension, ouvert
+    directement (racine → index.html route vers app/import.html, voir index.html à la racine)."""
     data = seed(); data["uca_design"] = "carnet"
     page = browser.new_page()
     page.on("pageerror", lambda e: errors.append(f"[lien] {e}"))
@@ -124,18 +125,29 @@ def link_roundtrip(browser, base, errors):
       const back = await UCA_TRANSFER.fromLinkHash('#' + link.split('#')[1]);
       return { link, same: JSON.stringify(back.data) === JSON.stringify(data) };
     }""", data)
-    check("lien : pointe vers app/import.html#d=", "/app/import.html#d=" in res["link"], res["link"][:70])
+    check("lien : pointe vers la racine publique (#d=)", res["link"].startswith("https://kiricoucou.github.io/uca-extension/#d="), res["link"][:70])
     check("lien : données reconstruites identiques", res["same"], str(res))
     page.close()
-    # Ouvert directement (comme depuis un SMS) : import automatique, sans caméra ni fichier.
-    local_link = base + "app/import.html#" + res["link"].split("#", 1)[1]
+    # Ouvert directement (comme depuis un SMS) : la racine route vers l'import, sans caméra ni fichier.
+    local_link = base + "#" + res["link"].split("#", 1)[1]
     page2 = browser.new_page()
     page2.on("pageerror", lambda e: errors.append(f"[lien-ouverture] {e}"))
-    page2.goto(local_link); page2.wait_for_timeout(1600)
+    page2.goto(local_link); page2.wait_for_timeout(2000)
     stored = page2.evaluate("() => new Promise(r => chrome.storage.local.get('uca_events', d => r((d.uca_events || []).length)))")
-    check("lien ouvert directement : cours importés dans le stockage", stored == len(data["uca_events"]), str(stored))
+    check("lien ouvert depuis la racine : cours importés dans le stockage", stored == len(data["uca_events"]), str(stored))
     check("lien : fragment effacé de l'URL après lecture", "#d=" not in page2.url, page2.url)
     page2.close()
+
+
+def root_router(browser, base, errors):
+    """La racine (index.html) est la seule adresse publique : sans lien partageable, elle renvoie
+    vers le guide d'installation ; jamais une page interne brute (agenda, choisir un design…)."""
+    ctx = browser.new_context()
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[racine] {e}"))
+    page.goto(base); page.wait_for_timeout(1000)
+    check("racine, visite simple : renvoie vers le guide d'installation", "install.html" in page.url, page.url)
+    ctx.close()
 
 
 def update_detection(browser, base, errors):
@@ -187,6 +199,7 @@ def main():
             run_flow(chromium, p.devices["Pixel 7"], base, "android", errors, "carnet")
             qr_roundtrip(chromium, base, errors)
             link_roundtrip(chromium, base, errors)
+            root_router(chromium, base, errors)
             update_detection(chromium, base, errors)
             chromium.close()
             try:

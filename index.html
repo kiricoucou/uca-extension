@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emploi du temps UCA</title>
+<link rel="icon" type="image/png" href="app/icons/icon-192.png">
+<link rel="stylesheet" href="app/app.css">
+</head>
+<body>
+<main class="center">
+  <img class="app-logo" src="app/icons/icon-192.png" alt="">
+  <p class="muted">Ouverture…</p>
+</main>
+<script>
+/* Seule page publique de kiricoucou.github.io/uca-extension : lien de téléchargement de l'app
+   et lien partageable (#d=…, voir core/transfer.js buildShareLink). Un lien partageable va direct
+   à l'import ; toute autre visite passe par app/index.html, qui renvoie vers le guide d'installation
+   tant que l'app n'a pas été ouverte sur cet appareil. */
+(function () {
+  if (location.hash.indexOf("#d=") === 0) { location.replace("app/import.html" + location.hash); return; }
+  location.replace("app/index.html" + location.search);
+})();
+</script>
+</body>
+</html>

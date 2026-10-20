@@ -43,7 +43,7 @@ D'autres captures de chaque design (vue mois, détail d'un cours...) sont dans `
 
 ## App téléphone (Android et iPhone)
 
-Une app installable (PWA) est servie par GitHub Pages : <https://kiricoucou.github.io/uca-extension/app/>.
+Une app installable (PWA) est servie par GitHub Pages : <https://kiricoucou.github.io/uca-extension/>. C'est la seule page publique du dépôt : une visite directe renvoie vers le guide d'installation ; un lien partageable (voir plus bas) importe directement.
 
 - **Installation** : ouvre le lien sur ton téléphone. Android : bouton « Installer l'application ». iPhone (Safari) : Partager → « Sur l'écran d'accueil ». Icône, écran de démarrage et plein écran comme une vraie app ; fonctionne hors ligne.
 - **Données** : une app web ne peut pas se connecter à Odin elle-même (le navigateur interdit de lire un autre site avec ta session, et la double authentification passe par le CAS). Les données viennent donc de l'extension, trois façons au choix dans **Exporter** (sur l'ordinateur) :

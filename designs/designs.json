@@ -4,6 +4,7 @@
     "name": "Design animé",
     "description": "Sombre turquoise, icônes animées",
     "folder": "designs/anime",
+    "badgeColor": "#18b7b0",
     "preview": {
       "background": "#121418",
       "surface": "#1b1e24",
@@ -41,6 +42,7 @@
     "name": "Design professionnel",
     "description": "Clair et épuré, icônes vectorielles",
     "folder": "designs/professionnel",
+    "badgeColor": "#0b57d0",
     "preview": {
       "background": "#ffffff",
       "surface": "#f1f3f4",

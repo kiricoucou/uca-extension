@@ -9,6 +9,17 @@ const SECTIONS = [
       options: [["auto", "Automatique"], ["day", "Jour"], ["3day", "3 jours"], ["5day", "5 jours"], ["6day", "6 jours"], ["week", "Semaine"], ["month", "Mois"]] },
     { key: "hideWeekend", type: "switch", label: "Masquer le week-end", hint: "Vue Semaine : samedi et dimanche n'apparaissent que s'il y a cours." },
   ] },
+  { title: "Rappels et synchronisation", fields: [
+    { key: "remindersEnabled", type: "switch", label: "Rappel avant chaque cours", hint: "Notification avec la matière et la salle." },
+    { key: "reminderMinutes", type: "select", label: "Délai du rappel",
+      options: [[5, "5 min avant"], [10, "10 min avant"], [15, "15 min avant"], [30, "30 min avant"], [60, "1 h avant"]] },
+    { key: "autoSyncHours", type: "select", label: "Synchronisation automatique",
+      hint: "En arrière-plan, tant que ta session Odin est valide. Si elle a expiré, rien ne s'ouvre : l'icône affiche « ! » et tu te reconnectes quand tu veux.",
+      options: [[0, "Désactivée"], [1, "Toutes les heures"], [3, "Toutes les 3 h"], [6, "Toutes les 6 h"], [12, "Toutes les 12 h"]] },
+    { key: "badgeMode", type: "select", label: "Pastille sur l'icône",
+      hint: "« 25m » quand un cours commence dans moins d'une heure, sinon l'heure (« 14h »).",
+      options: [["next", "Prochain cours du jour"], ["remaining", "Cours restants aujourd'hui"], ["off", "Aucune"]] },
+  ] },
 ];
 
 function $(id) { return document.getElementById(id); }

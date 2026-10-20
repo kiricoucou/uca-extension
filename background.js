@@ -1,3 +1,6 @@
+// Firefox charge core/settings.js via manifest.background.scripts ; Chrome (service worker) ici.
+if (typeof UCA_getSettings === "undefined" && typeof importScripts === "function") importScripts("core/settings.js");
+
 const EDT_URL = "https://odin.iut.uca.fr/etudiants/?p=edt";
 const ABSENCES_URL = "https://odin.iut.uca.fr/etudiants/?p=absences";
 const NOTES_URL = "https://odin.iut.uca.fr/etudiants/?p=notes";
@@ -473,29 +476,29 @@ async function syncNotesQuietly() {
   }
 }
 
+async function syncSucceeded(text, silent) {
+  const events = await storeResult(text);
+  await chrome.storage.local.set({ uca_session_expired: false });
+  broadcast({ type: "UCA_SYNC_RESULT", ok: true, text, events, silent });
+  await syncAbsencesQuietly();
+  await syncNotesQuietly();
+}
+
+/* mode "background" (synchro automatique) : uniquement la reconnexion silencieuse,
+   jamais la fenêtre CAS. Session expirée : trySilentResync met uca_session_expired. */
 async function handleSync(mode) {
   let text = null;
-  if (mode === "resync") {
+  if (mode === "resync" || mode === "background") {
     text = await trySilentResync();
-    if (text && DATE_HEADER_RE.test(text)) {
-      const events = await storeResult(text);
-      await chrome.storage.local.set({ uca_session_expired: false });
-      broadcast({ type: "UCA_SYNC_RESULT", ok: true, text, events, silent: true });
-      await syncAbsencesQuietly();
-      await syncNotesQuietly();
-      return;
-    }
+    if (text && DATE_HEADER_RE.test(text)) { await syncSucceeded(text, true); return; }
+    if (mode === "background") return;
   }
   text = await fullLogin();
   if (!text || !DATE_HEADER_RE.test(text)) {
     broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: "Aucun emploi du temps détecté sur la page." });
     return;
   }
-  const events = await storeResult(text);
-  await chrome.storage.local.set({ uca_session_expired: false });
-  broadcast({ type: "UCA_SYNC_RESULT", ok: true, text, events, silent: false });
-  await syncAbsencesQuietly();
-  await syncNotesQuietly();
+  await syncSucceeded(text, false);
 }
 
 /* ============ Session cookie (durée restante / déconnexion) ============ */
@@ -571,3 +574,106 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     .finally(() => { syncInProgress = false; });
   return false;
 });
+
+/* ============ Rappels, synchro automatique, pastille ============ */
+const REMINDER_PREFIX = "uca_rem|";
+const AUTO_SYNC_ALARM = "uca_auto_sync";
+const BADGE_ALARM = "uca_badge";
+
+function eventKey(ev) { return ev.date + "_" + pad(ev.startH) + ":" + pad(ev.startM) + "_" + ev.title; }
+function eventStart(ev) { return new Date(ev.year, ev.month, ev.day, ev.startH, ev.startM).getTime(); }
+function eventEnd(ev) { return new Date(ev.year, ev.month, ev.day, ev.endH, ev.endM).getTime(); }
+
+async function currentDesign() {
+  const [{ uca_design }, designs] = await Promise.all([chrome.storage.local.get("uca_design"), loadDesigns()]);
+  return designs.find((d) => d.id === uca_design) || null;
+}
+
+async function scheduleReminders() {
+  const [settings, { uca_events }, alarms] = await Promise.all([UCA_getSettings(), chrome.storage.local.get("uca_events"), chrome.alarms.getAll()]);
+  await Promise.all(alarms.filter((a) => a.name.startsWith(REMINDER_PREFIX)).map((a) => chrome.alarms.clear(a.name)));
+  if (!settings.remindersEnabled) return;
+  const now = Date.now(), horizon = now + 7 * 86400000;
+  (uca_events || []).forEach((ev) => {
+    const start = eventStart(ev), when = start - settings.reminderMinutes * 60000;
+    if (when > now + 5000 && start < horizon) chrome.alarms.create(REMINDER_PREFIX + eventKey(ev), { when });
+  });
+}
+
+async function onReminderAlarm(name) {
+  const key = name.slice(REMINDER_PREFIX.length);
+  const [{ uca_events }, design] = await Promise.all([chrome.storage.local.get("uca_events"), currentDesign()]);
+  const ev = (uca_events || []).find((e) => eventKey(e) === key);
+  if (!ev) return;
+  const minutes = Math.max(1, Math.round((eventStart(ev) - Date.now()) / 60000));
+  chrome.notifications.create(name, {
+    type: "basic",
+    iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
+    title: `Dans ${minutes} min : ${ev.title}`,
+    message: [ev.room && "Salle " + ev.room, ev.teacher].filter(Boolean).join(" · ") || `${pad(ev.startH)}:${pad(ev.startM)} – ${pad(ev.endH)}:${pad(ev.endM)}`,
+    priority: 1,
+  });
+}
+
+chrome.notifications.onClicked.addListener(async (id) => {
+  if (!id.startsWith("uca_")) return;
+  const design = await currentDesign();
+  chrome.tabs.create({ url: chrome.runtime.getURL(design ? `${design.folder}/agenda.html` : "choose.html?tab=1") });
+  chrome.notifications.clear(id);
+});
+
+async function configureAutoSync() {
+  const { autoSyncHours } = await UCA_getSettings();
+  await chrome.alarms.clear(AUTO_SYNC_ALARM);
+  if (autoSyncHours > 0) chrome.alarms.create(AUTO_SYNC_ALARM, { periodInMinutes: autoSyncHours * 60 });
+}
+
+async function runBackgroundSync() {
+  const { uca_last_sync } = await chrome.storage.local.get("uca_last_sync");
+  if (!uca_last_sync || syncInProgress) return; // jamais connecté : rien à resynchroniser
+  syncInProgress = true;
+  try { await handleSync("background"); } catch (e) { /* réessai à la prochaine alarme */ } finally { syncInProgress = false; }
+}
+
+/* « 25m » si un cours commence dans moins d'une heure, sinon l'heure du prochain cours du
+   jour (« 14h ») ; « ! » si la session a expiré. Le détail est dans l'infobulle. */
+async function updateBadge() {
+  const [settings, data, design] = await Promise.all([UCA_getSettings(), chrome.storage.local.get(["uca_events", "uca_session_expired", "uca_last_sync"]), currentDesign()]);
+  const color = (design && design.badgeColor) || "#5f6368";
+  let text = "", title = "Emploi du temps UCA";
+  if (data.uca_session_expired && data.uca_last_sync) { text = "!"; title = "Session Odin expirée : reconnecte-toi"; }
+  else if (settings.badgeMode !== "off") {
+    const now = Date.now(), today = new Date();
+    const key = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+    const todayEvs = (data.uca_events || []).filter((e) => e.date === key).sort((a, b) => eventStart(a) - eventStart(b));
+    if (settings.badgeMode === "remaining") {
+      const left = todayEvs.filter((e) => eventEnd(e) > now);
+      if (left.length) { text = String(left.length); title = `${left.length} cours restant${left.length > 1 ? "s" : ""} aujourd'hui`; }
+    } else {
+      const next = todayEvs.find((e) => eventStart(e) > now);
+      if (next) {
+        const mins = Math.round((eventStart(next) - now) / 60000);
+        text = mins < 60 ? `${mins}m` : `${next.startH}h`;
+        title = `Prochain cours : ${pad(next.startH)}:${pad(next.startM)} ${next.title}${next.room ? " — " + next.room : ""}`;
+      }
+    }
+  }
+  await chrome.action.setBadgeText({ text });
+  await chrome.action.setBadgeBackgroundColor({ color: text === "!" ? "#d93025" : color });
+  await chrome.action.setTitle({ title });
+}
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name.startsWith(REMINDER_PREFIX)) onReminderAlarm(alarm.name);
+  else if (alarm.name === AUTO_SYNC_ALARM) runBackgroundSync();
+  else if (alarm.name === BADGE_ALARM) updateBadge();
+});
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local") return;
+  if (changes.uca_events || changes.uca_settings) scheduleReminders();
+  if (changes.uca_settings) configureAutoSync();
+  if (changes.uca_events || changes.uca_settings || changes.uca_session_expired || changes.uca_design) updateBadge();
+});
+chrome.alarms.create(BADGE_ALARM, { periodInMinutes: 1 });
+chrome.runtime.onStartup.addListener(() => { scheduleReminders(); configureAutoSync(); updateBadge(); });
+chrome.runtime.onInstalled.addListener(() => { scheduleReminders(); configureAutoSync(); updateBadge(); });

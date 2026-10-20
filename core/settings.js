@@ -6,6 +6,10 @@
 const DEFAULTS = {
   startView: "auto",   // auto | day | 3day | 5day | 6day | week | month
   hideWeekend: false,  // vue Semaine : samedi/dimanche masqués s'il n'y a pas cours
+  remindersEnabled: true,
+  reminderMinutes: 15, // notification N minutes avant chaque cours
+  autoSyncHours: 3,    // 0 = désactivée ; synchro silencieuse uniquement (jamais de fenêtre CAS)
+  badgeMode: "next",   // next (prochain cours du jour) | remaining (cours restants aujourd'hui) | off
 };
 
 function getSettings() {

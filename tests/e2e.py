@@ -44,6 +44,42 @@ JS_HEADER = """() => {
 }"""
 
 
+def background_checks(ctx, sw, data):
+    """Rappels, pastille, notification, synchro auto (indépendants du design)."""
+    page = ctx.pages[0]
+    js_event = """(offsetMin) => { const d = new Date(Date.now() + offsetMin * 60000); d.setSeconds(0, 0);
+      const p = n => String(n).padStart(2, '0');
+      return { date: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()), year: d.getFullYear(), month: d.getMonth(), day: d.getDate(),
+               startH: d.getHours(), startM: d.getMinutes(), endH: Math.min(23, d.getHours() + 1), endM: d.getMinutes(),
+               title: 'Cours test', teacher: 'M. Test', room: 'Z9', raw: '', color: '#888' }; }"""
+    soon = sw.evaluate(js_event, 30)
+    later = sw.evaluate(js_event, 26 * 60)
+    sw.evaluate("(evs) => chrome.storage.local.set({uca_events: evs, uca_session_expired: false})", [soon, later])
+    page.wait_for_timeout(800)
+    alarms = sw.evaluate("chrome.alarms.getAll().then(a => a.map(x => ({name: x.name, when: x.scheduledTime, period: x.periodInMinutes || 0})))")
+    rem = [a for a in alarms if a["name"].startswith("uca_rem|")]
+    check("rappels programmés pour les cours à venir", len(rem) == 2, str([a["name"] for a in rem]))
+    auto = [a for a in alarms if a["name"] == "uca_auto_sync"]
+    check("synchro automatique toutes les 3 h", bool(auto) and auto[0]["period"] == 180, str(auto))
+    sw.evaluate("updateBadge()"); page.wait_for_timeout(300)
+    badge = sw.evaluate("chrome.action.getBadgeText({})")
+    check("pastille « dans X min » avant un cours proche", badge.endswith("m") and 25 <= int(badge[:-1] or 0) <= 30, badge)
+    title = sw.evaluate("chrome.action.getTitle({})")
+    check("infobulle de l'icône = prochain cours", "Cours test" in title and "Z9" in title, title)
+    name = next(a["name"] for a in rem if "Cours test" in a["name"] and a["when"] < (later_ms := 10**13))
+    sw.evaluate("(n) => onReminderAlarm(n)", name); page.wait_for_timeout(500)
+    notifs = sw.evaluate("chrome.notifications.getAll()")
+    check("notification de rappel affichée", any(k.startswith("uca_rem|") for k in notifs), str(notifs))
+    sw.evaluate("chrome.storage.local.set({uca_settings: {remindersEnabled: false, badgeMode: 'off', autoSyncHours: 0}})"); page.wait_for_timeout(600)
+    alarms = sw.evaluate("chrome.alarms.getAll().then(a => a.map(x => x.name))")
+    check("réglages : rappels et synchro auto désactivables", not any(a.startswith("uca_rem|") for a in alarms) and "uca_auto_sync" not in alarms, str(alarms))
+    check("réglages : pastille désactivable", sw.evaluate("chrome.action.getBadgeText({})") == "")
+    sw.evaluate("chrome.storage.local.set({uca_session_expired: true})"); page.wait_for_timeout(500)
+    check("pastille « ! » si la session a expiré", sw.evaluate("chrome.action.getBadgeText({})") == "!")
+    sw.evaluate("(s) => chrome.storage.local.remove('uca_settings').then(() => chrome.storage.local.set(s))", data)
+    page.wait_for_timeout(300)
+
+
 def main():
     errors = []
     data = seed()
@@ -126,6 +162,7 @@ def main():
             shot(mob, f"{did}-mobile"); mob.close()
 
         check("même ordre des boutons dans tous les designs", len(set(orders.values())) == 1, str(orders))
+        background_checks(ctx, sw, data)
         settings = ctx.new_page(); watch(settings, "settings")
         settings.goto(f"{base}/settings.html"); settings.wait_for_timeout(400)
         settings.select_option("#f-startView", "week"); settings.wait_for_timeout(300)

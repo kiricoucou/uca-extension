@@ -15,7 +15,10 @@ Non officielle, non affiliée à l'Université Clermont Auvergne. Aucune donnée
 - **Liens rapides** Moodle et messagerie Zimbra.
 - **Mise à jour** : vérification de la version sur GitHub (voir [`UPDATES.md`](UPDATES.md)).
 - **Page d'aide intégrée** (`aide.html`, bouton ❓) qui explique chaque fonctionnalité.
-- **Paramètres** communs à tous les designs (`settings.html`) : vue à l'ouverture, masquer le week-end.
+- **Rappel avant chaque cours** (notification avec matière et salle, délai réglable).
+- **Synchronisation automatique** en arrière-plan (toutes les 1 à 12 h) : uniquement la reconnexion silencieuse, aucune fenêtre ne s'ouvre ; si la session a expiré, l'icône affiche « ! ».
+- **Pastille sur l'icône** : « 25m » avant un cours proche, sinon l'heure du prochain cours du jour, ou le nombre de cours restants.
+- **Paramètres** communs à tous les designs (`settings.html`) : vue à l'ouverture, masquer le week-end, rappels, synchro auto, pastille.
 - Responsive (menu hamburger sous 820px).
 - **Plusieurs designs au choix** : au premier lancement l'extension demande quel design utiliser (changeable ensuite). Les fonctionnalités sont identiques, seul l'affichage change.
 

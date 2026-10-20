@@ -80,6 +80,51 @@ def background_checks(ctx, sw, data):
     page.wait_for_timeout(300)
 
 
+def edt_change_checks(ctx, sw, base, data):
+    """Deux synchros simulées demain : salle changée, cours déplacé, ajouté, annulé."""
+    import datetime
+    page = ctx.pages[0]
+    tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+
+    def ev(h, m, eh, em, title, room):
+        return {"date": tomorrow.isoformat(), "year": tomorrow.year, "month": tomorrow.month - 1, "day": tomorrow.day,
+                "startH": h, "startM": m, "endH": eh, "endM": em, "title": title, "teacher": "M. Test", "room": room, "raw": title, "color": "#888"}
+    prev = [ev(8, 0, 10, 0, "R2.01 Algo CM", "A1"), ev(10, 0, 12, 0, "R2.02 Web TD", "B2"), ev(14, 0, 16, 0, "R2.03 Réseau TP", "C3")]
+    nxt = [ev(8, 0, 10, 0, "R2.01 Algo CM", "A7"), ev(11, 0, 13, 0, "R2.02 Web TD", "B2"), ev(16, 30, 18, 0, "R2.04 Maths TD", "D4")]
+    sw.evaluate("chrome.notifications.getAll().then(n => Promise.all(Object.keys(n).map(k => chrome.notifications.clear(k))))")
+    sw.evaluate("(p) => chrome.storage.local.set({uca_events: p, uca_edt_changes: []})", prev)
+    found = sw.evaluate("([p, n]) => chrome.storage.local.set({uca_events: n}).then(() => applyEdtChanges(p, n)).then(f => f.map(c => c.type).sort().join(','))", [prev, nxt])
+    check("changements EDT détectés (salle, déplacé, ajouté, annulé)", found == "added,cancelled,moved,room", found)
+    page.wait_for_timeout(400)
+    notifs = sw.evaluate("chrome.notifications.getAll()")
+    check("notification de changement d'EDT", any(k.startswith("uca_edt|") for k in notifs), str(notifs))
+    again = sw.evaluate("([n]) => applyEdtChanges(n, n).then(() => chrome.storage.local.get('uca_edt_changes')).then(d => d.uca_edt_changes.length)", [nxt])
+    check("changements conservés à la synchro suivante (7 jours)", again == 4, str(again))
+    weeks_ahead = (tomorrow - (tomorrow - datetime.timedelta(days=tomorrow.weekday()))).days >= 0 and (
+        (tomorrow - datetime.timedelta(days=tomorrow.weekday())) != (datetime.date.today() - datetime.timedelta(days=datetime.date.today().weekday())))
+    for d in designs():
+        ag = ctx.new_page(); ag.set_viewport_size({"width": 1400, "height": 860})
+        ag.goto(f"{base}/{d['folder']}/agenda.html"); ag.bring_to_front(); ag.wait_for_timeout(800)
+        ag.locator("#viewTabs button[data-view='week']").click(); ag.wait_for_timeout(300)
+        if weeks_ahead:
+            ag.locator("#nextBtn").click(); ag.wait_for_timeout(400)
+        badges = ag.evaluate("() => [...document.querySelectorAll('.view.active .chg-badge')].map(b => b.textContent).sort().join(',')")
+        check(f"{d['id']} : badges des cours modifiés", badges == "Annulé,Déplacé,Nouveau,Salle changée", badges)
+        check(f"{d['id']} : cours annulé affiché barré", ag.locator(".view.active .event-card.ev-cancelled").count() == 1)
+        shot(ag, f"{d['id']}-changements")
+        ag.close()
+    releve = data["uca_releve_notes"]
+    import copy
+    newer = copy.deepcopy(releve)
+    newer["ue"][0]["matieres"][1]["evals"] = [{"label": "Projet (sur 20.0)", "coeff": 1, "note": 17.5, "moy": 12, "maxi": 19, "mini": 6}]
+    sw.evaluate("(s) => chrome.storage.local.set({uca_notes_seen: s})", data["uca_notes_seen"])
+    fresh = sw.evaluate("(r) => recordNotesSeen(r).then(f => f.map(g => g.label + '=' + g.note).join(';'))", newer)
+    check("nouvelle note détectée", fresh == "Projet — R1.02 : Web=17.5", fresh)
+    page.wait_for_timeout(300)
+    check("notification de nouvelle note", any(k.startswith("uca_grade|") for k in sw.evaluate("chrome.notifications.getAll()")))
+    sw.evaluate("(s) => chrome.storage.local.remove('uca_edt_changes').then(() => chrome.storage.local.set(s))", data)
+
+
 def main():
     errors = []
     data = seed()
@@ -163,6 +208,7 @@ def main():
 
         check("même ordre des boutons dans tous les designs", len(set(orders.values())) == 1, str(orders))
         background_checks(ctx, sw, data)
+        edt_change_checks(ctx, sw, base, data)
         settings = ctx.new_page(); watch(settings, "settings")
         settings.goto(f"{base}/settings.html"); settings.wait_for_timeout(400)
         settings.select_option("#f-startView", "week"); settings.wait_for_timeout(300)

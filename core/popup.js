@@ -11,6 +11,8 @@ const MONTHS = ["janvier","février","mars","avril","mai","juin","juillet","aoû
 function pad(n) { return String(n).padStart(2, "0"); }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function $(id) { return document.getElementById(id); }
+let changes = new Map();
+function eventKey(ev) { return ev.date + "_" + pad(ev.startH) + ":" + pad(ev.startM) + "_" + ev.title; }
 function eventColorKey(title) { return title.replace(/\b(CM|TD|TDA|TP|TPA)\b/gi, "").trim() || title; }
 
 function setStatus(msg) {
@@ -60,7 +62,7 @@ function renderEvents(events) {
       const row = document.createElement("div"); row.className = "ev" + (state ? " " + state : "");
       row.innerHTML = `<div class="stripe" style="background:${D.eventColor(eventColorKey(ev.title))}"></div>
         <div class="time">${pad(ev.startH)}:${pad(ev.startM)}–${pad(ev.endH)}:${pad(ev.endM)}${state === "current" ? `<span class="ev-state">${escapeHtml(T("current"))}</span>` : ""}</div>
-        <div class="info"><div class="title">${escapeHtml(ev.title)}</div>
+        <div class="info"><div class="title">${changes.has(eventKey(ev)) ? D.changeBadge(changes.get(eventKey(ev)).type) : ""}${escapeHtml(ev.title)}</div>
         <div class="meta">${escapeHtml(metaText(ev))}</div></div>`;
       g.appendChild(row);
     });
@@ -78,7 +80,8 @@ function renderConnectionButtons(connected) {
 }
 
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_session_expired"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_session_expired", "uca_edt_changes"], (data) => {
+    changes = new Map((data.uca_edt_changes || []).filter(c => c.type !== "cancelled").map(c => [c.key, c]));
     renderLastSync(data.uca_last_sync);
     renderEvents(data.uca_events);
     renderSessionState(!!data.uca_session_expired);

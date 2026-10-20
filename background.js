@@ -437,7 +437,9 @@ function parseScheduleText(raw) {
 
 async function storeResult(text) {
   const events = parseScheduleText(text);
+  const { uca_events } = await chrome.storage.local.get("uca_events");
   await chrome.storage.local.set({ uca_events: events, uca_last_sync: new Date().toISOString() });
+  await applyEdtChanges(uca_events || [], events);
   return events;
 }
 
@@ -460,11 +462,19 @@ async function recordNotesSeen(releve) {
     if (note === null || note === undefined) return;
     if (!seen[key] || seen[key].note !== note) seen[key] = { note, at };
   };
+  const fresh = [];
+  const markAndTrack = (key, note, label) => {
+    const before = seen[key];
+    mark(key, note);
+    if (at && seen[key] !== before) fresh.push({ label, note });
+  };
   releve.ue.forEach((ue) => (ue.matieres || []).forEach((m) => {
-    mark(m.label + "|", m.note);
-    (m.evals || []).forEach((e) => mark(m.label + "|" + e.label, e.note));
+    markAndTrack(m.label + "|", m.note, m.label);
+    (m.evals || []).forEach((e) => markAndTrack(m.label + "|" + e.label, e.note, `${e.label.replace(/\s*\(sur[^)]*\)/i, "")} — ${m.label}`));
   }));
   await chrome.storage.local.set({ uca_notes_seen: seen });
+  if (fresh.length) await notifyNewGrades(fresh);
+  return fresh;
 }
 
 async function syncNotesQuietly() {
@@ -677,3 +687,84 @@ chrome.storage.onChanged.addListener((changes, area) => {
 chrome.alarms.create(BADGE_ALARM, { periodInMinutes: 1 });
 chrome.runtime.onStartup.addListener(() => { scheduleReminders(); configureAutoSync(); updateBadge(); });
 chrome.runtime.onInstalled.addListener(() => { scheduleReminders(); configureAutoSync(); updateBadge(); });
+
+/* ============ Changements d'emploi du temps ============
+   Comparaison sur la plage de dates couverte par les deux synchros et à partir
+   d'aujourd'hui (un cours passé sorti de la fenêtre Odin n'est pas une annulation).
+   Même clé + autre salle = salle changée ; même titre et même date mais autre heure =
+   déplacé ; sinon ajouté / annulé. Gardés 7 jours dans uca_edt_changes. */
+const EDT_CHANGE_TTL_MS = 7 * 86400000;
+const CHANGE_LABELS_BG = { added: "Ajouté", moved: "Déplacé", room: "Salle changée", cancelled: "Annulé" };
+
+function diffEvents(prev, next) {
+  if (!prev.length || !next.length) return [];
+  const t = new Date();
+  const today = dateKey(t.getFullYear(), t.getMonth(), t.getDate());
+  const span = (evs) => evs.reduce((r, e) => [e.date < r[0] ? e.date : r[0], e.date > r[1] ? e.date : r[1]], [evs[0].date, evs[0].date]);
+  const [p0, p1] = span(prev), [n0, n1] = span(next);
+  const lo = [p0, n0, today].sort()[2], hi = [p1, n1].sort()[0];
+  if (lo > hi) return [];
+  const inRange = (e) => e.date >= lo && e.date <= hi;
+  const P = new Map(prev.filter(inRange).map((e) => [eventKey(e), e]));
+  const N = new Map(next.filter(inRange).map((e) => [eventKey(e), e]));
+  const out = [];
+  N.forEach((e, k) => { const o = P.get(k); if (o && (o.room || "") !== (e.room || "")) out.push({ type: "room", key: k, ev: e, before: { room: o.room } }); });
+  const removed = [...P].filter(([k]) => !N.has(k)).map(([, e]) => e);
+  [...N].filter(([k]) => !P.has(k)).forEach(([k, e]) => {
+    const i = removed.findIndex((r) => r.title === e.title && r.date === e.date);
+    if (i >= 0) {
+      const r = removed.splice(i, 1)[0];
+      out.push({ type: "moved", key: k, ev: e, before: { startH: r.startH, startM: r.startM, endH: r.endH, endM: r.endM, room: r.room } });
+    } else out.push({ type: "added", key: k, ev: e });
+  });
+  removed.forEach((e) => out.push({ type: "cancelled", key: eventKey(e), ev: e }));
+  return out;
+}
+
+async function applyEdtChanges(prev, next) {
+  const found = diffEvents(prev, next);
+  const now = Date.now();
+  const { uca_edt_changes } = await chrome.storage.local.get("uca_edt_changes");
+  const nextKeys = new Set(next.map(eventKey));
+  const fresh = new Set(found.map((c) => c.key));
+  const kept = (uca_edt_changes || []).filter((c) => now - c.at < EDT_CHANGE_TTL_MS && !fresh.has(c.key)
+    && (c.type === "cancelled" ? !nextKeys.has(c.key) : nextKeys.has(c.key)));
+  const all = kept.concat(found.map((c) => ({ ...c, at: now })));
+  await chrome.storage.local.set({ uca_edt_changes: all });
+  if (found.length) await notifyEdtChanges(found);
+  return found;
+}
+
+function fmtEvShort(ev) {
+  const d = new Date(ev.year, ev.month, ev.day);
+  return `${d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })} ${pad(ev.startH)}:${pad(ev.startM)}`;
+}
+
+async function notifyEdtChanges(list) {
+  const settings = await UCA_getSettings();
+  if (!settings.notifyEdtChanges) return;
+  const design = await currentDesign();
+  const lines = list.slice(0, 4).map((c) => `${CHANGE_LABELS_BG[c.type]} : ${c.ev.title} (${fmtEvShort(c.ev)}${c.type === "room" ? ", salle " + (c.ev.room || "?") : ""})`);
+  if (list.length > 4) lines.push(`… et ${list.length - 4} autre(s)`);
+  chrome.notifications.create("uca_edt|" + Date.now(), {
+    type: "basic",
+    iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
+    title: list.length === 1 ? "Emploi du temps modifié" : `${list.length} changements d'emploi du temps`,
+    message: lines.join("\n"),
+    priority: 1,
+  });
+}
+
+async function notifyNewGrades(list) {
+  const settings = await UCA_getSettings();
+  if (!settings.notifyNewGrades) return;
+  const design = await currentDesign();
+  const fmt = (n) => String(n).replace(".", ",");
+  chrome.notifications.create("uca_grade|" + Date.now(), {
+    type: "basic",
+    iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
+    title: list.length === 1 ? `Nouvelle note : ${fmt(list[0].note)}` : `${list.length} nouvelles notes`,
+    message: list.slice(0, 4).map((g) => `${g.label} : ${fmt(g.note)}`).join("\n"),
+    priority: 1,
+  });
+}

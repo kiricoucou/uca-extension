@@ -12,6 +12,8 @@ let notes = {};
 let absences = null;
 let releveNotes = null;
 let notesSeen = {};
+let edtChanges = new Map(); // eventKey -> changement (ajouté / déplacé / salle) ; annulés : fantômes
+let cancelledGhosts = [];
 let settings = Object.assign({}, UCA_SETTINGS_DEFAULTS);
 let currentView = "week";
 let autoViewApplied = false;
@@ -47,9 +49,27 @@ function toast(msg, type) {
   setTimeout(() => { el.style.transition = "opacity .3s"; el.style.opacity = "0"; setTimeout(() => el.remove(), 300); }, 4200);
 }
 
+function setEdtChanges(list) {
+  edtChanges = new Map(); cancelledGhosts = [];
+  (list || []).forEach(c => {
+    if (c.type === "cancelled") cancelledGhosts.push({ ...c.ev, cancelled: true, color: D.eventColor(eventColorKey(c.ev.title)) });
+    else edtChanges.set(c.key, c);
+  });
+}
 function eventsOnDate(d) {
   const key = dateKey(d);
-  return events.filter(c => c.date === key).sort((a, b) => (a.startH * 60 + a.startM) - (b.startH * 60 + b.startM));
+  return events.concat(cancelledGhosts).filter(c => c.date === key).sort((a, b) => (a.startH * 60 + a.startM) - (b.startH * 60 + b.startM));
+}
+function changeOf(ev) { return ev.cancelled ? { type: "cancelled" } : edtChanges.get(eventKey(ev)); }
+function changeBadgeHtml(ev) { const c = changeOf(ev); return c ? D.changeBadge(c.type) : ""; }
+function changeDetailHtml(ev) {
+  const c = changeOf(ev);
+  if (!c) return "";
+  const b = c.before || {};
+  const detail = c.type === "room" ? `ancienne salle : ${b.room || "—"}`
+    : c.type === "moved" ? `avant : ${pad(b.startH)}:${pad(b.startM)} – ${pad(b.endH)}:${pad(b.endM)}`
+    : c.type === "cancelled" ? "ce cours n'apparaît plus sur Odin" : "ajouté depuis la synchro précédente";
+  return `<p>${D.changeBadge(c.type)} ${escapeHtml(detail)}</p>`;
 }
 function getFiveDayDays() {
   const start = startOfWeek(refDate);
@@ -96,6 +116,7 @@ function openDetail(ev) {
   const noteVal = notes[pendingEventKey] || "";
   $("detailTitle").innerHTML = D.icon("book", "title") + escapeHtml(ev.title);
   $("detailBody").innerHTML = `
+    ${changeDetailHtml(ev)}
     <p>${D.icon("clock")}<strong>Horaire :</strong> ${pad(ev.startH)}:${pad(ev.startM)} – ${pad(ev.endH)}:${pad(ev.endM)}</p>
     <p>${D.icon("calendar")}<strong>Date :</strong> ${ev.day}/${pad(ev.month + 1)}/${ev.year}</p>
     ${ev.teacher ? `<p>${D.icon("user")}<strong>Enseignant :</strong> ${escapeHtml(ev.teacher)}</p>` : ""}
@@ -185,7 +206,7 @@ function fitCard(card) {
   };
   if (!overflows()) return;
   const time = card.querySelector(".ev-time"), title = card.querySelector(".ev-title");
-  if (time && title) { title.textContent = time.textContent + " · " + title.textContent; time.remove(); }
+  if (time && title) { title.insertBefore(document.createTextNode(time.textContent + " · "), title.firstChild); time.remove(); }
   let s = parseFloat(card.style.getPropertyValue("--s")) || 1;
   while (overflows() && s > 0.66) { s = Math.round((s - 0.04) * 100) / 100; card.style.setProperty("--s", s); }
 }
@@ -238,7 +259,7 @@ function renderTimeGrid(containerId, days) {
       const height = (durMin / 60) * pxPerHour;
       const mobile = isMobileUI();
       const scale = D.grid.fontScale && !mobile ? Math.max(0.9, Math.min(1.8, height / MIN_CARD_HEIGHT)) : 1;
-      const card = document.createElement("div"); card.className = "event-card" + (height < 26 ? " tiny" : "");
+      const card = document.createElement("div"); card.className = "event-card" + (height < 26 ? " tiny" : "") + (ev.cancelled ? " ev-cancelled" : changeOf(ev) ? " ev-changed" : "");
       if (sameDay(d, today)) { const nm = new Date().getHours() * 60 + new Date().getMinutes(), sm = ev.startH * 60 + ev.startM, em = ev.endH * 60 + ev.endM; if (nm >= em) card.classList.add("past"); else if (nm >= sm) card.classList.add("current"); } else if (d < today) card.classList.add("past");
       card.style.top = top + "px"; card.style.height = height + "px"; card.style.setProperty("--s", scale);
       if (cols > 1 && D.grid.overlap === "cascade") { const step = Math.min(28, 60 / cols); card.classList.add("cascade"); card.style.left = `calc(${colIdx * step}% + 2px)`; card.style.width = `calc(${100 - colIdx * step}% - 4px)`; card.style.zIndex = String(2 + colIdx); }
@@ -248,7 +269,7 @@ function renderTimeGrid(containerId, days) {
       if (mobile) {
         card.classList.add("m");
         card.innerHTML = `${badge}<div class="ev-title" title="${escapeHtml(ev.title)}">${escapeHtml(shortTitle(ev.title))}</div>${ev.room ? `<div class="ev-sub">${escapeHtml(ev.room)}</div>` : ""}`;
-      } else card.innerHTML = `${badge}<div class="ev-time">${pad(ev.startH)}:${pad(ev.startM)}–${pad(ev.endH)}:${pad(ev.endM)}</div><div class="ev-title" title="${escapeHtml(ev.title)}">${escapeHtml(ev.title)}</div>${metaHtml(ev, "div")}`;
+      } else card.innerHTML = `${badge}<div class="ev-time">${pad(ev.startH)}:${pad(ev.startM)}–${pad(ev.endH)}:${pad(ev.endM)}</div><div class="ev-title" title="${escapeHtml(ev.title)}">${changeBadgeHtml(ev)}${escapeHtml(ev.title)}</div>${metaHtml(ev, "div")}`;
       card.addEventListener("click", (e) => { e.stopPropagation(); openDetail(ev); });
       col.appendChild(card);
     });
@@ -325,10 +346,10 @@ function renderMobileDay() {
       if (sm - prevEnd >= 30) { const gap = document.createElement("div"); gap.className = "m-gap"; gap.textContent = "Pause · " + fmtGap(sm - prevEnd); list.appendChild(gap); }
     }
     const state = (isToday && nowMin >= em) || refDate < today ? "past" : (isToday && nowMin >= sm ? "current" : "");
-    const card = document.createElement("div"); card.className = "m-card" + (state ? " " + state : "");
+    const card = document.createElement("div"); card.className = "m-card" + (state ? " " + state : "") + (ev.cancelled ? " ev-cancelled" : changeOf(ev) ? " ev-changed" : "");
     card.style.setProperty("--evc", ev.color);
     card.innerHTML = `<div class="m-time"><b>${pad(ev.startH)}:${pad(ev.startM)}</b><span>${pad(ev.endH)}:${pad(ev.endM)}</span></div>
-      <div class="m-body">${state === "current" ? `<span class="m-badge">${escapeHtml(T("current"))}</span>` : ""}<div class="m-title">${escapeHtml(ev.title)}</div>
+      <div class="m-body">${state === "current" ? `<span class="m-badge">${escapeHtml(T("current"))}</span>` : ""}<div class="m-title">${changeBadgeHtml(ev)}${escapeHtml(ev.title)}</div>
       ${ev.teacher ? `<div class="m-meta">${D.icon("user")}<span>${escapeHtml(ev.teacher)}</span></div>` : ""}
       ${ev.room ? `<div class="m-meta">${D.icon("pin")}<span>${escapeHtml(ev.room)}</span></div>` : ""}</div>
       ${notes[eventKey(ev)] ? D.noteBadge("day") : ""}`;
@@ -358,7 +379,7 @@ function renderDayList() {
     evs.forEach(ev => {
       const card = document.createElement("div"); card.className = "day-card"; card.style.position = "relative";
       const badge = notes[eventKey(ev)] ? D.noteBadge("day") : "";
-      card.innerHTML = `<div class="stripe" style="background:${ev.color}"></div><div class="content">${badge}<div class="time">${pad(ev.startH)}:${pad(ev.startM)} <small>${escapeHtml(T("timeSep"))} ${pad(ev.endH)}:${pad(ev.endM)}</small></div><div class="title">${escapeHtml(ev.title)}</div><div class="meta">${metaHtml(ev, "span")}</div></div>`;
+      card.innerHTML = `<div class="stripe" style="background:${ev.color}"></div><div class="content">${badge}<div class="time">${pad(ev.startH)}:${pad(ev.startM)} <small>${escapeHtml(T("timeSep"))} ${pad(ev.endH)}:${pad(ev.endM)}</small></div><div class="title">${changeBadgeHtml(ev)}${escapeHtml(ev.title)}</div><div class="meta">${metaHtml(ev, "span")}</div></div>`;
       card.addEventListener("click", () => openDetail(ev));
       list.appendChild(card);
     });
@@ -429,13 +450,14 @@ function renderSyncInfo(iso) {
   $("syncInfo").textContent = iso ? "Dernière synchro : " + new Date(iso).toLocaleString("fr-FR") : "Jamais synchronisé";
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes"], (data) => {
     settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, data.uca_settings);
     events = (data.uca_events || []).map(ev => ({ ...ev, color: D.eventColor(eventColorKey(ev.title)) }));
     notes = data.uca_notes || {};
     absences = data.uca_absences || null;
     releveNotes = data.uca_releve_notes || null;
     notesSeen = data.uca_notes_seen || {};
+    setEdtChanges(data.uca_edt_changes);
     if (!autoViewApplied) {
       autoViewApplied = true;
       if (settings.startView !== "auto" && availableViews().includes(settings.startView)) currentView = settings.startView;
@@ -700,7 +722,9 @@ UCA_CORE.initUpdate();
 UCA_CORE.initDesignSwitch(true);
 UCA_CORE.initSettings();
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "local" && changes.uca_settings) { settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, changes.uca_settings.newValue); render(); }
+  if (area !== "local") return;
+  if (changes.uca_settings) { settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, changes.uca_settings.newValue); render(); }
+  if (changes.uca_edt_changes) { setEdtChanges(changes.uca_edt_changes.newValue); render(); }
 });
 loadFromStorage();
 })();

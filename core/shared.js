@@ -29,6 +29,7 @@ const DEFAULT_TEXT = {
   current: "En cours",
 };
 
+const CHANGE_LABELS = { added: "Nouveau", moved: "Déplacé", room: "Salle changée", cancelled: "Annulé" };
 const DEFAULT_PALETTE = ["#1967d2", "#0b8043", "#8e24aa", "#c5221f", "#b06000", "#3f51b5", "#00796b", "#ad1457", "#5f6368", "#795548"];
 function hashString(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return h; }
 
@@ -39,6 +40,8 @@ const DEFAULTS = {
   eventColor: (key) => DEFAULT_PALETTE[hashString(key) % DEFAULT_PALETTE.length],
   // Indicateur "note personnelle" sur un cours. context : "grid" | "day".
   noteBadge: () => "",
+  // Badge d'un cours modifié depuis la dernière synchro. type : added | moved | room | cancelled.
+  changeBadge: (type) => `<span class="chg-badge chg-${type}">${CHANGE_LABELS[type] || ""}</span>`,
   // Illustration des états vides. kind : "day" | "notes" | "popup".
   emptyHtml: () => "",
   // overlap : "side" (cours simultanés côte à côte) | "cascade" (décalés en escalier).
@@ -55,6 +58,7 @@ window.UCA_defineDesign = function (spec) {
   D.text = Object.assign({}, DEFAULT_TEXT, spec.text);
   D.t = (key) => (D.text[key] !== undefined ? D.text[key] : "");
   D.hashString = hashString;
+  D.changeLabels = CHANGE_LABELS;
   window.UCA_DESIGN = D;
 };
 

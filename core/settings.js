@@ -10,6 +10,8 @@ const DEFAULTS = {
   reminderMinutes: 15, // notification N minutes avant chaque cours
   autoSyncHours: 3,    // 0 = désactivée ; synchro silencieuse uniquement (jamais de fenêtre CAS)
   badgeMode: "next",   // next (prochain cours du jour) | remaining (cours restants aujourd'hui) | off
+  notifyEdtChanges: true, // notification quand un cours est ajouté / annulé / déplacé / change de salle
+  notifyNewGrades: true,  // notification quand une nouvelle note apparaît
 };
 
 function getSettings() {

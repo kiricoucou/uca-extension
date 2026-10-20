@@ -20,6 +20,10 @@ const SECTIONS = [
       hint: "« 25m » quand un cours commence dans moins d'une heure, sinon l'heure (« 14h »).",
       options: [["next", "Prochain cours du jour"], ["remaining", "Cours restants aujourd'hui"], ["off", "Aucune"]] },
   ] },
+  { title: "Alertes", fields: [
+    { key: "notifyEdtChanges", type: "switch", label: "Changement d'emploi du temps", hint: "Cours ajouté, annulé, déplacé ou changement de salle, détecté à chaque synchro. Les cours concernés sont aussi marqués dans l'agenda pendant 7 jours." },
+    { key: "notifyNewGrades", type: "switch", label: "Nouvelle note", hint: "Notification quand une note apparaît (ou change) dans ton relevé." },
+  ] },
 ];
 
 function $(id) { return document.getElementById(id); }

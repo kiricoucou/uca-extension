@@ -49,10 +49,14 @@
 </main>
 <script src="../core/env.js"></script>
 <script>
-(function () {
+(async function () {
   const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-  if (standalone) { location.replace("index.html"); return; }
+  // "standalone" peut ne pas être détecté dans certaines fenêtres "application" (raccourci créé
+  // autrement qu'avec le bouton ci-dessous) : un design déjà choisi sur cet appareil veut dire
+  // qu'il a déjà servi, donc jamais revoir ce guide — sinon l'app resterait bloquée dessus.
+  const { uca_design } = await new Promise((r) => chrome.storage.local.get("uca_design", r));
+  if (standalone || uca_design) { localStorage.setItem("uca_install_seen", "1"); location.replace("index.html"); return; }
   document.getElementById("iosCard").classList.toggle("hidden", !ios);
   document.getElementById("androidCard").classList.toggle("hidden", ios);
   let deferred = null;

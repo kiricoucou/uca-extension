@@ -34,6 +34,25 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   if (e.request.method !== "GET") return;
+  // Pages (navigation) : réseau d'abord. Ces fichiers contiennent la logique de redirection
+  // elle-même (ex. install.html → index.html si déjà installé) ; en cache-first elle peut rester
+  // périmée indéfiniment (jamais revisitée pour se rafraîchir en arrière-plan). Hors ligne : repli
+  // sur le cache. Fichiers statiques (JS/CSS/images) : cache-first + revalidation, comme avant.
+  if (e.request.mode === "navigate") {
+    e.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      try {
+        const res = await fetch(e.request);
+        if (res.ok) cache.put(e.request, res.clone());
+        return res;
+      } catch (err) {
+        const cached = await cache.match(e.request, { ignoreSearch: true });
+        if (cached) return cached;
+        throw err;
+      }
+    })());
+    return;
+  }
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(e.request, { ignoreSearch: true });

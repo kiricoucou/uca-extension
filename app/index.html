@@ -18,8 +18,11 @@
    puis agenda du design choisi (les paramètres de raccourci sont transmis). */
 (async function () {
   const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
-  if (!standalone && !localStorage.getItem("uca_install_seen")) { location.replace("install.html"); return; }
   const [{ uca_design }, designs] = await Promise.all([chrome.storage.local.get("uca_design"), fetch(chrome.runtime.getURL("designs/designs.json")).then((r) => r.json())]);
+  // Design déjà choisi sur cet appareil : il a déjà servi, jamais revoir le guide d'installation
+  // (y compris dans une fenêtre "application" classique où le mode standalone n'est pas détecté).
+  if (uca_design) localStorage.setItem("uca_install_seen", "1");
+  if (!standalone && !uca_design && !localStorage.getItem("uca_install_seen")) { location.replace("install.html"); return; }
   const design = designs.find((d) => d.id === uca_design);
   if (!design) { location.replace(chrome.runtime.getURL("choose.html?tab=1")); return; }
   location.replace(chrome.runtime.getURL(`${design.folder}/agenda.html`) + location.search.replace(/[?&]source=pwa/, "").replace(/^&/, "?"));

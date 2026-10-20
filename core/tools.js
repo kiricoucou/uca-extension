@@ -161,7 +161,7 @@ function buildExportPanel(panel, opts) {
         const original = link.textContent;
         link.textContent = "Le lien est bien copié"; link.disabled = true;
         setTimeout(() => { link.textContent = original; link.disabled = false; }, 2500);
-        linkInfo.textContent = "Colle-le dans un SMS, un mail, ou ouvre-le directement sur ton téléphone.";
+        linkInfo.textContent = "Colle-le dans un SMS, un mail, ou ouvre-le directement sur ton téléphone. Jamais gardé par GitHub ni aucun serveur, expire au bout de 2 jours.";
       } catch {
         let box = panel.querySelector(".xp-link-fallback");
         if (!box) { box = el("input", "xp-link-fallback"); box.readOnly = true; panel.insertBefore(box, linkInfo); }

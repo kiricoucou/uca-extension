@@ -21,6 +21,16 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A.5.5 0 0 1 6 20z"/><path d="M14 3.5V8h4M12 11v6M9.5 14.5 12 17l2.5-2.5"/></svg>Importer un fichier .ucasync
     </label>
     <input type="file" id="fileInput" accept=".ucasync,application/json" class="hidden">
+    <button class="btn" id="pasteLinkBtn" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4.2 4.2 0 0 0 6 0l3-3a4.2 4.2 0 0 0-6-6l-1 1"/><path d="M14 10a4.2 4.2 0 0 0-6 0l-3 3a4.2 4.2 0 0 0 6 6l1-1"/></svg>Coller un lien de partage
+    </button>
+  </section>
+
+  <section class="card hidden" id="linkCard">
+    <p class="muted">Colle le lien reçu (SMS, mail...) — valable 2 jours, jamais gardé par GitHub ni aucun serveur.</p>
+    <input type="text" id="linkInput" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://kiricoucou.github.io/uca-extension/#d=…">
+    <button class="btn primary" id="linkGoBtn" type="button">Importer</button>
+    <button class="btn" id="linkCancelBtn" type="button">Annuler</button>
   </section>
 
   <section class="card hidden" id="scanCard">

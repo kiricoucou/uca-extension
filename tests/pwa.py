@@ -138,6 +138,29 @@ def link_roundtrip(browser, base, errors):
     check("lien : fragment effacé de l'URL après lecture", "#d=" not in page2.url, page2.url)
     page2.close()
 
+    # Lien vieux de plus de 2 jours : refusé (voir core/transfer.js LINK_MAX_AGE_MS).
+    page3 = browser.new_page()
+    page3.goto(base + "app/import.html"); page3.wait_for_timeout(300)
+    old = page3.evaluate("""async (data) => {
+      const snap = { format: 'uca-sync', version: 1, exportedAt: new Date(Date.now() - 3 * 86400000).toISOString(), data };
+      const link = await UCA_TRANSFER.buildShareLink(snap);
+      try { await UCA_TRANSFER.fromLinkHash('#' + link.split('#')[1]); return { rejected: false }; }
+      catch (e) { return { rejected: true, message: e.message }; }
+    }""", data)
+    check("lien de plus de 2 jours : refusé", old.get("rejected") is True and "expir" in old.get("message", ""), str(old))
+    page3.close()
+
+    # Lien collé à la main sur app/import.html (bouton "Coller un lien de partage").
+    page4 = browser.new_page()
+    page4.on("pageerror", lambda e: errors.append(f"[lien-colle] {e}"))
+    page4.goto(base + "app/import.html"); page4.wait_for_timeout(400)
+    page4.locator("#pasteLinkBtn").click(); page4.wait_for_timeout(200)
+    page4.locator("#linkInput").fill("un message avant " + res["link"] + " et après")
+    page4.locator("#linkGoBtn").click(); page4.wait_for_timeout(1200)
+    stored4 = page4.evaluate("() => new Promise(r => chrome.storage.local.get('uca_events', d => r((d.uca_events || []).length)))")
+    check("lien collé à la main (entouré de texte) : importé", stored4 == len(data["uca_events"]), str(stored4))
+    page4.close()
+
 
 def root_router(browser, base, errors):
     """La racine (index.html) est la seule adresse publique : sans lien partageable, elle renvoie
@@ -147,6 +170,24 @@ def root_router(browser, base, errors):
     page.on("pageerror", lambda e: errors.append(f"[racine] {e}"))
     page.goto(base); page.wait_for_timeout(1000)
     check("racine, visite simple : renvoie vers le guide d'installation", "install.html" in page.url, page.url)
+    ctx.close()
+
+
+def no_install_loop_once_configured(browser, base, errors):
+    """Un appareil qui a déjà un design choisi ne doit plus jamais revoir le guide d'installation,
+    même si "display-mode: standalone" n'est pas détecté (ex. fenêtre "application" classique) :
+    sinon l'app reste bloquée sur ce guide au lieu d'ouvrir l'agenda."""
+    ctx = browser.new_context()
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[boucle-install] {e}"))
+    page.goto(base + "app/import.html"); page.wait_for_timeout(300)
+    data = seed(); data["uca_design"] = "anime"
+    page.evaluate("(d) => new Promise(r => chrome.storage.local.set(d, r))", data)
+    # Pas de "uca_install_seen" dans localStorage, pas de mode standalone : avant le correctif,
+    # index.html renvoyait quand même vers install.html.
+    page.goto(base + "app/index.html"); page.wait_for_timeout(1200)
+    check("design déjà choisi : jamais renvoyé vers le guide d'installation", "install.html" not in page.url, page.url)
+    check("design déjà choisi : agenda ouvert directement", "agenda.html" in page.url, page.url)
     ctx.close()
 
 
@@ -217,6 +258,7 @@ def main():
             qr_roundtrip(chromium, base, errors)
             link_roundtrip(chromium, base, errors)
             root_router(chromium, base, errors)
+            no_install_loop_once_configured(chromium, base, errors)
             update_detection(chromium, base, errors)
             chromium.close()
             try:

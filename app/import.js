@@ -88,14 +88,38 @@ if (new URLSearchParams(location.search).has("shared") && "caches" in window) {
   });
 }
 
-/* Lien partagé (#d=…, voir core/transfer.js buildShareLink) : import direct, sans caméra ni fichier.
-   Efface le fragment aussitôt lu pour ne pas laisser les données dans l'historique du navigateur. */
-if (location.hash.startsWith("#d=")) {
-  const h = location.hash;
-  history.replaceState(null, "", location.pathname + location.search);
+/* Lien partagé (#d=…, voir core/transfer.js buildShareLink) : import direct, sans caméra ni fichier. */
+function importFromLinkHash(h) {
   UCA_TRANSFER.fromLinkHash(h).then((snap) => finish(UCA_TRANSFER.validate(snap)))
     .catch((e) => status(e instanceof SyntaxError ? "Lien illisible ou incomplet." : e.message, "err"));
 }
+// Ouvert directement avec le fragment dans l'URL : efface-le aussitôt lu, pour ne pas laisser
+// les données dans l'historique du navigateur.
+if (location.hash.startsWith("#d=")) {
+  const h = location.hash;
+  history.replaceState(null, "", location.pathname + location.search);
+  importFromLinkHash(h);
+}
+
+/* Lien collé à la main (bouton "Coller un lien de partage") : accepte le lien complet ou juste
+   le fragment, extrait la partie #d=… où qu'elle soit dans le texte collé. */
+$("pasteLinkBtn").addEventListener("click", () => {
+  $("chooseCard").classList.add("hidden");
+  $("linkCard").classList.remove("hidden");
+  $("linkInput").value = "";
+  $("linkInput").focus();
+});
+$("linkCancelBtn").addEventListener("click", () => {
+  $("linkCard").classList.add("hidden");
+  $("chooseCard").classList.remove("hidden");
+});
+$("linkGoBtn").addEventListener("click", () => {
+  const raw = $("linkInput").value.trim();
+  const m = /#d=\S+/.exec(raw);
+  if (!m) { status("Ce texte ne contient pas de lien de partage valide.", "err"); return; }
+  $("linkCard").classList.add("hidden");
+  importFromLinkHash(m[0]);
+});
 
 $("scanBtn").addEventListener("click", startScan);
 $("stopBtn").addEventListener("click", stopScan);

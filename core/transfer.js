@@ -37,15 +37,25 @@ async function encodeFrames(snap) {
   return Array.from({ length: n }, (_, i) => `${PREFIX}|${sid}|${i + 1}|${n}|${packed.slice(i * CHUNK, (i + 1) * CHUNK)}`);
 }
 
-/* Même instantané que le QR, mais en un seul lien (fragment #d=…, jamais envoyé au serveur qui
-   héberge la page) : à coller dans n'importe quelle appli de messagerie, pas besoin de caméra. */
+// Durée de vie d'un lien partageable : au-delà, l'app refuse de l'importer (voir fromLinkHash).
+// Pas une limite technique — le lien reste lisible indéfiniment — mais un vieux lien qui traîne
+// dans un SMS ou un mail ne doit pas rester utilisable indéfiniment pour autant.
+const LINK_MAX_AGE_MS = 2 * 24 * 60 * 60 * 1000;
+
+/* Même instantané que le QR, mais en un seul lien (fragment #d=…, jamais envoyé ni gardé par
+   GitHub Pages ni aucun serveur : le fragment après # n'est jamais transmis dans une requête HTTP,
+   le navigateur le garde pour lui) : à coller dans n'importe quelle appli de messagerie, pas besoin
+   de caméra. Valable 2 jours (LINK_MAX_AGE_MS) : refais un transfert passé ce délai. */
 async function buildShareLink(snap) {
   return `${APP_URL}#d=${encodeURIComponent(await pack(snap))}`;
 }
 
 async function fromLinkHash(h) {
   if (!h || !h.startsWith("#d=")) return null;
-  return JSON.parse(new TextDecoder().decode(await pipe(fromB64(decodeURIComponent(h.slice(3))), new DecompressionStream("deflate"))));
+  const snap = JSON.parse(new TextDecoder().decode(await pipe(fromB64(decodeURIComponent(h.slice(3))), new DecompressionStream("deflate"))));
+  const age = snap && snap.exportedAt ? Date.now() - new Date(snap.exportedAt).getTime() : 0;
+  if (age > LINK_MAX_AGE_MS) throw new Error("Ce lien a plus de 2 jours, il a expiré. Refais un transfert depuis l'extension (Exporter → Copier un lien).");
+  return snap;
 }
 
 /* Accumule les trames lues ; repart de zéro si une autre session apparaît. */
@@ -110,5 +120,5 @@ function drawQr(canvas, text, sizePx) {
   for (let r = 0; r < count; r++) for (let c = 0; c < count; c++) if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
 }
 
-root.UCA_TRANSFER = { APP_URL, DOWNLOAD_URL, KEYS, snapshot, encodeFrames, buildShareLink, fromLinkHash, collector, validate, applyImport, exportFile, drawQr };
+root.UCA_TRANSFER = { APP_URL, DOWNLOAD_URL, LINK_MAX_AGE_MS, KEYS, snapshot, encodeFrames, buildShareLink, fromLinkHash, collector, validate, applyImport, exportFile, drawQr };
 })(self);

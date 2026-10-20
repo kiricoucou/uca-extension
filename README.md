@@ -4,6 +4,20 @@ Extension Chrome/Edge (Manifest V3) qui récupère ton emploi du temps, tes abse
 
 Non officielle, non affiliée à l'Université Clermont Auvergne. Aucune donnée n'est envoyée à un serveur tiers : tout reste stocké localement dans ton navigateur (`chrome.storage.local`).
 
+Faite pour rendre l'emploi du temps plus simple à lire au quotidien, avec un affichage qui s'adapte à chaque étudiant : trois designs au choix, vue jour/semaine/mois, filtres, rappels, et tout ce qui est listé ci-dessous.
+
+## Captures d'écran
+
+| Animé | Professionnel | Carnet |
+|---|---|---|
+| ![Design animé](designs/anime/previews/1-semaine.jpg) | ![Design professionnel](designs/professionnel/previews/1-semaine.jpg) | ![Design carnet](designs/carnet/previews/1-semaine.jpg) |
+
+| Relevé de notes | Vue mobile | Popup |
+|---|---|---|
+| ![Relevé de notes](designs/anime/previews/2-notes.jpg) | ![Vue mobile](designs/carnet/previews/4-mobile.jpg) | ![Popup](designs/professionnel/previews/3-popup.jpg) |
+
+D'autres captures de chaque design (vue mois, détail d'un cours...) sont dans `designs/<id>/previews/` et défilent dans le sélecteur de design de l'extension.
+
 ## Fonctionnalités
 
 - **Synchronisation** : connexion CAS (fenêtre dédiée, 15 min pour valider la double authentification) puis reconnexion silencieuse tant que la session Odin reste valide. Détection automatique de session expirée.
@@ -36,16 +50,28 @@ Une app installable (PWA) est servie par GitHub Pages : <https://kiricoucou.gith
 - Les trois designs, les filtres, les notes, les absences et l'export `.ics` fonctionnent dans l'app. Les rappels passent par l'export `.ics` (avec alarmes) importé dans le calendrier du téléphone.
 - Refais un transfert après chaque synchro sur l'ordinateur pour mettre l'app à jour.
 
-## Installation (mode développeur)
+## Tutoriel d'installation
 
-1. Télécharge ou clone ce dépôt.
-2. Ouvre `chrome://extensions`.
-3. Active le **Mode développeur** (coin supérieur droit).
-4. Clique **Charger l'extension non empaquetée**, sélectionne le dossier du dépôt.
-5. Choisis ton design (page ouverte automatiquement, ou au premier clic sur l'icône).
-6. Clique l'icône de l'extension → **Se connecter**, connecte-toi sur le CAS UCA quand la fenêtre s'ouvre.
+Pas de Chrome Web Store (extension non publiée) : l'installation se fait « en mode développeur », en quelques clics.
 
-Firefox : utiliser `manifest.firefox.json` (renommer en `manifest.json` ou charger via `about:debugging` → *Ce Firefox* → *Charger un module complémentaire temporaire*).
+### Chrome / Edge
+
+1. **Télécharge le dépôt** : bouton vert **Code** sur cette page → **Download ZIP**, puis décompresse le dossier obtenu (ou clone-le avec `git clone` si tu connais git).
+2. Ouvre un nouvel onglet et tape `chrome://extensions` dans la barre d'adresse (sur Edge : `edge://extensions`).
+3. En haut à droite, active **Mode développeur**.
+4. Clique **Charger l'extension non empaquetée**, puis sélectionne le dossier décompressé (celui qui contient `manifest.json`).
+5. L'icône de l'extension apparaît dans la barre d'outils (épingle-la pour la garder visible). Un onglet s'ouvre automatiquement pour **choisir un design** (animé, professionnel ou carnet) — rien n'empêche d'en changer plus tard avec le bouton **Design**.
+6. Clique l'icône de l'extension → **Se connecter**. Une fenêtre CAS UCA s'ouvre : connecte-toi normalement (identifiant, mot de passe, double authentification). L'emploi du temps se charge automatiquement une fois connecté.
+
+### Firefox
+
+Même principe, avec `manifest.firefox.json` : renomme-le en `manifest.json` (en remplaçant celui déjà présent) **avant** de charger le dossier, puis `about:debugging` → **Ce Firefox** → **Charger un module complémentaire temporaire** → sélectionne n'importe quel fichier du dossier (`manifest.json` par exemple).
+
+Avec Firefox, le module est retiré à chaque fermeture du navigateur (limite des extensions temporaires) : il faut refaire le chargement à chaque redémarrage, ou passer par Firefox Android une fois l'extension publiée sur addons.mozilla.org (pas encore fait).
+
+### Sur ton téléphone
+
+Pas besoin d'installer l'extension : voir la section [App téléphone](#app-téléphone-android-et-iphone) ci-dessus, qui fonctionne comme une vraie app une fois les données transférées depuis l'extension.
 
 ## Structure
 
@@ -95,7 +121,11 @@ Voir `confidentialite.html` dans le dossier de chaque design : l'extension utili
 
 ## Licence
 
-Projet personnel, non affilié à l'UCA. Utilise à tes risques, l'UCA peut modifier Odin à tout moment et casser le scraping.
+Projet personnel, non affilié à l'UCA, fait pour rendre l'emploi du temps plus facile à lire au quotidien et pour s'adapter à chaque étudiant (choix du design, filtres, rappels...).
+
+- **Partage** : je suis seul autorisé à partager, publier ou redistribuer ce code (dépôt, copie, build, lien de téléchargement...). Demande-moi avant de le publier ailleurs.
+- **Modifications** : tu peux modifier ton exemplaire pour ton usage personnel, mais à tes propres risques — si une modification casse l'extension, affiche des données fausses, ou pose un problème quelconque, c'est de ta responsabilité, pas de la mienne.
+- **Aucune garantie** : le projet est fourni tel quel, sans garantie de fonctionnement, de disponibilité ni d'exactitude des données affichées. L'UCA peut modifier Odin à tout moment et casser la récupération des données.
 
 ## Polices du design carnet
 

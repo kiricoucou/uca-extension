@@ -37,8 +37,9 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
 .switch input:checked + span::after{transform:translateX(18px);}
 .saved{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ok);color:#fff;padding:8px 16px;border-radius:999px;font-weight:600;opacity:0;transition:opacity .2s;pointer-events:none;}
 .saved.show{opacity:1;}
-.foot{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:8px;}
-.foot button{font:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:18px;height:36px;padding:0 16px;cursor:pointer;}
+.foot{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;}
+.foot-right{display:flex;gap:12px;align-items:center;}
+.foot button,.foot a{font:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:18px;height:36px;padding:0 16px;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none;box-sizing:border-box;}
 .foot button.primary{background:var(--focus);color:var(--on-focus);border-color:transparent;font-weight:600;}
 </style>
 </head>
@@ -49,7 +50,10 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
   <div id="sections"></div>
   <div class="foot">
     <button type="button" id="resetBtn">Rétablir les valeurs par défaut</button>
-    <button type="button" class="primary" id="agendaBtn">Ouvrir l'agenda</button>
+    <div class="foot-right">
+      <a id="downloadAppBtn" href="https://kiricoucou.github.io/uca-extension/app/install.html" target="_blank" rel="noopener">Télécharger l'app</a>
+      <button type="button" class="primary" id="agendaBtn">Ouvrir l'agenda</button>
+    </div>
   </div>
 </main>
 <div class="saved" id="saved" role="status">Enregistré</div>

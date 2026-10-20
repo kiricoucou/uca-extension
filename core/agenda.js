@@ -748,6 +748,10 @@ let phoneTimer = 0;
 function closePhoneModal() { clearInterval(phoneTimer); const o = $("phoneOverlay"); if (o) o.remove(); }
 async function openPhoneModal() {
   closePhoneModal();
+  // Ferme les panneaux Notes/Absences/Filtres/Exporter encore ouverts : sinon la modale
+  // téléphone se superpose au panneau qui l'a ouverte (chevauchement visuel).
+  Object.keys(TOOL_PANELS).forEach((id) => { if ($(id)) $(id).classList.remove("open"); });
+  if ($("ucaSheetBackdrop")) $("ucaSheetBackdrop").hidden = true;
   const T_ = UCA_TRANSFER;
   const overlay = document.createElement("div"); overlay.className = "modal-overlay open"; overlay.id = "phoneOverlay";
   overlay.innerHTML = `<div class="modal phone-modal">

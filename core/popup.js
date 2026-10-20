@@ -46,7 +46,7 @@ function renderEvents(events) {
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const todayKey = today.getFullYear() + "-" + pad(today.getMonth() + 1) + "-" + pad(today.getDate());
-  const upcoming = events.filter(e => e.date >= todayKey).sort((a, b) => a.date.localeCompare(b.date) || (a.startH * 60 + a.startM) - (b.startH * 60 + b.startM));
+  const upcoming = events.filter(e => e.date >= todayKey && UCA_TOOLS.passes(e)).sort((a, b) => a.date.localeCompare(b.date) || (a.startH * 60 + a.startM) - (b.startH * 60 + b.startM));
   const groups = {};
   upcoming.slice(0, 40).forEach(e => { (groups[e.date] = groups[e.date] || []).push(e); });
   Object.keys(groups).sort().forEach(dk => {
@@ -157,5 +157,5 @@ chrome.runtime.onMessage.addListener((msg) => {
 UCA_CORE.initUpdate();
 UCA_CORE.initDesignSwitch(false);
 UCA_CORE.initSettings();
-loadFromStorage();
+UCA_TOOLS.load(loadFromStorage);
 })();

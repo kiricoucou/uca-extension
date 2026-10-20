@@ -58,7 +58,7 @@ function setEdtChanges(list) {
 }
 function eventsOnDate(d) {
   const key = dateKey(d);
-  return events.concat(cancelledGhosts).filter(c => c.date === key).sort((a, b) => (a.startH * 60 + a.startM) - (b.startH * 60 + b.startM));
+  return events.concat(cancelledGhosts).filter(c => c.date === key && UCA_TOOLS.passes(c)).sort((a, b) => (a.startH * 60 + a.startM) - (b.startH * 60 + b.startM));
 }
 function changeOf(ev) { return ev.cancelled ? { type: "cancelled" } : edtChanges.get(eventKey(ev)); }
 function changeBadgeHtml(ev) { const c = changeOf(ev); return c ? D.changeBadge(c.type) : ""; }
@@ -423,6 +423,8 @@ function buildMobileMenu() {
   m.appendChild(menuButton("mi", D.icon("link") + "Moodle", () => window.open(MOODLE_URL, "_blank", "noopener")));
   m.appendChild(menuButton("mi", D.icon("mail") + "Messagerie (Zimbra)", () => window.open(MAIL_URL, "_blank", "noopener")));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
+  if ($("filterPanel")) m.appendChild(menuButton("mi", D.icon("filter") + "Filtres" + (UCA_TOOLS.activeCount() ? ` (${UCA_TOOLS.activeCount()})` : ""), () => openToolPanel("filterPanel", true)));
+  if ($("exportPanel")) m.appendChild(menuButton("mi", D.icon("export") + "Exporter (.ics)", () => openToolPanel("exportPanel", true)));
   m.appendChild(menuButton("mi", D.icon("settings") + "Paramètres", UCA_CORE.openSettings));
   m.appendChild(menuButton("mi", D.icon("design") + "Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
@@ -658,6 +660,60 @@ document.addEventListener("click", (e) => {
   if (panel.classList.contains("open") && !$("notesWrap").contains(e.target)) panel.classList.remove("open");
 });
 
+/* ============================= Filtres / export =============================
+   Panneau déroulant sur ordinateur ; sur téléphone, feuille en bas d'écran. */
+function displayedDays() {
+  const start = startOfWeek(refDate);
+  if (currentView === "month") { const n = new Date(refDate.getFullYear(), refDate.getMonth() + 1, 0).getDate(); return Array.from({ length: n }, (_, i) => new Date(refDate.getFullYear(), refDate.getMonth(), i + 1)); }
+  if (currentView === "5day") return getFiveDayDays();
+  if (currentView === "6day") return getSixDayDays();
+  if (currentView === "3day") return [0, 1, 2].map(i => addDays(refDate, i));
+  if (currentView === "day") return [new Date(refDate)];
+  return Array.from({ length: 7 }, (_, i) => addDays(start, i));
+}
+const TOOL_PANELS = {
+  filterPanel: { wrap: "filterWrap", build: (p) => UCA_TOOLS.buildFilterPanel(p, events) },
+  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes }) },
+};
+function openToolPanel(id, asSheet) {
+  const panel = $(id), conf = TOOL_PANELS[id];
+  if (!panel) return;
+  ["absencesPanel", "notesPanel", ...Object.keys(TOOL_PANELS)].forEach(o => { if (o !== id && $(o)) $(o).classList.remove("open"); });
+  if (asSheet) { document.body.appendChild(panel); panel.classList.add("as-sheet"); showSheetBackdrop(panel); }
+  else if (panel.parentNode !== $(conf.wrap)) { $(conf.wrap).appendChild(panel); panel.classList.remove("as-sheet"); }
+  if (!panel.classList.contains("open")) conf.build(panel);
+  if (asSheet) panel.classList.add("open"); else togglePanel(panel);
+}
+// Fond assombri derrière une feuille (téléphone) : un appui dessus ferme la feuille.
+function showSheetBackdrop(panel) {
+  let bd = $("ucaSheetBackdrop");
+  if (!bd) {
+    bd = document.createElement("div"); bd.id = "ucaSheetBackdrop";
+    bd.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:139;";
+    document.body.appendChild(bd);
+  }
+  bd.hidden = false;
+  bd.onclick = () => { panel.classList.remove("open"); bd.hidden = true; };
+}
+function renderFilterButton() {
+  if (!$("filterBtn")) return;
+  const n = UCA_TOOLS.activeCount();
+  $("filterBtn").innerHTML = D.icon("filter") + '<span class="btn-label">Filtres</span>' + (n ? ` <span class="filter-count">${n}</span>` : "");
+  $("filterBtn").classList.toggle("active", n > 0);
+}
+Object.keys(TOOL_PANELS).forEach(id => {
+  const btn = $(id.replace("Panel", "Btn"));
+  if (!btn) return;
+  btn.addEventListener("click", (e) => { e.stopPropagation(); openToolPanel(id, false); });
+  document.addEventListener("click", (e) => {
+    const p = $(id);
+    // Un clic sur un élément que le panneau vient de reconstruire n'est plus dans la page : ce n'est pas un clic dehors.
+    if (!document.contains(e.target)) return;
+    if (p.classList.contains("open") && !p.contains(e.target) && !$(TOOL_PANELS[id].wrap).contains(e.target) && !e.target.closest("#mobileMenu")) p.classList.remove("open");
+  });
+});
+UCA_TOOLS.onChange(() => { renderFilterButton(); render(); });
+
 /* Menu "plus" optionnel (#moreBtn / #morePanel) fourni par certains designs. */
 if ($("moreBtn")) {
   $("moreBtn").addEventListener("click", (e) => { e.stopPropagation(); togglePanel($("morePanel")); });
@@ -721,10 +777,11 @@ chrome.runtime.onMessage.addListener((msg) => {
 UCA_CORE.initUpdate();
 UCA_CORE.initDesignSwitch(true);
 UCA_CORE.initSettings();
+renderFilterButton();
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
   if (changes.uca_settings) { settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, changes.uca_settings.newValue); render(); }
   if (changes.uca_edt_changes) { setEdtChanges(changes.uca_edt_changes.newValue); render(); }
 });
-loadFromStorage();
+UCA_TOOLS.load(() => { renderFilterButton(); loadFromStorage(); });
 })();

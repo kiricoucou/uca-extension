@@ -37,11 +37,43 @@ JS_HEADER = """() => {
   const centers = keep.map(e => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; }).sort((a, b) => a - b);
   const rows = []; centers.forEach(c => { if (!rows.length || c - rows[rows.length - 1] > 14) rows.push(c); });
   const KEYS = ['viewTabs', 'prevBtn', 'periodLabel', 'nextBtn', 'todayBtn', 'zoomCtrl', 'absencesWrap', 'notesWrap',
-                'settingsBtn', 'designBtn', 'syncBtn'];
+                'filterWrap', 'exportWrap', 'settingsBtn', 'designBtn', 'syncBtn'];
   const order = keep.map(e => { const h = e.getAttribute('href') || ''; if (h) return h.includes('moodle') ? 'moodle' : h.includes('mail') ? 'mail' : h.includes('aide') ? 'aide' : h;
     return KEYS.includes(e.id) ? e.id : null; }).filter(Boolean);
   return { rows: rows.length, order: order.join(',') };
 }"""
+
+
+def tool_checks(ag, did):
+    """Filtres (recherche, type, matière) et export .ics, sur la vue Semaine."""
+    count = lambda: ag.evaluate("() => document.querySelectorAll('.view.active .event-card').length")
+    total = count()
+    ag.locator("#filterBtn").click(); ag.wait_for_timeout(300)
+    ag.locator("#filterPanel .fp-search").fill("Web"); ag.wait_for_timeout(300)
+    titles = ag.evaluate("() => [...new Set([...document.querySelectorAll('.view.active .event-card .ev-title')].map(t => t.textContent))]")
+    check(f"{did} : filtre par recherche", 0 < count() < total and all("Web" in t for t in titles), str(titles))
+    check(f"{did} : compteur de filtres actifs", ag.locator("#filterBtn .filter-count").inner_text() == "1")
+    ag.locator("#filterPanel .fp-search").fill(""); ag.wait_for_timeout(200)
+    ag.locator("#filterPanel .fp-chip", has_text="TP").click(); ag.wait_for_timeout(300)
+    tp = ag.evaluate("() => [...new Set([...document.querySelectorAll('.view.active .event-card .ev-title')].map(t => t.textContent))]")
+    check(f"{did} : filtre par type (TP)", tp and all("TP" in t for t in tp), str(tp))
+    shot(ag, f"{did}-filtres")
+    ag.locator("#filterPanel .fp-reset").click(); ag.wait_for_timeout(300)
+    check(f"{did} : « Tout afficher » rétablit tout", count() == total, f"{count()} / {total}")
+    ag.locator("#filterPanel .fp-item", has_text="R1.02").locator("input").uncheck(); ag.wait_for_timeout(300)
+    check(f"{did} : masquer une matière", count() < total and ag.evaluate("() => ![...document.querySelectorAll('.view.active .event-card')].some(c => c.textContent.includes('R1.02'))"))
+    ag.locator("#filterPanel .fp-reset").click(); ag.wait_for_timeout(200)
+    ag.mouse.click(700, 500); ag.wait_for_timeout(200)
+    ag.locator("#exportBtn").click(); ag.wait_for_timeout(300)
+    ag.locator("#exportPanel input[value=week]").check()
+    with ag.expect_download() as dl:
+        ag.locator("#exportPanel .xp-go").click()
+    ics = open(dl.value.path(), encoding="utf-8", newline="").read()
+    n = ics.count("BEGIN:VEVENT")
+    ok = ics.startswith("BEGIN:VCALENDAR") and "TZID:Europe/Paris" in ics and n == total and "TRIGGER:-PT15M" in ics and "\r\n" in ics
+    check(f"{did} : export .ics (semaine, fuseau, rappels)", ok, f"{n} événements / {total}")
+    shot(ag, f"{did}-export")
+    ag.mouse.click(700, 500); ag.wait_for_timeout(200)
 
 
 def background_checks(ctx, sw, data):
@@ -184,6 +216,7 @@ def main():
             check(f"{did} : détail des déclarations d'absence", decl == 2 and statuses == "Justifiée,En attente", f"{decl} {statuses}")
             shot(ag, f"{did}-absences")
             ag.locator("#absencesBtn").click()
+            tool_checks(ag, did)
             for w in (1100, 1400, 1920):
                 ag.set_viewport_size({"width": w, "height": 860}); ag.wait_for_timeout(300)
                 h = ag.evaluate(JS_HEADER)
@@ -204,6 +237,12 @@ def main():
             mob.set_viewport_size({"width": 390, "height": 844})
             mob.goto(f"{base}/{d['folder']}/agenda.html"); mob.bring_to_front(); mob.wait_for_timeout(800)
             check(f"{did} : téléphone → vue Jour en cartes", mob.locator(".m-day-view").count() == 1)
+            mob.locator("#menuBtn").click(); mob.wait_for_timeout(300)
+            mob.locator("#mobileMenu .mi", has_text="Filtres").click(); mob.wait_for_timeout(300)
+            check(f"{did} : téléphone → Filtres en feuille", mob.locator("#filterPanel.as-sheet.open").is_visible())
+            shot(mob, f"{did}-mobile-filtres")
+            mob.mouse.click(200, 100); mob.wait_for_timeout(300)
+            check(f"{did} : téléphone → feuille fermée par un appui dehors", not mob.locator("#filterPanel.open").count())
             shot(mob, f"{did}-mobile"); mob.close()
 
         check("même ordre des boutons dans tous les designs", len(set(orders.values())) == 1, str(orders))

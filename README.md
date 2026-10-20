@@ -19,6 +19,8 @@ Non officielle, non affiliée à l'Université Clermont Auvergne. Aucune donnée
 - **Synchronisation automatique** en arrière-plan (toutes les 1 à 12 h) : uniquement la reconnexion silencieuse, aucune fenêtre ne s'ouvre ; si la session a expiré, l'icône affiche « ! ».
 - **Changements d'emploi du temps** détectés à chaque synchro (cours ajouté, annulé, déplacé, changement de salle) : badge sur le cours pendant 7 jours, cours annulé affiché barré, notification.
 - **Notification de nouvelle note**.
+- **Filtres** : recherche (matière, prof, salle), type de cours (CM / TD / TP / Examen), matières masquées ; appliqués à toutes les vues et au popup.
+- **Export .ics** (Google Agenda, Outlook, téléphone) : semaine affichée, 4 semaines ou tout, avec rappels intégrés.
 - **Pastille sur l'icône** : « 25m » avant un cours proche, sinon l'heure du prochain cours du jour, ou le nombre de cours restants.
 - **Paramètres** communs à tous les designs (`settings.html`) : vue à l'ouverture, masquer le week-end, rappels, synchro auto, pastille, alertes.
 - Responsive (menu hamburger sous 820px).
@@ -46,6 +48,7 @@ Une seule extension (la racine du dépôt). La logique est commune ; chaque doss
 | `choose.html` / `choose.js` | Sélecteur de design (premier lancement, puis bouton « Design ») |
 | `settings.html` / `settings.js`, `core/settings.js` | Page Paramètres et valeurs par défaut des réglages (partagées avec le service worker) |
 | `core/shared.js` | API de design (`UCA_defineDesign`) + briques communes (mise à jour, changement de design) |
+| `core/tools.js` | Filtres et export .ics |
 | `core/popup.js` / `core/agenda.js` | Logique du popup et de l'agenda, identique pour tous les designs |
 | `designs/designs.json` | Registre des designs disponibles |
 | `designs/<id>/` | Un design : `popup.html`, `agenda.html`, `aide.html`, `confidentialite.html`, `design.js`, `icons/`, assets |

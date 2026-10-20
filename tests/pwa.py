@@ -138,6 +138,38 @@ def link_roundtrip(browser, base, errors):
     page2.close()
 
 
+def update_detection(browser, base, errors):
+    """Bandeau de mise à jour de l'app (core/env.js checkAppUpdate) : current = manifest.json figé
+    dans le cache du service worker, latest = GitHub (ici simulé via une interception réseau)."""
+    current_version = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))["version"]
+    ctx = browser.new_context()
+    ctx.route("https://raw.githubusercontent.com/**", lambda route: route.fulfill(
+        status=200, content_type="application/json", body=json.dumps({"version": "99.0.0"})))
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[maj] {e}"))
+    page.goto(base + "designs/anime/agenda.html"); page.wait_for_timeout(500)
+    data = seed(); data["uca_design"] = "anime"
+    page.evaluate("(d) => new Promise(r => chrome.storage.local.set(d, r))", data)
+    page.goto(base + "designs/anime/agenda.html"); page.wait_for_timeout(1500)
+    # Simule une app déjà installée avant un déploiement : le cache garde l'ancienne version.
+    page.evaluate("""async (v) => {
+      const cache = await caches.open('uca-app-v1');
+      const url = UCA_APP.root + 'manifest.json';
+      const old = JSON.parse(await (await cache.match(url)).text()); old.version = v;
+      await cache.put(url, new Response(JSON.stringify(old), { headers: { 'content-type': 'application/json' } }));
+    }""", current_version)
+    page.evaluate("() => chrome.runtime.sendMessage({ type: 'UCA_FORCE_UPDATE_CHECK' })")
+    page.wait_for_timeout(700)
+    state = page.evaluate("() => new Promise(r => chrome.storage.local.get(['uca_update_available','uca_current_version','uca_latest_version'], r))")
+    check("maj app : détectée (current figé != latest GitHub)", state.get("uca_update_available") is True, str(state))
+    check("maj app : versions correctes", state.get("uca_current_version") == current_version and state.get("uca_latest_version") == "99.0.0", str(state))
+    box = page.locator("#updateOverlay:not(.hidden)").bounding_box()
+    vp = page.viewport_size
+    check("maj app : bandeau plein écran, bloque l'usage", bool(box) and box["width"] >= vp["width"] - 2 and box["height"] >= vp["height"] - 2)
+    check("maj app : un seul bouton (Mettre à jour)", page.locator("#updateOverlay button").count() == 1)
+    ctx.close()
+
+
 def main():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(ROOT)],
@@ -155,6 +187,7 @@ def main():
             run_flow(chromium, p.devices["Pixel 7"], base, "android", errors, "carnet")
             qr_roundtrip(chromium, base, errors)
             link_roundtrip(chromium, base, errors)
+            update_detection(chromium, base, errors)
             chromium.close()
             try:
                 webkit = p.webkit.launch()

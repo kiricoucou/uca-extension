@@ -48,6 +48,49 @@ window.addEventListener("storage", (e) => {
   notify(changes);
 });
 
+/* ---------- Mise à jour de l'app (même bandeau que l'extension, core/shared.js UCA_CORE) ----------
+   « current » = manifest.json tel que servi par le service worker (cache-first, donc figé depuis
+   la dernière mise à jour appliquée) ; « latest » = manifest.json sur GitHub, en contournant le
+   service worker (requête vers un autre domaine, jamais interceptée par son gestionnaire fetch). */
+const MANIFEST_RAW_URL = "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/manifest.json";
+function compareVersions(a, b) {
+  const pa = String(a).split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) { const x = pa[i] || 0, y = pb[i] || 0; if (x !== y) return x - y; }
+  return 0;
+}
+async function checkAppUpdate() {
+  try {
+    // Lu directement dans le cache (sans fetch()) : ne déclenche pas la revalidation en arrière-plan
+    // du service worker, qui figerait silencieusement "current" sur la dernière version dès ce
+    // contrôle — current doit rester gelé jusqu'à ce que la mise à jour soit réellement appliquée.
+    const [curRes, lat] = await Promise.all([
+      "caches" in window ? caches.match(ROOT + "manifest.json") : null,
+      fetch(MANIFEST_RAW_URL + "?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()),
+    ]);
+    const cur = curRes ? await curRes.json() : lat; // rien en cache (tout juste installé) : déjà à jour
+    const current = cur && cur.version, latest = lat && lat.version;
+    if (!current || !latest) return;
+    await local.set({ uca_current_version: current, uca_latest_version: latest, uca_update_available: compareVersions(current, latest) < 0 });
+  } catch (e) { /* hors ligne ou GitHub injoignable : on ne change rien */ }
+}
+// Nouvelle version déjà détectée (déployée pendant que l'app était ouverte) : force une vraie
+// vérification réseau du service worker, lui fait prendre la main, puis recharge la page.
+async function applyAppUpdate() {
+  try {
+    const reg = await navigator.serviceWorker.getRegistration(ROOT);
+    if (reg) {
+      await reg.update();
+      if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+      await new Promise((resolve) => {
+        navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true });
+        setTimeout(resolve, 5000);
+      });
+    }
+  } catch (e) { /* on recharge quand même ci-dessous */ }
+  location.reload();
+}
+
 /* ---------- Messages vers le « service worker » de l'extension ---------- */
 async function handle(msg) {
   if (!msg) return undefined;
@@ -59,7 +102,9 @@ async function handle(msg) {
     return { ok: true, folder: d.folder };
   }
   if (msg.type === "UCA_SYNC_REQUEST") { location.href = ROOT + "app/import.html"; return undefined; }
-  return undefined; // déconnexion, mise à jour, alarmes : sans objet dans l'app
+  if (msg.type === "UCA_FORCE_UPDATE_CHECK") { checkAppUpdate(); return undefined; }
+  if (msg.type === "UCA_APPLY_UPDATE") { applyAppUpdate(); return undefined; }
+  return undefined; // déconnexion, alarmes : sans objet dans l'app
 }
 
 window.chrome = {

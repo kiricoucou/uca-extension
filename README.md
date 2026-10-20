@@ -52,6 +52,7 @@ Une app installable (PWA) est servie par GitHub Pages : <https://kiricoucou.gith
   - **Fichier `.ucasync`** en secours (Drive, AirDrop, ou « Partager → EDT UCA » sur Android).
 - Les trois designs, les filtres, les notes, les absences et l'export `.ics` fonctionnent dans l'app. Les rappels passent par l'export `.ics` (avec alarmes) importé dans le calendrier du téléphone.
 - Refais un transfert après chaque synchro sur l'ordinateur pour mettre l'app à jour.
+- **Mise à jour de l'app** : détectée automatiquement (comparaison avec `manifest.json` sur GitHub, comme l'extension). Un écran plein écran bloque l'app avec un seul bouton **Mettre à jour** — impossible de continuer avec une version périmée.
 
 ## Tutoriel d'installation
 

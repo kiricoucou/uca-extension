@@ -158,7 +158,10 @@ function buildExportPanel(panel, opts) {
       const url = await opts.shareLink();
       try {
         await navigator.clipboard.writeText(url);
-        linkInfo.textContent = "Lien copié — colle-le dans un SMS, un mail, ou ouvre-le directement sur ton téléphone.";
+        const original = link.textContent;
+        link.textContent = "Le lien est bien copié"; link.disabled = true;
+        setTimeout(() => { link.textContent = original; link.disabled = false; }, 2500);
+        linkInfo.textContent = "Colle-le dans un SMS, un mail, ou ouvre-le directement sur ton téléphone.";
       } catch {
         let box = panel.querySelector(".xp-link-fallback");
         if (!box) { box = el("input", "xp-link-fallback"); box.readOnly = true; panel.insertBefore(box, linkInfo); }

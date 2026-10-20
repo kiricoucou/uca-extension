@@ -769,6 +769,9 @@ async function openPhoneModal() {
     const link = await T_.buildShareLink(snap);
     try {
       await navigator.clipboard.writeText(link);
+      const btn = $("phoneLink"), original = btn.textContent;
+      btn.textContent = "Le lien est bien copié"; btn.disabled = true;
+      setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2500);
       toast("Lien copié — colle-le dans un SMS, un mail...", "ok");
     } catch {
       // Presse-papiers inaccessible (permission refusée, contexte non sécurisé...) : champ à copier à la main.

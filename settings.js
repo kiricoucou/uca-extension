@@ -85,5 +85,34 @@ $("agendaBtn").addEventListener("click", () => {
     });
 });
 
+/* Mises à jour : même mécanisme que le bandeau de l'agenda (background.js pour l'extension,
+   core/env.js pour l'app). Version périmée : la page est bloquée, seul "Mettre à jour" reste. */
+function renderUpdate(d) {
+  $("verCur").textContent = d.uca_current_version || "—";
+  $("verLat").textContent = d.uca_latest_version || "—";
+  let block = $("updBlock");
+  if (!d.uca_update_available) { if (block) block.remove(); return; }
+  if (block) return;
+  block = el("div", "upd-block"); block.id = "updBlock";
+  const box = el("div", "box");
+  box.append(el("h2", "", "Nouvelle version disponible"),
+    el("p", "hint", `Installée : ${d.uca_current_version || "?"} · Dernière : ${d.uca_latest_version || "?"}`));
+  const b = el("button", "upd-btn primary", "Mettre à jour"); b.type = "button";
+  b.addEventListener("click", () => { b.disabled = true; chrome.runtime.sendMessage({ type: "UCA_APPLY_UPDATE" }); });
+  box.appendChild(b); block.appendChild(box); document.body.appendChild(block);
+}
+const UPD_KEYS = ["uca_update_available", "uca_current_version", "uca_latest_version"];
+chrome.storage.local.get(UPD_KEYS).then(renderUpdate);
+chrome.storage.onChanged.addListener((c, area) => { if (area === "local" && UPD_KEYS.some((k) => c[k])) chrome.storage.local.get(UPD_KEYS).then(renderUpdate); });
+$("checkUpdBtn").addEventListener("click", () => {
+  const b = $("checkUpdBtn"); b.disabled = true; b.textContent = "Vérification…";
+  chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
+  setTimeout(() => chrome.storage.local.get(UPD_KEYS).then((d) => {
+    renderUpdate(d); b.disabled = false; b.textContent = d.uca_update_available ? "Vérifier" : "À jour ✓";
+  }), 2500);
+});
+$("forceUpdBtn").addEventListener("click", () => { $("forceUpdBtn").disabled = true; chrome.runtime.sendMessage({ type: "UCA_APPLY_UPDATE" }); });
+chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
+
 UCA_getSettings().then(render);
 })();

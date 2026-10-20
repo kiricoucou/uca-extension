@@ -40,6 +40,11 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
 .foot{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;}
 .foot-right{display:flex;gap:12px;align-items:center;}
 .foot button,.foot a{font:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:18px;height:36px;padding:0 16px;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none;box-sizing:border-box;}
+.upd-btn{font:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:18px;height:36px;padding:0 16px;cursor:pointer;}
+.upd-btn.primary{background:var(--focus);color:var(--on-focus);border-color:transparent;font-weight:600;}
+.upd-block{position:fixed;inset:0;z-index:5000;background:rgba(8,9,11,.92);display:flex;align-items:center;justify-content:center;padding:20px;}
+.upd-block .box{background:var(--surface);color:var(--text);border-radius:16px;padding:24px;max-width:380px;text-align:center;}
+.upd-block h2{margin:0 0 8px;font-size:20px;}
 .foot button.primary{background:var(--focus);color:var(--on-focus);border-color:transparent;font-weight:600;}
 </style>
 </head>
@@ -48,6 +53,16 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
   <h1>Paramètres</h1>
   <p class="lead">Ces réglages s'appliquent à tous les designs. Ils sont enregistrés tout de suite, sur cet appareil uniquement.</p>
   <div id="sections"></div>
+  <section>
+    <h2>Mises à jour</h2>
+    <div class="row">
+      <div class="txt"><div class="lbl">Version</div><div class="hint" id="updState">Installée : <span id="verCur">—</span> · Dernière : <span id="verLat">—</span></div></div>
+      <div class="foot-right">
+        <button type="button" class="upd-btn" id="checkUpdBtn">Vérifier</button>
+        <button type="button" class="upd-btn primary" id="forceUpdBtn">Forcer la mise à jour</button>
+      </div>
+    </div>
+  </section>
   <div class="foot">
     <button type="button" id="resetBtn">Rétablir les valeurs par défaut</button>
     <div class="foot-right">

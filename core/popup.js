@@ -158,5 +158,17 @@ UCA_CORE.initUpdate();
 UCA_CORE.initDesignSwitch(false);
 UCA_CORE.initSettings();
 if ($("phoneBtn")) $("phoneBtn").addEventListener("click", () => chrome.tabs.create({ url: new URL("agenda.html#phone", location.href).href }));
+// Génère le lien de partage (même que Exporter → Copier un lien) et le copie, en un seul clic.
+$("linkBtn").addEventListener("click", async () => {
+  const btn = $("linkBtn"), original = btn.textContent;
+  try {
+    const link = await UCA_TRANSFER.buildShareLink(await UCA_TRANSFER.snapshot());
+    await navigator.clipboard.writeText(link);
+    btn.textContent = "Le lien est bien copié";
+  } catch (e) {
+    btn.textContent = "Copie impossible";
+  }
+  setTimeout(() => { btn.textContent = original; }, 2500);
+});
 UCA_TOOLS.load(loadFromStorage);
 })();

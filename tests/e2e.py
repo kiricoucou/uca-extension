@@ -205,6 +205,8 @@ def main():
             check(f"{did} : boutons Paramètres et Design dans le popup", pg.locator("#settingsBtn").count() == 1 and pg.locator("#designBtn").count() == 1)
             right = pg.evaluate("() => Math.max(...[...document.querySelector('header').children].filter(e => e.offsetWidth).map(e => e.getBoundingClientRect().right))")
             check(f"{did} : en-tête du popup sans débordement", right <= 400, f"{right:.0f}px")
+            pg.locator("#linkBtn").click(); pg.wait_for_timeout(500)
+            check(f"{did} : popup → bouton Générer le lien (copié ou erreur affichée)", any(t in pg.locator("#linkBtn").inner_text() for t in ("copié", "impossible")), pg.locator("#linkBtn").inner_text())
             shot(pg, f"{did}-popup"); pg.close()
 
             ag = ctx.new_page(); watch(ag, f"{did}/agenda")

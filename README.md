@@ -46,7 +46,7 @@ D'autres captures de chaque design (vue mois, détail d'un cours...) sont dans `
 Une app installable (PWA) est servie par GitHub Pages : <https://kiricoucou.github.io/uca-extension/>. C'est la seule page publique du dépôt : une visite directe renvoie vers le guide d'installation ; un lien partageable (voir plus bas) importe directement.
 
 - **Installation** : ouvre le lien sur ton téléphone. Android : bouton « Installer l'application ». iPhone (Safari) : Partager → « Sur l'écran d'accueil ». Icône, écran de démarrage et plein écran comme une vraie app ; fonctionne hors ligne.
-- **Données** : une app web ne peut pas se connecter à Odin elle-même (le navigateur interdit de lire un autre site avec ta session, et la double authentification passe par le CAS). Les données viennent donc de l'extension, trois façons au choix dans **Exporter** (sur l'ordinateur) :
+- **Synchronisation directe** : si l'app est ouverte dans le **même navigateur** que l'extension (sur l'ordinateur), le bouton redevient **Synchroniser** et parle directement à Odin via l'extension (`content-bridge.js`) — comme dans l'extension elle-même, sans rien exporter ni importer. Sur un autre appareil (téléphone), ou si l'extension n'est pas installée, c'est impossible : un navigateur isolé une page web des cookies d'un autre domaine, et le CAS fait une double authentification dans une fenêtre dédiée. Les données passent alors par l'extension, trois façons au choix dans **Exporter** (sur l'ordinateur) :
   - **Copier un lien** — colle-le dans un SMS, un mail ou n'importe quelle appli, et ouvre-le sur ton téléphone : import automatique, sans caméra. Les données voyagent dans le lien lui-même (après le `#`), jamais envoyées à un serveur.
   - **QR code animé** — pratique à la première installation : dans l'app, **Importer → Scanner**.
   - **Fichier `.ucasync`** en secours (Drive, AirDrop, ou « Partager → EDT UCA » sur Android).
@@ -116,6 +116,7 @@ Prérequis : Python 3 + Playwright (`pip install playwright` puis `playwright in
 | `python -I -X utf8 tests/e2e.py [dossier]` | Charge l'extension dans Chromium avec des données factices et vérifie chaque design : pas de scroll, aucun bloc coupé, barre sur 2 étages dans le même ordre, moyenne, notes récentes, réglages, vue téléphone, 0 erreur JS (captures dans `dossier` si fourni) |
 | `python -I -X utf8 tests/gen_icons.py <id>` | Rend `designs/<id>/icons/icon.svg` en PNG 16/32/48/128 |
 | `python -I -X utf8 tests/pwa.py [dossier]` | Teste l'app téléphone servie en local (Android via Chromium, iPhone via WebKit) : installation, choix du design, import, hors ligne, raccourcis, aller-retour des QR codes |
+| `python -I -X utf8 tests/bridge.py` | Teste le pont extension ↔ app web (`content-bridge.js` + `core/env.js`) : détection de l'extension, bouton Synchroniser, résultat de synchro appliqué sans recharger |
 | `python -I -X utf8 tests/gen_app_assets.py` | Régénère icônes et écrans de démarrage de l'app depuis `app/icons/icon.svg` |
 | `python -I -X utf8 tests/gen_previews.py [id ...]` | Régénère les 6 captures du sélecteur (`designs/<id>/previews/`) |
 

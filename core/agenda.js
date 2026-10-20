@@ -830,9 +830,20 @@ $("zoomPct").textContent = Math.round(zoomLevel * 100) + "%";
 /* ============================= Synchronisation ============================= */
 const syncBtn = $("syncBtn");
 if (window.UCA_APP) {
-  const walker = document.createTreeWalker(syncBtn, NodeFilter.SHOW_TEXT);
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) if (/Synchroniser/.test(n.textContent)) n.textContent = n.textContent.replace("Synchroniser", "Importer");
-  syncBtn.title = "Importer les données depuis l'extension de l'ordinateur";
+  // Par défaut, pas d'extension détectée dans ce navigateur : "Synchroniser" ne veut rien dire
+  // (pas d'accès à Odin depuis une page web) -> "Importer" (transfert par lien/QR/fichier).
+  // Si l'extension répond (core/env.js, pont avec content-bridge.js), le bouton redevient une
+  // vraie synchro Odin, exactement comme dans l'extension.
+  const setSyncLabel = (importer) => {
+    const walker = document.createTreeWalker(syncBtn, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (importer && /Synchroniser/.test(n.textContent)) n.textContent = n.textContent.replace("Synchroniser", "Importer");
+      else if (!importer && /Importer/.test(n.textContent)) n.textContent = n.textContent.replace("Importer", "Synchroniser");
+    }
+    syncBtn.title = importer ? "Importer les données depuis l'extension de l'ordinateur" : "Synchroniser avec Odin (extension détectée dans ce navigateur)";
+  };
+  setSyncLabel(!window.UCA_APP.extensionReady);
+  window.addEventListener("uca-extension-ready", () => setSyncLabel(false));
 }
 function triggerSync() {
   syncBtn.disabled = true;

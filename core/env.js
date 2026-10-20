@@ -91,6 +91,36 @@ async function applyAppUpdate() {
   location.reload();
 }
 
+/* ---------- Pont avec l'extension Chrome, si elle est installée dans ce même navigateur ----------
+   content-bridge.js (chargé par l'extension sur ce domaine, voir manifest.json content_scripts)
+   relaie par window.postMessage : présence, état de session, résultats de synchro. Permet à l'app
+   de déclencher une vraie synchro Odin (au lieu du transfert manuel par lien/QR/fichier) quand
+   l'extension est là ; sinon, seul le transfert par lien/QR/fichier reste possible (pas de CORS
+   ni d'accès aux cookies d'un autre domaine depuis une simple page web, voir README). */
+const msgListeners = [];
+window.UCA_APP.extensionReady = false;
+window.addEventListener("message", (ev) => {
+  if (ev.source !== window || !ev.data || ev.data.source !== "uca-extension") return;
+  const msg = ev.data;
+  if (msg.type === "UCA_EXTENSION_READY" && !window.UCA_APP.extensionReady) {
+    window.UCA_APP.extensionReady = true;
+    window.dispatchEvent(new Event("uca-extension-ready"));
+  }
+  // Les résultats de synchro de l'extension vivent dans SON stockage (origine chrome-extension://…,
+  // jamais accessible depuis une page web) : on les recopie ici pour que l'app reste utilisable
+  // hors ligne et après un rechargement, exactement comme un transfert par lien le ferait.
+  if (msg.type === "UCA_SYNC_RESULT" && msg.ok) {
+    local.set({ uca_events: msg.events, uca_last_sync: msg.lastSync, uca_session_expired: false });
+  } else if (msg.type === "UCA_ABSENCES_RESULT" && msg.ok) {
+    local.set({ uca_absences: msg.absences, uca_absences_sync: msg.sync });
+  } else if (msg.type === "UCA_NOTES_RESULT" && msg.ok) {
+    local.set({ uca_releve_notes: msg.releve, uca_releve_notes_sync: msg.sync });
+  } else if (msg.type === "UCA_SESSION_STATE") {
+    local.set({ uca_session_expired: !!msg.expired });
+  }
+  msgListeners.forEach((fn) => fn(msg));
+});
+
 /* ---------- Messages vers le « service worker » de l'extension ---------- */
 async function handle(msg) {
   if (!msg) return undefined;
@@ -101,7 +131,14 @@ async function handle(msg) {
     await local.set({ uca_design: d.id });
     return { ok: true, folder: d.folder };
   }
-  if (msg.type === "UCA_SYNC_REQUEST") { location.href = ROOT + "app/import.html"; return undefined; }
+  if (msg.type === "UCA_SYNC_REQUEST") {
+    // Extension détectée : vraie synchro via le pont, pas de redirection vers l'écran d'import.
+    if (window.UCA_APP.extensionReady && (msg.mode === "resync" || msg.mode === "login")) {
+      window.postMessage({ source: "uca-site", type: "UCA_SYNC_REQUEST", mode: msg.mode }, location.origin);
+      return undefined;
+    }
+    location.href = ROOT + "app/import.html"; return undefined;
+  }
   if (msg.type === "UCA_FORCE_UPDATE_CHECK") { checkAppUpdate(); return undefined; }
   if (msg.type === "UCA_APPLY_UPDATE") { applyAppUpdate(); return undefined; }
   return undefined; // déconnexion, alarmes : sans objet dans l'app
@@ -113,7 +150,7 @@ window.chrome = {
     id: null,
     getURL: (p) => ROOT + String(p).replace(/^\//, ""),
     sendMessage(msg, cb) { const p = handle(msg); if (typeof cb === "function") p.then(cb); return p; },
-    onMessage: { addListener() {} },
+    onMessage: { addListener: (fn) => msgListeners.push(fn) },
   },
   tabs: { create: ({ url }) => { location.href = url; } },
 };

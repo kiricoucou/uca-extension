@@ -438,16 +438,18 @@ function parseScheduleText(raw) {
 async function storeResult(text) {
   const events = parseScheduleText(text);
   const { uca_events } = await chrome.storage.local.get("uca_events");
-  await chrome.storage.local.set({ uca_events: events, uca_last_sync: new Date().toISOString() });
+  const lastSync = new Date().toISOString();
+  await chrome.storage.local.set({ uca_events: events, uca_last_sync: lastSync });
   await applyEdtChanges(uca_events || [], events);
-  return events;
+  return { events, lastSync };
 }
 
 async function syncAbsencesQuietly() {
   const absences = await scrapeAbsences();
   if (absences) {
-    await chrome.storage.local.set({ uca_absences: absences, uca_absences_sync: new Date().toISOString() });
-    broadcast({ type: "UCA_ABSENCES_RESULT", ok: true, absences });
+    const sync = new Date().toISOString();
+    await chrome.storage.local.set({ uca_absences: absences, uca_absences_sync: sync });
+    broadcast({ type: "UCA_ABSENCES_RESULT", ok: true, absences, sync });
   }
 }
 
@@ -481,15 +483,16 @@ async function syncNotesQuietly() {
   const releve = await scrapeNotes();
   if (releve) {
     await recordNotesSeen(releve);
-    await chrome.storage.local.set({ uca_releve_notes: releve, uca_releve_notes_sync: new Date().toISOString() });
-    broadcast({ type: "UCA_NOTES_RESULT", ok: true, releve });
+    const sync = new Date().toISOString();
+    await chrome.storage.local.set({ uca_releve_notes: releve, uca_releve_notes_sync: sync });
+    broadcast({ type: "UCA_NOTES_RESULT", ok: true, releve, sync });
   }
 }
 
 async function syncSucceeded(text, silent) {
-  const events = await storeResult(text);
+  const { events, lastSync } = await storeResult(text);
   await chrome.storage.local.set({ uca_session_expired: false });
-  broadcast({ type: "UCA_SYNC_RESULT", ok: true, text, events, silent });
+  broadcast({ type: "UCA_SYNC_RESULT", ok: true, text, events, lastSync, silent });
   await syncAbsencesQuietly();
   await syncNotesQuietly();
 }

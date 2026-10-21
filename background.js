@@ -7,6 +7,18 @@ const NOTES_URL = "https://odin.iut.uca.fr/etudiants/?p=notes";
 const CAS_URL = "https://ent.uca.fr/cas/login?service=" + encodeURIComponent("https://odin.iut.uca.fr/portail/");
 const DATE_HEADER_RE = /\d{1,2}\s*(janvier|f[ée]vrier|mars|avril|mai|juin|juillet|ao[uû]t|septembre|octobre|novembre|d[ée]cembre)/i;
 const LOGIN_WAIT_MS = 15 * 60 * 1000;
+// Après un échec réel (pas une annulation), le bouton Synchroniser reste visuellement désactivé
+// ce temps-là avant de réapparaître : évite de marteler une resynchro si Odin est en panne.
+const SYNC_RETRY_COOLDOWN_MS = 10 * 1000;
+// Odin lui-même peut répondre par une page d'erreur (service en panne, maintenance...) plutôt que
+// par l'emploi du temps : repéré dans le texte de la page pour arrêter d'attendre tout de suite
+// (sinon on patiente jusqu'au bout des relances en pensant que la page finira par se charger).
+function looksLikeServiceError(text) {
+  if (!text) return false;
+  const head = text.slice(0, 500);
+  return /\b(404|500|502|503|504)\b/.test(head)
+    || /page (introuvable|non trouv[ée]e)|erreur (serveur|interne)|service (indisponible|temporairement indisponible)|site (indisponible|en maintenance)|maintenance en cours|internal server error|not found|service unavailable|bad gateway|gateway timeout/i.test(head);
+}
 
 function broadcast(msg) {
   try { chrome.runtime.sendMessage(msg).catch(() => {}); } catch (e) { /* no listener open, fine */ }
@@ -193,6 +205,11 @@ async function extractScheduleTextWithRetry(tabId, tries, delayMs) {
   for (let i = 0; i < tries; i++) {
     last = await extractScheduleText(tabId);
     if (DATE_HEADER_RE.test(last)) return last;
+    if (looksLikeServiceError(last)) {
+      const e = new Error("Le service Odin semble indisponible (erreur renvoyée par le site).");
+      e.serviceDown = true;
+      throw e;
+    }
     await sleep(delayMs);
   }
   return last;
@@ -206,7 +223,13 @@ async function navigateAndScrape(tabId) {
 
 async function trySilentResync() {
   broadcast({ type: "UCA_SYNC_PROGRESS", stage: "resync" });
-  let tab;
+  let tab, closedByUser = false;
+  // L'onglet silencieux (active:false) reste visible dans la barre d'onglets : un utilisateur
+  // peut le fermer en le prenant pour une erreur. Fermeture détectée -> annulation nette plutôt
+  // que de laisser le code suivant échouer en silence et enchaîner sur une fenêtre de connexion
+  // complète surprise (voir trySilentResync catch ci-dessous et handleSync).
+  const onRemoved = (tabId) => { if (tab && tabId === tab.id) closedByUser = true; };
+  chrome.tabs.onRemoved.addListener(onRemoved);
   try {
     tab = await chrome.tabs.create({ url: EDT_URL, active: false });
     await waitForComplete(tab.id, 30000);
@@ -222,7 +245,11 @@ async function trySilentResync() {
     return text;
   } catch (e) {
     if (tab) { try { await chrome.tabs.remove(tab.id); } catch (_) {} }
+    if (closedByUser) { const err = new Error("Synchronisation annulée."); err.cancelled = true; throw err; }
+    if (e && e.serviceDown) throw e;
     return null;
+  } finally {
+    chrome.tabs.onRemoved.removeListener(onRemoved);
   }
 }
 
@@ -230,23 +257,36 @@ async function fullLogin() {
   broadcast({ type: "UCA_SYNC_PROGRESS", stage: "login-opening" });
   const win = await chrome.windows.create({ url: CAS_URL, type: "popup", width: 480, height: 700 });
   const tab = win.tabs[0];
-  broadcast({ type: "UCA_SYNC_PROGRESS", stage: "login-waiting" });
-  // Popup fermée par l'utilisateur : on abandonne tout de suite (sinon le verrou de
-  // synchro resterait pris jusqu'à LOGIN_WAIT_MS et aucun nouveau login ne passerait).
-  let onClosed;
-  const closed = new Promise((_, reject) => {
-    onClosed = (winId) => { if (winId === win.id) reject(new Error("Fenêtre de connexion fermée")); };
-    chrome.windows.onRemoved.addListener(onClosed);
-  });
+  let closedByUser = false;
+  const onClosed = (winId) => { if (winId === win.id) closedByUser = true; };
+  chrome.windows.onRemoved.addListener(onClosed);
   try {
-    await Promise.race([waitForUrlContains(tab.id, "odin.iut.uca.fr", LOGIN_WAIT_MS), closed]);
+    broadcast({ type: "UCA_SYNC_PROGRESS", stage: "login-waiting" });
+    // Popup fermée par l'utilisateur pendant l'attente de connexion : on abandonne tout de suite
+    // (sinon le verrou de synchro resterait pris jusqu'à LOGIN_WAIT_MS et aucune nouvelle synchro
+    // ne passerait). Fermée plus tard (pendant navigateAndScrape ci-dessous) : les appels sur cet
+    // onglet échouent naturellement, repérés via closedByUser dans le catch.
+    let onRaceClosed;
+    const closed = new Promise((_, reject) => {
+      onRaceClosed = (winId) => { if (winId === win.id) { const e = new Error("Fenêtre de connexion fermée."); e.cancelled = true; reject(e); } };
+      chrome.windows.onRemoved.addListener(onRaceClosed);
+    });
+    try {
+      await Promise.race([waitForUrlContains(tab.id, "odin.iut.uca.fr", LOGIN_WAIT_MS), closed]);
+    } finally {
+      chrome.windows.onRemoved.removeListener(onRaceClosed);
+    }
+    broadcast({ type: "UCA_SYNC_PROGRESS", stage: "scraping" });
+    const text = await navigateAndScrape(tab.id);
+    await chrome.tabs.remove(tab.id);
+    return text;
+  } catch (e) {
+    try { await chrome.tabs.remove(tab.id); } catch (_) {}
+    if (closedByUser && !e.cancelled) { const err = new Error("Fenêtre de connexion fermée."); err.cancelled = true; throw err; }
+    throw e;
   } finally {
     chrome.windows.onRemoved.removeListener(onClosed);
   }
-  broadcast({ type: "UCA_SYNC_PROGRESS", stage: "scraping" });
-  const text = await navigateAndScrape(tab.id);
-  await chrome.tabs.remove(tab.id);
-  return text;
 }
 
 /* ============ Absences ============ */
@@ -546,13 +586,21 @@ async function syncSucceeded(text, silent) {
 async function handleSync(mode) {
   let text = null;
   if (mode === "resync" || mode === "background") {
-    text = await trySilentResync();
+    try {
+      text = await trySilentResync();
+    } catch (e) {
+      // "background" (synchro auto) : échec silencieux, elle réessaiera à la prochaine alarme.
+      // "resync" (bouton) : annulation ou service Odin en panne -> remonte tel quel, sans jamais
+      // enchaîner sur une fenêtre de connexion complète que l'utilisateur n'a pas demandée.
+      if (mode === "background") return;
+      throw e;
+    }
     if (text && DATE_HEADER_RE.test(text)) { await syncSucceeded(text, true); return; }
     if (mode === "background") return;
   }
   text = await fullLogin();
   if (!text || !DATE_HEADER_RE.test(text)) {
-    broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: "Aucun emploi du temps détecté sur la page." });
+    broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: "Aucun emploi du temps détecté sur la page.", retryAfterMs: SYNC_RETRY_COOLDOWN_MS });
     return;
   }
   await syncSucceeded(text, false);
@@ -627,7 +675,8 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   syncInProgress = true;
   handleSync(msg.mode)
     .catch((err) => {
-      broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: String((err && err.message) || err) });
+      const cancelled = !!(err && err.cancelled);
+      broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: String((err && err.message) || err), cancelled, retryAfterMs: cancelled ? 0 : SYNC_RETRY_COOLDOWN_MS });
     })
     .finally(() => { syncInProgress = false; });
   return false;

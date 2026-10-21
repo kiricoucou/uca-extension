@@ -428,6 +428,7 @@ function buildMobileMenu() {
   m.appendChild(menuButton("mi", D.icon("book") + "Notes" + (avg != null ? ` — moyenne ${fmtNote(avg)}` : ""), () => openToolPanel("notesPanel", true)));
   m.appendChild(menuButton("mi", D.icon("chart") + escapeHtml(absences ? `Absences : ${plural(absences.declarees, "déclarée")}, ${plural(absences.nonJustifiees, "non justifiée")}` : "Absences"), () => openToolPanel("absencesPanel", true)));
   ((absences && absences.declarations) || []).slice(0, 3).forEach(d => { const n = declarationNode(d); n.classList.add("m-decl"); m.appendChild(n); });
+  m.appendChild(menuButton("mi", D.icon("link") + "Liens (accueil, aide, installation…)", () => openToolPanel("linksPanel", true)));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   m.appendChild(menuButton("mi", D.icon("link") + "Moodle", () => window.open(MOODLE_URL, "_blank", "noopener")));
   m.appendChild(menuButton("mi", D.icon("mail") + "Messagerie (Zimbra)", () => window.open(MAIL_URL, "_blank", "noopener")));
@@ -712,6 +713,7 @@ const TOOL_PANELS = {
   absencesPanel: { wrap: "absencesWrap", build: () => {} },
   filterPanel: { wrap: "filterWrap", build: (p) => UCA_TOOLS.buildFilterPanel(p, events) },
   exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.makeShareLink() }) },
+  linksPanel: { wrap: "linksWrap", build: (p) => UCA_TOOLS.buildLinksPanel(p) },
 };
 function openToolPanel(id, asSheet) {
   const panel = $(id), conf = TOOL_PANELS[id];
@@ -739,7 +741,7 @@ function renderFilterButton() {
   $("filterBtn").innerHTML = D.icon("filter") + '<span class="btn-label">Filtres</span>' + (n ? ` <span class="filter-count">${n}</span>` : "");
   $("filterBtn").classList.toggle("active", n > 0);
 }
-["filterPanel", "exportPanel"].forEach(id => {
+["filterPanel", "exportPanel", "linksPanel"].forEach(id => {
   const btn = $(id.replace("Panel", "Btn"));
   if (!btn) return;
   btn.addEventListener("click", (e) => { e.stopPropagation(); openToolPanel(id, false); });
@@ -896,8 +898,15 @@ chrome.runtime.onMessage.addListener((msg) => {
     UCA_CORE.loginHelp(msg.stage === "login-waiting");
   } else if (msg.type === "UCA_SYNC_RESULT") {
     UCA_CORE.loginHelp(false);
+    if (!msg.ok) {
+      toast(T("errorPrefix") + (msg.error || "Erreur"), "warn");
+      // Annulation (onglet/fenêtre fermé par l'utilisateur) : le bouton redevient cliquable tout
+      // de suite. Échec réel (Odin en panne, rien détecté...) : pause avant de réessayer.
+      if (msg.retryAfterMs) UCA_CORE.syncCooldown([syncBtn], msg.retryAfterMs);
+      else syncBtn.disabled = false;
+      return;
+    }
     syncBtn.disabled = false;
-    if (!msg.ok) { toast(T("errorPrefix") + (msg.error || "Erreur"), "warn"); return; }
     toast(msg.silent ? T("syncSilent") : T("syncOk"), "ok");
     loadFromStorage();
   } else if (msg.type === "UCA_ABSENCES_RESULT") {

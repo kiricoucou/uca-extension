@@ -252,7 +252,7 @@ def network_first(browser, base, errors):
     page.goto(base + "designs/carnet/agenda.html"); page.wait_for_timeout(1500)
     controlled = page.evaluate("() => !!navigator.serviceWorker.controller")
     page.evaluate("""async () => {
-      const c = await caches.open('uca-app-v2');
+      const c = await caches.open('uca-app-v3');
       const bad = (t) => new Response(t, { headers: { 'content-type': 'text/javascript' } });
       await c.put(UCA_APP.root + 'designs/carnet/design.js', bad('window.__stale = true;'));
       await c.put(UCA_APP.root + 'designs/designs.json', new Response('[]', { headers: { 'content-type': 'application/json' } }));
@@ -260,6 +260,27 @@ def network_first(browser, base, errors):
     page.reload(); page.wait_for_timeout(1500)
     check("réseau d'abord : page contrôlée par le service worker", controlled)
     check("réseau d'abord : copie périmée du cache ignorée en ligne", page.evaluate("() => !window.__stale") and page.locator(".view.active .event-card, .m-card").count() > 0)
+    ctx.close()
+
+
+def http_cache_bypass(browser, base, errors):
+    """Le service worker doit ignorer le cache HTTP du navigateur (Cache-Control: max-age, comme
+    en envoie GitHub Pages) et pas seulement son propre cache applicatif : sinon un contenu
+    republié peut rester invisible plusieurs minutes après "Mettre à jour" malgré un cache Cache
+    API vidé (voir sw.js, fetch forcé en cache:'no-store')."""
+    ctx = browser.new_context()
+    calls = {"n": 0}
+
+    def handle(route):
+        calls["n"] += 1
+        route.fulfill(status=200, content_type="text/plain", headers={"Cache-Control": "max-age=600"}, body=f"VERSION-{calls['n']}")
+    ctx.route("**/cache-probe.txt", handle)
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[cache-http] {e}"))
+    page.goto(base + "designs/anime/agenda.html"); page.wait_for_timeout(500)
+    v1 = page.evaluate("() => fetch('cache-probe.txt').then(r => r.text())")
+    v2 = page.evaluate("() => fetch('cache-probe.txt').then(r => r.text())")
+    check("service worker : cache HTTP (max-age) ignoré, contenu toujours frais", v1 == "VERSION-1" and v2 == "VERSION-2", f"{v1} / {v2}")
     ctx.close()
 
 
@@ -294,7 +315,7 @@ def update_detection(browser, base, errors):
     # Clique "Mettre à jour" : le cache (shell complet, stale-while-revalidate) doit être vidé —
     # sinon la page rechargée réaffiche le contenu périmé malgré la "mise à jour".
     page.evaluate("""async () => {
-      const cache = await caches.open('uca-app-v2');
+      const cache = await caches.open('uca-app-v3');
       await cache.put(UCA_APP.root + 'core/agenda.js', new Response('/* PERIME */', { headers: { 'content-type': 'text/javascript' } }));
     }""")
     # La nouvelle version est désormais celle servie : après rechargement, plus rien à mettre à jour.
@@ -303,7 +324,7 @@ def update_detection(browser, base, errors):
     page.wait_for_load_state("load", timeout=10000)
     page.wait_for_timeout(1500)
     poisoned_gone = page.evaluate("""async () => {
-      const c = await caches.open('uca-app-v2');
+      const c = await caches.open('uca-app-v3');
       const r = await c.match(UCA_APP.root + 'core/agenda.js');
       return !r || !(await r.text()).includes('PERIME');
     }""")
@@ -332,6 +353,7 @@ def main():
             site_pages(chromium, base, errors)
             no_install_loop_once_configured(chromium, base, errors)
             network_first(chromium, base, errors)
+            http_cache_bypass(chromium, base, errors)
             update_detection(chromium, base, errors)
             chromium.close()
             try:

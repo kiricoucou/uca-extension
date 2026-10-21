@@ -64,7 +64,16 @@ window.UCA_defineDesign = function (spec) {
 
 function $(id) { return document.getElementById(id); }
 
+let cooldownTimer = 0;
 window.UCA_CORE = {
+  /* Après un échec de synchro réel (pas une annulation) : garde les boutons donnés désactivés
+     pendant `ms`, puis les réactive — évite de marteler Synchroniser si Odin est en panne.
+     Un nouvel appel pendant le délai le remplace (pas de chevauchement). */
+  syncCooldown(buttons, ms) {
+    clearTimeout(cooldownTimer);
+    buttons.forEach((b) => { if (b) b.disabled = true; });
+    cooldownTimer = setTimeout(() => buttons.forEach((b) => { if (b) b.disabled = false; }), ms);
+  },
   /* Écran (#updateOverlay) ou bandeau (#updateBar) selon ce que le design fournit. */
   renderUpdate(available, current, latest) {
     const el = $("updateOverlay") || $("updateBar");

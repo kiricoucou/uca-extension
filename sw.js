@@ -7,7 +7,7 @@
      ligne (ou si le réseau ne répond pas en NETWORK_TIMEOUT_MS).
    - Requêtes « no-store » (vérification de version, core/env.js) : jamais servies par le cache.
    - Android « Partager → EDT UCA » : le fichier .ucasync reçu est déposé en cache pour app/import.html. */
-const CACHE = "uca-app-v2";
+const CACHE = "uca-app-v3";
 const NETWORK_TIMEOUT_MS = 4000;
 const SHELL = [
   "index.html", "install.html", "aide.html", "404.html", "site.css", "app/index.html", "app/import.html", "app/install.html", "app/import.js", "app/app.css", "app.webmanifest", "manifest.json",
@@ -43,7 +43,13 @@ self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET" || e.request.cache === "no-store") return;
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
-    const network = fetch(e.request).then((res) => {
+    // "Réseau d'abord" doit vraiment interroger le réseau : fetch(e.request) réutilise le mode de
+    // cache HTTP par défaut du navigateur, qui peut rendre une réponse sans round-trip (GitHub
+    // Pages envoie des en-têtes Cache-Control avec max-age) — une page rechargée après "Mettre à
+    // jour" pouvait alors réafficher une version déjà périmée avant même d'atteindre ce service
+    // worker. "no-store" force une vraie requête à chaque fois ; seul le cache applicatif (Cache
+    // API, ci-dessous) sert de mémoire, en ligne comme hors ligne.
+    const network = fetch(new Request(e.request, { cache: "no-store" })).then((res) => {
       if (res.ok && res.type === "basic") cache.put(cacheKey(e.request), res.clone());
       return res;
     });

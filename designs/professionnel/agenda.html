@@ -476,7 +476,7 @@ input[type=checkbox],input[type=radio]{accent-color:var(--accent);width:18px;hei
 @media (max-width:820px){ .hdr-break{display:none;} }
 @media (max-width:1500px){ .brand-name{display:none;} .brand{margin-right:8px;} }
 @media (max-width:1300px){ #todayBtn .today-txt{display:none;} #todayBtn{padding:0 10px;} }
-@media (max-width:1150px){ #zoomCtrl{display:none;} }
+@media (max-width:1150px){ #zoomCtrl{display:none;} #linksBtn .li-txt{display:none;} #linksBtn{padding:0 10px;} }
 .hdr-link{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 16px;border:1px solid var(--border-strong);border-radius:18px;color:var(--text);text-decoration:none;font-size:14px;font-weight:500;white-space:nowrap;}
 .hdr-link:hover{background:color-mix(in srgb,var(--text) 6%,transparent);}
 .hdr-link.icon{width:36px;padding:0;justify-content:center;}
@@ -659,6 +659,10 @@ html.uca-app .footer-link{display:none;}
       <div class="ap-row warn" id="apJourneesNJ"><span class="ap-lbl">Journées non justifiées</span><span class="ap-val">—</span></div>
       <a class="ap-link" href="https://odin.iut.uca.fr/etudiants/?p=absences" target="_blank" rel="noopener noreferrer">Voir le détail sur Odin ↗</a>
     </div>
+  </div>
+  <div class="absences-wrap mobile-hide-zoom" id="linksWrap">
+    <button id="linksBtn" title="Pages publiées (accueil, aide, installation…)"><svg class="ic sm" aria-hidden="true"><use href="#i-link"/></svg><span class="li-txt">Liens</span></button>
+    <div class="absences-panel tool-panel" id="linksPanel"></div>
   </div>
   <div class="hdr-break" aria-hidden="true"></div>
   <div class="absences-wrap mobile-hide-zoom" id="notesWrap">

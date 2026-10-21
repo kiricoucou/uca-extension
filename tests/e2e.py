@@ -36,7 +36,7 @@ JS_HEADER = """() => {
     && !['absolute', 'fixed'].includes(getComputedStyle(e).position));
   const centers = keep.map(e => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; }).sort((a, b) => a - b);
   const rows = []; centers.forEach(c => { if (!rows.length || c - rows[rows.length - 1] > 14) rows.push(c); });
-  const KEYS = ['viewTabs', 'prevBtn', 'periodLabel', 'nextBtn', 'todayBtn', 'zoomCtrl', 'absencesWrap', 'notesWrap',
+  const KEYS = ['viewTabs', 'prevBtn', 'periodLabel', 'nextBtn', 'todayBtn', 'zoomCtrl', 'absencesWrap', 'linksWrap', 'notesWrap',
                 'filterWrap', 'exportWrap', 'settingsBtn', 'designBtn', 'syncBtn'];
   const order = keep.map(e => { const h = e.getAttribute('href') || ''; if (h) return h.includes('moodle') ? 'moodle' : h.includes('mail') ? 'mail' : h.includes('aide') ? 'aide' : h;
     return KEYS.includes(e.id) ? e.id : null; }).filter(Boolean);
@@ -88,6 +88,20 @@ def tool_checks(ag, did):
     shot(ag, f"{did}-telephone")
     ag.keyboard.press("Escape"); ag.wait_for_timeout(200)
     check(f"{did} : fenêtre téléphone fermée par Échap", ag.locator("#phoneOverlay").count() == 0)
+    ag.mouse.click(700, 500); ag.wait_for_timeout(200)
+
+    # Panneau Liens : les 7 pages publiées sur GitHub Pages, ouvertes dans un nouvel onglet.
+    opened = []
+    ag.on("popup", lambda p: opened.append(p.url))
+    ag.locator("#linksBtn").click(); ag.wait_for_timeout(300)
+    items = ag.locator("#linksPanel .xp-phone")
+    check(f"{did} : panneau Liens liste les 7 pages publiées", items.count() == 7, str(items.count()))
+    labels = items.all_inner_texts()
+    for k in ("Accueil", "Aide", "Agenda en ligne", "Importer mes données", "404"):
+        check(f"{did} : panneau Liens → « {k} »", any(k in t for t in labels), str(labels))
+    shot(ag, f"{did}-liens")
+    items.first.click(); ag.wait_for_timeout(400)
+    check(f"{did} : lien ouvert dans un nouvel onglet vers github.io", bool(opened) and opened[0].startswith("https://kiricoucou.github.io/uca-extension/"), str(opened))
     ag.mouse.click(700, 500); ag.wait_for_timeout(200)
 
 
@@ -238,6 +252,45 @@ def notes_parse_checks(sw):
     check("notes : mise à jour sans fausse alerte sur les anciennes notes", fresh2 == 0, str(fresh2))
 
 
+def sync_cooldown_checks(ctx, sw, base):
+    """Résultat de synchro simulé (comme un vrai broadcast de background.js) : un échec réel
+    (retryAfterMs) garde Synchroniser désactivé le temps indiqué puis le réactive ; une annulation
+    (cancelled) le réactive tout de suite — jamais besoin d'attendre pour relancer après avoir
+    fermé l'onglet/la fenêtre de connexion."""
+    page = ctx.new_page()
+    page.goto(f"{base}/designs/anime/agenda.html"); page.wait_for_timeout(600)
+    disabled = lambda: page.evaluate("() => document.getElementById('syncBtn').disabled")
+
+    page.evaluate("() => { document.getElementById('syncBtn').disabled = true; }")
+    sw.evaluate("() => chrome.runtime.sendMessage({ type: 'UCA_SYNC_RESULT', ok: false, error: 'Service Odin en panne (test).', retryAfterMs: 400 })")
+    page.wait_for_timeout(150)
+    check("échec réel de synchro : bouton encore désactivé pendant la pause", disabled() is True)
+    page.wait_for_timeout(500)
+    check("échec réel de synchro : bouton réactivé après la pause", disabled() is False)
+
+    page.evaluate("() => { document.getElementById('syncBtn').disabled = true; }")
+    sw.evaluate("() => chrome.runtime.sendMessage({ type: 'UCA_SYNC_RESULT', ok: false, error: 'Synchronisation annulée.', cancelled: true })")
+    page.wait_for_timeout(150)
+    check("synchro annulée : bouton réactivé immédiatement", disabled() is False)
+    page.close()
+
+
+def service_error_checks(sw):
+    """Détection d'une page d'erreur renvoyée par Odin lui-même (service en panne)."""
+    res = sw.evaluate("""() => ({
+      error404: looksLikeServiceError('Erreur 404 - Page non trouvée'),
+      error503: looksLikeServiceError('<html><body>503 Service Unavailable</body></html>'),
+      maintenance: looksLikeServiceError('Site en maintenance, merci de revenir plus tard.'),
+      normal: looksLikeServiceError('Lundi 12 janvier 2026\\n08:00-10:00\\nR1.01 : Algo CM'),
+      empty: looksLikeServiceError(''),
+    })""")
+    check("service Odin en panne : 404 détecté", res["error404"] is True, str(res))
+    check("service Odin en panne : 503 détecté", res["error503"] is True, str(res))
+    check("service Odin en panne : maintenance détectée", res["maintenance"] is True, str(res))
+    check("emploi du temps normal : pas pris pour une erreur", res["normal"] is False, str(res))
+    check("texte vide : pas pris pour une erreur", res["empty"] is False, str(res))
+
+
 def main():
     errors = []
     data = seed()
@@ -335,6 +388,8 @@ def main():
         edt_change_checks(ctx, sw, base, data)
         edt_detail_checks(sw)
         notes_parse_checks(sw)
+        service_error_checks(sw)
+        sync_cooldown_checks(ctx, sw, base)
         sw.evaluate("(s) => chrome.storage.local.set(s)", data)
         settings = ctx.new_page(); watch(settings, "settings")
         settings.goto(f"{base}/settings.html"); settings.wait_for_timeout(600)

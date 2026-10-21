@@ -146,8 +146,15 @@ chrome.runtime.onMessage.addListener((msg) => {
     UCA_CORE.loginHelp(msg.stage === "login-waiting");
   } else if (msg.type === "UCA_SYNC_RESULT") {
     UCA_CORE.loginHelp(false);
+    if (!msg.ok) {
+      setStatus(T("errorPrefix") + (msg.error || "Erreur"));
+      // Annulation : les boutons redeviennent cliquables tout de suite. Échec réel : pause avant
+      // de réessayer (évite de marteler Synchroniser si Odin est en panne).
+      if (msg.retryAfterMs) UCA_CORE.syncCooldown([$("loginBtn"), $("syncBtn")], msg.retryAfterMs);
+      else setBusy(false);
+      return;
+    }
     setBusy(false);
-    if (!msg.ok) { setStatus(T("errorPrefix") + (msg.error || "Erreur")); return; }
     setStatus(msg.silent ? T("syncSilent") : T("syncOk"));
     setTimeout(() => setStatus(null), 3000);
     loadFromStorage();

@@ -178,8 +178,31 @@ function buildExportPanel(panel, opts) {
   }
 }
 
+/* ============================= Pages publiques (GitHub Pages) =============================
+   Les pages réellement servies à la racine du dépôt (hors pages internes par design — aide.html
+   et confidentialite.html existent aussi dans chaque designs/<id>/, ce ne sont pas celles-ci). */
+const SITE_ROOT = "https://kiricoucou.github.io/uca-extension/";
+const PUBLIC_PAGES = [
+  { label: "Accueil", hint: "Présentation et comparatif des quatre façons d'utiliser l'EDT", path: "index.html" },
+  { label: "Aide", hint: "Toutes les questions fréquentes, avec recherche", path: "aide.html" },
+  { label: "Installer l'app — lien court", hint: "Adresse courte à partager (redirige vers le guide)", path: "install.html" },
+  { label: "Installer l'app — guide détaillé", hint: "Étapes Android, iPhone et ordinateur", path: "app/install.html" },
+  { label: "Agenda en ligne", hint: "La même app, dans un simple onglet", path: "app/index.html" },
+  { label: "Importer mes données", hint: "Scanner un QR, coller un lien ou choisir un fichier", path: "app/import.html" },
+  { label: "Page introuvable (404)", hint: "Pour vérifier qu'elle s'affiche bien", path: "404.html" },
+];
+function buildLinksPanel(panel) {
+  panel.innerHTML = "";
+  panel.appendChild(el("div", "fp-h", "Pages publiées sur GitHub Pages"));
+  PUBLIC_PAGES.forEach((p) => {
+    const btn = el("button", "xp-phone", p.label); btn.type = "button"; btn.title = p.hint;
+    btn.addEventListener("click", () => window.open(SITE_ROOT + p.path, "_blank", "noopener"));
+    panel.appendChild(btn);
+  });
+}
+
 window.UCA_TOOLS = {
-  TYPES, typeOf, subjectOf, passes, activeCount, buildFilterPanel, buildExportPanel, buildIcs,
+  TYPES, typeOf, subjectOf, passes, activeCount, buildFilterPanel, buildExportPanel, buildIcs, buildLinksPanel,
   load(cb) {
     chrome.storage.local.get("uca_filters", (d) => { filters = Object.assign({ q: "", types: [], hidden: [] }, d.uca_filters); cb(); });
   },

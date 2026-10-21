@@ -10,7 +10,7 @@
 const APP_URL = "https://kiricoucou.github.io/uca-extension/";
 // Lien affiché/scanné pour « ouvrir ou installer l'app » (modale téléphone, bouton Télécharger) :
 // toujours le guide d'installation, peu importe l'état de l'appareil qui scanne.
-const DOWNLOAD_URL = "https://kiricoucou.github.io/uca-extension/app/install.html";
+const DOWNLOAD_URL = "https://kiricoucou.github.io/uca-extension/install.html";
 const KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_releve_notes", "uca_releve_notes_sync", "uca_absences",
   "uca_notes_seen", "uca_edt_changes", "uca_settings", "uca_filters", "uca_design"];
 const CHUNK = 480;

@@ -35,25 +35,40 @@ function compareVersions(a, b) {
   return 0;
 }
 
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+
+// Un essai, sans effet de bord sur le stockage : juste "ça a marché ou pas".
+async function fetchLatestVersion() {
+  const res = await fetch(MANIFEST_RAW_URL + "?t=" + Date.now(), { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const remote = await res.json();
+  if (!remote || !remote.version) throw new Error("manifest.json sans version");
+  return remote.version;
+}
+
 async function checkForUpdate() {
   const current = chrome.runtime.getManifest().version;
-  try {
-    const res = await fetch(MANIFEST_RAW_URL + "?t=" + Date.now(), { cache: "no-store" });
-    if (!res.ok) return;
-    const remote = await res.json();
-    const latest = remote && remote.version;
-    if (!latest) return;
-    const updateAvailable = compareVersions(current, latest) < 0;
-    await chrome.storage.local.set({
-      uca_current_version: current,
-      uca_latest_version: latest,
-      uca_update_available: updateAvailable,
-      uca_update_checked_at: new Date().toISOString(),
-    });
-    broadcast({ type: "UCA_UPDATE_STATE", current, latest, updateAvailable });
-  } catch (e) {
-    /* Pas de réseau / GitHub injoignable : on ne bloque rien sur une erreur réseau. */
+  let latest = null, lastError = null;
+  // Un échec isolé (réseau lent, DNS...) ne doit pas faire croire que la vérification "ne marche
+  // pas" : un deuxième essai après une courte pause avant d'abandonner et de le signaler vraiment.
+  for (let i = 0; i < 2 && !latest; i++) {
+    if (i) await sleep(1200);
+    try { latest = await fetchLatestVersion(); } catch (e) { lastError = e; }
   }
+  if (!latest) {
+    await chrome.storage.local.set({ uca_update_check_failed: String(lastError), uca_update_checked_at: new Date().toISOString() });
+    broadcast({ type: "UCA_UPDATE_STATE", current, latest: null, updateAvailable: false, error: String(lastError) });
+    return;
+  }
+  const updateAvailable = compareVersions(current, latest) < 0;
+  await chrome.storage.local.set({
+    uca_current_version: current,
+    uca_latest_version: latest,
+    uca_update_available: updateAvailable,
+    uca_update_checked_at: new Date().toISOString(),
+    uca_update_check_failed: null,
+  });
+  broadcast({ type: "UCA_UPDATE_STATE", current, latest, updateAvailable });
 }
 
 /* ============ Design choisi (registre designs/designs.json) ============

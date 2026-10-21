@@ -8,7 +8,11 @@
     "preview": {
       "background": "#121418",
       "surface": "#1b1e24",
-      "accent": "#18b7b0"
+      "accent": "#18b7b0",
+      "text": "#f2f3f5",
+      "textDim": "#9aa0ab",
+      "border": "#2a2e37",
+      "onAccent": "#05211f"
     },
     "screenshots": [
       {
@@ -46,7 +50,11 @@
     "preview": {
       "background": "#ffffff",
       "surface": "#f1f3f4",
-      "accent": "#0b57d0"
+      "accent": "#0b57d0",
+      "text": "#1f1f1f",
+      "textDim": "#5f6368",
+      "border": "#dadce0",
+      "onAccent": "#ffffff"
     },
     "screenshots": [
       {
@@ -84,7 +92,11 @@
     "preview": {
       "background": "#f6f0e1",
       "surface": "#ffe58f",
-      "accent": "#2f4fa2"
+      "accent": "#2f4fa2",
+      "text": "#2d2a26",
+      "textDim": "#6e6658",
+      "border": "#e2d5b8",
+      "onAccent": "#ffffff"
     },
     "screenshots": [
       {

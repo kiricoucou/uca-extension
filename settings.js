@@ -90,6 +90,7 @@ $("agendaBtn").addEventListener("click", () => {
 function renderUpdate(d) {
   $("verCur").textContent = d.uca_current_version || "—";
   $("verLat").textContent = d.uca_latest_version || "—";
+  $("updErr").textContent = d.uca_update_check_failed ? "Vérification impossible (pas de connexion, ou github.com injoignable)." : "";
   let block = $("updBlock");
   if (!d.uca_update_available) { if (block) block.remove(); return; }
   if (block) return;
@@ -101,15 +102,17 @@ function renderUpdate(d) {
   b.addEventListener("click", () => { b.disabled = true; chrome.runtime.sendMessage({ type: "UCA_APPLY_UPDATE" }); });
   box.appendChild(b); block.appendChild(box); document.body.appendChild(block);
 }
-const UPD_KEYS = ["uca_update_available", "uca_current_version", "uca_latest_version"];
+const UPD_KEYS = ["uca_update_available", "uca_current_version", "uca_latest_version", "uca_update_check_failed"];
 chrome.storage.local.get(UPD_KEYS).then(renderUpdate);
 chrome.storage.onChanged.addListener((c, area) => { if (area === "local" && UPD_KEYS.some((k) => c[k])) chrome.storage.local.get(UPD_KEYS).then(renderUpdate); });
 $("checkUpdBtn").addEventListener("click", () => {
   const b = $("checkUpdBtn"); b.disabled = true; b.textContent = "Vérification…";
   chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
+  // Jusqu'à 2 essais côté background.js/env.js (environ 1,2 s entre les deux) : on laisse la marge.
   setTimeout(() => chrome.storage.local.get(UPD_KEYS).then((d) => {
-    renderUpdate(d); b.disabled = false; b.textContent = d.uca_update_available ? "Vérifier" : "À jour ✓";
-  }), 2500);
+    renderUpdate(d); b.disabled = false;
+    b.textContent = d.uca_update_check_failed ? "Réessayer" : d.uca_update_available ? "Vérifier" : "À jour ✓";
+  }), 4000);
 });
 $("forceUpdBtn").addEventListener("click", () => { $("forceUpdBtn").disabled = true; chrome.runtime.sendMessage({ type: "UCA_APPLY_UPDATE" }); });
 chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });

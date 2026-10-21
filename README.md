@@ -4,7 +4,7 @@ Extension Chrome/Edge (Manifest V3) qui récupère ton emploi du temps, tes abse
 
 Non officielle, non affiliée à l'Université Clermont Auvergne. Aucune donnée n'est envoyée à un serveur tiers : tout reste stocké localement dans ton navigateur (`chrome.storage.local`).
 
-**📥 Installer :** [l'extension (ordinateur, Chrome/Edge)](#tutoriel-dinstallation) · [l'app (téléphone)](https://kiricoucou.github.io/uca-extension/app/install.html)
+**📥 Installer :** [l'extension (ordinateur, Chrome/Edge)](#tutoriel-dinstallation) · [l'app (téléphone)](https://kiricoucou.github.io/uca-extension/install.html)
 
 Faite pour rendre l'emploi du temps plus simple à lire au quotidien, avec un affichage qui s'adapte à chaque étudiant : trois designs au choix, vue jour/semaine/mois, filtres, rappels, et tout ce qui est listé ci-dessous.
 

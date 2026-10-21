@@ -59,20 +59,31 @@ function compareVersions(a, b) {
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) { const x = pa[i] || 0, y = pb[i] || 0; if (x !== y) return x - y; }
   return 0;
 }
+function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+async function fetchLatestManifest() {
+  const res = await fetch(MANIFEST_RAW_URL + "?t=" + Date.now(), { cache: "no-store" });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
 async function checkAppUpdate() {
+  // Un échec isolé (réseau lent, DNS, service worker encore en train de s'installer...) ne doit
+  // pas faire croire que la vérification "ne marche pas" : un deuxième essai avant d'abandonner.
+  let lat = null, lastError = null;
+  for (let i = 0; i < 2 && !lat; i++) {
+    if (i) await sleep(1200);
+    try { lat = await fetchLatestManifest(); } catch (e) { lastError = e; }
+  }
+  if (!lat) { await local.set({ uca_update_check_failed: String(lastError) }); return; }
   try {
     // Lu directement dans le cache (sans fetch()) : ne déclenche pas la revalidation en arrière-plan
     // du service worker, qui figerait silencieusement "current" sur la dernière version dès ce
     // contrôle — current doit rester gelé jusqu'à ce que la mise à jour soit réellement appliquée.
-    const [curRes, lat] = await Promise.all([
-      "caches" in window ? caches.match(ROOT + "manifest.json") : null,
-      fetch(MANIFEST_RAW_URL + "?t=" + Date.now(), { cache: "no-store" }).then((r) => r.json()),
-    ]);
+    const curRes = "caches" in window ? await caches.match(ROOT + "manifest.json") : null;
     const cur = curRes ? await curRes.json() : lat; // rien en cache (tout juste installé) : déjà à jour
     const current = cur && cur.version, latest = lat && lat.version;
-    if (!current || !latest) return;
-    await local.set({ uca_current_version: current, uca_latest_version: latest, uca_update_available: compareVersions(current, latest) < 0 });
-  } catch (e) { /* hors ligne ou GitHub injoignable : on ne change rien */ }
+    if (!current || !latest) { await local.set({ uca_update_check_failed: "manifest.json invalide" }); return; }
+    await local.set({ uca_current_version: current, uca_latest_version: latest, uca_update_available: compareVersions(current, latest) < 0, uca_update_check_failed: null });
+  } catch (e) { await local.set({ uca_update_check_failed: String(e) }); }
 }
 // Nouvelle version détectée : il ne suffit PAS de recharger la page, le service worker sert le
 // shell en cache-first (stale-while-revalidate, sw.js) — un simple reload réaffiche donc l'ancienne
@@ -174,10 +185,20 @@ const viewport = document.querySelector('meta[name="viewport"]');
 if (viewport) viewport.setAttribute("content", "width=device-width, initial-scale=1.0, viewport-fit=cover");
 local.get("uca_design").then(({ uca_design }) => fetch(ROOT + "designs/designs.json").then((r) => r.json()).then((designs) => {
   const d = designs.find((x) => x.id === uca_design);
-  const bg = (d && d.preview && d.preview.background) || "#0b57d0";
+  const p = (d && d.preview) || {};
+  const bg = p.background || "#0b57d0";
   tag("meta", { name: "theme-color", content: bg });
   const dark = parseInt(bg.slice(1, 3), 16) + parseInt(bg.slice(3, 5), 16) + parseInt(bg.slice(5, 7), 16) < 384;
   tag("meta", { name: "apple-mobile-web-app-status-bar-style", content: dark ? "black-translucent" : "default" });
+  // Pages app/ (install, import, accueil) : couleurs du design déjà choisi, pour que l'app ne
+  // bascule pas vers un style générique bleu entre l'extension et ces écrans de transition.
+  if (d) {
+    const root = document.documentElement.style;
+    [["--bg", "background"], ["--surface", "surface"], ["--accent", "accent"], ["--on-accent", "onAccent"],
+      ["--text", "text"], ["--text-dim", "textDim"], ["--border", "border"]].forEach(([cssVar, key]) => {
+      if (p[key]) root.setProperty(cssVar, p[key]);
+    });
+  }
 })).catch(() => {});
 document.documentElement.classList.add("uca-app");
 

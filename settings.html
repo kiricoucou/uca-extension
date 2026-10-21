@@ -27,6 +27,8 @@ section h2 + .row{border-top:none;}
 .row .txt{flex:1;min-width:0;}
 .row .lbl{font-weight:500;}
 .row .hint{color:var(--text-dim);font-size:12.5px;}
+.row .hint.err{color:#d93025;}
+.row .hint.err:empty{display:none;}
 select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:7px 10px;min-width:170px;}
 select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--focus);outline-offset:2px;}
 .switch{position:relative;width:44px;height:26px;flex-shrink:0;}
@@ -56,7 +58,7 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
   <section>
     <h2>Mises à jour</h2>
     <div class="row">
-      <div class="txt"><div class="lbl">Version</div><div class="hint" id="updState">Installée : <span id="verCur">—</span> · Dernière : <span id="verLat">—</span></div></div>
+      <div class="txt"><div class="lbl">Version</div><div class="hint" id="updState">Installée : <span id="verCur">—</span> · Dernière : <span id="verLat">—</span></div><div class="hint err" id="updErr"></div></div>
       <div class="foot-right">
         <button type="button" class="upd-btn" id="checkUpdBtn">Vérifier</button>
         <button type="button" class="upd-btn primary" id="forceUpdBtn">Forcer la mise à jour</button>
@@ -66,7 +68,7 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
   <div class="foot">
     <button type="button" id="resetBtn">Rétablir les valeurs par défaut</button>
     <div class="foot-right">
-      <a id="downloadAppBtn" href="https://kiricoucou.github.io/uca-extension/app/install.html" target="_blank" rel="noopener">Télécharger l'app</a>
+      <a id="downloadAppBtn" href="https://kiricoucou.github.io/uca-extension/install.html" target="_blank" rel="noopener">Télécharger l'app</a>
       <button type="button" class="primary" id="agendaBtn">Ouvrir l'agenda</button>
     </div>
   </div>

@@ -49,7 +49,7 @@
     "badgeColor": "#0b57d0",
     "preview": {
       "background": "#ffffff",
-      "surface": "#f1f3f4",
+      "surface": "#ffffff",
       "accent": "#0b57d0",
       "text": "#1f1f1f",
       "textDim": "#5f6368",
@@ -91,7 +91,7 @@
     "badgeColor": "#2f4fa2",
     "preview": {
       "background": "#f6f0e1",
-      "surface": "#ffe58f",
+      "surface": "#fffaf0",
       "accent": "#2f4fa2",
       "text": "#2d2a26",
       "textDim": "#6e6658",

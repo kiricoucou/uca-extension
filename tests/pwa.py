@@ -113,63 +113,112 @@ def qr_roundtrip(browser, base, errors):
 
 
 def link_roundtrip(browser, base, errors):
-    """Lien partageable (#d=…), adresse publique = la racine : construit par l'extension, ouvert
-    directement (racine → index.html route vers app/import.html, voir index.html à la racine)."""
+    """Lien partageable chiffré (#e=…), adresse publique = la racine : construit comme dans
+    l'extension, ouvert directement (racine → app/import.html), code demandé puis mémorisé."""
     data = seed(); data["uca_design"] = "carnet"
-    page = browser.new_page()
-    page.on("pageerror", lambda e: errors.append(f"[lien] {e}"))
-    page.goto(base + "app/import.html"); page.wait_for_timeout(300)
-    res = page.evaluate("""async (data) => {
-      const snap = { format: 'uca-sync', version: 1, exportedAt: new Date().toISOString(), data };
-      const link = await UCA_TRANSFER.buildShareLink(snap);
-      const back = await UCA_TRANSFER.fromLinkHash('#' + link.split('#')[1]);
-      return { link, same: JSON.stringify(back.data) === JSON.stringify(data) };
-    }""", data)
-    check("lien : pointe vers la racine publique (#d=)", res["link"].startswith("https://kiricoucou.github.io/uca-extension/#d="), res["link"][:70])
-    check("lien : données reconstruites identiques", res["same"], str(res))
-    page.close()
-    # Ouvert directement (comme depuis un SMS) : la racine route vers l'import, sans caméra ni fichier.
-    local_link = base + "#" + res["link"].split("#", 1)[1]
-    page2 = browser.new_page()
-    page2.on("pageerror", lambda e: errors.append(f"[lien-ouverture] {e}"))
-    page2.goto(local_link); page2.wait_for_timeout(2000)
-    stored = page2.evaluate("() => new Promise(r => chrome.storage.local.get('uca_events', d => r((d.uca_events || []).length)))")
-    check("lien ouvert depuis la racine : cours importés dans le stockage", stored == len(data["uca_events"]), str(stored))
-    check("lien : fragment effacé de l'URL après lecture", "#d=" not in page2.url, page2.url)
-    page2.close()
-
-    # Lien vieux de plus de 2 jours : refusé (voir core/transfer.js LINK_MAX_AGE_MS).
-    page3 = browser.new_page()
-    page3.goto(base + "app/import.html"); page3.wait_for_timeout(300)
-    old = page3.evaluate("""async (data) => {
-      const snap = { format: 'uca-sync', version: 1, exportedAt: new Date(Date.now() - 3 * 86400000).toISOString(), data };
-      const link = await UCA_TRANSFER.buildShareLink(snap);
-      try { await UCA_TRANSFER.fromLinkHash('#' + link.split('#')[1]); return { rejected: false }; }
-      catch (e) { return { rejected: true, message: e.message }; }
-    }""", data)
-    check("lien de plus de 2 jours : refusé", old.get("rejected") is True and "expir" in old.get("message", ""), str(old))
-    page3.close()
-
-    # Lien collé à la main sur app/import.html (bouton "Coller un lien de partage").
-    page4 = browser.new_page()
-    page4.on("pageerror", lambda e: errors.append(f"[lien-colle] {e}"))
-    page4.goto(base + "app/import.html"); page4.wait_for_timeout(400)
-    page4.locator("#pasteLinkBtn").click(); page4.wait_for_timeout(200)
-    page4.locator("#linkInput").fill("un message avant " + res["link"] + " et après")
-    page4.locator("#linkGoBtn").click(); page4.wait_for_timeout(1200)
-    stored4 = page4.evaluate("() => new Promise(r => chrome.storage.local.get('uca_events', d => r((d.uca_events || []).length)))")
-    check("lien collé à la main (entouré de texte) : importé", stored4 == len(data["uca_events"]), str(stored4))
-    page4.close()
-
-
-def root_router(browser, base, errors):
-    """La racine (index.html) est la seule adresse publique : sans lien partageable, elle renvoie
-    vers le guide d'installation ; jamais une page interne brute (agenda, choisir un design…)."""
+    code = "K7P2QX"
     ctx = browser.new_context()
     page = ctx.new_page()
-    page.on("pageerror", lambda e: errors.append(f"[racine] {e}"))
-    page.goto(base); page.wait_for_timeout(1000)
-    check("racine, visite simple : renvoie vers le guide d'installation", "install.html" in page.url, page.url)
+    page.on("pageerror", lambda e: errors.append(f"[lien] {e}"))
+    page.goto(base + "app/import.html"); page.wait_for_timeout(300)
+    res = page.evaluate("""async ([data, code]) => {
+      const snap = { format: 'uca-sync', version: 1, exportedAt: new Date().toISOString(), data };
+      const link = await UCA_TRANSFER.buildShareLink(snap, { code, hours: 48 });
+      const h = '#' + link.split('#')[1];
+      const back = await UCA_TRANSFER.fromLinkHash(h, code.toLowerCase());
+      let wrong = null; try { await UCA_TRANSFER.fromLinkHash(h, 'ZZZZZZ'); } catch (e) { wrong = e.kind; }
+      let noCode = null; try { await UCA_TRANSFER.fromLinkHash(h, ''); } catch (e) { noCode = e.kind; }
+      // Expiration modifiée à la main : le chiffrement authentifie l'en-tête, le lien devient invalide.
+      const parts = h.slice(3).split('.'); parts[1] = (parseInt(parts[1], 36) + 999999).toString(36);
+      let tampered = null; try { await UCA_TRANSFER.fromLinkHash('#e=' + parts.join('.'), code); } catch (e) { tampered = e.kind; }
+      const json = JSON.stringify(data);
+      const sample = (data.uca_events[0] || {}).title || '';
+      return { link, same: JSON.stringify(back.data) === json, wrong, noCode, tampered, plainVisible: sample && link.includes(encodeURIComponent(sample).slice(0, 12)) };
+    }""", [data, code])
+    check("lien : pointe vers la racine publique (#e=)", res["link"].startswith("https://kiricoucou.github.io/uca-extension/#e="), res["link"][:70])
+    check("lien : données reconstruites identiques avec le bon code", res["same"], str(res)[:200])
+    check("lien : mauvais code refusé", res["wrong"] == "code", str(res["wrong"]))
+    check("lien : sans code, rien n'est lisible", res["noCode"] == "code", str(res["noCode"]))
+    check("lien : expiration modifiée → lien invalide", res["tampered"] == "code", str(res["tampered"]))
+    check("lien : contenu chiffré (aucun intitulé de cours en clair)", not res["plainVisible"])
+    page.close()
+
+    # Ouvert directement (comme depuis un SMS) : la racine route vers l'import, le code est demandé.
+    local_link = base + "#" + res["link"].split("#", 1)[1]
+    page2 = ctx.new_page()
+    page2.on("pageerror", lambda e: errors.append(f"[lien-ouverture] {e}"))
+    page2.goto(local_link); page2.wait_for_timeout(1500)
+    check("lien : fragment effacé de l'URL dès l'ouverture", "#e=" not in page2.url, page2.url)
+    check("lien : code de partage demandé", page2.locator("#codeCard:not(.hidden)").count() == 1)
+    shot(page2, "lien-code")
+    page2.locator("#codeInput").fill("ZZZZZZ"); page2.locator("#codeGoBtn").click(); page2.wait_for_timeout(1500)
+    check("lien : mauvais code → message d'erreur", "incorrect" in page2.locator("#status").inner_text(), page2.locator("#status").inner_text())
+    page2.locator("#codeInput").fill(code.lower()); page2.locator("#codeGoBtn").click(); page2.wait_for_timeout(2500)
+    stored = page2.evaluate("() => new Promise(r => chrome.storage.local.get(['uca_events','uca_share_code_saved'], d => r(d)))")
+    check("lien ouvert depuis la racine : cours importés", len(stored.get("uca_events") or []) == len(data["uca_events"]), str(len(stored.get("uca_events") or [])))
+    check("lien : code mémorisé sur ce téléphone", stored.get("uca_share_code_saved") == code, str(stored.get("uca_share_code_saved")))
+    page2.close()
+
+    # Lien expiré : refusé avant même de demander le code.
+    page3 = ctx.new_page()
+    page3.goto(base + "app/import.html"); page3.wait_for_timeout(300)
+    old = page3.evaluate("""async ([data, code]) => {
+      const snap = { format: 'uca-sync', version: 1, exportedAt: new Date().toISOString(), data };
+      const link = await UCA_TRANSFER.buildShareLink(snap, { code, hours: -1 });
+      try { await UCA_TRANSFER.fromLinkHash('#' + link.split('#')[1], code); return { rejected: false }; }
+      catch (e) { return { rejected: true, kind: e.kind, message: e.message }; }
+    }""", [data, code])
+    check("lien expiré : refusé", old.get("rejected") is True and old.get("kind") == "expired", str(old))
+    legacy = page3.evaluate("""async () => { try { await UCA_TRANSFER.fromLinkHash('#d=abc'); return null; } catch (e) { return e.kind; } }""")
+    check("ancien lien non chiffré (#d=) : refusé", legacy == "format", str(legacy))
+    page3.close()
+
+    # Lien collé à la main (bouton "Coller un lien de partage") : code déjà mémorisé → import direct.
+    page4 = ctx.new_page()
+    page4.on("pageerror", lambda e: errors.append(f"[lien-colle] {e}"))
+    page4.goto(base + "app/import.html"); page4.wait_for_timeout(400)
+    page4.evaluate("() => new Promise(r => chrome.storage.local.remove('uca_events', r))")
+    page4.locator("#pasteLinkBtn").click(); page4.wait_for_timeout(200)
+    page4.locator("#linkInput").fill("un message avant " + res["link"] + " et après")
+    page4.locator("#linkGoBtn").click(); page4.wait_for_timeout(2500)
+    stored4 = page4.evaluate("() => new Promise(r => chrome.storage.local.get('uca_events', d => r((d.uca_events || []).length)))")
+    check("lien collé (code mémorisé) : importé sans redemander", stored4 == len(data["uca_events"]), str(stored4))
+    page4.close()
+    ctx.close()
+
+
+def site_pages(browser, base, errors):
+    """Pages publiques : accueil (comparatif), aide (recherche), 404 (boutons)."""
+    ctx = browser.new_context()
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[site] {e}"))
+    page.goto(base); page.wait_for_timeout(800)
+    check("accueil : reste sur la racine (plus de redirection)", page.url.rstrip("/") == base.rstrip("/") or page.url.endswith("index.html"), page.url)
+    heads = page.locator("table.compare thead th").all_inner_texts()
+    check("accueil : comparatif site / agenda en ligne / extension / app",
+          all(any(k in h for h in heads) for k in ["Site", "Agenda en ligne", "Extension", "App"]), str(heads))
+    check("accueil : ligne « connexion directe à Odin » mise en avant", page.locator("tr.key th", has_text="directement à Odin").count() == 1)
+    check("accueil : pas de défilement horizontal", page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"))
+    shot(page, "accueil")
+    page.goto(base + "aide.html"); page.wait_for_timeout(600)
+    total = page.locator("details.qa").count()
+    check("aide : nombreuses questions", total >= 50, str(total))
+    page.fill("#q", "code incorrect"); page.wait_for_timeout(200)
+    visible = page.locator("details.qa:visible").count()
+    check("aide : la recherche filtre les questions", 0 < visible < total, f"{visible}/{total}")
+    page.fill("#q", ""); page.goto(base + "aide.html#maj-extension"); page.wait_for_timeout(400)
+    check("aide : ancre #maj-extension ouverte", page.locator("#maj-extension[open]").count() == 1)
+    shot(page, "aide")
+    page.goto(base + "nexiste/pas/du-tout.html"); page.wait_for_timeout(600)
+    # http.server ne sert pas 404.html pour une adresse inconnue (GitHub Pages oui) : page testée directement.
+    page.goto(base + "404.html"); page.wait_for_timeout(600)
+    hrefs = page.eval_on_selector_all("a.btn", "els => els.map(a => a.getAttribute('href'))")
+    labels = " ".join(page.locator("a.btn").all_inner_texts())
+    check("404 : boutons Accueil, Agenda en ligne, Installer, Aide",
+          all(k in labels for k in ["Accueil", "agenda en ligne", "Installer l'app", "Aide"]), labels)
+    check("404 : liens vers ce même site en local", all(h.startswith("/") for h in hrefs), str(hrefs))
+    check("404 : logo animé", page.evaluate("getComputedStyle(document.querySelector('.logo .float')).animationName") == "float")
+    shot(page, "404")
     ctx.close()
 
 
@@ -191,30 +240,47 @@ def no_install_loop_once_configured(browser, base, errors):
     ctx.close()
 
 
+def network_first(browser, base, errors):
+    """En ligne, une copie périmée dans le cache ne doit jamais être servie (app installée,
+    raccourci ou onglet : même service worker) — la dernière version arrive sans aucun clic."""
+    ctx = browser.new_context()
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[reseau-d-abord] {e}"))
+    page.goto(base + "designs/carnet/agenda.html"); page.wait_for_timeout(500)
+    data = seed(); data["uca_design"] = "carnet"
+    page.evaluate("(d) => new Promise(r => chrome.storage.local.set(d, r))", data)
+    page.goto(base + "designs/carnet/agenda.html"); page.wait_for_timeout(1500)
+    controlled = page.evaluate("() => !!navigator.serviceWorker.controller")
+    page.evaluate("""async () => {
+      const c = await caches.open('uca-app-v2');
+      const bad = (t) => new Response(t, { headers: { 'content-type': 'text/javascript' } });
+      await c.put(UCA_APP.root + 'designs/carnet/design.js', bad('window.__stale = true;'));
+      await c.put(UCA_APP.root + 'designs/designs.json', new Response('[]', { headers: { 'content-type': 'application/json' } }));
+    }""")
+    page.reload(); page.wait_for_timeout(1500)
+    check("réseau d'abord : page contrôlée par le service worker", controlled)
+    check("réseau d'abord : copie périmée du cache ignorée en ligne", page.evaluate("() => !window.__stale") and page.locator(".view.active .event-card, .m-card").count() > 0)
+    ctx.close()
+
+
 def update_detection(browser, base, errors):
-    """Bandeau de mise à jour de l'app (core/env.js checkAppUpdate) : current = manifest.json figé
-    dans le cache du service worker, latest = GitHub (ici simulé via une interception réseau)."""
+    """Bandeau de mise à jour de l'app (core/env.js checkAppUpdate) : current = version obtenue par
+    la page (réseau d'abord, cache hors ligne), latest = manifest.json du site en no-store (ici une
+    version plus récente simulée, comme une page démarrée sur sa copie hors ligne)."""
     current_version = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))["version"]
     ctx = browser.new_context()
-    ctx.route("https://raw.githubusercontent.com/**", lambda route: route.fulfill(
-        status=200, content_type="application/json", body=json.dumps({"version": "99.0.0"})))
+    newer = lambda route: route.fulfill(status=200, content_type="application/json", body=json.dumps({"version": "99.0.0"}))
+    ctx.route("**/manifest.json?latest=*", newer)
     page = ctx.new_page()
     page.on("pageerror", lambda e: errors.append(f"[maj] {e}"))
     page.goto(base + "designs/anime/agenda.html"); page.wait_for_timeout(500)
     data = seed(); data["uca_design"] = "anime"
     page.evaluate("(d) => new Promise(r => chrome.storage.local.set(d, r))", data)
     page.goto(base + "designs/anime/agenda.html"); page.wait_for_timeout(1500)
-    # Simule une app déjà installée avant un déploiement : le cache garde l'ancienne version.
-    page.evaluate("""async (v) => {
-      const cache = await caches.open('uca-app-v1');
-      const url = UCA_APP.root + 'manifest.json';
-      const old = JSON.parse(await (await cache.match(url)).text()); old.version = v;
-      await cache.put(url, new Response(JSON.stringify(old), { headers: { 'content-type': 'application/json' } }));
-    }""", current_version)
     page.evaluate("() => chrome.runtime.sendMessage({ type: 'UCA_FORCE_UPDATE_CHECK' })")
-    page.wait_for_timeout(700)
+    page.wait_for_timeout(900)
     state = page.evaluate("() => new Promise(r => chrome.storage.local.get(['uca_update_available','uca_current_version','uca_latest_version'], r))")
-    check("maj app : détectée (current figé != latest GitHub)", state.get("uca_update_available") is True, str(state))
+    check("maj app : détectée (version chargée != version publiée)", state.get("uca_update_available") is True, str(state))
     check("maj app : versions correctes", state.get("uca_current_version") == current_version and state.get("uca_latest_version") == "99.0.0", str(state))
     box = page.locator("#updateOverlay:not(.hidden)").bounding_box()
     vp = page.viewport_size
@@ -228,14 +294,16 @@ def update_detection(browser, base, errors):
     # Clique "Mettre à jour" : le cache (shell complet, stale-while-revalidate) doit être vidé —
     # sinon la page rechargée réaffiche le contenu périmé malgré la "mise à jour".
     page.evaluate("""async () => {
-      const cache = await caches.open('uca-app-v1');
+      const cache = await caches.open('uca-app-v2');
       await cache.put(UCA_APP.root + 'core/agenda.js', new Response('/* PERIME */', { headers: { 'content-type': 'text/javascript' } }));
     }""")
+    # La nouvelle version est désormais celle servie : après rechargement, plus rien à mettre à jour.
+    ctx.unroute("**/manifest.json?latest=*", newer)
     page.locator("#updateOverlay button").click()
     page.wait_for_load_state("load", timeout=10000)
-    page.wait_for_timeout(500)
+    page.wait_for_timeout(1500)
     poisoned_gone = page.evaluate("""async () => {
-      const c = await caches.open('uca-app-v1');
+      const c = await caches.open('uca-app-v2');
       const r = await c.match(UCA_APP.root + 'core/agenda.js');
       return !r || !(await r.text()).includes('PERIME');
     }""")
@@ -261,8 +329,9 @@ def main():
             run_flow(chromium, p.devices["Pixel 7"], base, "android", errors, "carnet")
             qr_roundtrip(chromium, base, errors)
             link_roundtrip(chromium, base, errors)
-            root_router(chromium, base, errors)
+            site_pages(chromium, base, errors)
             no_install_loop_once_configured(chromium, base, errors)
+            network_first(chromium, base, errors)
             update_detection(chromium, base, errors)
             chromium.close()
             try:

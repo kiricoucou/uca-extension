@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aide — Emploi du temps UCA</title>
+<meta name="description" content="Aide complète : installer l'extension et l'app, synchroniser Odin, liens de partage chiffrés, notes, absences, changements d'emploi du temps, mises à jour, confidentialité, dépannage.">
+<link rel="icon" type="image/png" href="app/icons/icon-192.png">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="app/icons/icon-192.png" alt=""><span>Emploi du temps UCA</span></a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="index.html" class="hide-sm">Accueil</a>
+      <a href="index.html#comparatif">Comparatif</a>
+      <a href="aide.html" aria-current="page">Aide</a>
+      <a href="app/index.html">Agenda en ligne</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap help-layout">
+  <nav class="toc" aria-label="Sommaire">
+    <h2>Sommaire</h2>
+    <a href="#debuter">Pour commencer</a>
+    <a href="#versions">Site, agenda, extension, app</a>
+    <a href="#installer-extension">Installer l'extension</a>
+    <a href="#installer-app">Installer l'app</a>
+    <a href="#synchro">Synchroniser avec Odin</a>
+    <a href="#partage">Envoyer vers le téléphone</a>
+    <a href="#agenda">Utiliser l'agenda</a>
+    <a href="#changements">Changements d'EDT</a>
+    <a href="#notes">Notes et moyenne</a>
+    <a href="#absences">Absences</a>
+    <a href="#rappels">Rappels et notifications</a>
+    <a href="#designs">Designs et réglages</a>
+    <a href="#maj">Mises à jour</a>
+    <a href="#confidentialite">Confidentialité</a>
+    <a href="#depannage">Dépannage</a>
+    <a href="#contact">Signaler un problème</a>
+  </nav>
+
+  <main class="help">
+    <h1>Aide</h1>
+    <p class="lead">Tout ce qu'il faut savoir sur l'extension, l'app, l'agenda en ligne et le site. Tape un mot-clé pour trouver une réponse.</p>
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg>
+      <input type="search" id="q" placeholder="Rechercher : lien expiré, code, salle, note orange, iPhone…" autocomplete="off" aria-label="Rechercher dans l'aide">
+    </div>
+    <p class="no-results" id="noResults">Aucune réponse ne correspond. Essaie un autre mot, ou <a href="#contact">signale ton problème</a>.</p>
+
+    <section id="debuter">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>Pour commencer</h2>
+      <details class="qa" open><summary>C'est quoi, Emploi du temps UCA ?</summary><div class="a">
+        <p>Un outil étudiant qui lit ton emploi du temps, tes notes et tes absences sur <b>Odin</b> (odin.iut.uca.fr) et les affiche dans un agenda clair, sur ordinateur et sur téléphone. Il ajoute ce qu'Odin ne fait pas : moyenne recalculée, notes récentes en couleur, alertes quand un cours change, rappels, export vers ton agenda, mode hors ligne.</p>
+        <p>Ce n'est <b>pas</b> un service officiel de l'Université Clermont Auvergne.</p>
+      </div></details>
+      <details class="qa"><summary>Par quoi je commence ?</summary><div class="a">
+        <ol>
+          <li>Sur ton ordinateur, <a href="#installer-extension">installe l'extension</a> et choisis un design.</li>
+          <li>Clique l'icône de l'extension → <b>Se connecter</b>, connecte-toi à l'ENT comme d'habitude.</li>
+          <li>Pour l'avoir sur ton téléphone : <a href="#installer-app">installe l'app</a>, puis dans l'extension clique <b>Générer le lien</b> et ouvre ce lien sur le téléphone.</li>
+        </ol>
+      </div></details>
+      <details class="qa"><summary>C'est gratuit ? Il faut créer un compte ?</summary><div class="a">
+        <p>Gratuit, sans compte, sans publicité. Tu utilises uniquement ton compte ENT habituel, directement sur le site de l'université.</p>
+      </div></details>
+    </section>
+
+    <section id="versions">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="8" height="7" rx="1.5"/><rect x="13" y="4" width="8" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="7" rx="1.5"/><rect x="13" y="13" width="8" height="7" rx="1.5"/></svg></span>Site, agenda en ligne, extension, app</h2>
+      <p>Mêmes vues, mêmes designs, mêmes fonctionnalités d'affichage. Le <a href="index.html#comparatif">comparatif détaillé</a> est sur l'accueil.</p>
+      <details class="qa"><summary>Quelle est la vraie différence entre les quatre ?</summary><div class="a">
+        <p><b>La connexion à Odin.</b> Seule l'<b>extension</b> peut se connecter directement à Odin, parce qu'elle tourne dans ton navigateur avec ta session ENT. L'<b>app</b> et l'<b>agenda en ligne</b> sont de simples pages web : un navigateur interdit à une page d'aller lire un autre site avec tes identifiants. Elles reçoivent donc les données <b>depuis l'extension</b> : par lien de partage chiffré, QR code animé ou fichier.</p>
+        <p>Exception : sur un ordinateur où l'extension est installée, l'app et l'agenda en ligne ouverts <b>dans le même navigateur</b> détectent l'extension et peuvent synchroniser directement (le bouton redevient « Synchroniser »).</p>
+        <p>Le <b>site</b> (accueil, cette aide) ne contient aucune donnée : il présente le projet et héberge le code.</p>
+      </div></details>
+      <details class="qa"><summary>Agenda en ligne ou app installée : qu'est-ce qui change ?</summary><div class="a">
+        <p>C'est le même code. Installée, l'app a son icône, s'ouvre en plein écran, sans barre d'adresse, et démarre plus vite. L'agenda en ligne s'ouvre dans un onglet, sans rien installer (pratique sur un poste de l'IUT). Les deux fonctionnent hors ligne après une première visite.</p>
+      </div></details>
+      <details class="qa"><summary>Je peux utiliser seulement l'app, sans l'extension ?</summary><div class="a">
+        <p>Il faut l'extension quelque part pour récupérer les données d'Odin (sur ton ordinateur ou celui d'un proche — chaque compte reste dans son propre navigateur). Une fois les données envoyées, l'app fonctionne seule, même hors ligne. Refais un lien après chaque synchro pour la mettre à jour.</p>
+      </div></details>
+    </section>
+
+    <section id="installer-extension">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4.5a2 2 0 1 1 4 0V6h3a1 1 0 0 1 1 1v3h-1.5a2 2 0 1 0 0 4H18v3a1 1 0 0 1-1 1h-3v-1.5a2 2 0 1 0-4 0V18H7a1 1 0 0 1-1-1v-3h1.5a2 2 0 1 0 0-4H6V7a1 1 0 0 1 1-1h3z"/></svg></span>Installer l'extension</h2>
+      <details class="qa" open><summary>Chrome, Edge, Brave, Opera</summary><div class="a">
+        <ol>
+          <li>Télécharge le code : <a href="https://github.com/kiricoucou/uca-extension/archive/refs/heads/main.zip">uca-extension-main.zip</a>, puis décompresse-le (clic droit → Extraire tout).</li>
+          <li>Ouvre un onglet et tape <code>chrome://extensions</code> (Edge : <code>edge://extensions</code>).</li>
+          <li>Active <b>Mode développeur</b> (en haut à droite).</li>
+          <li>Clique <b>Charger l'extension non empaquetée</b> et choisis le dossier décompressé (celui qui contient <code>manifest.json</code>).</li>
+          <li>Épingle l'icône dans la barre d'outils (pièce de puzzle → épingle). Un onglet s'ouvre pour choisir un design.</li>
+        </ol>
+        <p class="note">Garde ce dossier au même endroit : Chrome le relit à chaque démarrage. Si tu le supprimes, l'extension disparaît.</p>
+      </div></details>
+      <details class="qa"><summary>Firefox</summary><div class="a">
+        <p>Firefox demande un paquet construit avec <code>tests/build_firefox.py</code> (voir le README du dépôt), chargé dans <code>about:debugging</code> → <b>Ce Firefox</b> → <b>Charger un module complémentaire temporaire</b>. Un module temporaire disparaît à la fermeture de Firefox. Une publication sur addons.mozilla.org (installation permanente, et Firefox Android) est prévue.</p>
+      </div></details>
+      <details class="qa"><summary>Pourquoi pas sur le Chrome Web Store ?</summary><div class="a">
+        <p>Le projet n'est pas publié sur le store pour l'instant. Le « mode développeur » est simplement la façon d'installer une extension depuis un dossier : le code est entièrement visible sur GitHub.</p>
+      </div></details>
+      <details class="qa"><summary>Chrome affiche « Désactiver les extensions en mode développeur » au démarrage</summary><div class="a">
+        <p>Message normal pour toute extension chargée depuis un dossier. Ferme-le (croix), ne clique pas sur « Désactiver ».</p>
+      </div></details>
+    </section>
+
+    <section id="installer-app">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>Installer l'app</h2>
+      <p><a class="btn primary" href="install.html">Ouvrir la page d'installation</a></p>
+      <details class="qa" open><summary>Android (Chrome, Edge, Samsung Internet)</summary><div class="a">
+        <ol><li>Ouvre <a href="install.html">la page d'installation</a> sur le téléphone.</li><li>Appuie sur <b>Installer l'application</b> (ou menu ⋮ → <b>Installer l'application</b> / <b>Ajouter à l'écran d'accueil</b>).</li><li>L'icône EDT UCA apparaît avec tes autres applis.</li></ol>
+      </div></details>
+      <details class="qa"><summary>iPhone, iPad (Safari)</summary><div class="a">
+        <ol><li>Ouvre <a href="install.html">la page d'installation</a> <b>dans Safari</b> (pas dans Instagram, Messenger…).</li><li>Bouton <b>Partager</b> (carré avec une flèche) → <b>Sur l'écran d'accueil</b> → <b>Ajouter</b>.</li></ol>
+        <p>Un lien ouvert depuis une autre appli s'ouvre parfois dans un navigateur intégré : utilise « Ouvrir dans Safari ».</p>
+      </div></details>
+      <details class="qa"><summary>Ordinateur (Chrome, Edge)</summary><div class="a">
+        <p>Sur la page d'installation, clique l'icône <b>Installer</b> à droite de la barre d'adresse. L'app s'ouvre dans sa propre fenêtre. Avec l'extension dans le même navigateur, elle synchronise directement.</p>
+      </div></details>
+      <details class="qa"><summary>Raccourcis de l'icône (Aujourd'hui, Notes, Absences)</summary><div class="a">
+        <p>Sur Android et sur ordinateur, un appui long (ou clic droit) sur l'icône propose des raccourcis vers la vue du jour, les notes et les absences.</p>
+      </div></details>
+    </section>
+
+    <section id="synchro">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.6-4.5M4 4v4h4M4 13a8 8 0 0 0 14.6 4.5M20 20v-4h-4"/></svg></span>Synchroniser avec Odin</h2>
+      <details class="qa" open><summary>Comment se passe la première connexion ?</summary><div class="a">
+        <ol><li>Icône de l'extension → <b>Se connecter</b>.</li><li>Un onglet de l'ENT (ent.uca.fr) s'ouvre : identifiant, mot de passe, double authentification si demandée. Tu tapes tout toi-même sur le site de l'université.</li><li>Une fois connecté, l'extension lit l'emploi du temps, puis les absences et les notes, et ferme l'onglet.</li></ol>
+      </div></details>
+      <details class="qa"><summary>La connexion est faite mais rien ne se passe</summary><div class="a">
+        <p>Un bandeau <b>« C'est fait »</b> apparaît pendant la connexion : clique-le une fois connecté à l'ENT, l'extension reprend la main. Si l'onglet reste bloqué, ferme-le et relance <b>Synchroniser</b>.</p>
+      </div></details>
+      <details class="qa"><summary>Synchroniser, c'est quoi exactement ?</summary><div class="a">
+        <p>Relire Odin avec ta session encore ouverte, sans retaper ton mot de passe. Si la session a expiré, l'extension te demande de te reconnecter.</p>
+      </div></details>
+      <details class="qa"><summary>Synchro automatique</summary><div class="a">
+        <p>Dans <b>Paramètres</b> : toutes les 1, 3, 6 ou 12 h. Elle se fait en silence tant que ta session Odin est valide. Si elle a expiré, aucune fenêtre ne s'ouvre toute seule : l'icône affiche <b>« ! »</b>, tu te reconnectes quand tu veux.</p>
+      </div></details>
+      <details class="qa"><summary>Me déconnecter</summary><div class="a">
+        <p>Bouton <b>Déconnexion</b> de la popup : la session Odin est fermée dans le navigateur. Tes données restent affichées jusqu'à la prochaine synchro.</p>
+      </div></details>
+    </section>
+
+    <section id="partage">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 14a4.2 4.2 0 0 0 6 0l3-3a4.2 4.2 0 0 0-6-6l-1 1"/><path d="M14 10a4.2 4.2 0 0 0-6 0l-3 3a4.2 4.2 0 0 0 6 6l1-1"/></svg></span>Envoyer vers le téléphone (liens de partage)</h2>
+      <details class="qa" open id="lien"><summary>Comment envoyer mes données sur mon téléphone ?</summary><div class="a">
+        <ol>
+          <li>Dans la popup de l'extension, clique <b>Générer le lien</b> (ou dans l'agenda : <b>Exporter</b> → <b>Copier un lien pour l'app</b>). Le lien est copié, et ton <b>code de partage</b> s'affiche.</li>
+          <li>Envoie-toi le lien (SMS, mail, messagerie…) et ouvre-le sur le téléphone.</li>
+          <li>La première fois, l'app demande le code de partage : tape-le, coche « Mémoriser » et c'est fini. Les fois suivantes, l'import est direct.</li>
+        </ol>
+      </div></details>
+      <details class="qa"><summary>Le lien est-il sécurisé ? Qui peut le lire ?</summary><div class="a">
+        <p>Les données sont <b>chiffrées</b> dans le lien (AES-GCM 256 bits, clé dérivée de ton code de partage). Sans le code, le lien est une suite de caractères illisible, même pour la personne qui le trouve dans un SMS.</p>
+        <p>Le lien n'est <b>stocké nulle part</b> : la partie après le <code>#</code> n'est jamais envoyée à GitHub ni à aucun serveur, elle reste dans le navigateur qui l'ouvre. L'app efface aussitôt le lien de la barre d'adresse et de l'historique.</p>
+      </div></details>
+      <details class="qa"><summary>Où trouver ou changer mon code de partage ?</summary><div class="a">
+        <p>Dans l'extension : <b>Paramètres</b> → <b>Partage vers le téléphone</b> → <b>Code de partage</b>. Il est créé automatiquement au premier lien. Tu peux taper le tien (4 caractères minimum) ou cliquer <b>Nouveau</b>. Changer le code rend tous les anciens liens inutilisables.</p>
+        <p>Le code n'est jamais inclus dans un lien ni dans un export.</p>
+      </div></details>
+      <details class="qa"><summary>Combien de temps un lien reste-t-il valable ?</summary><div class="a">
+        <p>Tu choisis : <b>Paramètres</b> → <b>Durée de validité d'un lien</b> (1 h, 6 h, 1 jour, 2 jours, 7 jours ; 2 jours par défaut). La date d'expiration est liée au chiffrement : impossible de la prolonger en modifiant le lien. Passé ce délai, l'app affiche « Ce lien a expiré » : génère un nouveau lien.</p>
+      </div></details>
+      <details class="qa"><summary>« Code incorrect »</summary><div class="a">
+        <p>Le code tapé (ou mémorisé sur le téléphone) n'est pas celui utilisé pour créer le lien. Vérifie le code dans les Paramètres de l'extension. Si tu l'as changé entre-temps, génère un nouveau lien.</p>
+      </div></details>
+      <details class="qa"><summary>Les autres façons : QR code animé et fichier</summary><div class="a">
+        <ul>
+          <li><b>QR code animé</b> : dans l'agenda de l'extension, <b>Exporter</b> → <b>Afficher le QR code</b> ; dans l'app, <b>Importer</b> → <b>Scanner le code animé</b>. Les données passent directement d'un écran à l'autre, par la caméra.</li>
+          <li><b>Fichier <code>.ucasync</code></b> : à transférer comme tu veux (câble, Drive, AirDrop…), puis <b>Importer un fichier</b> dans l'app. Sur Android, « Partager → EDT UCA » marche aussi.</li>
+        </ul>
+        <p>Ces deux méthodes ne passent par aucun lien : rien ne transite par Internet avec le QR code.</p>
+      </div></details>
+      <details class="qa"><summary>L'app ne se met pas à jour toute seule après une synchro</summary><div class="a">
+        <p>Sur téléphone, l'app ne peut pas joindre Odin : elle affiche les données du dernier lien importé (« Données de l'ordinateur du … »). Après une synchro sur l'ordinateur, génère un nouveau lien. Sur ordinateur avec l'extension dans le même navigateur, la synchro est directe.</p>
+      </div></details>
+    </section>
+
+    <section id="agenda">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>Utiliser l'agenda</h2>
+      <details class="qa"><summary>Les vues : Jour, 3 jours, 5 jours, 6 jours, Semaine, Mois</summary><div class="a">
+        <p>Boutons en haut à gauche. La vue d'ouverture se règle dans Paramètres (« Automatique » : semaine sur ordinateur, jour sur téléphone). Flèches ‹ › pour avancer ou reculer, <b>Aujourd'hui</b> pour revenir. La journée la plus chargée tient toujours à l'écran, sans défiler.</p>
+      </div></details>
+      <details class="qa"><summary>Zoom</summary><div class="a"><p>Boutons − et + à côté du pourcentage : agrandit ou réduit le texte des cours. Retenu sur cet appareil.</p></div></details>
+      <details class="qa"><summary>Détail d'un cours et note personnelle</summary><div class="a">
+        <p>Clique un cours : horaires, salle, enseignant, changements récents, et une zone pour écrire une note personnelle (devoir à rendre, salle à retenir…). Un petit indicateur marque les cours qui ont une note.</p>
+      </div></details>
+      <details class="qa"><summary>Filtres</summary><div class="a">
+        <p>Bouton <b>Filtres</b> : recherche par texte, par type (CM, TD, TP, examen…) ou masquer des matières. Le nombre de filtres actifs s'affiche sur le bouton. Les filtres s'appliquent à toutes les vues.</p>
+      </div></details>
+      <details class="qa"><summary>Exporter vers Google Agenda, Outlook, le calendrier du téléphone (.ics)</summary><div class="a">
+        <p><b>Exporter</b> → choisis la période (semaine affichée, 4 semaines, tout), avec ou sans les filtres, avec ou sans rappel. Ouvre le fichier <code>.ics</code> téléchargé : ton agenda propose de l'importer. Le rappel inclus fait sonner ton téléphone avant chaque cours, même sans l'extension.</p>
+      </div></details>
+      <details class="qa"><summary>Moodle et Mail</summary><div class="a"><p>Raccourcis vers moodle.uca.fr et la messagerie de l'université.</p></div></details>
+      <details class="qa"><summary>Sur téléphone : où sont les boutons ?</summary><div class="a"><p>Dans le menu (☰) en haut : vues, notes, absences, filtres, export, paramètres. Fais glisser la bande des jours pour changer de jour.</p></div></details>
+    </section>
+
+    <section id="changements">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/></svg></span>Changements d'emploi du temps</h2>
+      <details class="qa" open><summary>Quels changements sont détectés ?</summary><div class="a">
+        <p>À chaque synchro, l'extension compare le nouvel emploi du temps au précédent (à partir d'aujourd'hui) et repère :</p>
+        <ul>
+          <li><span class="badge-demo" style="background:#1558c0">Déplacé</span> autre heure ou autre jour (jusqu'à 7 jours d'écart) ;</li>
+          <li><span class="badge-demo" style="background:#b45309">Salle changée</span> même cours, autre salle ;</li>
+          <li><span class="badge-demo" style="background:#b45309">Horaire modifié</span> même début, fin différente ;</li>
+          <li><span class="badge-demo" style="background:#b45309">Intitulé modifié</span> même créneau, autre cours (TD devenu TP, autre matière…) ;</li>
+          <li><span class="badge-demo" style="background:#8e24aa">Enseignant changé</span> ;</li>
+          <li><span class="badge-demo" style="background:#8e24aa">Infos modifiées</span> remarque ajoutée par Odin (groupe, « reporté »…) ;</li>
+          <li><span class="badge-demo" style="background:#137333">Nouveau</span> cours ajouté ;</li>
+          <li><span class="badge-demo" style="background:#b3261e">Annulé</span> cours disparu d'Odin (affiché barré).</li>
+        </ul>
+        <p>Plusieurs changements à la fois (déplacé <i>et</i> nouvelle salle) sont tous listés.</p>
+      </div></details>
+      <details class="qa"><summary>Où voir le détail avant / après ?</summary><div class="a">
+        <p>Clique le cours marqué : la fenêtre de détail liste chaque changement, par exemple « Salle : B102 → B205 » ou « Horaire : 08:00–10:00 → 10:15–12:15 », avec la date de détection. La notification de l'extension donne le même détail.</p>
+      </div></details>
+      <details class="qa"><summary>Combien de temps un cours reste marqué ?</summary><div class="a"><p>7 jours après la détection. Les cours passés ne comptent pas comme annulés quand ils sortent de la fenêtre d'Odin.</p></div></details>
+      <details class="qa"><summary>Rien n'est signalé à la première synchro</summary><div class="a"><p>Normal : il faut un emploi du temps précédent pour comparer. Les changements apparaissent à partir de la deuxième synchro.</p></div></details>
+    </section>
+
+    <section id="notes">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11l3 3v13H5z"/><path d="M9 9h6M9 13h6M9 17h4"/></svg></span>Notes et moyenne</h2>
+      <details class="qa" open><summary>Pourquoi certaines notes sont en orange ou en jaune ?</summary><div class="a">
+        <p>Odin ne date pas les notes. L'extension retient quand chaque note apparaît (ou change) : <b class="c-new">orange</b> pendant quelques jours, puis <b class="c-recent">jaune</b> pendant autant, puis normale. Le délai se règle dans <b>Paramètres</b> → <b>Nouvelles notes en orange</b> (1 à 7 jours, 2 par défaut).</p>
+        <p>Concerne les notes d'évaluation, de matière et d'UE. Deux évaluations au même nom dans une matière sont suivies séparément.</p>
+      </div></details>
+      <details class="qa"><summary>Une note récente n'est pas en orange</summary><div class="a">
+        <ul>
+          <li><b>Première synchro des notes</b> : tout ce qui existe déjà est considéré comme ancien (sinon tout serait orange).</li>
+          <li><b>Délai dépassé</b> : la couleur compte à partir du moment où l'extension a vu la note, pas de sa date de publication. Allonge le délai dans Paramètres si tu synchronises rarement.</li>
+          <li><b>Dans l'app</b> : génère un nouveau lien après la synchro pour transmettre aussi l'âge des notes.</li>
+        </ul>
+      </div></details>
+      <details class="qa"><summary>Comment est calculée la moyenne générale ?</summary><div class="a">
+        <p>Odin ne remplit souvent la note de matière ou d'UE qu'au jury. En attendant, la moyenne est recalculée à partir des évaluations, avec les coefficients affichés par Odin (évaluation → matière → UE → moyenne générale). Aucun coefficient n'est inventé. C'est une estimation : seule la moyenne officielle fait foi.</p>
+      </div></details>
+      <details class="qa"><summary>Notification « Nouvelle note »</summary><div class="a"><p>L'extension prévient quand une note apparaît ou change (désactivable dans Paramètres → Alertes).</p></div></details>
+    </section>
+
+    <section id="absences">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>Absences</h2>
+      <details class="qa"><summary>Que contient le panneau Absences ?</summary><div class="a">
+        <p>Les compteurs d'Odin (déclarées, justifiées, non justifiées, avec motif, journées non justifiées) et la liste de tes déclarations (dates, horaires, motif, statut). Le nombre d'absences non justifiées s'affiche sur le bouton.</p>
+      </div></details>
+      <details class="qa"><summary>Il manque le détail de certaines absences</summary><div class="a"><p>Odin ne détaille que les absences que tu as déclarées ; pour les autres, il ne donne que leur nombre.</p></div></details>
+    </section>
+
+    <section id="rappels">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg></span>Rappels et notifications</h2>
+      <details class="qa"><summary>Rappel avant chaque cours</summary><div class="a"><p>Extension : notification 5, 10, 15, 30 ou 60 min avant (Paramètres), avec la matière et la salle. Clique-la pour ouvrir l'agenda. Sur téléphone : passe par l'export <code>.ics</code> avec rappel.</p></div></details>
+      <details class="qa"><summary>La pastille sur l'icône</summary><div class="a"><p>« 25m » quand un cours commence dans moins d'une heure, sinon l'heure du prochain cours (« 14h »), ou le nombre de cours restants. « ! » en rouge : session Odin expirée. Réglable ou désactivable.</p></div></details>
+      <details class="qa"><summary>Je ne reçois aucune notification</summary><div class="a"><p>Vérifie que les notifications de Chrome sont autorisées par ton système (Windows : Paramètres → Système → Notifications ; mode « Ne pas déranger » désactivé), et que l'option est active dans Paramètres.</p></div></details>
+    </section>
+
+    <section id="designs">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.6 0-1.3-1-1.6-1-2.9 0-1 .8-1.5 1.8-1.5H17a4 4 0 0 0 4-4C21 6.6 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7.5" r="1"/></svg></span>Designs et réglages</h2>
+      <details class="qa"><summary>Changer de design</summary><div class="a"><p>Bouton <b>Design</b> : animé (sombre turquoise), professionnel (clair épuré) ou carnet (papier crème, écriture manuscrite). Seule l'apparence change, toutes les fonctionnalités sont identiques. Le design choisi s'applique aussi à la page Paramètres et à l'app.</p></div></details>
+      <details class="qa"><summary>Où sont les Paramètres ?</summary><div class="a"><p>Bouton <b>Paramètres</b> dans l'agenda et la popup. Les réglages sont enregistrés immédiatement, sur cet appareil uniquement. « Rétablir les valeurs par défaut » remet tout à zéro (sauf le code de partage).</p></div></details>
+    </section>
+
+    <section id="maj">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 20h14"/></svg></span>Mises à jour</h2>
+      <details class="qa" open id="maj-app"><summary>App, agenda en ligne, raccourci, site : automatiques</summary><div class="a">
+        <p>Que l'app soit installée sur ordinateur, sur téléphone, ajoutée en raccourci ou ouverte dans un onglet : dès qu'elle est en ligne, chaque page est chargée depuis la dernière version publiée. La copie gardée sur l'appareil ne sert qu'hors ligne.</p>
+        <p>Si l'app a démarré sur sa copie hors ligne (réseau absent ou trop lent) et qu'une version plus récente existe, un écran <b>Nouvelle version disponible</b> bloque l'app : <b>Mettre à jour</b> vide la copie et recharge. Paramètres → <b>Vérifier les mises à jour</b> force une vérification.</p>
+      </div></details>
+      <details class="qa" open id="maj-extension"><summary>Extension : comment appliquer une mise à jour ?</summary><div class="a">
+        <p>Une extension chargée depuis un dossier ne peut pas se télécharger elle-même (Chrome l'interdit). Quand l'écran « Nouvelle version disponible » s'affiche :</p>
+        <ol>
+          <li><b>Si tu as installé avec git</b> : <code>git pull</code> dans le dossier, puis <b>Mettre à jour</b>.</li>
+          <li><b>Sinon</b> : télécharge <a href="https://github.com/kiricoucou/uca-extension/archive/refs/heads/main.zip">la nouvelle version (zip)</a>, décompresse-la <b>par-dessus l'ancien dossier</b> (remplacer les fichiers), puis clique <b>Mettre à jour</b> (ou le bouton ↻ de l'extension dans <code>chrome://extensions</code>).</li>
+        </ol>
+        <p>Tes données et réglages sont conservés tant que tu gardes le même dossier. Si les fichiers ne sont pas encore à jour, « Mettre à jour » ouvre cette page au lieu de recharger pour rien.</p>
+      </div></details>
+      <details class="qa"><summary>« Installée : — · Dernière : — » ou « Vérification impossible »</summary><div class="a"><p>La vérification n'a pas pu joindre GitHub (pas de connexion, réseau de l'IUT filtrant…). Réessaie avec <b>Vérifier les mises à jour</b> une fois en ligne.</p></div></details>
+    </section>
+
+    <section id="confidentialite">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></span>Confidentialité</h2>
+      <details class="qa" open><summary>Quelles données, et où vont-elles ?</summary><div class="a">
+        <ul>
+          <li>Emploi du temps, notes, absences, notes personnelles et réglages : <b>uniquement dans ton navigateur ou ton téléphone</b>.</li>
+          <li><b>Aucun serveur</b> appartenant au projet. <b>Rien n'est stocké sur GitHub</b> : GitHub héberge seulement le code et ces pages.</li>
+          <li>Les seules connexions de l'extension : Odin et l'ENT (pour lire tes données, comme toi dans un onglet), et la lecture du numéro de version sur GitHub (aucune donnée envoyée).</li>
+          <li>Ton mot de passe n'est jamais lu ni enregistré : tu le tapes toi-même sur le site de l'université.</li>
+          <li>Liens de partage : chiffrés, jamais transmis à un serveur, valables le temps que tu choisis.</li>
+        </ul>
+      </div></details>
+      <details class="qa"><summary>Effacer toutes mes données</summary><div class="a"><p>Extension : supprime-la dans <code>chrome://extensions</code>. App : désinstalle-la, ou efface les données du site <code>kiricoucou.github.io</code> dans les réglages du navigateur.</p></div></details>
+      <details class="qa"><summary>Le code est-il vérifiable ?</summary><div class="a"><p>Oui, tout est public sur <a href="https://github.com/kiricoucou/uca-extension">github.com/kiricoucou/uca-extension</a>, sans code caché ni minifié.</p></div></details>
+    </section>
+
+    <section id="depannage">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 6.5a4 4 0 0 0-5.3 5.3L3.5 17.5l3 3 5.7-5.7a4 4 0 0 0 5.3-5.3l-2.4 2.4-2.6-.4-.4-2.6z"/></svg></span>Dépannage</h2>
+      <details class="qa"><summary>« Aucun emploi du temps détecté sur la page »</summary><div class="a"><p>Odin n'a pas affiché l'emploi du temps à temps (site lent, maintenance) ou la connexion n'a pas abouti. Ouvre odin.iut.uca.fr dans un onglet pour vérifier qu'il répond, puis relance la synchro.</p></div></details>
+      <details class="qa"><summary>L'icône affiche « ! »</summary><div class="a"><p>Ta session Odin a expiré. Clique l'icône → <b>Se connecter</b>.</p></div></details>
+      <details class="qa"><summary>L'app affiche une vieille version ou un affichage cassé</summary><div class="a"><p>Paramètres → <b>Vérifier les mises à jour</b>. En dernier recours : ferme complètement l'app, rouvre-la en ligne ; ou efface les données du site dans le navigateur (puis réimporte un lien).</p></div></details>
+      <details class="qa"><summary>« Ce lien a expiré » / « Ancien format de lien »</summary><div class="a"><p>Le lien a dépassé sa durée de validité, ou date d'avant le chiffrement des liens. Clique <b>Générer le lien</b> dans l'extension pour en créer un nouveau.</p></div></details>
+      <details class="qa"><summary>La caméra ne s'ouvre pas pour scanner</summary><div class="a"><p>Autorise la caméra pour le site dans les réglages du navigateur. Sur iPhone, ouvre l'app depuis l'écran d'accueil ou Safari. Sinon, utilise le lien de partage : pas besoin de caméra.</p></div></details>
+      <details class="qa"><summary>« Copie impossible » en générant un lien</summary><div class="a"><p>Le presse-papiers est bloqué par le navigateur. Dans l'agenda, <b>Exporter</b> → <b>Copier un lien</b> affiche alors le lien dans un champ à copier à la main.</p></div></details>
+      <details class="qa"><summary>Un cours apparaît en double ou mal placé</summary><div class="a"><p>L'affichage reprend exactement Odin. Si Odin est correct mais pas l'agenda, <a href="#contact">signale-le</a> avec une capture (sans données personnelles si possible).</p></div></details>
+    </section>
+
+    <section id="contact">
+      <h2><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v11H8l-4 4z"/></svg></span>Signaler un problème</h2>
+      <p>Ouvre un ticket sur <a href="https://github.com/kiricoucou/uca-extension/issues">GitHub (Issues)</a> : décris ce que tu faisais, ce que tu attendais, ce qui s'est passé, ton navigateur et le design utilisé. N'y mets jamais ton mot de passe ni un lien de partage.</p>
+    </section>
+  </main>
+</div>
+
+<footer class="site">
+  <div class="wrap">
+    <span>Emploi du temps UCA — projet étudiant, non affilié à l'Université Clermont Auvergne.</span>
+    <span><a href="index.html">Accueil</a> · <a href="install.html">Installer l'app</a> · <a href="https://github.com/kiricoucou/uca-extension">Code source</a></span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  const input = document.getElementById("q");
+  const sections = Array.from(document.querySelectorAll(".help section"));
+  const items = Array.from(document.querySelectorAll("details.qa"));
+  const initialOpen = new Map(items.map((d) => [d, d.open]));
+  const norm = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  items.forEach((d) => { d.dataset.text = norm(d.textContent); });
+  function apply() {
+    const words = norm(input.value).split(/\s+/).filter(Boolean);
+    let shown = 0;
+    items.forEach((d) => {
+      const hit = words.every((w) => d.dataset.text.includes(w));
+      d.hidden = !hit;
+      d.open = words.length ? hit : initialOpen.get(d);
+      if (hit) shown++;
+    });
+    sections.forEach((s) => {
+      const qa = s.querySelectorAll("details.qa");
+      s.hidden = words.length > 0 && qa.length > 0 && Array.from(qa).every((d) => d.hidden);
+      if (words.length && !qa.length) s.hidden = true;
+    });
+    document.getElementById("noResults").style.display = words.length && !shown ? "block" : "none";
+  }
+  input.addEventListener("input", apply);
+  // Lien direct vers une question (#lien, #maj-extension…) : l'ouvrir.
+  function openTarget() {
+    const t = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+    if (t && t.tagName === "DETAILS") t.open = true;
+    if (t) t.querySelectorAll && t.querySelectorAll("details.qa").forEach((d, i) => { if (i === 0) d.open = true; });
+  }
+  window.addEventListener("hashchange", openTarget);
+  openTarget();
+})();
+</script>
+</body>
+</html>

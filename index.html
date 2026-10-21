@@ -4,23 +4,191 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Emploi du temps UCA</title>
+<meta name="description" content="Emploi du temps, notes et absences de l'IUT Clermont Auvergne (Odin), lisibles partout : extension, app téléphone, agenda en ligne. Non officiel.">
 <link rel="icon" type="image/png" href="app/icons/icon-192.png">
-<link rel="stylesheet" href="app/app.css">
+<script>
+/* Lien de partage chiffré (#e=…, core/transfer.js) : direction l'import, avant même d'afficher la page.
+   Le fragment n'est jamais envoyé à GitHub : il reste dans le navigateur. */
+if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location.hash);
+</script>
+<link rel="stylesheet" href="site.css">
 </head>
 <body>
-<main class="center">
-  <img class="app-logo" src="app/icons/icon-192.png" alt="">
-  <p class="muted">Ouverture…</p>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="app/icons/icon-192.png" alt=""><span>Emploi du temps UCA</span></a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="index.html" aria-current="page" class="hide-sm">Accueil</a>
+      <a href="#comparatif">Comparatif</a>
+      <a href="aide.html">Aide</a>
+      <a href="app/index.html">Agenda en ligne</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <img class="logo" src="app/icons/icon-192.png" alt="">
+      <h1>Ton emploi du temps de l'IUT,<br>lisible partout.</h1>
+      <p class="lead">Cours, notes, moyenne et absences d'Odin, dans un agenda clair sur ordinateur et téléphone. Avec alertes quand un cours change de salle ou d'horaire, et quand une note tombe.</p>
+      <div class="btns">
+        <a class="btn primary" href="app/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Ouvrir l'agenda en ligne</a>
+        <a class="btn" href="install.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>Installer l'app</a>
+        <a class="btn" href="aide.html#installer-extension"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4.5a2 2 0 1 1 4 0V6h3a1 1 0 0 1 1 1v3h-1.5a2 2 0 1 0 0 4H18v3a1 1 0 0 1-1 1h-3v-1.5a2 2 0 1 0-4 0V18H7a1 1 0 0 1-1-1v-3h1.5a2 2 0 1 0 0-4H6V7a1 1 0 0 1 1-1h3z"/></svg>Installer l'extension</a>
+        <a class="btn" href="aide.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 17h.01"/></svg>Aide</a>
+      </div>
+      <p style="margin-top:22px"><span class="tag">Projet étudiant non officiel</span></p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <h2>Quatre façons de l'utiliser</h2>
+      <p class="sub">Mêmes fonctionnalités et mêmes designs partout. Ce qui change : comment les données arrivent.</p>
+      <div class="cards">
+        <article class="card">
+          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4.5a2 2 0 1 1 4 0V6h3a1 1 0 0 1 1 1v3h-1.5a2 2 0 1 0 0 4H18v3a1 1 0 0 1-1 1h-3v-1.5a2 2 0 1 0-4 0V18H7a1 1 0 0 1-1-1v-3h1.5a2 2 0 1 0 0-4H6V7a1 1 0 0 1 1-1h3z"/></svg></span>Extension</h3>
+          <p>Sur ordinateur (Chrome, Edge, Brave, Firefox). La seule qui se connecte directement à Odin : synchro en un clic, synchro automatique, rappels et notifications.</p>
+          <a class="btn" href="aide.html#installer-extension">Comment l'installer</a>
+        </article>
+        <article class="card">
+          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>App</h3>
+          <p>Installée sur téléphone (Android, iPhone) ou ordinateur, en plein écran et hors ligne. Reçoit les données de l'extension par lien chiffré, QR code ou fichier.</p>
+          <a class="btn" href="install.html">Installer l'app</a>
+        </article>
+        <article class="card">
+          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>Agenda en ligne</h3>
+          <p>La même app, dans un simple onglet, sans rien installer. Pratique sur un ordinateur de l'IUT ou pour essayer.</p>
+          <a class="btn" href="app/index.html">Ouvrir l'agenda</a>
+        </article>
+        <article class="card">
+          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>Site</h3>
+          <p>Ces pages : présentation, comparatif, aide complète et liens d'installation. Ne contient aucune donnée personnelle.</p>
+          <a class="btn" href="aide.html">Lire l'aide</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="comparatif">
+    <div class="wrap">
+      <h2>Comparatif</h2>
+      <p class="sub">La grande différence : seule l'extension se connecte directement à Odin. L'app et l'agenda en ligne reçoivent les données depuis l'extension, par lien de partage chiffré (ou QR code, ou fichier).</p>
+      <div class="table-scroll">
+        <table class="compare">
+          <thead>
+            <tr>
+              <th scope="col"></th>
+              <th scope="col">Site<small>pages d'info</small></th>
+              <th scope="col">Agenda en ligne<small>onglet du navigateur</small></th>
+              <th scope="col">Extension<small>Chrome / Firefox, ordinateur</small></th>
+              <th scope="col">App<small>installée, téléphone ou ordinateur</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="key">
+              <th scope="row">Se connecter directement à Odin</th>
+              <td><span class="pill no">Non</span><br>Aucune donnée.</td>
+              <td><span class="pill part">Via l'extension</span><br>Oui si l'extension est installée dans ce même navigateur (bouton Synchroniser). Sinon : lien de partage.</td>
+              <td><span class="pill yes">Oui</span><br>Connexion ENT (CAS) dans un onglet, puis synchro en un clic.</td>
+              <td><span class="pill part">Via l'extension</span><br>Sur ordinateur avec l'extension dans le même navigateur : oui. Sur téléphone : lien de partage.</td>
+            </tr>
+            <tr class="key">
+              <th scope="row">Recevoir les données par lien de partage</th>
+              <td><span class="pill no">—</span></td>
+              <td><span class="pill yes">Oui</span><br>Lien chiffré, QR animé ou fichier.</td>
+              <td><span class="pill yes">Crée les liens</span><br>Bouton « Générer le lien », code de partage, durée au choix.</td>
+              <td><span class="pill yes">Oui</span><br>Lien chiffré (code tapé une fois), QR animé ou fichier.</td>
+            </tr>
+            <tr>
+              <th scope="row">Installation</th>
+              <td>Rien</td>
+              <td>Rien</td>
+              <td>Charger le dossier dans le navigateur (5 min)</td>
+              <td>« Ajouter à l'écran d'accueil » / « Installer »</td>
+            </tr>
+            <tr>
+              <th scope="row">Sur téléphone</th>
+              <td><span class="pill yes">Oui</span></td>
+              <td><span class="pill yes">Oui</span></td>
+              <td><span class="pill part">Pas encore</span><br>Firefox Android prévu.</td>
+              <td><span class="pill yes">Oui</span><br>Android et iPhone.</td>
+            </tr>
+            <tr>
+              <th scope="row">Synchro automatique</th>
+              <td>—</td>
+              <td><span class="pill no">Non</span><br>Sauf via l'extension.</td>
+              <td><span class="pill yes">Oui</span><br>Toutes les 1 à 12 h, en silence.</td>
+              <td><span class="pill no">Non</span><br>Refais un lien après une synchro.</td>
+            </tr>
+            <tr>
+              <th scope="row">Changements d'EDT (salle, horaire, prof...)</th>
+              <td>—</td>
+              <td><span class="pill yes">Affichés</span><br>Badges sur les cours.</td>
+              <td><span class="pill yes">Notifiés</span><br>Notification + badges, détail avant/après.</td>
+              <td><span class="pill yes">Affichés</span><br>Badges sur les cours.</td>
+            </tr>
+            <tr>
+              <th scope="row">Nouvelles notes</th>
+              <td>—</td>
+              <td><span class="pill yes">En orange</span></td>
+              <td><span class="pill yes">Notifiées</span><br>Et en orange.</td>
+              <td><span class="pill yes">En orange</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Rappels avant les cours</th>
+              <td>—</td>
+              <td><span class="pill part">Via .ics</span><br>Export vers ton agenda.</td>
+              <td><span class="pill yes">Oui</span><br>Notifications 5 à 60 min avant.</td>
+              <td><span class="pill part">Via .ics</span><br>Le calendrier du téléphone sonne.</td>
+            </tr>
+            <tr>
+              <th scope="row">Hors ligne</th>
+              <td><span class="pill part">Partiel</span></td>
+              <td><span class="pill yes">Oui</span><br>Après une première visite.</td>
+              <td><span class="pill yes">Oui</span></td>
+              <td><span class="pill yes">Oui</span></td>
+            </tr>
+            <tr>
+              <th scope="row">Mises à jour</th>
+              <td>Automatiques</td>
+              <td>Automatiques</td>
+              <td>Bouton « Mettre à jour » (voir l'aide)</td>
+              <td>Automatiques</td>
+            </tr>
+            <tr>
+              <th scope="row">Où sont tes données</th>
+              <td>Nulle part</td>
+              <td>Dans ce navigateur</td>
+              <td>Dans ce navigateur</td>
+              <td>Sur cet appareil</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="legend">Toutes les versions affichent les mêmes vues (jour, 3/5/6 jours, semaine, mois), notes, moyenne, absences, filtres et export .ics.</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <h2>Tes données restent chez toi</h2>
+      <p class="sub">Aucun serveur, aucun compte, rien n'est stocké sur GitHub.</p>
+      <div class="cards">
+        <article class="card"><h3>Pas de serveur</h3><p>L'extension lit Odin dans ton navigateur et garde tout dans ton navigateur. Ce site ne fait qu'héberger le code.</p></article>
+        <article class="card"><h3>Liens chiffrés</h3><p>Un lien de partage contient tes données chiffrées (AES-256). Sans ton code de partage, il est illisible. GitHub ne le reçoit jamais : la partie après « # » ne quitte pas le navigateur.</p></article>
+        <article class="card"><h3>Durée choisie</h3><p>Tu choisis combien de temps un lien reste valable (1 h à 7 jours). Passé ce délai, l'app le refuse.</p></article>
+      </div>
+    </div>
+  </section>
 </main>
-<script>
-/* Seule page publique de kiricoucou.github.io/uca-extension : lien de téléchargement de l'app
-   et lien partageable (#d=…, voir core/transfer.js buildShareLink). Un lien partageable va direct
-   à l'import ; toute autre visite passe par app/index.html, qui renvoie vers le guide d'installation
-   tant que l'app n'a pas été ouverte sur cet appareil. */
-(function () {
-  if (location.hash.indexOf("#d=") === 0) { location.replace("app/import.html" + location.hash); return; }
-  location.replace("app/index.html" + location.search);
-})();
-</script>
+
+<footer class="site">
+  <div class="wrap">
+    <span>Emploi du temps UCA — projet étudiant, non affilié à l'Université Clermont Auvergne.</span>
+    <span><a href="aide.html">Aide</a> · <a href="aide.html#confidentialite">Confidentialité</a> · <a href="https://github.com/kiricoucou/uca-extension">Code source</a></span>
+  </div>
+</footer>
 </body>
 </html>

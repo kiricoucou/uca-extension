@@ -88,14 +88,54 @@ if (new URLSearchParams(location.search).has("shared") && "caches" in window) {
   });
 }
 
-/* Lien partagé (#d=…, voir core/transfer.js buildShareLink) : import direct, sans caméra ni fichier. */
-function importFromLinkHash(h) {
-  UCA_TRANSFER.fromLinkHash(h).then((snap) => finish(UCA_TRANSFER.validate(snap)))
-    .catch((e) => status(e instanceof SyntaxError ? "Lien illisible ou incomplet." : e.message, "err"));
+/* Lien partagé chiffré (#e=…, voir core/transfer.js buildShareLink) : import direct, sans caméra
+   ni fichier. Le code de partage peut être mémorisé sur ce téléphone (stockage local uniquement). */
+const SAVED_CODE = "uca_share_code_saved";
+let pendingHash = null;
+function showCodeCard(h, message) {
+  pendingHash = h;
+  ["chooseCard", "linkCard"].forEach((id) => $(id).classList.add("hidden"));
+  $("codeCard").classList.remove("hidden");
+  try {
+    const p = UCA_TRANSFER.parseLinkHash(h);
+    $("codeExpiry").textContent = p ? "Lien valable jusqu'au " + new Date(p.expiresAt).toLocaleString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) + "." : "";
+  } catch (e) { $("codeExpiry").textContent = ""; }
+  if (message) status(message, "err"); else status("");
+  $("codeInput").focus();
 }
+async function importFromLinkHash(h, typedCode) {
+  const saved = (await chrome.storage.local.get(SAVED_CODE))[SAVED_CODE];
+  const code = typedCode || saved;
+  try {
+    const snap = await UCA_TRANSFER.fromLinkHash(h, code);
+    if (!snap) { status("Ce texte ne contient pas de lien de partage valide.", "err"); return; }
+    if (typedCode) {
+      if ($("codeRemember").checked) await chrome.storage.local.set({ [SAVED_CODE]: UCA_TRANSFER.normCode(typedCode) });
+      else await chrome.storage.local.remove(SAVED_CODE);
+    }
+    $("codeCard").classList.add("hidden");
+    pendingHash = null;
+    finish(UCA_TRANSFER.validate(snap));
+  } catch (e) {
+    if (e.kind === "code") showCodeCard(h, typedCode ? e.message : (saved ? "Le code mémorisé ne correspond pas à ce lien : tape le code actuel." : ""));
+    else { $("codeCard").classList.add("hidden"); $("chooseCard").classList.remove("hidden"); status(e instanceof SyntaxError ? "Lien illisible ou incomplet." : e.message, "err"); }
+  }
+}
+$("codeGoBtn").addEventListener("click", () => {
+  const c = UCA_TRANSFER.normCode($("codeInput").value);
+  if (c.length < 4) { status("Le code fait au moins 4 caractères.", "err"); return; }
+  if (pendingHash) importFromLinkHash(pendingHash, c);
+});
+$("codeInput").addEventListener("keydown", (e) => { if (e.key === "Enter") $("codeGoBtn").click(); });
+$("codeCancelBtn").addEventListener("click", () => {
+  pendingHash = null;
+  $("codeCard").classList.add("hidden");
+  $("chooseCard").classList.remove("hidden");
+  status("");
+});
 // Ouvert directement avec le fragment dans l'URL : efface-le aussitôt lu, pour ne pas laisser
-// les données dans l'historique du navigateur.
-if (location.hash.startsWith("#d=")) {
+// le lien dans l'historique du navigateur.
+if (location.hash.startsWith("#e=") || location.hash.startsWith("#d=")) {
   const h = location.hash;
   history.replaceState(null, "", location.pathname + location.search);
   importFromLinkHash(h);
@@ -115,7 +155,7 @@ $("linkCancelBtn").addEventListener("click", () => {
 });
 $("linkGoBtn").addEventListener("click", () => {
   const raw = $("linkInput").value.trim();
-  const m = /#d=\S+/.exec(raw);
+  const m = /#[ed]=\S+/.exec(raw);
   if (!m) { status("Ce texte ne contient pas de lien de partage valide.", "err"); return; }
   $("linkCard").classList.add("hidden");
   importFromLinkHash(m[0]);

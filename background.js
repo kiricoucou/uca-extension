@@ -71,6 +71,23 @@ async function checkForUpdate() {
   broadcast({ type: "UCA_UPDATE_STATE", current, latest, updateAvailable });
 }
 
+/* « Mettre à jour » : recharger ne sert que si les fichiers sur le disque sont déjà plus récents
+   (git pull, nouveau dossier décompressé). manifest.json est relu sur le disque (fetch, pas
+   getManifest() qui reste figé) : s'il est encore ancien, on ouvre la page d'aide qui explique
+   comment récupérer la nouvelle version au lieu d'un rechargement qui ne changerait rien. */
+const HELP_UPDATE_URL = "https://kiricoucou.github.io/uca-extension/aide.html#maj-extension";
+async function applyExtensionUpdate() {
+  try {
+    const disk = await (await fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" })).json();
+    const { uca_latest_version } = await chrome.storage.local.get("uca_latest_version");
+    if (uca_latest_version && compareVersions(disk.version, uca_latest_version) < 0) {
+      await chrome.tabs.create({ url: HELP_UPDATE_URL });
+      return;
+    }
+  } catch (e) { /* on tente quand même le rechargement */ }
+  chrome.runtime.reload();
+}
+
 /* ============ Design choisi (registre designs/designs.json) ============
    Chaque design est un dossier (HTML/CSS/assets + design.js) ; la logique est dans core/.
    L'id choisi est stocké dans uca_design ; un id absent du registre renvoie au sélecteur. */
@@ -337,9 +354,12 @@ function parseNotesText(text) {
   // quelle. On ne veut l'afficher qu'une fois : dédup par titre exact, on garde la
   // première occurrence rencontrée et on lui rattache les évaluations des occurrences
   // suivantes (au cas où une réapparition apporterait une éval pas encore vue).
+  // Deux évaluations de même libellé dans une même matière (ex. deux « Contrôle (sur 20) ») sont
+  // deux notes distinctes : la 2e reçoit la clé « libellé #2 ». Une matière répétée sous une autre
+  // UE ne rajoute que les évaluations de rang pas encore vu.
   const matiereByLabel = new Map();
   const ueByLabel = new Map();
-  let currentUE = null, currentMatiere = null;
+  let currentUE = null, currentMatiere = null, occCounts = new Map();
   for (const raw of text.split(/\r?\n/)) {
     if (!raw.trim()) continue;
     const cols = raw.trim().split(/\t| {2,}/);
@@ -357,21 +377,26 @@ function parseNotesText(text) {
       }
       currentMatiere = null;
     } else if (/^(R|SAE)\d+(\.\d+)*\s*:/.test(label)) {
+      occCounts = new Map();
       if (matiereByLabel.has(label)) {
         currentMatiere = matiereByLabel.get(label);
+        if (currentMatiere.note == null && row.note != null) Object.assign(currentMatiere, { coeff: row.coeff, note: row.note, moy: row.moy, maxi: row.maxi, mini: row.mini });
       } else {
-        currentMatiere = { ...row, evals: [], _evalLabels: new Set() };
+        currentMatiere = { ...row, evals: [], _evalKeys: new Set() };
         matiereByLabel.set(label, currentMatiere);
         if (currentUE) currentUE.matieres.push(currentMatiere);
       }
     } else if (currentMatiere && /\(sur\s*[\d.,]+\)/i.test(label)) {
-      if (!currentMatiere._evalLabels.has(label)) {
-        currentMatiere._evalLabels.add(label);
-        currentMatiere.evals.push(row);
+      const n = (occCounts.get(label) || 0) + 1;
+      occCounts.set(label, n);
+      const key = n > 1 ? `${row.label} #${n}` : row.label;
+      if (!currentMatiere._evalKeys.has(key)) {
+        currentMatiere._evalKeys.add(key);
+        currentMatiere.evals.push({ ...row, key });
       }
     }
   }
-  ues.forEach((u) => u.matieres.forEach((m) => delete m._evalLabels));
+  ues.forEach((u) => u.matieres.forEach((m) => delete m._evalKeys));
   return { ue: ues.slice(0, 100) };
 }
 async function scrapeNotes() {
@@ -472,20 +497,25 @@ async function recordNotesSeen(releve) {
   const { uca_notes_seen } = await chrome.storage.local.get("uca_notes_seen");
   const seen = uca_notes_seen || {};
   const at = uca_notes_seen ? Date.now() : 0;
-  const mark = (key, note) => {
-    if (note === null || note === undefined) return;
-    if (!seen[key] || seen[key].note !== note) seen[key] = { note, at };
-  };
+  // Relevés vus avant le suivi des notes d'UE et des évaluations homonymes (« #2 ») : ces clés
+  // apparaissent d'un coup sans être nouvelles — comptées comme anciennes une seule fois.
+  const migrating = !!uca_notes_seen && seen.__v !== 2;
+  seen.__v = 2;
   const fresh = [];
   const markAndTrack = (key, note, label) => {
-    const before = seen[key];
-    mark(key, note);
-    if (at && seen[key] !== before) fresh.push({ label, note });
+    if (note === null || note === undefined) return;
+    if (seen[key] && seen[key].note === note) return;
+    const legacy = migrating && !seen[key] && (key.startsWith("UE|") || / #\d+$/.test(key));
+    seen[key] = { note, at: legacy ? 0 : at };
+    if (at && !legacy) fresh.push({ label, note });
   };
-  releve.ue.forEach((ue) => (ue.matieres || []).forEach((m) => {
-    markAndTrack(m.label + "|", m.note, m.label);
-    (m.evals || []).forEach((e) => markAndTrack(m.label + "|" + e.label, e.note, `${e.label.replace(/\s*\(sur[^)]*\)/i, "")} — ${m.label}`));
-  }));
+  releve.ue.forEach((ue) => {
+    markAndTrack("UE|" + ue.label, ue.note, ue.label);
+    (ue.matieres || []).forEach((m) => {
+      markAndTrack(m.label + "|", m.note, m.label);
+      (m.evals || []).forEach((e) => markAndTrack(m.label + "|" + (e.key || e.label), e.note, `${e.label.replace(/\s*\(sur[^)]*\)/i, "")} — ${m.label}`));
+    });
+  });
   await chrome.storage.local.set({ uca_notes_seen: seen });
   if (fresh.length) await notifyNewGrades(fresh);
   return fresh;
@@ -497,14 +527,16 @@ async function syncNotesQuietly() {
     await recordNotesSeen(releve);
     const sync = new Date().toISOString();
     await chrome.storage.local.set({ uca_releve_notes: releve, uca_releve_notes_sync: sync });
-    broadcast({ type: "UCA_NOTES_RESULT", ok: true, releve, sync });
+    const { uca_notes_seen } = await chrome.storage.local.get("uca_notes_seen");
+    broadcast({ type: "UCA_NOTES_RESULT", ok: true, releve, sync, notesSeen: uca_notes_seen || {} });
   }
 }
 
 async function syncSucceeded(text, silent) {
   const { events, lastSync } = await storeResult(text);
   await chrome.storage.local.set({ uca_session_expired: false });
-  broadcast({ type: "UCA_SYNC_RESULT", ok: true, text, events, lastSync, silent });
+  const { uca_edt_changes } = await chrome.storage.local.get("uca_edt_changes");
+  broadcast({ type: "UCA_SYNC_RESULT", ok: true, text, events, lastSync, silent, edtChanges: uca_edt_changes || [] });
   await syncAbsencesQuietly();
   await syncNotesQuietly();
 }
@@ -567,7 +599,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (!msg) return false;
   if (msg.type === "UCA_FORCE_UPDATE_CHECK") { checkForUpdate(); return false; }
   if (msg.type === "UCA_LOGIN_DONE") { if (loginDone) loginDone(); return false; }
-  if (msg.type === "UCA_APPLY_UPDATE") { chrome.runtime.reload(); return false; }
+  if (msg.type === "UCA_APPLY_UPDATE") { applyExtensionUpdate(); return false; }
   return false;
 });
 
@@ -707,10 +739,46 @@ chrome.runtime.onInstalled.addListener(() => { scheduleReminders(); configureAut
 /* ============ Changements d'emploi du temps ============
    Comparaison sur la plage de dates couverte par les deux synchros et à partir
    d'aujourd'hui (un cours passé sorti de la fenêtre Odin n'est pas une annulation).
-   Même clé + autre salle = salle changée ; même titre et même date mais autre heure =
-   déplacé ; sinon ajouté / annulé. Gardés 7 jours dans uca_edt_changes. */
+   Appariement ancien → nouveau, du plus sûr au moins sûr :
+     1. même jour + même début + même intitulé : compare fin, salle, enseignant, infos ;
+     2. même intitulé, même jour, autre heure : déplacé ;
+     3. même jour + même créneau, autre intitulé : intitulé modifié (TD → TP, autre matière...) ;
+     4. même intitulé, autre jour (≤ 7 jours d'écart, le plus proche) : déplacé à un autre jour ;
+     5. le reste : ajouté / annulé.
+   Chaque changement garde `details` (« Salle : B102 → B205 »...), affichés dans l'agenda et la
+   notification. Gardés 7 jours dans uca_edt_changes. */
 const EDT_CHANGE_TTL_MS = 7 * 86400000;
-const CHANGE_LABELS_BG = { added: "Ajouté", moved: "Déplacé", room: "Salle changée", cancelled: "Annulé" };
+const CHANGE_LABELS_BG = { added: "Ajouté", moved: "Déplacé", room: "Salle changée", teacher: "Enseignant changé", time: "Horaire modifié", title: "Intitulé modifié", info: "Infos modifiées", cancelled: "Annulé" };
+
+function fmtRange(e) { return `${pad(e.startH)}:${pad(e.startM)}–${pad(e.endH)}:${pad(e.endM)}`; }
+function fmtDayShort(e) { return new Date(e.year, e.month, e.day).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }); }
+function dayGap(a, b) { return Math.abs(Date.UTC(a.year, a.month, a.day) - Date.UTC(b.year, b.month, b.day)) / 86400000; }
+function norm(s) { return String(s || "").replace(/\s+/g, " ").trim(); }
+// Texte brut d'Odin sans l'intitulé, l'enseignant ni la salle : ce qui reste (groupe, remarque,
+// « annulé », « reporté »...) — un changement là-dedans est signalé comme « infos modifiées ».
+function extraInfo(e) {
+  let r = norm(e.raw);
+  [e.title, e.teacher, e.room].forEach((part) => { if (part) r = r.split(norm(part)).join(" "); });
+  return norm(r.replace(/enseignants?\s*:|salle\s*:/gi, " "));
+}
+function eventSnapshot(e) { return { date: e.date, year: e.year, month: e.month, day: e.day, startH: e.startH, startM: e.startM, endH: e.endH, endM: e.endM, title: e.title, room: e.room, teacher: e.teacher }; }
+
+function compareEvents(o, e) {
+  const details = [], kinds = new Set();
+  if (o.date !== e.date) { kinds.add("moved"); details.push(`Jour : ${fmtDayShort(o)} → ${fmtDayShort(e)}`); }
+  if (o.startH !== e.startH || o.startM !== e.startM) { kinds.add("moved"); details.push(`Horaire : ${fmtRange(o)} → ${fmtRange(e)}`); }
+  else if (o.endH !== e.endH || o.endM !== e.endM) { kinds.add("time"); details.push(`Horaire : ${fmtRange(o)} → ${fmtRange(e)}`); }
+  if (norm(o.title) !== norm(e.title)) { kinds.add("title"); details.push(`Intitulé : ${o.title} → ${e.title}`); }
+  if (norm(o.room) !== norm(e.room)) { kinds.add("room"); details.push(`Salle : ${o.room || "—"} → ${e.room || "—"}`); }
+  if (norm(o.teacher) !== norm(e.teacher)) { kinds.add("teacher"); details.push(`Enseignant : ${o.teacher || "—"} → ${e.teacher || "—"}`); }
+  if (o.raw !== undefined && e.raw !== undefined && extraInfo(o) !== extraInfo(e) && (extraInfo(o) || extraInfo(e))) {
+    kinds.add("info"); details.push(`Infos : ${extraInfo(o) || "—"} → ${extraInfo(e) || "—"}`);
+  }
+  if (!kinds.size) return null;
+  // Badge principal : ce qui compte le plus pour l'étudiant (où et quand aller).
+  const type = ["moved", "room", "time", "title", "teacher", "info"].find((k) => kinds.has(k));
+  return { type, kinds: [...kinds], details, before: eventSnapshot(o) };
+}
 
 function diffEvents(prev, next) {
   if (!prev.length || !next.length) return [];
@@ -721,19 +789,30 @@ function diffEvents(prev, next) {
   const lo = [p0, n0, today].sort()[2], hi = [p1, n1].sort()[0];
   if (lo > hi) return [];
   const inRange = (e) => e.date >= lo && e.date <= hi;
-  const P = new Map(prev.filter(inRange).map((e) => [eventKey(e), e]));
-  const N = new Map(next.filter(inRange).map((e) => [eventKey(e), e]));
-  const out = [];
-  N.forEach((e, k) => { const o = P.get(k); if (o && (o.room || "") !== (e.room || "")) out.push({ type: "room", key: k, ev: e, before: { room: o.room } }); });
-  const removed = [...P].filter(([k]) => !N.has(k)).map(([, e]) => e);
-  [...N].filter(([k]) => !P.has(k)).forEach(([k, e]) => {
-    const i = removed.findIndex((r) => r.title === e.title && r.date === e.date);
-    if (i >= 0) {
-      const r = removed.splice(i, 1)[0];
-      out.push({ type: "moved", key: k, ev: e, before: { startH: r.startH, startM: r.startM, endH: r.endH, endM: r.endM, room: r.room } });
-    } else out.push({ type: "added", key: k, ev: e });
-  });
-  removed.forEach((e) => out.push({ type: "cancelled", key: eventKey(e), ev: e }));
+  const P = prev.filter(inRange), N = next.filter(inRange);
+  const usedP = new Set(), usedN = new Set(), out = [];
+  const pair = (test, score) => {
+    N.forEach((e, ni) => {
+      if (usedN.has(ni)) return;
+      let best = -1, bestScore = Infinity;
+      P.forEach((o, pi) => {
+        if (usedP.has(pi) || !test(o, e)) return;
+        const s = score ? score(o, e) : 0;
+        if (s < bestScore) { best = pi; bestScore = s; }
+      });
+      if (best < 0) return;
+      usedP.add(best); usedN.add(ni);
+      const c = compareEvents(P[best], e);
+      if (c) out.push({ ...c, key: eventKey(e), ev: e });
+    });
+  };
+  const startMin = (e) => e.startH * 60 + e.startM;
+  pair((o, e) => o.date === e.date && startMin(o) === startMin(e) && norm(o.title) === norm(e.title));
+  pair((o, e) => o.date === e.date && norm(o.title) === norm(e.title), (o, e) => Math.abs(startMin(o) - startMin(e)));
+  pair((o, e) => o.date === e.date && startMin(o) === startMin(e) && o.endH === e.endH && o.endM === e.endM);
+  pair((o, e) => norm(o.title) === norm(e.title) && dayGap(o, e) <= 7, (o, e) => dayGap(o, e) * 1440 + Math.abs(startMin(o) - startMin(e)));
+  N.forEach((e, ni) => { if (!usedN.has(ni)) out.push({ type: "added", key: eventKey(e), ev: e, details: [`${fmtDayShort(e)} ${fmtRange(e)}${e.room ? ", salle " + e.room : ""}`] }); });
+  P.forEach((o, pi) => { if (!usedP.has(pi)) out.push({ type: "cancelled", key: eventKey(o), ev: o, details: [`${fmtDayShort(o)} ${fmtRange(o)}${o.room ? ", salle " + o.room : ""}`] }); });
   return out;
 }
 
@@ -760,7 +839,7 @@ async function notifyEdtChanges(list) {
   const settings = await UCA_getSettings();
   if (!settings.notifyEdtChanges) return;
   const design = await currentDesign();
-  const lines = list.slice(0, 4).map((c) => `${CHANGE_LABELS_BG[c.type]} : ${c.ev.title} (${fmtEvShort(c.ev)}${c.type === "room" ? ", salle " + (c.ev.room || "?") : ""})`);
+  const lines = list.slice(0, 4).map((c) => `${CHANGE_LABELS_BG[c.type]} : ${c.ev.title} (${fmtEvShort(c.ev)})${c.details && c.details.length && c.type !== "added" && c.type !== "cancelled" ? " — " + c.details.join(" ; ") : ""}`);
   if (list.length > 4) lines.push(`… et ${list.length - 4} autre(s)`);
   chrome.notifications.create("uca_edt|" + Date.now(), {
     type: "basic",

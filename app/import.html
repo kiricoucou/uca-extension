@@ -11,7 +11,7 @@
 <main>
   <img class="app-logo" src="icons/icon-192.png" alt="">
   <h1>Importer mes données</h1>
-  <p class="lead">Sur ton ordinateur, dans l'extension : <b>Exporter → Envoyer vers l'app téléphone</b>, puis « Afficher le code animé ».</p>
+  <p class="lead">Sur ton ordinateur, dans l'extension : <b>Générer le lien</b> et ouvre-le ici, ou <b>Exporter → Afficher le QR code</b>.</p>
 
   <section class="card" id="chooseCard">
     <button class="btn primary" id="scanBtn" type="button">
@@ -27,10 +27,19 @@
   </section>
 
   <section class="card hidden" id="linkCard">
-    <p class="muted">Colle le lien reçu (SMS, mail...) — valable 2 jours, jamais gardé par GitHub ni aucun serveur.</p>
-    <input type="text" id="linkInput" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://kiricoucou.github.io/uca-extension/#d=…">
+    <p class="muted">Colle le lien reçu (SMS, mail...). Il est chiffré et jamais gardé par GitHub ni aucun serveur.</p>
+    <input type="text" id="linkInput" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://kiricoucou.github.io/uca-extension/#e=…">
     <button class="btn primary" id="linkGoBtn" type="button">Importer</button>
     <button class="btn" id="linkCancelBtn" type="button">Annuler</button>
+  </section>
+
+  <section class="card hidden" id="codeCard">
+    <p class="muted">Ce lien est chiffré. Tape le <b>code de partage</b> affiché par l'extension (aussi visible dans Paramètres sur l'ordinateur).</p>
+    <p class="muted" id="codeExpiry"></p>
+    <input type="text" id="codeInput" class="code-input" maxlength="16" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7P2QX">
+    <label class="check"><input type="checkbox" id="codeRemember" checked> Mémoriser le code sur ce téléphone</label>
+    <button class="btn primary" id="codeGoBtn" type="button">Déchiffrer et importer</button>
+    <button class="btn" id="codeCancelBtn" type="button">Annuler</button>
   </section>
 
   <section class="card hidden" id="scanCard">

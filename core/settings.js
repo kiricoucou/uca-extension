@@ -12,6 +12,8 @@ const DEFAULTS = {
   badgeMode: "next",   // next (prochain cours du jour) | remaining (cours restants aujourd'hui) | off
   notifyEdtChanges: true, // notification quand un cours est ajouté / annulé / déplacé / change de salle
   notifyNewGrades: true,  // notification quand une nouvelle note apparaît
+  shareLinkHours: 48,     // durée de validité d'un lien de partage chiffré (core/transfer.js)
+  noteNewDays: 2,         // note affichée en orange pendant N jours, puis en jaune pendant autant
 };
 
 function getSettings() {

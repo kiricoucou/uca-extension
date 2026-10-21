@@ -8,6 +8,15 @@ const SECTIONS = [
     { key: "startView", type: "select", label: "Vue à l'ouverture", hint: "« Automatique » : Semaine sur ordinateur (5 jours si rien aujourd'hui), Jour sur téléphone.",
       options: [["auto", "Automatique"], ["day", "Jour"], ["3day", "3 jours"], ["5day", "5 jours"], ["6day", "6 jours"], ["week", "Semaine"], ["month", "Mois"]] },
     { key: "hideWeekend", type: "switch", label: "Masquer le week-end", hint: "Vue Semaine : samedi et dimanche n'apparaissent que s'il y a cours." },
+    { key: "noteNewDays", type: "select", label: "Nouvelles notes en orange", hint: "Une note nouvelle (ou modifiée) reste orange pendant ce délai, puis jaune pendant le même délai.",
+      options: [[1, "1 jour"], [2, "2 jours"], [3, "3 jours"], [5, "5 jours"], [7, "7 jours"]] },
+  ] },
+  { title: "Partage vers le téléphone", fields: [
+    { ext: true, key: "shareLinkHours", type: "select", label: "Durée de validité d'un lien",
+      hint: "Passé ce délai, l'app refuse le lien. Rien n'est stocké sur GitHub ni sur un serveur : les données voyagent chiffrées dans le lien lui-même.",
+      options: [[1, "1 heure"], [6, "6 heures"], [24, "1 jour"], [48, "2 jours"], [168, "7 jours"]] },
+    { ext: true, key: "shareCode", type: "code", label: "Code de partage",
+      hint: "Chiffre tes liens : sans ce code, un lien est illisible. À taper une seule fois sur le téléphone. Changer le code rend les anciens liens inutilisables." },
   ] },
   { title: "Rappels et synchronisation", fields: [
     { ext: true, key: "remindersEnabled", type: "switch", label: "Rappel avant chaque cours", hint: "Notification avec la matière et la salle." },
@@ -53,7 +62,26 @@ function flashSaved() {
 }
 function save(key, value) { UCA_saveSettings({ [key]: value }).then(flashSaved); }
 
+/* Code de partage : hors uca_settings (jamais inclus dans un export/lien), voir core/transfer.js. */
+function codeControl() {
+  const wrap = el("div", "code-ctl");
+  const input = el("input"); input.type = "text"; input.id = "f-shareCode"; input.maxLength = 16;
+  input.autocomplete = "off"; input.spellcheck = false;
+  const regen = el("button", "upd-btn", "Nouveau"); regen.type = "button"; regen.id = "shareCodeNew";
+  const store = (code) => chrome.storage.local.set({ uca_share_code: code }).then(flashSaved);
+  UCA_TRANSFER.shareDetails().then(({ code }) => { input.value = code; });
+  input.addEventListener("change", () => {
+    const code = UCA_TRANSFER.normCode(input.value);
+    if (code.length < 4) { input.setCustomValidity("4 caractères minimum"); input.reportValidity(); return; }
+    input.setCustomValidity(""); input.value = code; store(code);
+  });
+  regen.addEventListener("click", () => { const code = UCA_TRANSFER.randomCode(); input.value = code; store(code); });
+  wrap.append(input, regen);
+  return wrap;
+}
+
 function control(field, value) {
+  if (field.type === "code") return codeControl();
   if (field.type === "switch") {
     const wrap = el("label", "switch");
     const input = el("input"); input.type = "checkbox"; input.checked = !!value; input.id = "f-" + field.key;

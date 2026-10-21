@@ -163,14 +163,17 @@ if ($("phoneBtn")) $("phoneBtn").addEventListener("click", () => chrome.tabs.cre
 // Génère le lien de partage (même que Exporter → Copier un lien) et le copie, en un seul clic.
 $("linkBtn").addEventListener("click", async () => {
   const btn = $("linkBtn"), original = btn.textContent;
+  let delay = 2500;
   try {
-    const link = await UCA_TRANSFER.buildShareLink(await UCA_TRANSFER.snapshot());
-    await navigator.clipboard.writeText(link);
-    btn.textContent = "Le lien est bien copié";
+    const share = await UCA_TRANSFER.makeShareLink();
+    await navigator.clipboard.writeText(share.link);
+    btn.textContent = `Lien copié · code ${share.code}`;
+    btn.title = share.message;
+    delay = 8000; // le temps de noter le code
   } catch (e) {
     btn.textContent = "Copie impossible";
   }
-  setTimeout(() => { btn.textContent = original; }, 2500);
+  setTimeout(() => { btn.textContent = original; }, delay);
 });
 UCA_TOOLS.load(loadFromStorage);
 })();

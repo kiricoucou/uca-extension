@@ -49,10 +49,12 @@ window.addEventListener("storage", (e) => {
 });
 
 /* ---------- Mise à jour de l'app (même bandeau que l'extension, core/shared.js UCA_CORE) ----------
-   « current » = manifest.json tel que servi par le service worker (cache-first, donc figé depuis
-   la dernière mise à jour appliquée) ; « latest » = manifest.json sur GitHub, en contournant le
-   service worker (requête vers un autre domaine, jamais interceptée par son gestionnaire fetch). */
-const MANIFEST_RAW_URL = "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/manifest.json";
+   Vaut pour toutes les façons d'ouvrir l'app (installée sur ordinateur/téléphone, raccourci,
+   onglet). sw.js sert tout en réseau d'abord : en ligne, la page est déjà la dernière version.
+   « current » = manifest.json tel que cette page l'a obtenu (réseau, ou cache si hors ligne /
+   réseau trop lent) ; « latest » = manifest.json du site publié, en "no-store" (jamais servi par
+   le cache). Différents = la page tourne sur une copie en cache : « Mettre à jour » vide le cache
+   et recharge. Même site pour les deux : pas de faux positif pendant le déploiement de GitHub Pages. */
 function compareVersions(a, b) {
   const pa = String(a).split(".").map((n) => parseInt(n, 10) || 0);
   const pb = String(b).split(".").map((n) => parseInt(n, 10) || 0);
@@ -60,12 +62,16 @@ function compareVersions(a, b) {
   return 0;
 }
 function sleep(ms) { return new Promise((r) => setTimeout(r, ms)); }
+// Version de la page en cours, lue une fois au chargement (même chemin que la page elle-même).
+const loadedManifest = fetch(ROOT + "manifest.json").then((r) => (r.ok ? r.json() : null)).catch(() => null);
 async function fetchLatestManifest() {
-  const res = await fetch(MANIFEST_RAW_URL + "?t=" + Date.now(), { cache: "no-store" });
+  const res = await fetch(ROOT + "manifest.json?latest=" + Date.now(), { cache: "no-store" });
   if (!res.ok) throw new Error("HTTP " + res.status);
   return res.json();
 }
+let lastCheckAt = 0;
 async function checkAppUpdate() {
+  lastCheckAt = Date.now();
   // Un échec isolé (réseau lent, DNS, service worker encore en train de s'installer...) ne doit
   // pas faire croire que la vérification "ne marche pas" : un deuxième essai avant d'abandonner.
   let lat = null, lastError = null;
@@ -75,11 +81,7 @@ async function checkAppUpdate() {
   }
   if (!lat) { await local.set({ uca_update_check_failed: String(lastError) }); return; }
   try {
-    // Lu directement dans le cache (sans fetch()) : ne déclenche pas la revalidation en arrière-plan
-    // du service worker, qui figerait silencieusement "current" sur la dernière version dès ce
-    // contrôle — current doit rester gelé jusqu'à ce que la mise à jour soit réellement appliquée.
-    const curRes = "caches" in window ? await caches.match(ROOT + "manifest.json") : null;
-    const cur = curRes ? await curRes.json() : lat; // rien en cache (tout juste installé) : déjà à jour
+    const cur = (await loadedManifest) || lat;
     const current = cur && cur.version, latest = lat && lat.version;
     if (!current || !latest) { await local.set({ uca_update_check_failed: "manifest.json invalide" }); return; }
     await local.set({ uca_current_version: current, uca_latest_version: latest, uca_update_available: compareVersions(current, latest) < 0, uca_update_check_failed: null });
@@ -103,6 +105,10 @@ async function applyAppUpdate() {
   } catch (e) { /* on recharge quand même ci-dessous */ }
   location.reload();
 }
+// App laissée ouverte (téléphone en veille, fenêtre en arrière-plan) : revérifie au retour.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && Date.now() - lastCheckAt > 30 * 60 * 1000) checkAppUpdate();
+});
 
 /* ---------- Pont avec l'extension Chrome, si elle est installée dans ce même navigateur ----------
    content-bridge.js (chargé par l'extension sur ce domaine, voir manifest.json content_scripts)
@@ -123,11 +129,17 @@ window.addEventListener("message", (ev) => {
   // jamais accessible depuis une page web) : on les recopie ici pour que l'app reste utilisable
   // hors ligne et après un rechargement, exactement comme un transfert par lien le ferait.
   if (msg.type === "UCA_SYNC_RESULT" && msg.ok) {
-    local.set({ uca_events: msg.events, uca_last_sync: msg.lastSync, uca_session_expired: false });
+    const out = { uca_events: msg.events, uca_last_sync: msg.lastSync, uca_session_expired: false };
+    if (Array.isArray(msg.edtChanges)) out.uca_edt_changes = msg.edtChanges;
+    local.set(out);
   } else if (msg.type === "UCA_ABSENCES_RESULT" && msg.ok) {
     local.set({ uca_absences: msg.absences, uca_absences_sync: msg.sync });
   } else if (msg.type === "UCA_NOTES_RESULT" && msg.ok) {
-    local.set({ uca_releve_notes: msg.releve, uca_releve_notes_sync: msg.sync });
+    // Sans les notes « vues » de l'extension, l'app ne saurait pas quelles notes sont nouvelles
+    // (pas d'orange) : elles voyagent avec le relevé.
+    const out = { uca_releve_notes: msg.releve, uca_releve_notes_sync: msg.sync };
+    if (msg.notesSeen) out.uca_notes_seen = msg.notesSeen;
+    local.set(out);
   } else if (msg.type === "UCA_SESSION_STATE") {
     local.set({ uca_session_expired: !!msg.expired });
   }

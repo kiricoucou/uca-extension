@@ -50,9 +50,9 @@ function toast(msg, type) {
 }
 
 function setEdtChanges(list) {
-  edtChanges = new Map(); cancelledGhosts = [];
+  edtChanges = new Map(); cancelledGhosts = []; cancelledChanges.clear();
   (list || []).forEach(c => {
-    if (c.type === "cancelled") cancelledGhosts.push({ ...c.ev, cancelled: true, color: D.eventColor(eventColorKey(c.ev.title)) });
+    if (c.type === "cancelled") { cancelledGhosts.push({ ...c.ev, cancelled: true, color: D.eventColor(eventColorKey(c.ev.title)) }); cancelledChanges.set(c.key, c); }
     else edtChanges.set(c.key, c);
   });
 }
@@ -60,16 +60,22 @@ function eventsOnDate(d) {
   const key = dateKey(d);
   return events.concat(cancelledGhosts).filter(c => c.date === key && UCA_TOOLS.passes(c)).sort((a, b) => (a.startH * 60 + a.startM) - (b.startH * 60 + b.startM));
 }
-function changeOf(ev) { return ev.cancelled ? { type: "cancelled" } : edtChanges.get(eventKey(ev)); }
+const cancelledChanges = new Map();
+function changeOf(ev) { return ev.cancelled ? (cancelledChanges.get(eventKey(ev)) || { type: "cancelled" }) : edtChanges.get(eventKey(ev)); }
 function changeBadgeHtml(ev) { const c = changeOf(ev); return c ? D.changeBadge(c.type) : ""; }
 function changeDetailHtml(ev) {
   const c = changeOf(ev);
   if (!c) return "";
   const b = c.before || {};
-  const detail = c.type === "room" ? `ancienne salle : ${b.room || "—"}`
-    : c.type === "moved" ? `avant : ${pad(b.startH)}:${pad(b.startM)} – ${pad(b.endH)}:${pad(b.endM)}`
-    : c.type === "cancelled" ? "ce cours n'apparaît plus sur Odin" : "ajouté depuis la synchro précédente";
-  return `<p>${D.changeBadge(c.type)} ${escapeHtml(detail)}</p>`;
+  const intro = c.type === "cancelled" ? "Ce cours n'apparaît plus sur Odin."
+    : c.type === "added" ? "Ajouté depuis la synchro précédente."
+    : "Modifié depuis la synchro précédente :";
+  // Anciennes entrées (avant le détail des changements) : seulement salle ou horaire d'avant.
+  const details = c.details && c.type !== "added" && c.type !== "cancelled" ? c.details
+    : c.type === "room" ? [`Ancienne salle : ${b.room || "—"}`]
+    : c.type === "moved" && b.startH != null ? [`Avant : ${pad(b.startH)}:${pad(b.startM)} – ${pad(b.endH)}:${pad(b.endM)}`] : [];
+  const when = c.at ? ` <small>(détecté le ${new Date(c.at).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })})</small>` : "";
+  return `<p>${D.changeBadge(c.type)} ${escapeHtml(intro)}${when}</p>${details.length ? `<ul class="chg-details">${details.map(d => `<li>${escapeHtml(d)}</li>`).join("")}</ul>` : ""}`;
 }
 function getFiveDayDays() {
   const start = startOfWeek(refDate);
@@ -583,13 +589,14 @@ function ntCell(text, cls) {
   td.textContent = text;
   return td;
 }
-// Note apparue il y a moins de 2 jours : orange ; moins de 4 jours : jaune ; ensuite normale.
-const NOTE_NEW_MS = 2 * 86400000, NOTE_RECENT_MS = 4 * 86400000;
+// Note apparue (ou modifiée) depuis moins de N jours (Paramètres, 2 par défaut) : orange ;
+// moins de 2N jours : jaune ; ensuite normale. Comparaison numérique : 12 et 12.0 sont la même note.
+function noteDays() { return Math.max(1, Number(settings.noteNewDays) || 2); }
 function noteAgeClass(seenKey, note) {
   const seen = seenKey && notesSeen[seenKey];
-  if (note == null || !seen || seen.note !== note || !seen.at) return "";
-  const age = Date.now() - seen.at;
-  return age < NOTE_NEW_MS ? " note-new" : age < NOTE_RECENT_MS ? " note-recent" : "";
+  if (note == null || !seen || !seen.at || Number(seen.note) !== Number(note)) return "";
+  const age = Date.now() - seen.at, day = 86400000;
+  return age < noteDays() * day ? " note-new" : age < 2 * noteDays() * day ? " note-recent" : "";
 }
 function ntRow(cls, label, row, seenKey) {
   const tr = document.createElement("tr");
@@ -598,7 +605,10 @@ function ntRow(cls, label, row, seenKey) {
   tr.appendChild(ntCell(fmtNote(row.coeff), "num"));
   const ageCls = noteAgeClass(seenKey, row.note);
   const noteTd = ntCell(fmtNote(row.note), "num note note-val" + ageCls);
-  if (ageCls) noteTd.title = ageCls === " note-new" ? "Nouvelle note (moins de 2 jours)" : "Note récente (moins de 4 jours)";
+  if (ageCls) {
+    const n = noteDays();
+    noteTd.title = ageCls === " note-new" ? `Nouvelle note (moins de ${n} jour${n > 1 ? "s" : ""})` : `Note récente (moins de ${2 * n} jours)`;
+  }
   tr.appendChild(noteTd);
   tr.appendChild(ntCell(fmtNote(row.moy), "num"));
   tr.appendChild(ntCell(fmtNote(row.maxi), "num"));
@@ -655,14 +665,15 @@ function renderNotesPanel() {
         return true;
       });
       if (!matieres.length) return;
-      tbody.appendChild(ntRow("ue-row", ue.label, ue));
+      tbody.appendChild(ntRow("ue-row", ue.label, ue, "UE|" + ue.label));
       matieres.forEach((m) => {
         tbody.appendChild(ntRow("matiere-row" + (m.note == null ? " no-grade" : ""), m.label, m, m.label + "|"));
         const seenEvals = new Set();
         (m.evals || []).forEach((ev) => {
-          if (seenEvals.has(ev.label)) return;
-          seenEvals.add(ev.label);
-          tbody.appendChild(ntRow("eval-row", ev.label, ev, m.label + "|" + ev.label));
+          const key = ev.key || ev.label;
+          if (seenEvals.has(key)) return;
+          seenEvals.add(key);
+          tbody.appendChild(ntRow("eval-row", ev.label, ev, m.label + "|" + key));
         });
       });
     });
@@ -700,7 +711,7 @@ const TOOL_PANELS = {
   notesPanel: { wrap: "notesWrap", build: () => {} },
   absencesPanel: { wrap: "absencesWrap", build: () => {} },
   filterPanel: { wrap: "filterWrap", build: (p) => UCA_TOOLS.buildFilterPanel(p, events) },
-  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.snapshot().then(UCA_TRANSFER.buildShareLink) }) },
+  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.makeShareLink() }) },
 };
 function openToolPanel(id, asSheet) {
   const panel = $(id), conf = TOOL_PANELS[id];
@@ -760,7 +771,7 @@ async function openPhoneModal() {
       <p class="phone-step"><b>1.</b> Sur ton téléphone, scanne ce code pour ouvrir l'app (puis « Ajouter à l'écran d'accueil »). Déjà installée ? Passe à l'étape 2.</p>
       <div class="phone-qr"><canvas id="phoneQrApp"></canvas></div>
       <p class="phone-url"><a href="${escapeHtml(T_.DOWNLOAD_URL)}" target="_blank" rel="noopener">${escapeHtml(T_.DOWNLOAD_URL)}</a></p>
-      <p class="phone-step"><b>2.</b> Dans l'app : « Importer » puis « Scanner », et vise le code animé. Ou, plus simple, envoie-toi le lien ci-dessous (SMS, mail, messagerie...) et ouvre-le sur ton téléphone. Le lien contient tes données lui-même, jamais gardées par GitHub ni aucun serveur — et il expire au bout de 2 jours.</p>
+      <p class="phone-step"><b>2.</b> Dans l'app : « Importer » puis « Scanner », et vise le code animé. Ou, plus simple, envoie-toi le lien ci-dessous (SMS, mail, messagerie...) et ouvre-le sur ton téléphone. Le lien contient tes données chiffrées (illisibles sans ton code de partage), jamais gardées par GitHub ni aucun serveur, et il expire au bout du délai choisi dans Paramètres.</p>
       <div class="phone-actions"><button class="primary" id="phoneStart">Afficher le code animé</button><button id="phoneLink">Copier un lien</button><button id="phoneFile">Fichier de secours (.ucasync)</button></div>
     </div></div>`;
   document.body.appendChild(overlay);
@@ -770,13 +781,17 @@ async function openPhoneModal() {
   const snap = await T_.snapshot();
   $("phoneFile").addEventListener("click", () => T_.exportFile(snap));
   $("phoneLink").addEventListener("click", async () => {
-    const link = await T_.buildShareLink(snap);
+    const share = await T_.makeShareLink(snap);
+    const link = share.link;
+    let info = $("phoneShareInfo");
+    if (!info) { info = document.createElement("p"); info.id = "phoneShareInfo"; info.className = "phone-step"; overlay.querySelector(".phone-actions").after(info); }
+    info.textContent = share.message;
     try {
       await navigator.clipboard.writeText(link);
       const btn = $("phoneLink"), original = btn.textContent;
       btn.textContent = "Le lien est bien copié"; btn.disabled = true;
       setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2500);
-      toast("Lien copié — colle-le dans un SMS, un mail...", "ok");
+      toast("Lien copié — " + share.message, "ok");
     } catch {
       // Presse-papiers inaccessible (permission refusée, contexte non sécurisé...) : champ à copier à la main.
       let box = $("phoneLinkFallback");
@@ -900,7 +915,12 @@ UCA_CORE.initSettings();
 renderFilterButton();
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
-  if (changes.uca_settings) { settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, changes.uca_settings.newValue); render(); }
+  if (changes.uca_settings) { settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, changes.uca_settings.newValue); render(); renderNotesPanel(); }
+  if (changes.uca_notes_seen || changes.uca_releve_notes) {
+    if (changes.uca_notes_seen) notesSeen = changes.uca_notes_seen.newValue || {};
+    if (changes.uca_releve_notes) releveNotes = changes.uca_releve_notes.newValue || null;
+    renderNotesPanel();
+  }
   if (changes.uca_edt_changes) { setEdtChanges(changes.uca_edt_changes.newValue); render(); }
 });
 UCA_TOOLS.load(() => { renderFilterButton(); loadFromStorage(); });

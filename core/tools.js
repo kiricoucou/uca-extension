@@ -155,18 +155,18 @@ function buildExportPanel(panel, opts) {
     link.addEventListener("click", async () => {
       // Le lien transporte tout l'emploi du temps synchronisé (comme le QR/fichier), pas seulement
       // la période choisie ci-dessus : l'app applique ensuite ses propres filtres et vues.
-      const url = await opts.shareLink();
+      const share = await opts.shareLink();
       try {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(share.link);
         const original = link.textContent;
         link.textContent = "Le lien est bien copié"; link.disabled = true;
         setTimeout(() => { link.textContent = original; link.disabled = false; }, 2500);
-        linkInfo.textContent = "Colle-le dans un SMS, un mail, ou ouvre-le directement sur ton téléphone. Jamais gardé par GitHub ni aucun serveur, expire au bout de 2 jours.";
+        linkInfo.textContent = `${share.message}. Lien chiffré, jamais gardé par GitHub ni aucun serveur.`;
       } catch {
         let box = panel.querySelector(".xp-link-fallback");
         if (!box) { box = el("input", "xp-link-fallback"); box.readOnly = true; panel.insertBefore(box, linkInfo); }
-        box.value = url; box.hidden = false; box.focus(); box.select();
-        linkInfo.textContent = "Presse-papiers indisponible : copie le lien ci-dessus à la main.";
+        box.value = share.link; box.hidden = false; box.focus(); box.select();
+        linkInfo.textContent = `Presse-papiers indisponible : copie le lien ci-dessus à la main. ${share.message}.`;
       }
     });
     panel.append(link, linkInfo);

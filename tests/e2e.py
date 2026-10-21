@@ -76,7 +76,9 @@ def tool_checks(ag, did):
     ag.locator("#exportPanel .xp-phone", has_text="Copier un lien").click(); ag.wait_for_timeout(400)
     link_val = ag.evaluate("() => { const b = document.querySelector('.xp-link-fallback'); return b ? b.value : ''; }")
     link_btn_text = ag.locator("#exportPanel .xp-phone").first.inner_text()
-    check(f"{did} : export → lien copié (bouton) ou affiché (secours)", "/app/import.html#d=" in link_val or "copié" in link_btn_text, link_val or link_btn_text)
+    check(f"{did} : export → lien copié (bouton) ou affiché (secours)", "#e=" in link_val or "copié" in link_btn_text, link_val or link_btn_text)
+    info = ag.locator("#exportPanel .fp-empty").last.inner_text()
+    check(f"{did} : export → code de partage et durée affichés", "Code : " in info and "expire dans" in info, info)
     ag.locator("#exportPanel .xp-phone", has_text="QR code").click(); ag.wait_for_timeout(800)
     qr_w = ag.evaluate("() => { const c = document.getElementById('phoneQrApp'); return c ? c.width : 0; }")
     check(f"{did} : envoi téléphone → QR de l'app", ag.locator("#phoneOverlay").is_visible() and qr_w > 100, str(qr_w))
@@ -168,6 +170,72 @@ def edt_change_checks(ctx, sw, base, data):
     page.wait_for_timeout(300)
     check("notification de nouvelle note", any(k.startswith("uca_grade|") for k in sw.evaluate("chrome.notifications.getAll()")))
     sw.evaluate("(s) => chrome.storage.local.remove('uca_edt_changes').then(() => chrome.storage.local.set(s))", data)
+
+
+def edt_detail_checks(sw):
+    """Détection fine : enseignant, fin de cours, intitulé, autre jour, remarque Odin, cumul."""
+    import datetime
+    d1 = datetime.date.today() + datetime.timedelta(days=1)
+    d2 = datetime.date.today() + datetime.timedelta(days=2)
+
+    def ev(day, h, m, eh, em, title, room, teacher="M. Test", extra=""):
+        raw = f"{title}\nEnseignant : {teacher}\nSalle : {room}" + (f"\n{extra}" if extra else "")
+        return {"date": day.isoformat(), "year": day.year, "month": day.month - 1, "day": day.day,
+                "startH": h, "startM": m, "endH": eh, "endM": em, "title": title, "teacher": teacher, "room": room, "raw": raw, "color": "#888"}
+    prev = [
+        ev(d1, 8, 0, 10, 0, "R3.01 Dev CM", "A1", "M. Dupont"),
+        ev(d1, 10, 15, 12, 15, "R3.02 BD TD", "B2"),
+        ev(d1, 13, 30, 15, 30, "R3.03 Archi TD", "C3"),
+        ev(d1, 16, 0, 18, 0, "R3.04 Anglais TD", "D4"),
+        ev(d1, 8, 0, 9, 0, "R3.05 Com TD", "E5"),
+        ev(d2, 9, 0, 11, 0, "R3.06 Maths CM", "F6"),
+    ]
+    nxt = [
+        ev(d1, 8, 0, 10, 0, "R3.01 Dev CM", "A1", "Mme Martin"),             # enseignant
+        ev(d1, 10, 15, 13, 15, "R3.02 BD TD", "B2"),                          # fin de cours
+        ev(d1, 13, 30, 15, 30, "R3.03 Archi TP", "C3"),                       # intitulé (TD → TP)
+        ev(d2, 14, 0, 16, 0, "R3.04 Anglais TD", "G7"),                       # autre jour + salle
+        ev(d1, 8, 0, 9, 0, "R3.05 Com TD", "E5", extra="Cours reporté"),      # remarque Odin
+        ev(d2, 9, 0, 11, 0, "R3.06 Maths CM", "F6"),                          # inchangé
+    ]
+    res = sw.evaluate("([p, n]) => diffEvents(p, n).map(c => ({ type: c.type, title: c.ev.title, details: c.details || [], kinds: c.kinds || [] }))", [prev, nxt])
+    by = {r["title"]: r for r in res}
+    check("détail EDT : enseignant changé", by.get("R3.01 Dev CM", {}).get("type") == "teacher" and any("Mme Martin" in x for x in by["R3.01 Dev CM"]["details"]), str(by.get("R3.01 Dev CM")))
+    check("détail EDT : horaire de fin modifié", by.get("R3.02 BD TD", {}).get("type") == "time" and any("13:15" in x for x in by["R3.02 BD TD"]["details"]), str(by.get("R3.02 BD TD")))
+    check("détail EDT : intitulé modifié sur le même créneau (TD → TP)", by.get("R3.03 Archi TP", {}).get("type") == "title", str(by.get("R3.03 Archi TP")))
+    a = by.get("R3.04 Anglais TD", {})
+    check("détail EDT : déplacé à un autre jour + nouvelle salle (les deux listés)", a.get("type") == "moved" and "room" in a.get("kinds", []) and any("Jour" in x for x in a.get("details", [])) and any("G7" in x for x in a.get("details", [])), str(a))
+    check("détail EDT : remarque Odin ajoutée (« reporté »)", by.get("R3.05 Com TD", {}).get("type") == "info" and any("reporté" in x for x in by["R3.05 Com TD"]["details"]), str(by.get("R3.05 Com TD")))
+    check("détail EDT : cours inchangé non signalé, aucun faux ajout/annulation", "R3.06 Maths CM" not in by and not any(r["type"] in ("added", "cancelled") for r in res), str(res))
+
+
+def notes_parse_checks(sw):
+    """Deux évaluations homonymes = deux notes ; note d'UE suivie ; matière répétée sous une autre UE."""
+    text = "\n".join([
+        "UE 1.1 Développer\t1\t-\t\t\t",
+        "R1.01 : Init dev\t1\t-\t\t\t",
+        "Contrôle (sur 20)\t1\t12\t11\t18\t4",
+        "Contrôle (sur 20)\t1\t15\t11\t19\t3",
+        "UE 1.2 Optimiser\t1\t14,5\t\t\t",
+        "R1.01 : Init dev\t1\t-\t\t\t",
+        "Contrôle (sur 20)\t1\t12\t11\t18\t4",
+        "Contrôle (sur 20)\t1\t15\t11\t19\t3",
+    ])
+    rel = sw.evaluate("(t) => parseNotesText(t)", text)
+    evals = rel["ue"][0]["matieres"][0]["evals"]
+    check("notes : deux évaluations de même nom gardées toutes les deux", [e["note"] for e in evals] == [12, 15] and evals[1]["key"].endswith("#2"), str(evals))
+    check("notes : matière répétée sous une autre UE non dupliquée", len(rel["ue"][1]["matieres"]) == 0 and len(evals) == 2, str(rel))
+    sw.evaluate("() => chrome.storage.local.set({ uca_notes_seen: { __v: 2 } })")
+    rel["ue"][0]["matieres"][0]["evals"][1]["note"] = 16
+    rel["ue"][1]["note"] = 15
+    fresh = sw.evaluate("(r) => recordNotesSeen(r).then(f => f.map(g => g.label + '=' + g.note).sort().join(';'))", rel)
+    check("notes : 2e contrôle et note d'UE détectés comme nouveaux", "Contrôle — R1.01 : Init dev=16" in fresh and "UE 1.2 Optimiser=15" in fresh, fresh)
+    seen = sw.evaluate("() => chrome.storage.local.get('uca_notes_seen').then(d => d.uca_notes_seen)")
+    check("notes : chaque évaluation homonyme a sa propre clé", seen.get("R1.01 : Init dev|Contrôle (sur 20)", {}).get("note") == 12 and seen.get("R1.01 : Init dev|Contrôle (sur 20) #2", {}).get("note") == 16, str(seen)[:300])
+    # Migration : relevé déjà vu avant ce suivi → les nouvelles clés (UE, « #2 ») ne sont pas « nouvelles ».
+    sw.evaluate("() => chrome.storage.local.set({ uca_notes_seen: { 'R1.01 : Init dev|Contrôle (sur 20)': { note: 12, at: 0 } } })")
+    fresh2 = sw.evaluate("(r) => recordNotesSeen(r).then(f => f.length)", rel)
+    check("notes : mise à jour sans fausse alerte sur les anciennes notes", fresh2 == 0, str(fresh2))
 
 
 def main():
@@ -265,10 +333,29 @@ def main():
         check("même ordre des boutons dans tous les designs", len(set(orders.values())) == 1, str(orders))
         background_checks(ctx, sw, data)
         edt_change_checks(ctx, sw, base, data)
+        edt_detail_checks(sw)
+        notes_parse_checks(sw)
+        sw.evaluate("(s) => chrome.storage.local.set(s)", data)
         settings = ctx.new_page(); watch(settings, "settings")
-        settings.goto(f"{base}/settings.html"); settings.wait_for_timeout(400)
+        settings.goto(f"{base}/settings.html"); settings.wait_for_timeout(600)
         settings.select_option("#f-startView", "week"); settings.wait_for_timeout(300)
         check("page Paramètres enregistre", sw.evaluate("chrome.storage.local.get('uca_settings').then(d => d.uca_settings && d.uca_settings.startView)") == "week")
+        code = settings.locator("#f-shareCode").input_value()
+        check("Paramètres : code de partage créé (≥ 4 caractères)", len(code) >= 4, code)
+        settings.locator("#f-shareCode").fill("monCode42"); settings.locator("#f-shareCode").press("Tab"); settings.wait_for_timeout(300)
+        check("Paramètres : code personnalisé enregistré hors des réglages exportés",
+              sw.evaluate("chrome.storage.local.get(['uca_share_code','uca_settings']).then(d => d.uca_share_code + '|' + JSON.stringify(d.uca_settings))").startswith("MONCODE42|")
+              and "MONCODE42" not in sw.evaluate("chrome.storage.local.get('uca_settings').then(d => JSON.stringify(d.uca_settings))"))
+        settings.select_option("#f-shareLinkHours", "6"); settings.wait_for_timeout(300)
+        check("Paramètres : durée de validité des liens", sw.evaluate("chrome.storage.local.get('uca_settings').then(d => d.uca_settings.shareLinkHours)") == 6)
+        settings.select_option("#f-noteNewDays", "7"); settings.wait_for_timeout(300)
+        check("Paramètres : délai des notes en orange", sw.evaluate("chrome.storage.local.get('uca_settings').then(d => d.uca_settings.noteNewDays)") == 7)
+        shot(settings, "parametres")
+        exp = settings.evaluate("""async () => { const s = await UCA_TRANSFER.makeShareLink(); const p = UCA_TRANSFER.parseLinkHash('#' + s.link.split('#')[1]);
+          return { code: s.code, hours: (p.expiresAt - Date.now()) / 3600000, msg: s.message }; }""")
+        check("lien généré : code et durée réglés", exp["code"] == "MONCODE42" and 5.9 < exp["hours"] <= 6.01 and "6 h" in exp["msg"], str(exp))
+        snap = settings.evaluate("() => UCA_TRANSFER.snapshot().then(s => JSON.stringify(s))")
+        check("le code de partage n'est jamais dans les données transférées", "MONCODE42" not in snap)
         ctx.close()
     check("aucune erreur JavaScript", not errors, " | ".join(errors[:5]))
     print(f"\n{sum(results)}/{len(results)} vérifications OK")

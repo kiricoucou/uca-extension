@@ -33,6 +33,10 @@ section h2 + .row{border-top:none;}
 .row .hint.err:empty{display:none;}
 select{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:7px 10px;min-width:170px;}
 select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--focus);outline-offset:2px;}
+.code-ctl{display:flex;gap:8px;align-items:center;flex-shrink:0;}
+.code-ctl input{font:inherit;font-family:"Cascadia Mono",Consolas,monospace;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:7px 10px;width:130px;}
+.code-ctl input:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+@media (max-width:560px){.row{flex-wrap:wrap;}.row .txt{flex-basis:100%;}}
 .switch{position:relative;width:44px;height:26px;flex-shrink:0;}
 .switch input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer;}
 .switch span{position:absolute;inset:0;border-radius:13px;background:var(--border);transition:background .15s;pointer-events:none;}
@@ -78,6 +82,7 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
 <div class="saved" id="saved" role="status">Enregistré</div>
 <script src="core/env.js"></script>
 <script src="core/settings.js"></script>
+<script src="core/transfer.js"></script>
 <script src="settings.js"></script>
 </body>
 </html>

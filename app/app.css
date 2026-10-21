@@ -26,6 +26,9 @@ h1{font-size:24px;font-weight:700;text-align:center;margin:0 0 6px;}
 .muted{color:var(--text-dim);font-size:14px;text-align:center;}
 input[type="text"],input[type="url"]{display:block;width:100%;box-sizing:border-box;min-height:46px;border-radius:12px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:inherit;font-size:14px;padding:0 14px;margin-bottom:10px;}
 input[type="text"]:focus,input[type="url"]:focus{outline:2px solid var(--accent);outline-offset:1px;}
+input.code-input{font-family:"Cascadia Mono",Consolas,ui-monospace,monospace;font-size:20px;font-weight:700;letter-spacing:.2em;text-align:center;text-transform:uppercase;}
+.check{display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:var(--text-dim);margin:0 0 12px;}
+.check input{width:18px;height:18px;accent-color:var(--accent);}
 .link{color:var(--accent);background:none;border:none;font:inherit;font-weight:600;cursor:pointer;padding:6px;text-decoration:none;}
 .center{text-align:center;}
 .hidden{display:none!important;}

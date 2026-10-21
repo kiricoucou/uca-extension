@@ -37,25 +37,83 @@ async function encodeFrames(snap) {
   return Array.from({ length: n }, (_, i) => `${PREFIX}|${sid}|${i + 1}|${n}|${packed.slice(i * CHUNK, (i + 1) * CHUNK)}`);
 }
 
-// Durée de vie d'un lien partageable : au-delà, l'app refuse de l'importer (voir fromLinkHash).
-// Pas une limite technique — le lien reste lisible indéfiniment — mais un vieux lien qui traîne
-// dans un SMS ou un mail ne doit pas rester utilisable indéfiniment pour autant.
-const LINK_MAX_AGE_MS = 2 * 24 * 60 * 60 * 1000;
+/* Lien partageable chiffré : #e=1.<expiration>.<sel>.<iv>.<données>
+   - le fragment après # n'est jamais envoyé dans une requête HTTP : ni GitHub Pages ni aucun
+     serveur ne le reçoit ni ne le stocke ;
+   - les données sont chiffrées (AES-GCM 256, clé dérivée du code de partage par PBKDF2) : sans
+     le code, le lien est illisible, même pour qui le trouve dans un SMS ou un historique ;
+   - l'expiration (durée choisie dans Paramètres) est liée au chiffrement (donnée authentifiée) :
+     la modifier rend le lien invalide, et l'app refuse tout lien expiré. */
+const LINK_PREFIX = "#e=";
+const SHARE_HOURS_DEFAULT = 48;
+const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // sans 0/O, 1/I/L : se recopie sans erreur
+const PBKDF2_ITER = 150000;
 
-/* Même instantané que le QR, mais en un seul lien (fragment #d=…, jamais envoyé ni gardé par
-   GitHub Pages ni aucun serveur : le fragment après # n'est jamais transmis dans une requête HTTP,
-   le navigateur le garde pour lui) : à coller dans n'importe quelle appli de messagerie, pas besoin
-   de caméra. Valable 2 jours (LINK_MAX_AGE_MS) : refais un transfert passé ce délai. */
-async function buildShareLink(snap) {
-  return `${APP_URL}#d=${encodeURIComponent(await pack(snap))}`;
+function b64url(bytes) { return toB64(bytes).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+function fromB64url(s) { s = s.replace(/-/g, "+").replace(/_/g, "/"); while (s.length % 4) s += "="; return fromB64(s); }
+function normCode(code) { return String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+function randomCode(n = 6) {
+  const r = crypto.getRandomValues(new Uint8Array(n));
+  return Array.from(r, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
+}
+async function deriveKey(code, salt) {
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(normCode(code)), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: PBKDF2_ITER, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
 }
 
-async function fromLinkHash(h) {
-  if (!h || !h.startsWith("#d=")) return null;
-  const snap = JSON.parse(new TextDecoder().decode(await pipe(fromB64(decodeURIComponent(h.slice(3))), new DecompressionStream("deflate"))));
-  const age = snap && snap.exportedAt ? Date.now() - new Date(snap.exportedAt).getTime() : 0;
-  if (age > LINK_MAX_AGE_MS) throw new Error("Ce lien a plus de 2 jours, il a expiré. Refais un transfert depuis l'extension (Exporter → Copier un lien).");
-  return snap;
+/* Code et durée du lien, réglés dans Paramètres (côté ordinateur). Code créé au premier lien. */
+async function shareDetails() {
+  const d = await chrome.storage.local.get(["uca_share_code", "uca_settings"]);
+  let code = normCode(d.uca_share_code);
+  if (code.length < 4) { code = randomCode(); await chrome.storage.local.set({ uca_share_code: code }); }
+  const hours = Number((d.uca_settings || {}).shareLinkHours) || SHARE_HOURS_DEFAULT;
+  return { code, hours };
+}
+
+function hoursLabel(h) { return h < 24 ? `${h} h` : h % 24 === 0 ? `${h / 24} jour${h / 24 > 1 ? "s" : ""}` : `${h} h`; }
+
+async function buildShareLink(snap, opts) {
+  const { code, hours } = opts || await shareDetails();
+  const exp = Math.floor(Date.now() / 1000) + Math.round(hours * 3600);
+  const header = `1.${exp.toString(36)}`;
+  const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const plain = await pipe(new TextEncoder().encode(JSON.stringify(snap)), new CompressionStream("deflate"));
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv, additionalData: new TextEncoder().encode(header) }, await deriveKey(code, salt), plain));
+  return `${APP_URL}${LINK_PREFIX}${header}.${b64url(salt)}.${b64url(iv)}.${b64url(ct)}`;
+}
+
+/* Lien + ce qu'il faut dire à l'utilisateur (code à taper, durée). */
+async function makeShareLink(snap) {
+  const details = await shareDetails();
+  const link = await buildShareLink(snap || await snapshot(), details);
+  return { link, code: details.code, hours: details.hours, message: `Code : ${details.code} (à taper une fois sur le téléphone) · expire dans ${hoursLabel(details.hours)}` };
+}
+
+function linkError(message, kind) { const e = new Error(message); e.kind = kind; return e; }
+
+/* Lit l'en-tête sans le code : expiration visible avant même de demander le code. */
+function parseLinkHash(h) {
+  if (!h) return null;
+  if (h.startsWith("#d=")) throw linkError("Ancien format de lien (non chiffré), plus accepté. Génère un nouveau lien depuis l'extension.", "format");
+  if (!h.startsWith(LINK_PREFIX)) return null;
+  const parts = decodeURIComponent(h.slice(LINK_PREFIX.length)).split(".");
+  if (parts.length !== 5 || parts[0] !== "1") throw linkError("Lien illisible ou incomplet.", "format");
+  const exp = parseInt(parts[1], 36) * 1000;
+  return { header: `${parts[0]}.${parts[1]}`, expiresAt: exp, salt: fromB64url(parts[2]), iv: fromB64url(parts[3]), ct: fromB64url(parts[4]) };
+}
+
+async function fromLinkHash(h, code) {
+  const p = parseLinkHash(h);
+  if (!p) return null;
+  if (!(p.expiresAt > Date.now())) throw linkError("Ce lien a expiré. Génère un nouveau lien depuis l'extension (bouton « Générer le lien »).", "expired");
+  if (normCode(code).length < 4) throw linkError("Code de partage requis.", "code");
+  let plain;
+  try {
+    plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: p.iv, additionalData: new TextEncoder().encode(p.header) }, await deriveKey(code, p.salt), p.ct);
+  } catch (e) {
+    throw linkError("Code incorrect (ou lien modifié).", "code");
+  }
+  return JSON.parse(new TextDecoder().decode(await pipe(new Uint8Array(plain), new DecompressionStream("deflate"))));
 }
 
 /* Accumule les trames lues ; repart de zéro si une autre session apparaît. */
@@ -120,5 +178,5 @@ function drawQr(canvas, text, sizePx) {
   for (let r = 0; r < count; r++) for (let c = 0; c < count; c++) if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
 }
 
-root.UCA_TRANSFER = { APP_URL, DOWNLOAD_URL, LINK_MAX_AGE_MS, KEYS, snapshot, encodeFrames, buildShareLink, fromLinkHash, collector, validate, applyImport, exportFile, drawQr };
+root.UCA_TRANSFER = { APP_URL, DOWNLOAD_URL, KEYS, SHARE_HOURS_DEFAULT, snapshot, encodeFrames, buildShareLink, makeShareLink, parseLinkHash, fromLinkHash, shareDetails, randomCode, normCode, hoursLabel, collector, validate, applyImport, exportFile, drawQr };
 })(self);

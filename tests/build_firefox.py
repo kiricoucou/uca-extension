@@ -17,6 +17,8 @@ DIST = ROOT / "dist" / "firefox"
 # dépôt git, scratch...). Tout le reste de la racine est inclus.
 EXCLUDE_DIRS = {".git", ".github", ".claude", ".impeccable", "tests", "app", "dist", "__pycache__"}
 EXCLUDE_FILES = {"manifest.firefox.json", ".gitignore", ".nojekyll", "app.webmanifest", "sw.js"}
+# Pages du site public, à la racine seulement (designs/<id>/aide.html reste dans le paquet).
+EXCLUDE_ROOT_FILES = {"index.html", "install.html", "aide.html", "404.html", "site.css"}
 EXCLUDE_SUFFIXES = {".pyc"}
 
 
@@ -25,6 +27,8 @@ def should_copy(path: Path) -> bool:
     if any(part in EXCLUDE_DIRS for part in rel.parts):
         return False
     if rel.name in EXCLUDE_FILES:
+        return False
+    if len(rel.parts) == 1 and rel.name in EXCLUDE_ROOT_FILES:
         return False
     if rel.suffix in EXCLUDE_SUFFIXES:
         return False

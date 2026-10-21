@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page introuvable — Emploi du temps UCA</title>
+<link rel="icon" type="image/png" href="https://kiricoucou.github.io/uca-extension/app/icons/icon-192.png">
+<style>
+/* Autonome (styles en ligne, liens absolus) : GitHub Pages sert cette page pour n'importe quelle
+   adresse inconnue, à n'importe quelle profondeur — un chemin relatif y serait faux. */
+:root{color-scheme:light;--bg:#f5f7fb;--surface:#ffffff;--border:#dde3ee;--text:#18202e;--text-dim:#5a6478;--accent:#0b57d0;--on-accent:#ffffff;--accent-tint:#e7efff;--paper:#ffffff;--ring:#c7d3ea;
+  --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0f1218;--surface:#171b23;--border:#2b3240;--text:#e9edf5;--text-dim:#a0a9ba;--accent:#8ab4f8;--on-accent:#0b1d3a;--accent-tint:#1c2a44;--paper:#1e2430;--ring:#3a4458;}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0f1218;--surface:#171b23;--border:#2b3240;--text:#e9edf5;--text-dim:#a0a9ba;--accent:#8ab4f8;--on-accent:#0b1d3a;--accent-tint:#1c2a44;--paper:#1e2430;--ring:#3a4458;}
+*{box-sizing:border-box;}
+html,body{margin:0;min-height:100%;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:32px 16px;line-height:1.5;
+  background-image:radial-gradient(circle at 20% 10%,var(--accent-tint),transparent 45%),radial-gradient(circle at 85% 90%,var(--accent-tint),transparent 40%);}
+main{max-width:560px;width:100%;text-align:center;}
+.logo{width:168px;height:168px;margin:0 auto 10px;display:block;}
+.logo .float{animation:float 3.2s ease-in-out infinite;transform-origin:84px 90px;}
+.logo .page{transform-origin:84px 62px;animation:flip 3.2s ease-in-out infinite;}
+.logo .q{animation:blink 3.2s ease-in-out infinite;}
+.logo .shadow{animation:shadow 3.2s ease-in-out infinite;transform-origin:84px 156px;}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-3deg);}50%{transform:translateY(-10px) rotate(3deg);}}
+@keyframes shadow{0%,100%{transform:scaleX(1);opacity:.22;}50%{transform:scaleX(.78);opacity:.12;}}
+@keyframes flip{0%,30%{transform:rotateX(0);}45%{transform:rotateX(-180deg);}55%,100%{transform:rotateX(-180deg);opacity:0;}}
+@keyframes blink{0%,40%{opacity:0;transform:scale(.6);}55%,85%{opacity:1;transform:scale(1);}100%{opacity:0;}}
+.code{font-size:clamp(56px,14vw,88px);font-weight:800;letter-spacing:-.04em;line-height:1;margin:6px 0 4px;color:var(--accent);}
+h1{font-size:clamp(20px,4vw,26px);margin:0 0 8px;}
+p{color:var(--text-dim);margin:0 0 24px;}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;min-height:50px;padding:0 16px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-weight:600;text-decoration:none;transition:transform .12s,box-shadow .12s;}
+.btn:hover{box-shadow:0 4px 16px rgba(16,24,40,.1);}
+.btn:active{transform:scale(.98);}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:transparent;grid-column:1 / -1;}
+.btn svg{width:20px;height:20px;flex-shrink:0;}
+.path{font-family:"Cascadia Mono",Consolas,ui-monospace,monospace;font-size:13px;color:var(--text-dim);margin-top:22px;word-break:break-all;}
+@media (max-width:420px){.btns{grid-template-columns:1fr;}}
+@media (prefers-reduced-motion:reduce){.logo *{animation:none!important;}}
+</style>
+</head>
+<body>
+<main>
+  <svg class="logo" viewBox="0 0 168 168" aria-hidden="true">
+    <ellipse class="shadow" cx="84" cy="156" rx="46" ry="6" fill="currentColor" style="color:var(--text)"/>
+    <g class="float">
+      <rect x="28" y="30" width="112" height="112" rx="22" fill="var(--paper)" stroke="var(--ring)" stroke-width="3"/>
+      <path d="M28 52a22 22 0 0 1 22-22h68a22 22 0 0 1 22 22v10H28z" fill="var(--accent)"/>
+      <rect x="54" y="20" width="9" height="24" rx="4.5" fill="var(--text)"/>
+      <rect x="105" y="20" width="9" height="24" rx="4.5" fill="var(--text)"/>
+      <g fill="var(--ring)">
+        <rect x="44" y="76" width="18" height="14" rx="4"/><rect x="75" y="76" width="18" height="14" rx="4"/><rect x="106" y="76" width="18" height="14" rx="4"/>
+        <rect x="44" y="100" width="18" height="14" rx="4"/><rect x="106" y="100" width="18" height="14" rx="4"/>
+        <rect x="44" y="122" width="18" height="10" rx="4"/><rect x="75" y="122" width="18" height="10" rx="4"/><rect x="106" y="122" width="18" height="10" rx="4"/>
+      </g>
+      <rect class="page" x="75" y="100" width="18" height="14" rx="4" fill="var(--accent)"/>
+      <text class="q" x="84" y="113" text-anchor="middle" font-size="17" font-weight="800" fill="var(--accent)" font-family="Segoe UI,system-ui,sans-serif" style="transform-origin:84px 107px">?</text>
+    </g>
+  </svg>
+  <div class="code">404</div>
+  <h1 id="title">Ce cours n'est pas à l'emploi du temps</h1>
+  <p id="msg">La page demandée n'existe pas (ou plus). Elle a peut-être été déplacée, ou le lien est incomplet.</p>
+  <div class="btns">
+    <a class="btn primary" data-path="app/index.html" href="https://kiricoucou.github.io/uca-extension/app/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Ouvrir l'agenda en ligne</a>
+    <a class="btn" data-path="index.html" href="https://kiricoucou.github.io/uca-extension/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11 12 4l8 7v8.5a.5.5 0 0 1-.5.5H15v-6H9v6H4.5a.5.5 0 0 1-.5-.5z"/></svg>Accueil</a>
+    <a class="btn" data-path="install.html" href="https://kiricoucou.github.io/uca-extension/install.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M12 7v6M9.5 10.5 12 13l2.5-2.5"/></svg>Installer l'app</a>
+    <a class="btn" data-path="aide.html" href="https://kiricoucou.github.io/uca-extension/aide.html" style="grid-column:1 / -1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 17h.01"/></svg>Aide</a>
+  </div>
+  <p class="path" id="path"></p>
+</main>
+<script>
+(function () {
+  "use strict";
+  // Hors de GitHub Pages (test en local, copie hors ligne) : liens vers le même site, pas vers github.io.
+  var m = location.pathname.match(/^(.*?\/uca-extension\/)/);
+  var base = m ? m[1] : (location.hostname.endsWith("github.io") ? "/uca-extension/" : "/");
+  if (!/github\.io$/.test(location.hostname) || m) {
+    document.querySelectorAll("a[data-path]").forEach(function (a) { a.href = base + a.getAttribute("data-path"); });
+  }
+  document.getElementById("path").textContent = location.pathname.replace(base, "/");
+  if (navigator.onLine === false) {
+    document.getElementById("title").textContent = "Tu es hors ligne";
+    document.getElementById("msg").textContent = "Cette page n'a pas encore été enregistrée sur cet appareil. L'agenda, lui, reste disponible hors ligne.";
+  }
+})();
+</script>
+</body>
+</html>

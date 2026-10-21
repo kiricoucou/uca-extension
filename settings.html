@@ -50,10 +50,14 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
 .foot button,.foot a{font:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:18px;height:36px;padding:0 16px;cursor:pointer;display:inline-flex;align-items:center;text-decoration:none;box-sizing:border-box;}
 .upd-btn{font:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:18px;height:36px;padding:0 16px;cursor:pointer;}
 .upd-btn.primary{background:var(--focus);color:var(--on-focus);border-color:transparent;font-weight:600;}
+.upd-btn.danger{color:#d93025;border-color:#f3c2bd;}
+.upd-btn.danger.armed{background:#d93025;color:#fff;border-color:transparent;font-weight:600;}
 .upd-block{position:fixed;inset:0;z-index:5000;background:rgba(8,9,11,.92);display:flex;align-items:center;justify-content:center;padding:20px;}
 .upd-block .box{background:var(--surface);color:var(--text);border-radius:16px;padding:24px;max-width:380px;text-align:center;}
 .upd-block h2{margin:0 0 8px;font-size:20px;}
 .foot button.primary{background:var(--focus);color:var(--on-focus);border-color:transparent;font-weight:600;}
+.undo-bar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f2125;color:#fff;padding:10px 12px 10px 18px;border-radius:999px;display:flex;align-items:center;gap:14px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:4000;}
+.undo-bar .upd-btn{background:#8ab4f8;color:#0b1d3a;border-color:transparent;}
 </style>
 </head>
 <body>
@@ -68,6 +72,15 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
       <div class="txt"><div class="lbl">Version</div><div class="hint" id="updState">Installée : <span id="verCur">—</span> · Dernière : <span id="verLat">—</span></div><div class="hint err" id="updErr"></div></div>
       <div class="foot-right">
         <button type="button" class="upd-btn primary" id="checkUpdBtn">Vérifier les mises à jour</button>
+      </div>
+    </div>
+  </section>
+  <section>
+    <h2>Données</h2>
+    <div class="row">
+      <div class="txt"><div class="lbl">Réinitialiser l'agenda</div><div class="hint">Supprime les cours, notes, absences et notes personnelles synchronisés sur cet appareil. Tes réglages et ton design sont gardés. Annulable pendant 10 minutes.</div></div>
+      <div class="foot-right">
+        <button type="button" class="upd-btn danger" id="wipeBtn">Réinitialiser l'agenda</button>
       </div>
     </div>
   </section>

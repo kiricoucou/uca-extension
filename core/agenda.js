@@ -922,6 +922,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
     renderNotesPanel();
   }
   if (changes.uca_edt_changes) { setEdtChanges(changes.uca_edt_changes.newValue); render(); }
+  // Réinitialisation (ou son annulation) depuis Paramètres, dans un autre onglet : reflète tout de suite.
+  if (changes.uca_events) { events = (changes.uca_events.newValue || []).map(ev => ({ ...ev, color: D.eventColor(eventColorKey(ev.title)) })); render(); }
+  if (changes.uca_notes) { notes = changes.uca_notes.newValue || {}; render(); }
+  if (changes.uca_absences) { absences = changes.uca_absences.newValue || null; renderAbsencesPanel(); }
 });
 UCA_TOOLS.load(() => { renderFilterButton(); loadFromStorage(); });
 })();

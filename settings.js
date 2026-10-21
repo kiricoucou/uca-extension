@@ -35,6 +35,13 @@ const SECTIONS = [
   ] },
 ];
 
+// Réinitialiser l'agenda : vide les données synchronisées (cours, notes perso, absences, relevé,
+// changements d'EDT), jamais les réglages ni le design. Une sauvegarde est gardée 10 min pour
+// pouvoir annuler (uca_reset_backup, hors uca_settings : jamais exportée ni dans un lien de partage).
+const RESET_KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_absences_sync",
+  "uca_releve_notes", "uca_releve_notes_sync", "uca_notes_seen", "uca_edt_changes", "uca_app_imported_at", "uca_app_exported_at"];
+const UNDO_WINDOW_MS = 10 * 60 * 1000;
+
 function $(id) { return document.getElementById(id); }
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
 
@@ -129,6 +136,46 @@ $("backBtn").addEventListener("click", () => {
 $("resetBtn").addEventListener("click", () => {
   chrome.storage.local.set({ uca_settings: Object.assign({}, UCA_SETTINGS_DEFAULTS) }).then(() => { render(UCA_SETTINGS_DEFAULTS); flashSaved(); });
 });
+
+/* Double clic (confirmation) : 1er clic arme le bouton pendant quelques secondes, 2e clic agit. */
+let wipeArmed = 0;
+const WIPE_LABEL = "Réinitialiser l'agenda";
+function setWipeArmed(on) {
+  clearTimeout(wipeArmed);
+  const b = $("wipeBtn");
+  if (on) {
+    b.textContent = "Confirmer : tout sera supprimé"; b.classList.add("armed");
+    wipeArmed = setTimeout(() => setWipeArmed(false), 4000);
+  } else { b.textContent = WIPE_LABEL; b.classList.remove("armed"); }
+}
+$("wipeBtn").addEventListener("click", () => {
+  if (!$("wipeBtn").classList.contains("armed")) { setWipeArmed(true); return; }
+  setWipeArmed(false);
+  chrome.storage.local.get(RESET_KEYS).then((backup) => chrome.storage.local.set({ uca_reset_backup: { at: Date.now(), data: backup } })
+    .then(() => chrome.storage.local.remove(RESET_KEYS))).then(renderUndoBanner);
+});
+document.addEventListener("click", (e) => { if (!e.target.closest("#wipeBtn") && $("wipeBtn").classList.contains("armed")) setWipeArmed(false); });
+
+let undoTimer = 0;
+function renderUndoBanner() {
+  chrome.storage.local.get("uca_reset_backup").then(({ uca_reset_backup: backup }) => {
+    let bar = $("undoBar");
+    clearTimeout(undoTimer);
+    const left = backup ? backup.at + UNDO_WINDOW_MS - Date.now() : 0;
+    if (!backup || left <= 0) { if (bar) bar.remove(); return; }
+    if (!bar) {
+      bar = el("div", "undo-bar"); bar.id = "undoBar";
+      const txt = el("span", "", "Agenda réinitialisé.");
+      const btn = el("button", "upd-btn primary", "Annuler"); btn.type = "button";
+      btn.addEventListener("click", () => chrome.storage.local.set(backup.data).then(() => chrome.storage.local.remove("uca_reset_backup")).then(() => { flashSaved(); renderUndoBanner(); }));
+      bar.append(txt, btn);
+      document.body.appendChild(bar);
+    }
+    undoTimer = setTimeout(renderUndoBanner, Math.min(left, 60000));
+  });
+}
+chrome.storage.onChanged.addListener((c, area) => { if (area === "local" && c.uca_reset_backup) renderUndoBanner(); });
+renderUndoBanner();
 $("agendaBtn").addEventListener("click", () => {
   Promise.all([fetch(chrome.runtime.getURL("designs/designs.json")).then((r) => r.json()), chrome.storage.local.get("uca_design")])
     .then(([designs, d]) => {

@@ -34,11 +34,14 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   if (e.request.method !== "GET") return;
-  // Pages (navigation) : réseau d'abord. Ces fichiers contiennent la logique de redirection
-  // elle-même (ex. install.html → index.html si déjà installé) ; en cache-first elle peut rester
-  // périmée indéfiniment (jamais revisitée pour se rafraîchir en arrière-plan). Hors ligne : repli
-  // sur le cache. Fichiers statiques (JS/CSS/images) : cache-first + revalidation, comme avant.
-  if (e.request.mode === "navigate") {
+  // Pages (navigation) et core/*.js : réseau d'abord. Ces fichiers contiennent la logique de
+  // redirection (ex. install.html → index.html si déjà installé) ou des comportements corrigés
+  // par une mise à jour (ex. couleurs appliquées par erreur à toute une page) ; en cache-first, une
+  // page jamais revisitée seule (donc jamais revalidée en arrière-plan) peut rester périmée
+  // indéfiniment, et désactiver un correctif critique y est resté invisible jusqu'au prochain
+  // "Mettre à jour" manuel. Hors ligne : repli sur le cache. Le reste (CSS/images/vendor) garde le
+  // cache-first + revalidation habituel, pour la vitesse et le fonctionnement hors ligne.
+  if (e.request.mode === "navigate" || /\/core\/[\w-]+\.js$/.test(url.pathname)) {
     e.respondWith((async () => {
       const cache = await caches.open(CACHE);
       try {

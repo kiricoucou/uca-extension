@@ -223,7 +223,7 @@ def update_detection(browser, base, errors):
 
     page.goto(base + "settings.html"); page.wait_for_timeout(1200)
     check("maj app : page Paramètres bloquée aussi", page.locator("#updBlock").count() == 1)
-    check("maj app : boutons Vérifier / Forcer dans Paramètres", page.locator("#checkUpdBtn").count() == 1 and page.locator("#forceUpdBtn").count() == 1)
+    check("maj app : bouton Vérifier les mises à jour dans Paramètres", page.locator("#checkUpdBtn").count() == 1)
     page.goto(base + "designs/anime/agenda.html"); page.wait_for_timeout(1200)
     # Clique "Mettre à jour" : le cache (shell complet, stale-while-revalidate) doit être vidé —
     # sinon la page rechargée réaffiche le contenu périmé malgré la "mise à jour".

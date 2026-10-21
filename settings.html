@@ -18,6 +18,8 @@
 *{box-sizing:border-box;}
 body{margin:0;font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.45;}
 main{max-width:720px;margin:40px auto;padding:0 20px 40px;}
+.back-btn{font:inherit;border:none;background:none;color:var(--focus);cursor:pointer;padding:6px 0;margin-bottom:10px;font-weight:600;font-size:14px;}
+.back-btn:hover{text-decoration:underline;}
 h1{font-size:26px;font-weight:600;margin:0 0 4px;}
 .lead{color:var(--text-dim);margin:0 0 24px;}
 section{background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:16px;overflow:hidden;}
@@ -52,6 +54,7 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
 </head>
 <body>
 <main>
+  <button type="button" class="back-btn" id="backBtn">← Retour</button>
   <h1>Paramètres</h1>
   <p class="lead">Ces réglages s'appliquent à tous les designs. Ils sont enregistrés tout de suite, sur cet appareil uniquement.</p>
   <div id="sections"></div>
@@ -60,8 +63,7 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
     <div class="row">
       <div class="txt"><div class="lbl">Version</div><div class="hint" id="updState">Installée : <span id="verCur">—</span> · Dernière : <span id="verLat">—</span></div><div class="hint err" id="updErr"></div></div>
       <div class="foot-right">
-        <button type="button" class="upd-btn" id="checkUpdBtn">Vérifier</button>
-        <button type="button" class="upd-btn primary" id="forceUpdBtn">Forcer la mise à jour</button>
+        <button type="button" class="upd-btn primary" id="checkUpdBtn">Vérifier les mises à jour</button>
       </div>
     </div>
   </section>

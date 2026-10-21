@@ -29,6 +29,22 @@ const SECTIONS = [
 function $(id) { return document.getElementById(id); }
 function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
 
+/* Paramètres suit le design déjà choisi (extension et app) : couleurs reprises de
+   designs.json (préparées pour les pages app/app.css, voir core/env.js, réutilisées ici
+   avec les noms de variables de settings.html). */
+chrome.storage.local.get("uca_design", ({ uca_design }) => {
+  if (!uca_design) return;
+  fetch(chrome.runtime.getURL("designs/designs.json")).then((r) => r.json()).then((designs) => {
+    const p = (designs.find((d) => d.id === uca_design) || {}).preview;
+    if (!p) return;
+    const root = document.documentElement.style;
+    [["--bg", "background"], ["--surface", "surface"], ["--border", "border"], ["--text", "text"],
+      ["--text-dim", "textDim"], ["--focus", "accent"], ["--on-focus", "onAccent"]].forEach(([cssVar, key]) => {
+      if (p[key]) root.setProperty(cssVar, p[key]);
+    });
+  }).catch(() => {});
+});
+
 let savedTimer = 0;
 function flashSaved() {
   $("saved").classList.add("show");
@@ -74,6 +90,14 @@ function render(settings) {
   });
 }
 
+$("backBtn").addEventListener("click", () => {
+  // App : Paramètres remplace la page dans le même onglet (core/env.js) -> un vrai retour existe.
+  // Extension : Paramètres s'ouvre dans un onglet dédié (chrome.tabs.create) -> rien à quoi
+  // revenir, on ferme cet onglet à la place.
+  if (history.length > 1) history.back();
+  else window.close();
+});
+
 $("resetBtn").addEventListener("click", () => {
   chrome.storage.local.set({ uca_settings: Object.assign({}, UCA_SETTINGS_DEFAULTS) }).then(() => { render(UCA_SETTINGS_DEFAULTS); flashSaved(); });
 });
@@ -105,16 +129,21 @@ function renderUpdate(d) {
 const UPD_KEYS = ["uca_update_available", "uca_current_version", "uca_latest_version", "uca_update_check_failed"];
 chrome.storage.local.get(UPD_KEYS).then(renderUpdate);
 chrome.storage.onChanged.addListener((c, area) => { if (area === "local" && UPD_KEYS.some((k) => c[k])) chrome.storage.local.get(UPD_KEYS).then(renderUpdate); });
+const CHECK_BTN_LABEL = "Vérifier les mises à jour";
 $("checkUpdBtn").addEventListener("click", () => {
   const b = $("checkUpdBtn"); b.disabled = true; b.textContent = "Vérification…";
   chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
   // Jusqu'à 2 essais côté background.js/env.js (environ 1,2 s entre les deux) : on laisse la marge.
   setTimeout(() => chrome.storage.local.get(UPD_KEYS).then((d) => {
-    renderUpdate(d); b.disabled = false;
-    b.textContent = d.uca_update_check_failed ? "Réessayer" : d.uca_update_available ? "Vérifier" : "À jour ✓";
+    renderUpdate(d);
+    // Mise à jour disponible : le bloc plein écran (un seul bouton "Mettre à jour") prend le
+    // relais, pas la peine de réactiver celui-ci dessous.
+    if (d.uca_update_available) return;
+    b.disabled = false;
+    b.textContent = d.uca_update_check_failed ? "Réessayer" : "À jour ✓";
+    setTimeout(() => { if (!$("updBlock")) b.textContent = CHECK_BTN_LABEL; }, 2500);
   }), 4000);
 });
-$("forceUpdBtn").addEventListener("click", () => { $("forceUpdBtn").disabled = true; chrome.runtime.sendMessage({ type: "UCA_APPLY_UPDATE" }); });
 chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
 
 UCA_getSettings().then(render);

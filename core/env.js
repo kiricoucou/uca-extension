@@ -190,9 +190,12 @@ local.get("uca_design").then(({ uca_design }) => fetch(ROOT + "designs/designs.j
   tag("meta", { name: "theme-color", content: bg });
   const dark = parseInt(bg.slice(1, 3), 16) + parseInt(bg.slice(3, 5), 16) + parseInt(bg.slice(5, 7), 16) < 384;
   tag("meta", { name: "apple-mobile-web-app-status-bar-style", content: dark ? "black-translucent" : "default" });
-  // Pages app/ (install, import, accueil) : couleurs du design déjà choisi, pour que l'app ne
-  // bascule pas vers un style générique bleu entre l'extension et ces écrans de transition.
-  if (d) {
+  // Pages génériques app/app.css (install, import, accueil) seulement : couleurs du design déjà
+  // choisi, pour qu'elles ne retombent pas sur un bleu générique entre deux écrans du design.
+  // Jamais sur designs/<id>/agenda.html : ces pages ont déjà leurs propres variables --surface etc.
+  // pour toute l'interface (boutons, panneaux...), qu'un style inline (toujours prioritaire)
+  // écraserait entièrement — exactement ce qui a rendu tous les boutons jaunes sur carnet.
+  if (d && /\/app\/(install|import|index)\.html$/.test(location.pathname)) {
     const root = document.documentElement.style;
     [["--bg", "background"], ["--surface", "surface"], ["--accent", "accent"], ["--on-accent", "onAccent"],
       ["--text", "text"], ["--text-dim", "textDim"], ["--border", "border"]].forEach(([cssVar, key]) => {

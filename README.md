@@ -71,9 +71,22 @@ Pas de Chrome Web Store (extension non publiée) : l'installation se fait « en 
 
 ### Firefox
 
-Même principe, avec `manifest.firefox.json` : renomme-le en `manifest.json` (en remplaçant celui déjà présent) **avant** de charger le dossier, puis `about:debugging` → **Ce Firefox** → **Charger un module complémentaire temporaire** → sélectionne n'importe quel fichier du dossier (`manifest.json` par exemple).
+Manifest V3 dédié (`manifest.firefox.json`, `browser_specific_settings.gecko` déclaré) : fond
+persistant par scripts (`background.scripts`, pas de service worker, Firefox ne le gère pas de la
+même façon que Chrome) au lieu de `background.service_worker`, sinon même code, mêmes permissions,
+mêmes `content_scripts` que la version Chrome — vérifié identiques par `tests/parity.py`.
 
-Avec Firefox, le module est retiré à chaque fermeture du navigateur (limite des extensions temporaires) : il faut refaire le chargement à chaque redémarrage, ou passer par Firefox Android une fois l'extension publiée sur addons.mozilla.org (pas encore fait).
+1. `python -I -X utf8 tests/build_firefox.py` — construit le paquet dans `dist/firefox/`
+   (`manifest.firefox.json` renommé en `manifest.json`, fichiers de dev comme `tests/` ou `app/`
+   exclus) et un `.zip` prêt à déposer dans `dist/`.
+2. `about:debugging#/runtime/this-firefox` → **Ce Firefox** → **Charger un module complémentaire
+   temporaire** → `manifest.json` du dossier `dist/firefox/` (ou n'importe quel fichier dedans).
+
+Avec Firefox, un module temporaire est retiré à chaque fermeture du navigateur : il faut refaire
+l'étape 2 à chaque redémarrage (le build de l'étape 1 n'est à refaire qu'après un changement de
+code). Pour une installation permanente, qui survit aux redémarrages et ouvre la voie à Firefox
+Android, déposer le `.zip` de l'étape 1 sur
+[addons.mozilla.org](https://addons.mozilla.org/developers/addon/submit/) (pas encore fait).
 
 ### Sur ton téléphone
 
@@ -119,6 +132,8 @@ Prérequis : Python 3 + Playwright (`pip install playwright` puis `playwright in
 | `python -I -X utf8 tests/gen_icons.py <id>` | Rend `designs/<id>/icons/icon.svg` en PNG 16/32/48/128 |
 | `python -I -X utf8 tests/pwa.py [dossier]` | Teste l'app téléphone servie en local (Android via Chromium, iPhone via WebKit) : installation, choix du design, import, hors ligne, raccourcis, aller-retour des QR codes |
 | `python -I -X utf8 tests/bridge.py` | Teste le pont extension ↔ app web (`content-bridge.js` + `core/env.js`) : détection de l'extension, bouton Synchroniser, résultat de synchro appliqué sans recharger |
+| `python -I -X utf8 tests/parity.py` | Vérifie que `manifest.json` et `manifest.firefox.json` restent en phase (permissions, host_permissions, content_scripts) |
+| `python -I -X utf8 tests/build_firefox.py` | Construit le paquet Firefox dans `dist/firefox/` + un `.zip` (voir section Firefox ci-dessus) |
 | `python -I -X utf8 tests/gen_app_assets.py` | Régénère icônes et écrans de démarrage de l'app depuis `app/icons/icon.svg` |
 | `python -I -X utf8 tests/gen_previews.py [id ...]` | Régénère les 6 captures du sélecteur (`designs/<id>/previews/`) |
 

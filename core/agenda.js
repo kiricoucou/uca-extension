@@ -12,6 +12,8 @@ let notes = {};
 let absences = null;
 let scrapeIssues = {};
 let releveNotes = null;
+let notesHistory = [];
+let simScope = "", simTarget = 10, chartScope = "general";
 let notesSeen = {};
 let edtChanges = new Map(); // eventKey -> changement (ajouté / déplacé / salle) ; annulés : fantômes
 let cancelledGhosts = [];
@@ -475,13 +477,14 @@ function renderSyncInfo(iso, importedAt) {
   $("syncInfo").textContent = iso ? "Dernière synchro : " + new Date(iso).toLocaleString("fr-FR") : "Jamais synchronisé";
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history"], (data) => {
     if (window.UCA_APP && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) { location.href = chrome.runtime.getURL("app/import.html"); return; }
     settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, data.uca_settings);
     events = (data.uca_events || []).map(ev => ({ ...ev, color: D.eventColor(eventColorKey(ev.title)) }));
     notes = data.uca_notes || {};
     absences = data.uca_absences || null;
     scrapeIssues = data.uca_scrape_issues || {};
+    notesHistory = data.uca_notes_history || [];
     releveNotes = data.uca_releve_notes || null;
     notesSeen = data.uca_notes_seen || {};
     setEdtChanges(data.uca_edt_changes);
@@ -580,8 +583,21 @@ function renderAbsencesIssue() {
   const n = scrapeIssueNode("absences");
   if (n) panel.insertBefore(n, panel.firstChild);
 }
+function renderAbsenceAlert() {
+  const panel = $("absencesPanel");
+  const old = panel.querySelector(".absence-alert"); if (old) old.remove();
+  const th = Number(settings.absenceAlert) || 0, n = absences && absences.nonJustifiees;
+  if (!th || !n || n < th) return;
+  const node = document.createElement("div");
+  node.className = "absence-alert"; node.setAttribute("role", "status");
+  node.style.cssText = "margin:0 0 8px;padding:8px 10px;border:1px solid var(--danger);border-radius:8px;color:var(--danger);font-size:12.5px;line-height:1.4;font-weight:600;";
+  node.textContent = `${n} absence${n > 1 ? "s" : ""} non justifiée${n > 1 ? "s" : ""} : le seuil d'alerte (${th}) est atteint. Pense à déposer un justificatif sur Odin.`;
+  const issue = panel.querySelector(".scrape-issue");
+  panel.insertBefore(node, issue ? issue.nextSibling : panel.firstChild);
+}
 function renderAbsencesPanel() {
   renderAbsencesIssue();
+  renderAbsenceAlert();
   const fmt = (v) => (v === null || v === undefined ? "—" : v);
   const set = (id, key) => { document.querySelector(`#${id} .ap-val`).textContent = absences ? fmt(absences[key]) : "—"; };
   set("apDeclarees", "declarees"); set("apJustifiees", "justifiees"); set("apNonJustifiees", "nonJustifiees");
@@ -646,22 +662,175 @@ function ntRow(cls, label, row, seenKey) {
 // Odin ne remplit souvent la note de matière/UE qu'au jury de semestre ("-" avant ça) :
 // on la reconstruit depuis le niveau en dessous avec le Coeff de chaque ligne du tableau
 // (éval -> matière -> UE), jamais avec un poids par défaut inventé.
-function weightedAvg(items) {
-  let sw = 0, sc = 0;
-  items.forEach(({ note, coeff }) => { if (note == null || coeff == null) return; sw += note * coeff; sc += coeff; });
-  return sc ? sw / sc : null;
+const weightedAvg = UCA_GRADES.weightedAvg;
+const matiereEffectiveNote = UCA_GRADES.matiereNote;
+const ueEffectiveNote = UCA_GRADES.ueNote;
+function generalAverage() { return UCA_GRADES.generalAvg(releveNotes); }
+
+
+/* ---- Outils de la fenêtre Notes : examens à venir, simulateur d'objectif, évolution ----
+   Construits avec les classes communes (.fp-h, .fp-search, .fp-empty) : chaque design les habille. */
+function npEl(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; }
+const NP_ROW = "display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:4px 16px;font-size:13px;";
+const NP_EXAM = "display:flex;flex-direction:column;gap:1px;padding:5px 16px;font-size:13px;line-height:1.35;";
+/* Les fenêtres des designs ont leurs propres fonds (parfois sombres même en thème clair) : le texte des
+   blocs ajoutés suit la luminosité réelle du fond de la fenêtre Notes, pas le thème de la page. */
+function panelInk() {
+  let n = $("notesPanel");
+  while (n) {
+    const m = /rgba?\(([^)]+)\)/.exec(getComputedStyle(n).backgroundColor || "");
+    if (m) {
+      const [r, g, b, al] = m[1].split(",").map((x) => parseFloat(x));
+      if (al === undefined || al > 0.5) return (0.299 * r + 0.587 * g + 0.114 * b) < 140 ? "#ececec" : "#1f1f1f";
+    }
+    n = n.parentElement;
+  }
+  return "#1f1f1f";
 }
-function matiereEffectiveNote(m) {
-  if (m.note != null) return m.note;
-  return weightedAvg(m.evals || []);
+function inkify(node) {
+  if (!node) return node;
+  const ink = panelInk();
+  node.style.color = ink;
+  node.querySelectorAll(".fp-h, .fp-empty").forEach((e) => { e.style.color = ink; e.style.opacity = ".72"; });
+  return node;
 }
-function ueEffectiveNote(ue) {
-  if (ue.note != null) return ue.note;
-  return weightedAvg((ue.matieres || []).map(m => ({ note: matiereEffectiveNote(m), coeff: m.coeff })));
+function daysUntil(ev) {
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  return Math.round((new Date(ev.year, ev.month, ev.day) - t) / 86400000);
 }
-function generalAverage() {
-  if (!releveNotes || !releveNotes.ue || !releveNotes.ue.length) return null;
-  return weightedAvg(releveNotes.ue.map(ue => ({ note: ueEffectiveNote(ue), coeff: ue.coeff })));
+function countdownText(n) { return n <= 0 ? "Aujourd'hui" : n === 1 ? "Demain" : `Dans ${n} jours`; }
+function upcomingExams() {
+  const now = Date.now();
+  return events.filter((ev) => UCA_TOOLS.typeOf(ev.title) === "Examen" && new Date(ev.year, ev.month, ev.day, ev.endH, ev.endM).getTime() > now)
+    .sort((a, b) => new Date(a.year, a.month, a.day, a.startH, a.startM) - new Date(b.year, b.month, b.day, b.startH, b.startM)).slice(0, 4);
+}
+function examsBlock() {
+  const exams = upcomingExams();
+  if (!exams.length) return null;
+  const box = npEl("div", "np-exams");
+  box.appendChild(npEl("div", "fp-h", "Prochains examens"));
+  exams.forEach((ev) => {
+    const row = npEl("div", "np-exam"); row.style.cssText = NP_EXAM;
+    const left = npEl("b", "", ev.title);
+    const hm = `${String(ev.startH).padStart(2, "0")}h${String(ev.startM).padStart(2, "0")}`;
+    const date = new Date(ev.year, ev.month, ev.day).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+    const right = npEl("span", "", `${countdownText(daysUntil(ev))} · ${date} ${hm}${ev.room ? " · " + ev.room : ""}`);
+    right.style.opacity = ".85";
+    row.append(left, right); box.appendChild(row);
+  });
+  return box;
+}
+
+function simResultText(r, target, label) {
+  const f = fmtNote, n = r.pending, ev = `${n} évaluation${n > 1 ? "s" : ""} à venir (coeff ${f(r.coeff)})`;
+  const cur = r.current == null ? "" : ` Actuellement : ${f(r.current)} / 20.`;
+  if (r.status === "nothing") return "Aucune évaluation à venir à simuler ici.";
+  if (r.status === "reached") return `Objectif déjà atteint : ${f(target)} en ${label}, même avec 0 sur les ${ev}.${cur}`;
+  if (r.status === "impossible") return `Impossible d'atteindre ${f(target)} en ${label} : même 20 / 20 sur les ${ev} donne ${r.max == null ? "—" : f(r.max)}.${cur}`;
+  return `Il faut au moins ${f(r.needed)} / 20 de moyenne sur les ${ev} pour atteindre ${f(target)} en ${label}.${cur}`;
+}
+function simulatorBlock() {
+  const list = UCA_GRADES.scopes(releveNotes);
+  const box = npEl("div", "np-sim");
+  box.appendChild(npEl("div", "fp-h", "Simulateur d'objectif"));
+  if (!list.length) { box.appendChild(npEl("div", "fp-empty", "Aucune évaluation à venir dans ton relevé : rien à simuler.")); return box; }
+  if (!list.some((x) => x.id === simScope)) simScope = list[0].id;
+  const sel = npEl("select", "fp-search"); sel.id = "simScope"; sel.setAttribute("aria-label", "Matière, UE ou moyenne à viser");
+  list.forEach((x) => { const o = npEl("option", "", x.label); o.value = x.id; sel.appendChild(o); });
+  sel.value = simScope;
+  const row = npEl("div", "np-sim-row"); row.style.cssText = NP_ROW + "align-items:center;";
+  const lbl = npEl("label", "", "Objectif (sur 20)"); lbl.htmlFor = "simTarget";
+  const inp = npEl("input", "fp-search"); inp.id = "simTarget"; inp.type = "number"; inp.min = "0"; inp.max = "20"; inp.step = "0.5"; inp.value = String(simTarget);
+  inp.style.cssText = "width:96px;margin:0;display:inline-block;";
+  row.append(lbl, inp);
+  const out = npEl("div", "np-sim-out"); out.id = "simOut"; out.setAttribute("role", "status"); out.setAttribute("aria-live", "polite");
+  out.style.cssText = "padding:6px 16px 4px;font-size:13px;line-height:1.45;";
+  const update = () => {
+    const t = Math.max(0, Math.min(20, parseFloat(String(inp.value).replace(",", "."))));
+    if (Number.isNaN(t)) { out.textContent = "Entre un objectif entre 0 et 20."; return; }
+    simTarget = t; simScope = sel.value;
+    out.textContent = simResultText(UCA_GRADES.simulate(releveNotes, simScope, t), t, (list.find((x) => x.id === simScope) || {}).label || "");
+  };
+  sel.addEventListener("change", update); inp.addEventListener("input", update);
+  box.append(sel, row, out); update();
+  return box;
+}
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+function svgEl(tag, attrs) { const e = document.createElementNS(SVG_NS, tag); Object.keys(attrs || {}).forEach((k) => e.setAttribute(k, attrs[k])); return e; }
+function chartSvg(w, h) {
+  const svg = svgEl("svg", { viewBox: `0 0 ${w} ${h}`, role: "img", width: "100%" });
+  svg.style.cssText = "display:block;margin:4px 0 0;max-width:100%;";
+  return svg;
+}
+function svgText(x, y, text, anchor) { const t = svgEl("text", { x, y, "font-size": 10, "text-anchor": anchor || "middle", fill: "currentColor", opacity: ".75" }); t.textContent = text; return t; }
+function historyChart() {
+  const pts = notesHistory;
+  const wrap = npEl("div", "np-chart-body");
+  if (pts.length < 2) {
+    wrap.appendChild(npEl("div", "fp-empty", pts.length ? `Moyenne actuelle : ${fmtNote(pts[0].avg)} / 20. La courbe se dessine à chaque synchro où ta moyenne change.` : "Pas encore d'historique : la courbe se dessine à chaque synchro où ta moyenne change."));
+    return wrap;
+  }
+  const W = 360, H = 150, L = 30, Rr = 12, T = 12, B = 24;
+  const lo = Math.max(0, Math.floor(Math.min(...pts.map((p) => p.avg)) - 1)), hi = Math.min(20, Math.ceil(Math.max(...pts.map((p) => p.avg)) + 1));
+  const x = (i) => L + (W - L - Rr) * i / (pts.length - 1), y = (v) => T + (H - T - B) * (1 - (v - lo) / Math.max(1, hi - lo));
+  const svg = chartSvg(W, H); svg.setAttribute("aria-label", `Évolution de la moyenne générale : de ${fmtNote(pts[0].avg)} à ${fmtNote(pts[pts.length - 1].avg)}`);
+  [lo, (lo + hi) / 2, hi].forEach((v) => {
+    svg.appendChild(svgEl("line", { x1: L, x2: W - Rr, y1: y(v), y2: y(v), stroke: "currentColor", "stroke-opacity": ".15" }));
+    svg.appendChild(svgText(L - 4, y(v) + 3, fmtNote(v), "end"));
+  });
+  if (lo < 10 && hi > 10) svg.appendChild(svgEl("line", { x1: L, x2: W - Rr, y1: y(10), y2: y(10), stroke: "currentColor", "stroke-opacity": ".4", "stroke-dasharray": "3 3" }));
+  svg.appendChild(svgEl("polyline", { points: pts.map((p, i) => `${x(i)},${y(p.avg)}`).join(" "), fill: "none", stroke: "var(--accent)", "stroke-width": 2, "stroke-linejoin": "round" }));
+  pts.forEach((p, i) => {
+    const c = svgEl("circle", { cx: x(i), cy: y(p.avg), r: 3, fill: "var(--accent)" });
+    const tt = svgEl("title"); tt.textContent = `${new Date(p.at).toLocaleDateString("fr-FR")} : ${fmtNote(p.avg)} / 20`; c.appendChild(tt);
+    svg.appendChild(c);
+  });
+  const d = (p) => new Date(p.at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  svg.appendChild(svgText(L, H - 6, d(pts[0]), "start")); svg.appendChild(svgText(W - Rr, H - 6, d(pts[pts.length - 1]), "end"));
+  wrap.appendChild(svg);
+  return wrap;
+}
+function matiereChart(label) {
+  const series = UCA_GRADES.matiereSeries(releveNotes, label), wrap = npEl("div", "np-chart-body");
+  if (!series.length) { wrap.appendChild(npEl("div", "fp-empty", "Aucune note dans cette matière pour l'instant.")); return wrap; }
+  const W = 360, H = 150, L = 24, T = 10, B = 30, gw = (W - L - 8) / series.length, bw = Math.min(22, gw / 2.6);
+  const y = (v) => T + (H - T - B) * (1 - v / 20);
+  const svg = chartSvg(W, H); svg.setAttribute("aria-label", `Notes de ${label}, comparées à la moyenne de la classe`);
+  [0, 10, 20].forEach((v) => {
+    svg.appendChild(svgEl("line", { x1: L, x2: W - 8, y1: y(v), y2: y(v), stroke: "currentColor", "stroke-opacity": v === 10 ? ".4" : ".15", "stroke-dasharray": v === 10 ? "3 3" : "" }));
+    svg.appendChild(svgText(L - 4, y(v) + 3, v, "end"));
+  });
+  series.forEach((e, i) => {
+    const cx = L + gw * (i + .5);
+    const bars = [[cx - bw - 1, e.note, "var(--accent)", 1, "Ta note"], [cx + 1, e.moy, "currentColor", .35, "Moyenne de la classe"]];
+    bars.forEach(([bx, v, fill, op, what]) => {
+      if (v == null) return;
+      const r = svgEl("rect", { x: bx, y: y(v), width: bw, height: Math.max(1, y(0) - y(v)), fill, "fill-opacity": op, rx: 2 });
+      const tt = svgEl("title"); tt.textContent = `${e.label} — ${what} : ${fmtNote(v)} / 20`; r.appendChild(tt);
+      svg.appendChild(r);
+    });
+    svg.appendChild(svgText(cx, H - 16, e.label.length > 12 ? e.label.slice(0, 11) + "…" : e.label));
+    svg.appendChild(svgText(cx, H - 5, fmtNote(e.note)));
+  });
+  wrap.appendChild(svg);
+  const legend = npEl("div", "fp-empty", "Barre pleine : ta note · barre claire : moyenne de la classe");
+  wrap.appendChild(legend);
+  return wrap;
+}
+function chartBlock() {
+  const box = npEl("div", "np-chart");
+  box.appendChild(npEl("div", "fp-h", "Évolution des notes"));
+  const sel = npEl("select", "fp-search"); sel.id = "chartScope"; sel.setAttribute("aria-label", "Graphique à afficher");
+  const g = npEl("option", "", "Moyenne générale (historique)"); g.value = "general"; sel.appendChild(g);
+  UCA_GRADES.gradedMatieres(releveNotes).forEach((m) => { const o = npEl("option", "", m); o.value = "mat:" + m; sel.appendChild(o); });
+  if (![...sel.options].some((o) => o.value === chartScope)) chartScope = "general";
+  sel.value = chartScope;
+  const body = npEl("div"); body.style.cssText = "padding:4px 16px 0;";
+  const draw = () => { chartScope = sel.value; body.innerHTML = ""; body.appendChild(chartScope === "general" ? historyChart() : matiereChart(chartScope.slice(4))); inkify(body); };
+  sel.addEventListener("change", draw);
+  box.append(sel, body); draw();
+  return box;
 }
 function renderNotesPanel() {
   const content = $("npContent");
@@ -673,12 +842,14 @@ function renderNotesPanel() {
     empty.className = "notes-empty";
     empty.innerHTML = D.emptyHtml("notes") + escapeHtml("Aucun relevé — synchronise pour voir tes notes");
     content.appendChild(empty);
+    const exams = examsBlock(); if (exams) content.appendChild(inkify(exams));
   } else {
     if (avg != null) {
       const avgBar = document.createElement("div"); avgBar.className = "notes-avg";
       avgBar.innerHTML = `<span class="na-lbl">Moyenne générale</span><span class="na-val">${fmtNote(avg)} / 20</span>`;
       content.appendChild(avgBar);
     }
+    [examsBlock(), simulatorBlock(), chartBlock(), npEl("div", "fp-h", "Détail des notes")].forEach((b) => { if (b) content.appendChild(inkify(b)); });
     const table = document.createElement("table");
     table.className = "notes-table";
     const thead = document.createElement("thead");
@@ -940,7 +1111,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   } else if (msg.type === "UCA_ABSENCES_RESULT") {
     if (msg.ok) { absences = msg.absences; renderAbsencesPanel(); }
   } else if (msg.type === "UCA_NOTES_RESULT") {
-    if (msg.ok) chrome.storage.local.get("uca_notes_seen", (data) => { releveNotes = msg.releve; notesSeen = data.uca_notes_seen || {}; renderNotesPanel(); });
+    if (msg.ok) chrome.storage.local.get(["uca_notes_seen", "uca_notes_history"], (data) => { releveNotes = msg.releve; notesSeen = data.uca_notes_seen || {}; notesHistory = data.uca_notes_history || notesHistory; renderNotesPanel(); });
   } else if (msg.type === "UCA_UPDATE_STATE") {
     UCA_CORE.renderUpdate(msg.updateAvailable, msg.current, msg.latest);
   }
@@ -952,12 +1123,13 @@ UCA_CORE.initSettings();
 renderFilterButton();
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
-  if (changes.uca_settings) { settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, changes.uca_settings.newValue); render(); renderNotesPanel(); }
+  if (changes.uca_settings) { settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, changes.uca_settings.newValue); render(); renderNotesPanel(); renderAbsencesPanel(); }
   if (changes.uca_notes_seen || changes.uca_releve_notes) {
     if (changes.uca_notes_seen) notesSeen = changes.uca_notes_seen.newValue || {};
     if (changes.uca_releve_notes) releveNotes = changes.uca_releve_notes.newValue || null;
     renderNotesPanel();
   }
+  if (changes.uca_notes_history) { notesHistory = changes.uca_notes_history.newValue || []; renderNotesPanel(); }
   if (changes.uca_scrape_issues) { scrapeIssues = changes.uca_scrape_issues.newValue || {}; renderAbsencesPanel(); renderNotesPanel(); }
   if (changes.uca_edt_changes) { setEdtChanges(changes.uca_edt_changes.newValue); render(); }
   // Réinitialisation (ou son annulation) depuis Paramètres, dans un autre onglet : reflète tout de suite.

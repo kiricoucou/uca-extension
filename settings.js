@@ -32,6 +32,8 @@ const SECTIONS = [
   { title: "Alertes", fields: [
     { ext: true, key: "notifyEdtChanges", type: "switch", label: "Changement d'emploi du temps", hint: "Cours ajouté, annulé, déplacé ou changement de salle, détecté à chaque synchro. Les cours concernés sont aussi marqués dans l'agenda pendant 7 jours." },
     { ext: true, key: "statusWatch", type: "switch", label: "Surveiller Odin en arrière-plan", hint: "Teste Odin et la connexion toutes les 5 minutes et te prévient quand ils tombent en panne, puis quand ils reviennent." },
+    { key: "absenceAlert", type: "select", label: "Alerte d'absences non justifiées", hint: "Quand ce nombre est atteint : message dans le panneau Absences et notification. Désactivée par défaut.",
+      options: [[0, "Désactivée"], [2, "À 2 absences"], [3, "À 3 absences"], [4, "À 4 absences"], [5, "À 5 absences"], [6, "À 6 absences"], [8, "À 8 absences"], [10, "À 10 absences"]] },
     { ext: true, key: "notifyNewGrades", type: "switch", label: "Nouvelle note", hint: "Notification quand une note apparaît (ou change) dans ton relevé." },
   ] },
 ];
@@ -40,7 +42,7 @@ const SECTIONS = [
 // changements d'EDT), jamais les réglages ni le design. Une sauvegarde est gardée 10 min pour
 // pouvoir annuler (uca_reset_backup, hors uca_settings : jamais exportée ni dans un lien de partage).
 const RESET_KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_absences_sync",
-  "uca_releve_notes", "uca_releve_notes_sync", "uca_notes_seen", "uca_edt_changes", "uca_app_imported_at", "uca_app_exported_at"];
+  "uca_releve_notes", "uca_releve_notes_sync", "uca_notes_seen", "uca_notes_history", "uca_absence_alert", "uca_edt_changes", "uca_app_imported_at", "uca_app_exported_at"];
 const UNDO_WINDOW_MS = 10 * 60 * 1000;
 
 function $(id) { return document.getElementById(id); }

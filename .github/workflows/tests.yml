@@ -32,6 +32,8 @@ jobs:
           python -I -X utf8 tests/check_design.py
       - name: Lecture d'Odin (pages factices)
         run: python -I -X utf8 tests/scrape.py
+      - name: Notes, simulateur et absences
+        run: python -I -X utf8 tests/grades.py
       - name: Statut des sites
         run: python -I -X utf8 tests/status.py
       - name: Pont extension / app

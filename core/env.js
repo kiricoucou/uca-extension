@@ -139,6 +139,7 @@ window.addEventListener("message", (ev) => {
     // (pas d'orange) : elles voyagent avec le relevé.
     const out = { uca_releve_notes: msg.releve, uca_releve_notes_sync: msg.sync };
     if (msg.notesSeen) out.uca_notes_seen = msg.notesSeen;
+    if (msg.notesHistory) out.uca_notes_history = msg.notesHistory;
     local.set(out);
   } else if (msg.type === "UCA_SESSION_STATE") {
     local.set({ uca_session_expired: !!msg.expired });

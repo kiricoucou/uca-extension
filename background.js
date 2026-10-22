@@ -1,5 +1,6 @@
 // Firefox charge core/settings.js via manifest.background.scripts ; Chrome (service worker) ici.
 if (typeof UCA_getSettings === "undefined" && typeof importScripts === "function") importScripts("core/settings.js");
+if (typeof UCA_GRADES === "undefined" && typeof importScripts === "function") importScripts("core/grades.js");
 if (typeof UCA_STATUS === "undefined" && typeof importScripts === "function") importScripts("core/status.js");
 
 const EDT_URL = "https://odin.iut.uca.fr/etudiants/?p=edt";
@@ -543,6 +544,25 @@ async function recordScrapeIssue(kind, r) {
   await chrome.storage.local.set({ uca_scrape_issues: issues });
 }
 
+/* Alerte d'absences (réglage absenceAlert) : une notification chaque fois que le nombre d'absences non
+   justifiées atteint le seuil ou le dépasse (une seule par valeur) ; repasser sous le seuil la réarme. */
+async function checkAbsenceAlert(absences) {
+  const settings = await UCA_getSettings(), th = Number(settings.absenceAlert) || 0, n = absences.nonJustifiees || 0;
+  const { uca_absence_alert } = await chrome.storage.local.get("uca_absence_alert");
+  const last = (uca_absence_alert && uca_absence_alert.count) || 0;
+  if (!th || n < th) { if (last) await chrome.storage.local.remove("uca_absence_alert"); return; }
+  if (n <= last) return;
+  await chrome.storage.local.set({ uca_absence_alert: { count: n, at: Date.now() } });
+  const design = await currentDesign();
+  chrome.notifications.create("uca_absence|" + Date.now(), {
+    type: "basic",
+    iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
+    title: `${n} absence${n > 1 ? "s" : ""} non justifiée${n > 1 ? "s" : ""}`,
+    message: `Le seuil d'alerte (${th}) est atteint. Pense à déposer un justificatif sur Odin.`,
+    priority: 1,
+  });
+}
+
 async function syncAbsencesQuietly() {
   const r = await scrapeAbsences();
   await recordScrapeIssue("absences", r);
@@ -550,6 +570,7 @@ async function syncAbsencesQuietly() {
     const sync = new Date().toISOString();
     await chrome.storage.local.set({ uca_absences: r.data, uca_absences_sync: sync });
     broadcast({ type: "UCA_ABSENCES_RESULT", ok: true, absences: r.data, sync });
+    await checkAbsenceAlert(r.data);
   }
 }
 
@@ -592,8 +613,11 @@ async function syncNotesQuietly() {
     await recordNotesSeen(releve);
     const sync = new Date().toISOString();
     await chrome.storage.local.set({ uca_releve_notes: releve, uca_releve_notes_sync: sync });
-    const { uca_notes_seen } = await chrome.storage.local.get("uca_notes_seen");
-    broadcast({ type: "UCA_NOTES_RESULT", ok: true, releve, sync, notesSeen: uca_notes_seen || {} });
+    const { uca_notes_seen, uca_notes_history } = await chrome.storage.local.get(["uca_notes_seen", "uca_notes_history"]);
+    // Historique de la moyenne générale : un point seulement quand elle change.
+    const history = UCA_GRADES.nextHistory(uca_notes_history, releve, Date.now());
+    if (history) await chrome.storage.local.set({ uca_notes_history: history });
+    broadcast({ type: "UCA_NOTES_RESULT", ok: true, releve, sync, notesSeen: uca_notes_seen || {}, notesHistory: history || uca_notes_history || [] });
   }
 }
 

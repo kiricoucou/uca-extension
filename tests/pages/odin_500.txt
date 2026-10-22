@@ -1,0 +1,2 @@
+500 Internal Server Error
+Une erreur interne est survenue.

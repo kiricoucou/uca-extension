@@ -222,6 +222,36 @@ $("checkUpdBtn").addEventListener("click", () => {
 });
 chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
 
+/* Journal de diagnostic (uca_diag_log, écrit par background.js) : copie en texte brut. */
+function diagText(log, issues) {
+  const head = `Emploi du temps UCA ${(chrome.runtime.getManifest && chrome.runtime.getManifest().version) || ""} · ${navigator.userAgent.replace(/^Mozilla\/5\.0 /, "").slice(0, 90)}`;
+  const lines = (log || []).map((l) => `${new Date(l.at).toLocaleString("fr-FR")}  ${l.event}  ${l.detail}`.trimEnd());
+  const iss = Object.keys(issues || {}).map((k) => `problème en cours : ${k} = ${issues[k].issue}`);
+  return [head, ...iss, ...lines].join("\n");
+}
+function renderDiag() {
+  chrome.storage.local.get(["uca_diag_log", "uca_scrape_issues"]).then(({ uca_diag_log: log, uca_scrape_issues: issues }) => {
+    const n = (log || []).length, last = n ? log[n - 1] : null;
+    $("diagState").textContent = n ? `${n} événement${n > 1 ? "s" : ""} · dernier : ${last.event} (${new Date(last.at).toLocaleString("fr-FR")})` : "Aucun événement.";
+    $("diagCopyBtn").disabled = !n && !Object.keys(issues || {}).length;
+    $("diagClearBtn").disabled = !n;
+  });
+}
+$("diagCopyBtn").addEventListener("click", () => {
+  chrome.storage.local.get(["uca_diag_log", "uca_scrape_issues"]).then((d) => {
+    const text = diagText(d.uca_diag_log, d.uca_scrape_issues), b = $("diagCopyBtn");
+    const done = () => { b.textContent = "Copié ✓"; setTimeout(() => { b.textContent = "Copier"; }, 1800); };
+    (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(done).catch(() => {
+      const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) { /* copie impossible : le journal reste lisible dans le stockage */ }
+      ta.remove();
+    });
+  });
+});
+$("diagClearBtn").addEventListener("click", () => chrome.storage.local.remove("uca_diag_log").then(renderDiag));
+chrome.storage.onChanged.addListener((c, area) => { if (area === "local" && (c.uca_diag_log || c.uca_scrape_issues)) renderDiag(); });
+renderDiag();
+
 /* Statut des sites : sonde au chargement puis toutes les 30 s tant que la page est visible ;
    le service worker (surveillance) écrit aussi dans uca_status, d'où l'écoute du stockage. */
 const ST_LABEL = { ok: "En ligne", slow: "Lent", down: "En panne", unknown: "Inconnu" };

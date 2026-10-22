@@ -40,6 +40,8 @@ D'autres captures de chaque design (vue mois, détail d'un cours...) sont dans `
 - **Pastille sur l'icône** : « 25m » avant un cours proche, sinon l'heure du prochain cours du jour, ou le nombre de cours restants.
 - **Paramètres** communs à tous les designs (`settings.html`) : vue à l'ouverture, masquer le week-end, rappels, synchro auto, pastille, alertes.
 - **Statut des sites en direct** (Paramètres, `core/status.js`) : Odin, CAS, Moodle, Mail, site de l'extension et mises à jour, avec latence, historique et surveillance optionnelle en arrière-plan (notification panne / retour). Sondes anonymes, aucune donnée envoyée.
+- **Fiabilité de la lecture d'Odin** : page d'erreur d'Odin (404/500/503/maintenance) détectée aussi pour les notes et les absences, page méconnaissable signalée dans le panneau concerné (les anciennes données restent), **journal de diagnostic** local copiable (Paramètres → Diagnostic), sans aucun contenu de page.
+- **Tests et CI** : `tests/scrape.py` (pages Odin factices dans `tests/pages/`), GitHub Actions (`.github/workflows/tests.yml`) lance toutes les suites à chaque push et produit les paquets Chrome/Firefox (`tests/build_chrome.py`, `tests/build_firefox.py`) ; un tag `vX.Y.Z` publie une version GitHub avec les deux zips.
 - Responsive (menu hamburger sous 820px).
 - **Trois designs au choix** : animé (sombre turquoise), professionnel (clair épuré), carnet (papier crème, écriture manuscrite, post-it).
 - **Plusieurs designs au choix** : au premier lancement l'extension demande quel design utiliser (changeable ensuite). Les fonctionnalités sont identiques, seul l'affichage change.
@@ -102,6 +104,7 @@ Une seule extension (la racine du dépôt). La logique est commune ; chaque doss
 | `manifest.json` | Manifest unique (popup par défaut : `choose.html`) |
 | `background.js` | Service worker : connexion CAS, scraping, synchro, déconnexion, mise à jour GitHub, application du design choisi (`chrome.action.setPopup` / `setIcon`) |
 | `choose.html` / `choose.js` | Sélecteur de design (premier lancement, puis bouton « Design ») |
+| `tests/scrape.py`, `tests/pages/` | Parseurs et pannes d'Odin sur des pages factices |
 | `core/status.js` | Sondes de statut des sites (widget Paramètres + surveillance du service worker) |
 | `settings.html` / `settings.js`, `core/settings.js` | Page Paramètres et valeurs par défaut des réglages (partagées avec le service worker) |
 | `core/shared.js` | API de design (`UCA_defineDesign`) + briques communes (mise à jour, changement de design) |

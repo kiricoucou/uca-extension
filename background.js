@@ -351,28 +351,43 @@ async function extractDeclarations(tabId) {
   }
 }
 
-async function scrapeAbsences() {
+/* Page Odin secondaire (absences, notes) : { text, issue }. issue = "session" (renvoyé vers CAS),
+   "serviceDown" (page d'erreur d'Odin), "structure" (page chargée mais contenu attendu absent :
+   Odin a changé, ou page vide), "error" (onglet fermé, délai dépassé...), ou null si tout va bien.
+   Ne lève jamais : l'appelant garde alors les anciennes données. */
+async function scrapeOdinPage(url, isReady, extra) {
   let tab;
+  const t0 = Date.now();
   try {
-    tab = await chrome.tabs.create({ url: ABSENCES_URL, active: false });
+    tab = await chrome.tabs.create({ url, active: false });
     await waitForComplete(tab.id, 20000);
     const fresh = await chrome.tabs.get(tab.id);
-    if (hostOf(fresh.url || "") === "ent.uca.fr") { await chrome.tabs.remove(tab.id); return null; }
-    let text = "";
+    if (hostOf(fresh.url || "") === "ent.uca.fr") { await chrome.tabs.remove(tab.id); return { text: "", issue: "session" }; }
+    let text = "", ready = false;
     for (let i = 0; i < 10; i++) {
       text = await extractScheduleText(tab.id);
-      if (/absences?/i.test(text)) break;
+      if (isReady(text)) { ready = true; break; }
+      if (looksLikeServiceError(text) && text.trim().length < 800) break;
       await sleep(500);
     }
-    const declarations = await extractDeclarations(tab.id);
+    const more = ready && extra ? await extra(tab.id) : null;
     await chrome.tabs.remove(tab.id);
-    const out = parseAbsencesText(text);
-    if (declarations) out.declarations = declarations;
-    return out;
+    if (ready) return { text, more, issue: null };
+    return { text, issue: looksLikeServiceError(text) && text.trim().length < 800 ? "serviceDown" : "structure" };
   } catch (e) {
     if (tab) { try { await chrome.tabs.remove(tab.id); } catch (_) {} }
-    return null;
+    return { text: "", issue: "error", detail: String((e && e.message) || e).slice(0, 80), ms: Date.now() - t0 };
   }
+}
+
+async function scrapeAbsences() {
+  const r = await scrapeOdinPage(ABSENCES_URL, (t) => /absences?/i.test(t), extractDeclarations);
+  if (r.issue) return { data: null, issue: r.issue, detail: r.detail };
+  const out = parseAbsencesText(r.text);
+  if (r.more) out.declarations = r.more;
+  // Page lue mais aucun compteur reconnu : Odin a changé son affichage.
+  const known = ["declarees", "justifiees", "nonJustifiees"].some((k) => out[k] !== null && out[k] !== undefined);
+  return known ? { data: out, issue: null } : { data: null, issue: "structure" };
 }
 
 /* ============ Relevé de notes ============
@@ -441,25 +456,10 @@ function parseNotesText(text) {
   return { ue: ues.slice(0, 100) };
 }
 async function scrapeNotes() {
-  let tab;
-  try {
-    tab = await chrome.tabs.create({ url: NOTES_URL, active: false });
-    await waitForComplete(tab.id, 20000);
-    const fresh = await chrome.tabs.get(tab.id);
-    if (hostOf(fresh.url || "") === "ent.uca.fr") { await chrome.tabs.remove(tab.id); return null; }
-    let text = "";
-    for (let i = 0; i < 10; i++) {
-      text = await extractScheduleText(tab.id);
-      if (/\bCoeff\b/.test(text) && /\bMaxi\b/.test(text)) break;
-      await sleep(500);
-    }
-    await chrome.tabs.remove(tab.id);
-    const releve = parseNotesText(text);
-    return releve.ue.length ? releve : null;
-  } catch (e) {
-    if (tab) { try { await chrome.tabs.remove(tab.id); } catch (_) {} }
-    return null;
-  }
+  const r = await scrapeOdinPage(NOTES_URL, (t) => /\bCoeff\b/.test(t) && /\bMaxi\b/.test(t));
+  if (r.issue) return { data: null, issue: r.issue, detail: r.detail };
+  const releve = parseNotesText(r.text);
+  return releve.ue.length ? { data: releve, issue: null } : { data: null, issue: "structure" };
 }
 
 /* ============ Mini parseur texte (duplique la logique du site) ============ */
@@ -522,12 +522,34 @@ async function storeResult(text) {
   return { events, lastSync };
 }
 
+/* Journal de diagnostic local (200 lignes max) : codes et durées seulement, jamais de contenu de page,
+   de nom, de note ni d'identifiant. Copiable depuis Paramètres pour signaler un bug. */
+const DIAG_MAX = 200;
+async function diag(event, detail) {
+  try {
+    const { uca_diag_log } = await chrome.storage.local.get("uca_diag_log");
+    const log = (uca_diag_log || []).concat({ at: Date.now(), event, detail: detail || "" }).slice(-DIAG_MAX);
+    await chrome.storage.local.set({ uca_diag_log: log });
+  } catch (e) { /* le journal ne doit jamais casser une synchro */ }
+}
+const ISSUE_LABEL = { session: "session expirée", serviceDown: "Odin indisponible", structure: "page non reconnue (Odin a peut-être changé)", error: "erreur de chargement" };
+
+/* Mémorise (ou efface) le problème rencontré sur une page secondaire ; les anciennes données restent. */
+async function recordScrapeIssue(kind, r) {
+  const { uca_scrape_issues } = await chrome.storage.local.get("uca_scrape_issues");
+  const issues = Object.assign({}, uca_scrape_issues);
+  if (r.issue) { issues[kind] = { issue: r.issue, at: Date.now() }; await diag("scrape-" + kind, r.issue + (r.detail ? " : " + r.detail : "")); }
+  else delete issues[kind];
+  await chrome.storage.local.set({ uca_scrape_issues: issues });
+}
+
 async function syncAbsencesQuietly() {
-  const absences = await scrapeAbsences();
-  if (absences) {
+  const r = await scrapeAbsences();
+  await recordScrapeIssue("absences", r);
+  if (r.data) {
     const sync = new Date().toISOString();
-    await chrome.storage.local.set({ uca_absences: absences, uca_absences_sync: sync });
-    broadcast({ type: "UCA_ABSENCES_RESULT", ok: true, absences, sync });
+    await chrome.storage.local.set({ uca_absences: r.data, uca_absences_sync: sync });
+    broadcast({ type: "UCA_ABSENCES_RESULT", ok: true, absences: r.data, sync });
   }
 }
 
@@ -563,8 +585,10 @@ async function recordNotesSeen(releve) {
 }
 
 async function syncNotesQuietly() {
-  const releve = await scrapeNotes();
-  if (releve) {
+  const r = await scrapeNotes();
+  await recordScrapeIssue("notes", r);
+  if (r.data) {
+    const releve = r.data;
     await recordNotesSeen(releve);
     const sync = new Date().toISOString();
     await chrome.storage.local.set({ uca_releve_notes: releve, uca_releve_notes_sync: sync });
@@ -575,6 +599,7 @@ async function syncNotesQuietly() {
 
 async function syncSucceeded(text, silent) {
   const { events, lastSync } = await storeResult(text);
+  await diag("sync-ok", `${silent ? "silencieuse" : "connexion"} · ${events.length} cours`);
   await chrome.storage.local.set({ uca_session_expired: false });
   const { uca_edt_changes } = await chrome.storage.local.get("uca_edt_changes");
   broadcast({ type: "UCA_SYNC_RESULT", ok: true, text, events, lastSync, silent, edtChanges: uca_edt_changes || [] });
@@ -593,6 +618,7 @@ async function handleSync(mode) {
       // "background" (synchro auto) : échec silencieux, elle réessaiera à la prochaine alarme.
       // "resync" (bouton) : annulation ou service Odin en panne -> remonte tel quel, sans jamais
       // enchaîner sur une fenêtre de connexion complète que l'utilisateur n'a pas demandée.
+      await diag("sync-echec", `${mode} : ${e && e.serviceDown ? "Odin indisponible" : e && e.cancelled ? "annulée" : String((e && e.message) || e).slice(0, 80)}`);
       if (mode === "background") return;
       throw e;
     }

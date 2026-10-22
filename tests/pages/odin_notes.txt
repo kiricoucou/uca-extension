@@ -1,0 +1,8 @@
+Relevé de notes
+Coeff	Note	Moy	Maxi	Mini
+UE 1.1 Développer	1	13			
+R1.01 : Init dev	1	12,5	11	18	4
+Contrôle (sur 20.0)	1	12,5	11	18	4
+UE 1.2 Optimiser	1	-			
+R1.02 : Systèmes	1	-			
+QCM (sur 20.0)	1	-			

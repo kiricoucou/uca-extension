@@ -1,0 +1,68 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Installer Playwright
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+      - name: Syntaxe JavaScript et JSON
+        run: |
+          for f in background.js content-bridge.js settings.js choose.js sw.js core/*.js designs/*/design.js app/*.js; do node --check "$f"; done
+          python -c "import json,glob; [json.load(open(f, encoding='utf-8')) for f in ['manifest.json','manifest.firefox.json','designs/designs.json']]"
+      - name: Parité des manifestes et des designs
+        run: |
+          python -I -X utf8 tests/parity.py
+          python -I -X utf8 tests/check_design.py
+      - name: Lecture d'Odin (pages factices)
+        run: python -I -X utf8 tests/scrape.py
+      - name: Statut des sites
+        run: python -I -X utf8 tests/status.py
+      - name: Pont extension / app
+        run: python -I -X utf8 tests/bridge.py
+      - name: Site et app (PWA)
+        run: python -I -X utf8 tests/pwa.py
+      - name: Extension de bout en bout
+        run: python -I -X utf8 tests/e2e.py
+      - name: Paquets Chrome et Firefox
+        run: |
+          python -I -X utf8 tests/build_chrome.py
+          python -I -X utf8 tests/build_firefox.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: paquets-extension
+          path: dist/*.zip
+          if-no-files-found: error
+
+  release:
+    # Un tag vX.Y.Z publie une version GitHub avec les deux paquets. Rien n'est envoyé ailleurs.
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: paquets-extension
+          path: dist
+      - name: Créer la version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "${{ github.ref_name }}" dist/*.zip --repo "${{ github.repository }}" --title "${{ github.ref_name }}" --generate-notes

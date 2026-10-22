@@ -10,6 +10,7 @@ const T = D.t;
 let events = [];
 let notes = {};
 let absences = null;
+let scrapeIssues = {};
 let releveNotes = null;
 let notesSeen = {};
 let edtChanges = new Map(); // eventKey -> changement (ajouté / déplacé / salle) ; annulés : fantômes
@@ -474,12 +475,13 @@ function renderSyncInfo(iso, importedAt) {
   $("syncInfo").textContent = iso ? "Dernière synchro : " + new Date(iso).toLocaleString("fr-FR") : "Jamais synchronisé";
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues"], (data) => {
     if (window.UCA_APP && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) { location.href = chrome.runtime.getURL("app/import.html"); return; }
     settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, data.uca_settings);
     events = (data.uca_events || []).map(ev => ({ ...ev, color: D.eventColor(eventColorKey(ev.title)) }));
     notes = data.uca_notes || {};
     absences = data.uca_absences || null;
+    scrapeIssues = data.uca_scrape_issues || {};
     releveNotes = data.uca_releve_notes || null;
     notesSeen = data.uca_notes_seen || {};
     setEdtChanges(data.uca_edt_changes);
@@ -554,7 +556,32 @@ function renderDeclarations() {
   box.appendChild(note);
 }
 
+
+/* Problème rencontré à la dernière lecture d'Odin (page d'erreur, structure changée...) : on garde les
+   anciennes données et on le dit, au lieu d'afficher un résultat vide sans explication. */
+const SCRAPE_ISSUE_TEXT = {
+  session: "Session Odin expirée : reconnecte-toi.",
+  serviceDown: "Odin est indisponible : ces données datent de la dernière synchro réussie.",
+  structure: "Odin semble avoir changé sa page : ces données datent de la dernière synchro réussie. Signale-le dans l'aide si ça dure.",
+  error: "Lecture impossible cette fois : ces données datent de la dernière synchro réussie.",
+};
+function scrapeIssueNode(kind) {
+  const i = scrapeIssues[kind];
+  if (!i || !SCRAPE_ISSUE_TEXT[i.issue]) return null;
+  const n = document.createElement("div");
+  n.className = "scrape-issue"; n.setAttribute("role", "status");
+  n.style.cssText = "margin:0 0 8px;padding:8px 10px;border:1px solid var(--danger);border-radius:8px;color:var(--danger);font-size:12.5px;line-height:1.4;";
+  n.textContent = SCRAPE_ISSUE_TEXT[i.issue] + " (" + new Date(i.at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + ")";
+  return n;
+}
+function renderAbsencesIssue() {
+  const panel = $("absencesPanel");
+  const old = panel.querySelector(".scrape-issue"); if (old) old.remove();
+  const n = scrapeIssueNode("absences");
+  if (n) panel.insertBefore(n, panel.firstChild);
+}
 function renderAbsencesPanel() {
+  renderAbsencesIssue();
   const fmt = (v) => (v === null || v === undefined ? "—" : v);
   const set = (id, key) => { document.querySelector(`#${id} .ap-val`).textContent = absences ? fmt(absences[key]) : "—"; };
   set("apDeclarees", "declarees"); set("apJustifiees", "justifiees"); set("apNonJustifiees", "nonJustifiees");
@@ -639,6 +666,7 @@ function generalAverage() {
 function renderNotesPanel() {
   const content = $("npContent");
   content.innerHTML = "";
+  const issueNode = scrapeIssueNode("notes"); if (issueNode) content.appendChild(issueNode);
   const avg = generalAverage();
   if (!releveNotes || !releveNotes.ue || !releveNotes.ue.length) {
     const empty = document.createElement("div");
@@ -930,6 +958,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (changes.uca_releve_notes) releveNotes = changes.uca_releve_notes.newValue || null;
     renderNotesPanel();
   }
+  if (changes.uca_scrape_issues) { scrapeIssues = changes.uca_scrape_issues.newValue || {}; renderAbsencesPanel(); renderNotesPanel(); }
   if (changes.uca_edt_changes) { setEdtChanges(changes.uca_edt_changes.newValue); render(); }
   // Réinitialisation (ou son annulation) depuis Paramètres, dans un autre onglet : reflète tout de suite.
   if (changes.uca_events) { events = (changes.uca_events.newValue || []).map(ev => ({ ...ev, color: D.eventColor(eventColorKey(ev.title)) })); render(); }

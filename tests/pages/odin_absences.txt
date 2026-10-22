@@ -1,0 +1,6 @@
+Absences
+Nombre d'absences déclarées : 4
+Nombre d'absences justifiées : 1
+Nombre d'absences non justifiées : 3
+Nombre d'absences avec motifs présentés : 2
+Nombre d'absences journées non justifiées : 1

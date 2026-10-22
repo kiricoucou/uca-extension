@@ -271,6 +271,7 @@ function renderTimeGrid(containerId, days) {
   const gutterHead = document.createElement("div"); gutterHead.className = "grid-timegutter-head"; headRow.appendChild(gutterHead);
   days.forEach(d => { const dh = document.createElement("div"); dh.className = "grid-daycol-head" + (sameDay(d, today) ? " today" : ""); dh.innerHTML = `<div class="dname">${DAY_NAMES_SHORT[d.getDay()]}</div><div class="dnum">${d.getDate()}</div>`; markHoliday(dh, d, ".dnum"); headRow.appendChild(dh); });
   const scroll = document.createElement("div"); scroll.className = "grid-scroll";
+  scroll.tabIndex = 0; scroll.setAttribute("role", "region"); scroll.setAttribute("aria-label", "Grille horaire des cours");
   scroll.appendChild(headRow);
   const body = document.createElement("div"); body.className = "grid-body";
   scroll.appendChild(body);
@@ -509,10 +510,31 @@ function renderSessionState(expired) {
 }
 
 /* ============================= Sync & chargement ============================= */
+let syncInfoArgs = [null, null];
+const STALE_HOURS = 24;
+/* App : des données de plus de 24 h ne reflètent plus l'emploi du temps (l'app ne se synchronise pas toute seule) :
+   rappel en rouge dans la ligne d'info, avec un lien direct vers l'import ; recalculé toutes les 10 min. */
+function renderStaleReminder(iso, importedAt) {
+  const info = $("syncInfo"), old = info.querySelector("#staleInfo"); if (old) old.remove();
+  const t = new Date(iso || importedAt).getTime();
+  if (!window.UCA_APP || !importedAt || Number.isNaN(t)) return;
+  const hours = (Date.now() - t) / 3600000;
+  if (hours < STALE_HOURS) return;
+  const span = document.createElement("span"); span.id = "staleInfo"; span.setAttribute("role", "status");
+  span.style.cssText = "margin-left:12px;font-weight:600;color:var(--danger, #b3261e);";
+  const days = Math.floor(hours / 24);
+  span.append(document.createTextNode(days >= 2 ? `Données vieilles de ${days} jours. ` : "Données de plus de 24 h. "));
+  const a = document.createElement("a"); a.href = chrome.runtime.getURL("app/import.html"); a.textContent = "Refaire un transfert";
+  a.style.cssText = "color:inherit;text-decoration:underline;"; span.appendChild(a);
+  info.appendChild(span);
+}
+setInterval(() => { if (window.UCA_APP) { renderSyncInfo(...syncInfoArgs); renderNextInfo(); } }, 10 * 60 * 1000);
 function renderSyncInfo(iso, importedAt) {
+  syncInfoArgs = [iso, importedAt];
   const fmt = (d) => new Date(d).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   if (window.UCA_APP) {
     $("syncInfo").textContent = importedAt ? `Données de l'ordinateur du ${fmt(iso || importedAt)} — refais un transfert après une synchro` : "Aucune donnée : importe-les depuis l'extension";
+    renderStaleReminder(iso, importedAt);
     return;
   }
   $("syncInfo").textContent = iso ? "Dernière synchro : " + new Date(iso).toLocaleString("fr-FR") : "Jamais synchronisé";
@@ -974,7 +996,7 @@ const TOOL_PANELS = {
   notesPanel: { wrap: "notesWrap", build: () => {} },
   absencesPanel: { wrap: "absencesWrap", build: () => {} },
   filterPanel: { wrap: "filterWrap", build: (p) => UCA_TOOLS.buildFilterPanel(p, events) },
-  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.makeShareLink() }) },
+  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.makeShareLink(), canShare: window.UCA_APP ? null : UCA_TRANSFER.canShare, sendLink: UCA_TRANSFER.shareLink }) },
   linksPanel: { wrap: "linksWrap", build: (p) => UCA_TOOLS.buildLinksPanel(p) },
 };
 function openToolPanel(id, asSheet) {
@@ -1036,7 +1058,7 @@ async function openPhoneModal() {
       <div class="phone-qr"><canvas id="phoneQrApp"></canvas></div>
       <p class="phone-url"><a href="${escapeHtml(T_.DOWNLOAD_URL)}" target="_blank" rel="noopener">${escapeHtml(T_.DOWNLOAD_URL)}</a></p>
       <p class="phone-step"><b>2.</b> Dans l'app : « Importer » puis « Scanner », et vise le code animé. Ou, plus simple, envoie-toi le lien ci-dessous (SMS, mail, messagerie...) et ouvre-le sur ton téléphone. Le lien contient tes données chiffrées (illisibles sans ton code de partage), jamais gardées par GitHub ni aucun serveur, et il expire au bout du délai choisi dans Paramètres.</p>
-      <div class="phone-actions"><button class="primary" id="phoneStart">Afficher le code animé</button><button id="phoneLink">Copier un lien</button><button id="phoneFile">Fichier de secours (.ucasync)</button></div>
+      <div class="phone-actions"><button class="primary" id="phoneStart">Afficher le code animé</button><button id="phoneLink">Copier un lien</button>${T_.canShare() ? '<button id="phoneShare">Partager le lien…</button>' : ""}<button id="phoneFile">Fichier de secours (.ucasync)</button></div>
     </div></div>`;
   document.body.appendChild(overlay);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) closePhoneModal(); });
@@ -1068,6 +1090,14 @@ async function openPhoneModal() {
       box.hidden = false;
       box.focus(); box.select();
     }
+  });
+  if ($("phoneShare")) $("phoneShare").addEventListener("click", async () => {
+    const share = await T_.makeShareLink(snap);
+    let info = $("phoneShareInfo");
+    if (!info) { info = document.createElement("p"); info.id = "phoneShareInfo"; info.className = "phone-step"; overlay.querySelector(".phone-actions").after(info); }
+    info.textContent = share.message;
+    try { if (await T_.shareLink(share)) toast("Lien partagé — " + share.message, "ok"); }
+    catch (e) { info.textContent = "Partage impossible : utilise « Copier un lien ». " + share.message; }
   });
   $("phoneStart").addEventListener("click", async () => {
     const frames = await T_.encodeFrames(snap);
@@ -1200,6 +1230,17 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 UCA_CORE.initUpdate();
+/* Lecteurs d'écran : titre de page, zone de synchro repérée, bouton « Aujourd'hui » nommé même sans libellé visible. */
+(function () {
+  if (!document.querySelector("h1")) {
+    const h = document.createElement("h1"); h.textContent = "Emploi du temps UCA";
+    h.style.cssText = "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;";
+    (document.querySelector("header") || document.body).insertBefore(h, (document.querySelector("header") || document.body).firstChild);
+  }
+  const info = $("syncInfo");
+  if (info) { info.setAttribute("role", "region"); info.setAttribute("aria-label", "Dernière synchronisation et prochain cours"); }
+  if ($("todayBtn")) { $("todayBtn").setAttribute("aria-label", "Aujourd'hui"); if (!$("todayBtn").title) $("todayBtn").title = "Aujourd'hui"; }
+})();
 UCA_CORE.initDesignSwitch(true);
 UCA_CORE.initAutoDesign();
 UCA_CORE.initSettings();

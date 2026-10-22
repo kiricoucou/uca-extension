@@ -170,6 +170,15 @@ function buildExportPanel(panel, opts) {
       }
     });
     panel.append(link, linkInfo);
+    if (opts.canShare && opts.canShare()) {
+      const share = el("button", "xp-phone", "Partager le lien…"); share.type = "button";
+      share.addEventListener("click", async () => {
+        const s = await opts.shareLink();
+        try { await opts.sendLink(s); linkInfo.textContent = `${s.message}. Envoie le code séparément si besoin.`; }
+        catch (e) { linkInfo.textContent = "Partage impossible : utilise « Copier un lien »."; }
+      });
+      panel.insertBefore(share, linkInfo);
+    }
   }
   if (opts.onPhone) {
     const qr = el("button", "xp-phone", "Afficher le QR code (première installation)"); qr.type = "button";

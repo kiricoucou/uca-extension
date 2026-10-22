@@ -333,6 +333,80 @@ def update_detection(browser, base, errors):
     ctx.close()
 
 
+def stale_reminder(browser, base, errors):
+    """Rappel « données de plus de 24 h » dans l'app : absent à 2 h, présent à 30 h et à 80 h, avec lien vers l'import."""
+    data = seed(); data["uca_design"] = "carnet"
+    for hours, expected in ((2, None), (30, "Données de plus de 24 h."), (80, "Données vieilles de 3 jours.")):
+        ctx = browser.new_context(viewport={"width": 412, "height": 900})
+        page = ctx.new_page()
+        page.on("pageerror", lambda e: errors.append(f"[rappel] {e}"))
+        page.goto(base + "app/import.html"); page.wait_for_timeout(300)
+        page.evaluate("""([data, hours]) => {
+          const when = new Date(Date.now() - hours * 3600000).toISOString();
+          localStorage.setItem('uca_install_seen', '1');
+          localStorage.setItem('uca_store', JSON.stringify(Object.assign({}, data, { uca_last_sync: when, uca_app_imported_at: new Date().toISOString() })));
+        }""", [data, hours])
+        page.goto(base + "designs/carnet/agenda.html"); page.wait_for_timeout(900)
+        info = page.locator("#staleInfo")
+        if expected is None:
+            check(f"rappel : pas d'alerte à {hours} h", info.count() == 0)
+        else:
+            check(f"rappel : alerte à {hours} h", info.count() == 1 and expected in info.inner_text(), info.inner_text() if info.count() else "absent")
+            check(f"rappel {hours} h : lien vers l'import", info.locator("a").get_attribute("href").endswith("app/import.html"))
+        ctx.close()
+
+
+def paste_clipboard(browser, base, errors):
+    """« Coller un lien » lit le presse-papiers : lien présent -> import direct (code mémorisé) ; sinon champ manuel."""
+    data = seed(); data["uca_design"] = "carnet"
+    code = "K7P2QX"
+    ctx = browser.new_context(permissions=["clipboard-read", "clipboard-write"])
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[coller] {e}"))
+    page.goto(base + "app/import.html"); page.wait_for_timeout(300)
+    page.evaluate("""async ([data, code]) => {
+      const snap = { format: 'uca-sync', version: 1, exportedAt: new Date().toISOString(), data };
+      const link = await UCA_TRANSFER.buildShareLink(snap, { code, hours: 48 });
+      await navigator.clipboard.writeText('Voici mon agenda : ' + link);
+      await chrome.storage.local.set({ uca_share_code_saved: code });
+    }""", [data, code])
+    page.click("#pasteLinkBtn")
+    page.wait_for_url("**/designs/carnet/agenda.html*", timeout=10000); page.wait_for_timeout(500)
+    stored = page.evaluate("() => JSON.parse(localStorage.getItem('uca_store') || '{}')")
+    check("coller : lien du presse-papiers importé d'un seul geste", len(stored.get("uca_events") or []) > 0, str(list(stored)[:5]))
+    page.goto(base + "app/import.html"); page.wait_for_timeout(300)
+    page.evaluate("() => navigator.clipboard.writeText('rien à voir ici')")
+    page.click("#pasteLinkBtn"); page.wait_for_timeout(400)
+    check("coller : sans lien, le champ manuel s'ouvre avec un message", page.locator("#linkCard").is_visible() and "ne contient pas de lien" in page.locator("#status").inner_text())
+    ctx.close()
+
+
+def app_accessibility(browser, base, errors):
+    """Cibles tactiles >= 44 px sur les pages de l'app, noms accessibles des champs, focus visible au clavier."""
+    js = """() => [...document.querySelectorAll('a[href],button,input:not([type=hidden]),select,textarea')]
+      .filter(e => { const r = e.getBoundingClientRect(), cs = getComputedStyle(e); return r.width && r.height && cs.visibility !== 'hidden' && cs.display !== 'none' && !e.disabled && e.type !== 'checkbox'; })
+      .map(e => { const r = e.getBoundingClientRect(); return [Math.round(r.width), Math.round(r.height), e.id || e.className || e.tagName]; }).filter(x => x[0] < 44 || x[1] < 44)"""
+    ctx = browser.new_context(viewport={"width": 390, "height": 844})
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[a11y] {e}"))
+    for name in ("app/import.html", "app/install.html"):
+        page.goto(base + name); page.wait_for_timeout(500)
+        small = page.evaluate(js)
+        check(f"accessibilité : cibles tactiles >= 44 px ({name})", not small, str(small))
+    page.goto(base + "app/import.html"); page.wait_for_timeout(300)
+    for sel in ("#linkInput", "#codeInput"):
+        name = page.evaluate("(s) => document.querySelector(s).getAttribute('aria-label')", sel)
+        check(f"accessibilité : {sel} a un nom accessible", bool(name), str(name))
+    page.keyboard.press("Tab")
+    outline = page.evaluate("() => { const e = document.activeElement; const cs = getComputedStyle(e); return [e.id, parseFloat(cs.outlineWidth), cs.outlineStyle]; }")
+    check("accessibilité : le premier élément atteint au clavier a un focus visible", outline[1] >= 2 and outline[2] != "none", str(outline))
+    reduced = browser.new_context(viewport={"width": 390, "height": 844}, reduced_motion="reduce")
+    pg2 = reduced.new_page(); pg2.goto(base + "app/import.html"); pg2.wait_for_timeout(300)
+    dur = pg2.evaluate("() => parseFloat(getComputedStyle(document.querySelector('.progress > div')).transitionDuration)")
+    check("accessibilité : mouvement réduit respecté", dur < 0.01, str(dur))
+    reduced.close(); ctx.close()
+
+
 def main():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(ROOT)],
@@ -355,6 +429,9 @@ def main():
             network_first(chromium, base, errors)
             http_cache_bypass(chromium, base, errors)
             update_detection(chromium, base, errors)
+            stale_reminder(chromium, base, errors)
+            paste_clipboard(chromium, base, errors)
+            app_accessibility(chromium, base, errors)
             chromium.close()
             try:
                 webkit = p.webkit.launch()

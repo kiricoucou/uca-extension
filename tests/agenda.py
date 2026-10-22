@@ -157,6 +157,32 @@ def main():
             ag.set_viewport_size({"width": 1400, "height": 860})
             ag.close()
 
+        # --- partage natif du lien (SMS, mail, messagerie...) : le lien seul, jamais le code
+        sw.evaluate("(id) => chrome.storage.local.set({uca_design: id})", "professionnel")
+        sh = ctx.new_page()
+        sh.on("pageerror", lambda e: errors.append(f"[partage] {e}"))
+        sh.add_init_script("navigator.share = async (d) => { window.__shared = d; };")
+        sh.goto(f"{base}/designs/professionnel/agenda.html#phone"); sh.wait_for_timeout(1300)
+        check("partage : bouton « Partager le lien… » dans la fenêtre téléphone", sh.locator("#phoneShare").count() == 1)
+        sh.locator("#phoneShare").click(); sh.wait_for_timeout(900)
+        shared = sh.evaluate("() => window.__shared")
+        code = sh.evaluate("() => UCA_TRANSFER.shareDetails().then(d => d.code)")
+        check("partage : lien chiffré de l'app transmis au partage natif", bool(shared) and shared["url"].startswith("https://kiricoucou.github.io/uca-extension/#e=1."), str(shared)[:120])
+        check("partage : le code n'est jamais dans le message partagé", bool(shared) and code not in shared["url"] and code not in shared["text"] and code not in shared["title"])
+        check("partage : le code est affiché à l'écran pour l'envoyer à part", code in sh.locator("#phoneShareInfo").inner_text())
+        sh.evaluate("() => { window.__shared = null; }")
+        sh.locator("#phoneClose").click(); sh.wait_for_timeout(200)
+        sh.locator("#exportBtn").click(); sh.wait_for_timeout(300)
+        exp = sh.locator("#exportPanel .xp-phone", has_text="Partager le lien")
+        check("partage : bouton aussi dans le panneau Exporter", exp.count() == 1)
+        exp.click(); sh.wait_for_timeout(900)
+        check("partage : panneau Exporter transmet aussi le lien", bool(sh.evaluate("() => window.__shared")))
+        sh.close()
+        nosh = ctx.new_page(); nosh.add_init_script("Object.defineProperty(navigator, 'share', { value: undefined });")
+        nosh.goto(f"{base}/designs/professionnel/agenda.html#phone"); nosh.wait_for_timeout(1200)
+        check("partage : bouton absent quand le navigateur ne sait pas partager", nosh.locator("#phoneShare").count() == 0 and nosh.locator("#phoneLink").count() == 1)
+        nosh.close()
+
         # popup : prochain cours
         for d in designs():
             sw.evaluate("(id) => chrome.storage.local.set({uca_design: id})", d["id"])

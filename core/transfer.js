@@ -89,6 +89,19 @@ async function makeShareLink(snap) {
   return { link, code: details.code, hours: details.hours, message: `Code : ${details.code} (à taper une fois sur le téléphone) · expire dans ${hoursLabel(details.hours)}` };
 }
 
+/* Partage natif du téléphone / de l'ordinateur (SMS, mail, messagerie...) : le lien seul, jamais le code (envoyé à part,
+   sinon un message intercepté livrerait tout). Renvoie false si l'utilisateur ferme la feuille de partage. */
+function canShare() { return typeof navigator !== "undefined" && typeof navigator.share === "function"; }
+async function shareLink(share) {
+  try {
+    await navigator.share({ title: "Mon emploi du temps UCA", text: "Lien à ouvrir sur le téléphone (le code de partage se tape une seule fois) :", url: share.link });
+    return true;
+  } catch (e) {
+    if (e && e.name === "AbortError") return false;
+    throw e;
+  }
+}
+
 function linkError(message, kind) { const e = new Error(message); e.kind = kind; return e; }
 
 /* Lit l'en-tête sans le code : expiration visible avant même de demander le code. */
@@ -178,5 +191,5 @@ function drawQr(canvas, text, sizePx) {
   for (let r = 0; r < count; r++) for (let c = 0; c < count; c++) if (qr.isDark(r, c)) ctx.fillRect((c + quiet) * cell, (r + quiet) * cell, cell, cell);
 }
 
-root.UCA_TRANSFER = { APP_URL, DOWNLOAD_URL, KEYS, SHARE_HOURS_DEFAULT, snapshot, encodeFrames, buildShareLink, makeShareLink, parseLinkHash, fromLinkHash, shareDetails, randomCode, normCode, hoursLabel, collector, validate, applyImport, exportFile, drawQr };
+root.UCA_TRANSFER = { APP_URL, DOWNLOAD_URL, KEYS, SHARE_HOURS_DEFAULT, snapshot, encodeFrames, buildShareLink, makeShareLink, canShare, shareLink, parseLinkHash, fromLinkHash, shareDetails, randomCode, normCode, hoursLabel, collector, validate, applyImport, exportFile, drawQr };
 })(self);

@@ -39,6 +39,7 @@ async function startScan() {
   }
   $("chooseCard").classList.add("hidden");
   $("scanCard").classList.remove("hidden");
+  $("stopBtn").focus();
   const video = $("video");
   video.srcObject = stream;
   await video.play();
@@ -143,11 +144,21 @@ if (location.hash.startsWith("#e=") || location.hash.startsWith("#d=")) {
 
 /* Lien collé à la main (bouton "Coller un lien de partage") : accepte le lien complet ou juste
    le fragment, extrait la partie #d=… où qu'elle soit dans le texte collé. */
-$("pasteLinkBtn").addEventListener("click", () => {
+function showLinkCard(text) {
   $("chooseCard").classList.add("hidden");
   $("linkCard").classList.remove("hidden");
-  $("linkInput").value = "";
+  $("linkInput").value = text || "";
   $("linkInput").focus();
+}
+// Un seul geste : le bouton lit le presse-papiers (le navigateur demande l'autorisation ou affiche « Coller »)
+// et importe tout de suite si un lien de partage s'y trouve ; sinon, ou si la lecture est refusée, le champ à coller à la main s'ouvre.
+$("pasteLinkBtn").addEventListener("click", async () => {
+  let text = "";
+  try { text = navigator.clipboard && navigator.clipboard.readText ? await navigator.clipboard.readText() : ""; } catch (e) { text = ""; }
+  const m = /#[ed]=\S+/.exec(text || "");
+  if (m) { status("Lien trouvé dans le presse-papiers…"); importFromLinkHash(m[0]); return; }
+  showLinkCard("");
+  if (text) status("Le presse-papiers ne contient pas de lien de partage : colle-le ci-dessous.", "err");
 });
 $("linkCancelBtn").addEventListener("click", () => {
   $("linkCard").classList.add("hidden");

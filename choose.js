@@ -63,6 +63,7 @@ document.addEventListener("keydown", (e) => {
 function buildGallery(shots, fallback) {
   const gallery = el("div", "gallery");
   const track = el("div", "track");
+  track.tabIndex = 0; track.setAttribute("role", "group"); track.setAttribute("aria-label", "Captures du design : flèches gauche et droite pour les parcourir");
   if (!shots.length) {
     const fig = el("figure", "slide");
     fig.style.background = fallback.background;

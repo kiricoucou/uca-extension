@@ -182,6 +182,21 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 UCA_CORE.initUpdate();
+/* Lecteurs d'écran : titre, zones repérées (landmarks) et liens du pied de page assez grands. */
+(function () {
+  if (!document.querySelector("h1")) {
+    const h = document.createElement("h1"); h.textContent = "Emploi du temps UCA";
+    h.style.cssText = "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;";
+    const banner = document.querySelector("header");
+    if (banner) banner.insertBefore(h, banner.firstChild);
+    else { const hd = document.createElement("header"); hd.appendChild(h); document.body.insertBefore(hd, document.body.firstChild); }
+  }
+  const set = (id, attrs) => { const e = $(id); if (e) Object.keys(attrs).forEach((k) => e.setAttribute(k, attrs[k])); };
+  set("lastSync", { role: "region", "aria-label": "Dernière synchronisation" });
+  set("list", { role: "main", "aria-label": "Prochains cours" });
+  set("disclaimer", { role: "contentinfo" });
+  ["settingsBtn", "designBtn", "phoneBtn", "linkBtn"].forEach((id) => { const e = $(id); if (e) { e.style.minHeight = "24px"; e.style.padding = "4px 6px"; } });
+})();
 UCA_CORE.initDesignSwitch(false);
 UCA_CORE.initSettings();
 UCA_CORE.initAutoDesign();

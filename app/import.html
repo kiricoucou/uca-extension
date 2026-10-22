@@ -28,7 +28,7 @@
 
   <section class="card hidden" id="linkCard">
     <p class="muted">Colle le lien reçu (SMS, mail...). Il est chiffré et jamais gardé par GitHub ni aucun serveur.</p>
-    <input type="text" id="linkInput" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://kiricoucou.github.io/uca-extension/#e=…">
+    <input type="text" id="linkInput" aria-label="Lien de partage à coller" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://kiricoucou.github.io/uca-extension/#e=…">
     <button class="btn primary" id="linkGoBtn" type="button">Importer</button>
     <button class="btn" id="linkCancelBtn" type="button">Annuler</button>
   </section>
@@ -36,14 +36,14 @@
   <section class="card hidden" id="codeCard">
     <p class="muted">Ce lien est chiffré. Tape le <b>code de partage</b> affiché par l'extension (aussi visible dans Paramètres sur l'ordinateur).</p>
     <p class="muted" id="codeExpiry"></p>
-    <input type="text" id="codeInput" class="code-input" maxlength="16" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7P2QX">
+    <input type="text" id="codeInput" aria-label="Code de partage" class="code-input" maxlength="16" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7P2QX">
     <label class="check"><input type="checkbox" id="codeRemember" checked> Mémoriser le code sur ce téléphone</label>
     <button class="btn primary" id="codeGoBtn" type="button">Déchiffrer et importer</button>
     <button class="btn" id="codeCancelBtn" type="button">Annuler</button>
   </section>
 
   <section class="card hidden" id="scanCard">
-    <div class="scan-box"><video id="video" playsinline muted></video><div class="scan-frame"></div></div>
+    <div class="scan-box"><video id="video" playsinline muted aria-label="Caméra : vise le code affiché sur l'ordinateur"></video><div class="scan-frame"></div></div>
     <div class="progress"><div id="bar"></div></div>
     <p class="muted" id="scanInfo">Vise le code animé affiché sur l'ordinateur.</p>
     <button class="btn" id="stopBtn" type="button">Annuler</button>

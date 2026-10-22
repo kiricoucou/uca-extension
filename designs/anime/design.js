@@ -9,14 +9,27 @@ const ICONS = {
   logout: "bolt", design: "rocket", settings: "gear", filter: "search", export: "calendar", phone: "phone",
 };
 
+/* Couleur d'un cours : teinte au choix, lumière réduite juste ce qu'il faut pour que le texte blanc reste lisible
+   (contraste 5,4:1 minimum, pour rester lisible aussi en cours passé, vert / jaune / cyan assombris, bleus et violets inchangés). */
+function hsl(h, s, l) {
+  const k = (n) => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
+  return [0, 8, 4].map((n) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1))));
+}
+function lum(rgb) { const f = (c) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)); return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2]); }
+function readableHsl(hue) {
+  let l = 0.40;
+  while (l > 0.2 && 1.05 / (lum(hsl(hue, 0.68, l)) + 0.05) < 5.4) l -= 0.01;
+  return `hsl(${hue},68%,${Math.round(l * 100)}%)`;
+}
+
 UCA_defineDesign({
   icon(name, variant) {
     const file = ICONS[name];
     return file ? `<img class="gi${variant === "title" ? " lg" : ""}" src="svg/${file}.svg" alt="">` : "";
   },
-  swatch(i) { return `hsl(${(i * 36) % 360},68%,40%)`; },
+  swatch(i) { return readableHsl((i * 36) % 360); },
   eventColor(key) {
-    return `hsl(${UCA_DESIGN.hashString(key) % 360},68%,40%)`;
+    return readableHsl(UCA_DESIGN.hashString(key) % 360);
   },
   noteBadge(context) {
     return context === "grid"

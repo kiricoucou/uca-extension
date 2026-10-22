@@ -20,7 +20,7 @@ const SITES = [
   { id: "moodle", label: "Moodle", url: "https://moodle.uca.fr/", host: "moodle.uca.fr" },
   { id: "mail", label: "Messagerie UCA", url: "https://mail.uca.fr/zimbra/", host: "mail.uca.fr" },
   { id: "site", label: "Site de l'extension", url: "https://kiricoucou.github.io/uca-extension/", host: "kiricoucou.github.io", full: true, cors: true },
-  { id: "updates", label: "Mises à jour (GitHub)", url: "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/manifest.json", host: "raw.githubusercontent.com", full: true, cors: true },
+  { id: "updates", label: "Dépôt GitHub (version publique)", url: "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/manifest.json", host: "raw.githubusercontent.com", full: true, cors: true },
 ];
 
 const ERROR_TITLE = /\b(404|500|502|503|504)\b|introuvable|non trouv[ée]e|erreur (serveur|interne)|indisponible|maintenance|internal server error|not found|service unavailable|bad gateway|gateway timeout/i;

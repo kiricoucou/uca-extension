@@ -25,8 +25,8 @@ const SECTIONS = [
       hint: "Chiffre tes liens : sans ce code, un lien est illisible. À taper une seule fois sur le téléphone. Changer le code rend les anciens liens inutilisables." },
   ] },
   { title: "Rappels et synchronisation", fields: [
-    { ext: true, key: "remindersEnabled", type: "switch", label: "Rappel avant chaque cours", hint: "Notification avec la matière et la salle." },
-    { key: "reminderMinutes", type: "select", label: "Délai du rappel",
+    { notif: true, ext: true, key: "remindersEnabled", type: "switch", label: "Rappel avant chaque cours", hint: "Notification avec la matière et la salle." },
+    { notif: true, key: "reminderMinutes", type: "select", label: "Délai du rappel",
       options: [[5, "5 min avant"], [10, "10 min avant"], [15, "15 min avant"], [30, "30 min avant"], [60, "1 h avant"]] },
     { ext: true, key: "autoSyncHours", type: "select", label: "Synchronisation automatique",
       hint: "En arrière-plan, tant que ta session Odin est valide. Si elle a expiré, rien ne s'ouvre : l'icône affiche « ! » et tu te reconnectes quand tu veux.",
@@ -36,11 +36,11 @@ const SECTIONS = [
       options: [["next", "Prochain cours du jour"], ["remaining", "Cours restants aujourd'hui"], ["off", "Aucune"]] },
   ] },
   { title: "Alertes", fields: [
-    { ext: true, key: "notifyEdtChanges", type: "switch", label: "Changement d'emploi du temps", hint: "Cours ajouté, annulé, déplacé ou changement de salle, détecté à chaque synchro. Les cours concernés sont aussi marqués dans l'agenda pendant 7 jours." },
-    { ext: true, key: "statusWatch", type: "switch", label: "Surveiller Odin en arrière-plan", hint: "Teste Odin et la connexion toutes les 5 minutes et te prévient quand ils tombent en panne, puis quand ils reviennent." },
+    { notif: true, ext: true, key: "notifyEdtChanges", type: "switch", label: "Changement d'emploi du temps", hint: "Cours ajouté, annulé, déplacé ou changement de salle, détecté à chaque synchro. Les cours concernés sont aussi marqués dans l'agenda pendant 7 jours." },
+    { notif: true, ext: true, key: "statusWatch", type: "switch", label: "Surveiller Odin en arrière-plan", hint: "Teste Odin et la connexion toutes les 5 minutes et te prévient quand ils tombent en panne, puis quand ils reviennent." },
     { key: "absenceAlert", type: "select", label: "Alerte d'absences non justifiées", hint: "Quand ce nombre est atteint : message dans le panneau Absences et notification. Désactivée par défaut.",
       options: [[0, "Désactivée"], [2, "À 2 absences"], [3, "À 3 absences"], [4, "À 4 absences"], [5, "À 5 absences"], [6, "À 6 absences"], [8, "À 8 absences"], [10, "À 10 absences"]] },
-    { ext: true, key: "notifyNewGrades", type: "switch", label: "Nouvelle note", hint: "Notification quand une note apparaît (ou change) dans ton relevé." },
+    { notif: true, ext: true, key: "notifyNewGrades", type: "switch", label: "Nouvelle note", hint: "Notification quand une note apparaît (ou change) dans ton relevé." },
   ] },
 ];
 
@@ -119,7 +119,8 @@ let DESIGN_OPTIONS = [];
 function render(settings) {
   const root = $("sections"); root.innerHTML = "";
   SECTIONS.forEach((sec) => {
-    const fields = sec.fields.filter((f) => !(window.UCA_APP && f.ext));
+    const noNotif = typeof chrome.notifications === "undefined";
+    const fields = sec.fields.filter((f) => !(window.UCA_APP && f.ext) && !(noNotif && f.notif));
     if (!fields.length) return;
     const s = el("section"); s.appendChild(el("h2", "", sec.title));
     fields.forEach((f) => {
@@ -198,6 +199,14 @@ $("agendaBtn").addEventListener("click", () => {
 /* Mises à jour : même mécanisme que le bandeau de l'agenda (background.js pour l'extension,
    core/env.js pour l'app). Version périmée : la page est bloquée, seul "Mettre à jour" reste. */
 function renderUpdate(d) {
+  if (d.uca_store_build) {
+    // Paquet du magasin : mises à jour automatiques, rien à vérifier ni à appliquer ici.
+    $("updState").textContent = `Installée : ${d.uca_current_version || "—"} · mises à jour automatiques par ton navigateur`;
+    $("checkUpdBtn").hidden = true; $("updErr").textContent = "";
+    const old = $("updBlock"); if (old) old.remove();
+    return;
+  }
+  $("checkUpdBtn").hidden = false;
   $("verCur").textContent = d.uca_current_version || "—";
   $("verLat").textContent = d.uca_latest_version || "—";
   $("updErr").textContent = d.uca_update_check_failed ? "Vérification impossible (pas de connexion, ou github.com injoignable)." : "";
@@ -212,7 +221,7 @@ function renderUpdate(d) {
   b.addEventListener("click", () => { b.disabled = true; chrome.runtime.sendMessage({ type: "UCA_APPLY_UPDATE" }); });
   box.appendChild(b); block.appendChild(box); document.body.appendChild(block);
 }
-const UPD_KEYS = ["uca_update_available", "uca_current_version", "uca_latest_version", "uca_update_check_failed"];
+const UPD_KEYS = ["uca_store_build", "uca_update_available", "uca_current_version", "uca_latest_version", "uca_update_check_failed"];
 chrome.storage.local.get(UPD_KEYS).then(renderUpdate);
 chrome.storage.onChanged.addListener((c, area) => { if (area === "local" && UPD_KEYS.some((k) => c[k])) chrome.storage.local.get(UPD_KEYS).then(renderUpdate); });
 const CHECK_BTN_LABEL = "Vérifier les mises à jour";

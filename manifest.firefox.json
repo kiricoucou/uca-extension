@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Emploi du temps UCA (non officiel)",
-  "version": "1.36.0",
-  "description": "Extension non officielle, non affiliée à l'Université Clermont Auvergne. Récupère ton emploi du temps, tes absences et tes notes depuis Odin avec ta propre session, et les affiche dans la barre d'outils. Aucune donnée n'est envoyée à un serveur tiers : tout reste dans ton navigateur.",
+  "version": "1.37.0",
+  "description": "Emploi du temps, notes et absences de l'UCA (Odin) dans ton navigateur. Non officiel, aucune donnée envoyée à un tiers.",
   "permissions": ["scripting", "storage", "cookies", "alarms", "notifications"],
   "host_permissions": [
     "https://ent.uca.fr/*",
@@ -21,7 +21,8 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "uca-connecteur@site-emploi-du-temps.local",
-      "strict_min_version": "109.0"
+      "strict_min_version": "109.0",
+      "data_collection_permissions": { "required": ["none"] }
     }
   },
   "action": {

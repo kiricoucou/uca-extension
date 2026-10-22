@@ -189,6 +189,7 @@ const PUBLIC_PAGES = [
   { label: "Installer l'app — guide détaillé", hint: "Étapes Android, iPhone et ordinateur", path: "app/install.html" },
   { label: "Agenda en ligne", hint: "La même app, dans un simple onglet", path: "app/index.html" },
   { label: "Importer mes données", hint: "Scanner un QR, coller un lien ou choisir un fichier", path: "app/import.html" },
+  { label: "Politique de confidentialité", hint: "Quelles données, où elles sont stockées, toutes les connexions réseau", path: "confidentialite.html" },
   { label: "Page introuvable (404)", hint: "Pour vérifier qu'elle s'affiche bien", path: "404.html" },
 ];
 function buildLinksPanel(panel) {

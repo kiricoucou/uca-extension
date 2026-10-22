@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="icons/icon32.png">
+<meta name="description" content="Politique de confidentialité de l'extension Emploi du temps UCA (non officielle) : aucune donnée envoyée à un tiers.">
+<title>Politique de confidentialité — Emploi du temps UCA (non officiel)</title>
+<style>
+  :root{--bg:#ffffff;--surface:#ffffff;--border:#dadce0;--text:#1f1f1f;--text-dim:#5f6368;--accent:#0b57d0;}@media (prefers-color-scheme:dark){:root{--bg:#131314;--surface:#1e1f20;--border:#444746;--text:#e3e3e3;--text-dim:#a8acb0;--accent:#a8c7fa;}}
+  body{font-family:Roboto,'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);
+    max-width:760px;margin:0 auto;padding:32px 20px 64px;line-height:1.6;}
+  h1{font-size:22px;}
+  h2{font-size:16px;margin-top:32px;color:var(--accent);}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin:16px 0;}
+  .warn{border-color:#e0a030;background:#fff8ec;}
+  code{background:var(--border);padding:1px 5px;border-radius:4px;font-size:.92em;}
+  footer{margin-top:40px;color:var(--text-dim);font-size:12.5px;}
+</style>
+</head>
+<body>
+
+<p><a href="index.html">← Accueil</a></p>
+<h1>Politique de confidentialité</h1>
+<p><strong>Emploi du temps UCA (non officiel)</strong> — extension de navigateur (Chrome, Edge, Firefox), site et application web installable.</p>
+
+<div class="card warn">
+  <strong>Outil non officiel, non affilié à l'Université Clermont Auvergne (UCA).</strong>
+  Développé de façon indépendante pour faciliter la lecture de son propre emploi du temps,
+  de ses absences et de ses notes déjà accessibles sur Odin (ent.uca.fr / odin.iut.uca.fr).
+</div>
+
+<h2>En bref</h2>
+<div class="card">
+  <p>Il n'existe aucun serveur derrière ces outils, aucun compte, aucune publicité, aucune
+  télémétrie, aucun traceur. <strong>Tes cours, tes notes et tes absences ne sont jamais envoyés à
+  l'éditeur de l'outil ni à un tiers.</strong> Ils restent dans ton navigateur, sur ton appareil.</p>
+</div>
+
+<h2>Où sont stockées tes données</h2>
+<div class="card">
+  <ul>
+    <li><strong>Extension :</strong> dans le stockage local de ton profil navigateur
+      (<code>chrome.storage.local</code> ou l'équivalent Firefox) : emploi du temps, notes
+      personnelles, absences, relevé de notes, réglages, couleurs de matières.</li>
+    <li><strong>Site et application web :</strong> dans le <code>localStorage</code> de ton navigateur
+      (ou celui de l'application installée), sur ton appareil. Les pages du site sont servies par
+      GitHub Pages ; elles ne reçoivent jamais tes données.</li>
+  </ul>
+</div>
+
+<h2>Connexion UCA (CAS / Odin)</h2>
+<div class="card">
+  <p>Pour récupérer tes données, l'extension ouvre la page de connexion officielle de l'UCA
+  (<code>ent.uca.fr</code>), exactement comme si tu allais directement sur Odin. Ton identifiant et
+  ton mot de passe sont saisis sur le site de l'UCA : ils ne sont jamais lus, stockés ni transmis par
+  l'extension. Une fois connecté, elle lit le contenu des pages que ta propre session a le droit de voir
+  (emploi du temps, absences, notes) et l'affiche dans une interface plus pratique.</p>
+</div>
+
+<h2>Toutes les connexions réseau</h2>
+<div class="card">
+  <ul>
+    <li><code>ent.uca.fr</code> et <code>odin.iut.uca.fr</code> : connexion et lecture de tes pages, avec ta session.</li>
+    <li><strong>Statut des sites</strong> (Paramètres) : requête de lecture anonyme (sans cookie ni donnée) vers
+      <code>odin.iut.uca.fr</code>, <code>ent.uca.fr</code>, <code>moodle.uca.fr</code>, <code>mail.uca.fr</code>,
+      <code>kiricoucou.github.io</code> et <code>raw.githubusercontent.com</code>, pour savoir si ces sites répondent.
+      Uniquement quand la page Paramètres est ouverte, ou si tu actives la surveillance en arrière-plan.</li>
+    <li><strong>Mises à jour</strong> (paquet de développement seulement) : lecture du fichier public
+      <code>manifest.json</code> sur <code>raw.githubusercontent.com</code> pour connaître la dernière version.
+      Les paquets des magasins (addons.mozilla.org, Chrome Web Store) ne le font pas : le magasin met à jour tout seul.</li>
+    <li>Aucune autre requête. Aucun service d'analyse, aucune police ou bibliothèque chargée depuis Internet.</li>
+  </ul>
+</div>
+
+<h2>Partage vers le téléphone</h2>
+<div class="card">
+  <p>Le bouton « Envoyer vers le téléphone » crée un lien dont les données sont <strong>chiffrées</strong>
+  (AES-GCM 256, clé dérivée du code de partage choisi par toi) et placées après le <code>#</code> de l'adresse :
+  cette partie n'est jamais envoyée dans une requête HTTP, GitHub Pages ne la voit pas. Sans le code de partage,
+  le lien est illisible ; il expire après la durée que tu choisis (1 heure à 7 jours). Tu décides à qui tu envoies le lien.</p>
+</div>
+
+<h2>Permissions demandées</h2>
+<div class="card">
+  <ul>
+    <li><code>storage</code> : enregistrer tes données et réglages sur ton appareil.</li>
+    <li><code>scripting</code> + accès à <code>ent.uca.fr</code> et <code>odin.iut.uca.fr</code> : ouvrir ces pages en
+      arrière-plan et lire leur texte.</li>
+    <li><code>cookies</code> : lire la durée restante de ta session UCA et, quand tu cliques sur « Déconnexion »,
+      supprimer les cookies de <code>ent.uca.fr</code> et <code>odin.iut.uca.fr</code> uniquement.</li>
+    <li><code>alarms</code> : rappels de cours, synchronisation automatique, pastille de l'icône.</li>
+    <li><code>notifications</code> : rappels et alertes (désactivables dans Paramètres). Absente de Firefox pour Android.</li>
+    <li>Script sur <code>kiricoucou.github.io/uca-extension/</code> : relier le site/app à l'extension (bouton
+      « Synchroniser » du site). Il ne transmet rien d'autre.</li>
+  </ul>
+</div>
+
+<h2>Suppression de tes données</h2>
+<div class="card">
+  <p>Paramètres → Données → « Réinitialiser l'agenda » efface cours, notes, absences et relevé (annulable 10 minutes).
+  Désinstaller l'extension, ou effacer les données du site dans les réglages du navigateur, supprime tout
+  immédiatement : rien n'est conservé ailleurs.</p>
+</div>
+
+<h2>Code source et responsabilité</h2>
+<div class="card">
+  <p>Le code est lisible tel quel (aucune minification) dans le dépôt
+  <a href="https://github.com/kiricoucou/uca-extension">github.com/kiricoucou/uca-extension</a>. Ces outils sont développés
+  pour un usage personnel et fournis sans garantie ; l'UCA peut modifier Odin à tout moment. Une question ou un problème :
+  ouvre un ticket sur le dépôt.</p>
+</div>
+
+<footer>Dernière mise à jour : 2026-10-22.</footer>
+</body>
+</html>

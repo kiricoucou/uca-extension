@@ -22,6 +22,12 @@ function looksLikeServiceError(text) {
     || /page (introuvable|non trouv[ée]e)|erreur (serveur|interne)|service (indisponible|temporairement indisponible)|site (indisponible|en maintenance)|maintenance en cours|internal server error|not found|service unavailable|bad gateway|gateway timeout/i.test(head);
 }
 
+/* Notifications : absentes de Firefox pour Android (l'extension y fonctionne, sans alertes système). */
+function notify(id, options) {
+  if (typeof chrome.notifications === "undefined" || !chrome.notifications.create) return;
+  try { chrome.notifications.create(id, options); } catch (e) { /* une notification ratée ne doit jamais casser une synchro */ }
+}
+
 function broadcast(msg) {
   try { chrome.runtime.sendMessage(msg).catch(() => {}); } catch (e) { /* no listener open, fine */ }
 }
@@ -60,8 +66,25 @@ async function fetchLatestVersion() {
   return remote.version;
 }
 
+/* Paquet des magasins (addons.mozilla.org, Chrome Web Store) : le fichier store-build.txt n'existe que dans
+   ce paquet (tests/build_firefox.py --store). Le magasin gère les mises à jour : pas de comparaison avec GitHub,
+   pas de bouton « Mettre à jour ». */
+let storeBuild = null;
+async function isStoreBuild() {
+  if (storeBuild === null) {
+    try { storeBuild = (await fetch(chrome.runtime.getURL("store-build.txt"))).ok; } catch (e) { storeBuild = false; }
+  }
+  return storeBuild;
+}
+
 async function checkForUpdate() {
   const current = chrome.runtime.getManifest().version;
+  if (await isStoreBuild()) {
+    await chrome.storage.local.set({ uca_store_build: true, uca_current_version: current, uca_update_available: false, uca_update_check_failed: null });
+    broadcast({ type: "UCA_UPDATE_STATE", current, latest: current, updateAvailable: false });
+    return;
+  }
+  chrome.storage.local.remove("uca_store_build");
   let latest = null, lastError = null;
   // Un échec isolé (réseau lent, DNS...) ne doit pas faire croire que la vérification "ne marche
   // pas" : un deuxième essai après une courte pause avant d'abandonner et de le signaler vraiment.
@@ -91,6 +114,7 @@ async function checkForUpdate() {
    comment récupérer la nouvelle version au lieu d'un rechargement qui ne changerait rien. */
 const HELP_UPDATE_URL = "https://kiricoucou.github.io/uca-extension/aide.html#maj-extension";
 async function applyExtensionUpdate() {
+  if (await isStoreBuild()) return;
   try {
     const disk = await (await fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" })).json();
     const { uca_latest_version } = await chrome.storage.local.get("uca_latest_version");
@@ -257,26 +281,30 @@ async function trySilentResync() {
 
 async function fullLogin() {
   broadcast({ type: "UCA_SYNC_PROGRESS", stage: "login-opening" });
-  const win = await chrome.windows.create({ url: CAS_URL, type: "popup", width: 480, height: 700 });
-  const tab = win.tabs[0];
+  // Sans API windows (Firefox pour Android) : la connexion se fait dans un onglet normal.
+  const useWindow = typeof chrome.windows !== "undefined" && !!chrome.windows.create && !!chrome.windows.onRemoved;
+  let surface, tab;
+  if (useWindow) { surface = await chrome.windows.create({ url: CAS_URL, type: "popup", width: 480, height: 700 }); tab = surface.tabs[0]; }
+  else { tab = await chrome.tabs.create({ url: CAS_URL, active: true }); surface = { id: tab.id }; }
+  const removed = useWindow ? chrome.windows.onRemoved : chrome.tabs.onRemoved;
   let closedByUser = false;
-  const onClosed = (winId) => { if (winId === win.id) closedByUser = true; };
-  chrome.windows.onRemoved.addListener(onClosed);
+  const onClosed = (id) => { if (id === surface.id) closedByUser = true; };
+  removed.addListener(onClosed);
   try {
     broadcast({ type: "UCA_SYNC_PROGRESS", stage: "login-waiting" });
-    // Popup fermée par l'utilisateur pendant l'attente de connexion : on abandonne tout de suite
+    // Fenêtre (ou onglet) fermée par l'utilisateur pendant l'attente de connexion : on abandonne tout de suite
     // (sinon le verrou de synchro resterait pris jusqu'à LOGIN_WAIT_MS et aucune nouvelle synchro
     // ne passerait). Fermée plus tard (pendant navigateAndScrape ci-dessous) : les appels sur cet
     // onglet échouent naturellement, repérés via closedByUser dans le catch.
     let onRaceClosed;
     const closed = new Promise((_, reject) => {
-      onRaceClosed = (winId) => { if (winId === win.id) { const e = new Error("Fenêtre de connexion fermée."); e.cancelled = true; reject(e); } };
-      chrome.windows.onRemoved.addListener(onRaceClosed);
+      onRaceClosed = (id) => { if (id === surface.id) { const e = new Error("Fenêtre de connexion fermée."); e.cancelled = true; reject(e); } };
+      removed.addListener(onRaceClosed);
     });
     try {
       await Promise.race([waitForUrlContains(tab.id, "odin.iut.uca.fr", LOGIN_WAIT_MS), closed]);
     } finally {
-      chrome.windows.onRemoved.removeListener(onRaceClosed);
+      removed.removeListener(onRaceClosed);
     }
     broadcast({ type: "UCA_SYNC_PROGRESS", stage: "scraping" });
     const text = await navigateAndScrape(tab.id);
@@ -287,7 +315,7 @@ async function fullLogin() {
     if (closedByUser && !e.cancelled) { const err = new Error("Fenêtre de connexion fermée."); err.cancelled = true; throw err; }
     throw e;
   } finally {
-    chrome.windows.onRemoved.removeListener(onClosed);
+    removed.removeListener(onClosed);
   }
 }
 
@@ -554,7 +582,7 @@ async function checkAbsenceAlert(absences) {
   if (n <= last) return;
   await chrome.storage.local.set({ uca_absence_alert: { count: n, at: Date.now() } });
   const design = await currentDesign();
-  chrome.notifications.create("uca_absence|" + Date.now(), {
+  notify("uca_absence|" + Date.now(), {
     type: "basic",
     iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
     title: `${n} absence${n > 1 ? "s" : ""} non justifiée${n > 1 ? "s" : ""}`,
@@ -764,7 +792,7 @@ async function onReminderAlarm(name) {
   const ev = (uca_events || []).find((e) => eventKey(e) === key);
   if (!ev) return;
   const minutes = Math.max(1, Math.round((eventStart(ev) - Date.now()) / 60000));
-  chrome.notifications.create(name, {
+  notify(name, {
     type: "basic",
     iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
     title: `Dans ${minutes} min : ${ev.title}`,
@@ -773,7 +801,7 @@ async function onReminderAlarm(name) {
   });
 }
 
-chrome.notifications.onClicked.addListener(async (id) => {
+if (typeof chrome.notifications !== "undefined" && chrome.notifications.onClicked) chrome.notifications.onClicked.addListener(async (id) => {
   if (!id.startsWith("uca_")) return;
   const design = await currentDesign();
   chrome.tabs.create({ url: chrome.runtime.getURL(design ? `${design.folder}/agenda.html` : "choose.html?tab=1") });
@@ -852,7 +880,7 @@ async function runStatusWatch() {
     const before = previous[id] && previous[id].state, now = current[id].state;
     if (!before || (before === "down") === (now === "down")) return;
     const label = UCA_STATUS.SITES.find((s) => s.id === id).label;
-    chrome.notifications.create("uca_status|" + id + "|" + Date.now(), {
+    notify("uca_status|" + id + "|" + Date.now(), {
       type: "basic",
       iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
       title: now === "down" ? `${label} est en panne` : `${label} est de nouveau disponible`,
@@ -969,7 +997,7 @@ async function notifyEdtChanges(list) {
   const design = await currentDesign();
   const lines = list.slice(0, 4).map((c) => `${CHANGE_LABELS_BG[c.type]} : ${c.ev.title} (${fmtEvShort(c.ev)})${c.details && c.details.length && c.type !== "added" && c.type !== "cancelled" ? " — " + c.details.join(" ; ") : ""}`);
   if (list.length > 4) lines.push(`… et ${list.length - 4} autre(s)`);
-  chrome.notifications.create("uca_edt|" + Date.now(), {
+  notify("uca_edt|" + Date.now(), {
     type: "basic",
     iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
     title: list.length === 1 ? "Emploi du temps modifié" : `${list.length} changements d'emploi du temps`,
@@ -983,7 +1011,7 @@ async function notifyNewGrades(list) {
   if (!settings.notifyNewGrades) return;
   const design = await currentDesign();
   const fmt = (n) => String(n).replace(".", ",");
-  chrome.notifications.create("uca_grade|" + Date.now(), {
+  notify("uca_grade|" + Date.now(), {
     type: "basic",
     iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
     title: list.length === 1 ? `Nouvelle note : ${fmt(list[0].note)}` : `${list.length} nouvelles notes`,

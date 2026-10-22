@@ -2,7 +2,10 @@
 dist/firefox/, puis un .zip prêt pour about:debugging ("Charger un module complémentaire
 temporaire") ou pour un dépôt sur addons.mozilla.org.
 
-Usage : python -I -X utf8 tests/build_firefox.py
+Usage : python -I -X utf8 tests/build_firefox.py [--store]
+  (sans option) : paquet de développement / installation manuelle (vérification des mises à jour via GitHub).
+  --store       : paquet pour addons.mozilla.org (dist/uca-extension-firefox-store-<version>.zip) : pas de vérificateur
+                  de mises à jour GitHub (le magasin met à jour tout seul), permissions réduites au strict nécessaire.
 """
 import json
 import shutil
@@ -15,11 +18,29 @@ DIST = ROOT / "dist" / "firefox"
 
 # Fichiers/dossiers de dev jamais envoyés dans le paquet de l'extension (tests, app téléphone,
 # dépôt git, scratch...). Tout le reste de la racine est inclus.
-EXCLUDE_DIRS = {".git", ".github", ".claude", ".impeccable", "tests", "app", "dist", "__pycache__"}
+EXCLUDE_DIRS = {".git", ".github", ".claude", ".impeccable", "tests", "app", "dist", "store", "__pycache__"}
 EXCLUDE_FILES = {"manifest.firefox.json", ".gitignore", ".nojekyll", "app.webmanifest", "sw.js"}
 # Pages du site public, à la racine seulement (designs/<id>/aide.html reste dans le paquet).
-EXCLUDE_ROOT_FILES = {"index.html", "install.html", "aide.html", "404.html", "site.css"}
+EXCLUDE_ROOT_FILES = {"index.html", "install.html", "aide.html", "404.html", "confidentialite.html", "site.css"}
 EXCLUDE_SUFFIXES = {".pyc"}
+
+
+STORE_SITE = "https://kiricoucou.github.io/uca-extension/*"
+
+
+def store_manifest(manifest: dict, firefox: bool) -> dict:
+    """Manifeste du paquet des magasins : le strict nécessaire, rien pour le développement."""
+    m = json.loads(json.dumps(manifest))
+    # Les mises à jour passent par le magasin : plus d'accès à raw.githubusercontent.com.
+    m["host_permissions"] = [h for h in m.get("host_permissions", []) if "githubusercontent" not in h]
+    # Le pont avec l'app n'a de sens que sur le site publié (pas file://, ni localhost, réservés aux tests).
+    for cs in m.get("content_scripts", []):
+        cs["matches"] = [STORE_SITE]
+    if firefox:
+        gecko = m["browser_specific_settings"]["gecko"]
+        gecko["strict_min_version"] = "140.0"  # première version qui connaît data_collection_permissions
+        m["browser_specific_settings"]["gecko_android"] = {"strict_min_version": "142.0"}
+    return m
 
 
 def should_copy(path: Path) -> bool:
@@ -36,8 +57,11 @@ def should_copy(path: Path) -> bool:
 
 
 def main():
-    if DIST.exists():
-        shutil.rmtree(DIST)
+    store = "--store" in sys.argv[1:]
+    dist = ROOT / "dist" / ("firefox-store" if store else "firefox")
+    if dist.exists():
+        shutil.rmtree(dist)
+    DIST = dist
     DIST.mkdir(parents=True)
 
     for src in ROOT.rglob("*"):
@@ -51,9 +75,12 @@ def main():
         shutil.copy2(src, dest)
 
     manifest = json.loads((ROOT / "manifest.firefox.json").read_text(encoding="utf-8"))
+    if store:
+        manifest = store_manifest(manifest, firefox=True)
+        (DIST / "store-build.txt").write_text("paquet des magasins : pas de vérification de mise à jour via GitHub\n", encoding="utf-8")
     (DIST / "manifest.json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-    zip_path = ROOT / "dist" / f"uca-extension-firefox-{manifest['version']}.zip"
+    zip_path = ROOT / "dist" / f"uca-extension-firefox-{'store-' if store else ''}{manifest['version']}.zip"
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
         for f in DIST.rglob("*"):
             if f.is_file():

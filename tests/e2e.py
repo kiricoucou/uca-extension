@@ -90,12 +90,12 @@ def tool_checks(ag, did):
     check(f"{did} : fenêtre téléphone fermée par Échap", ag.locator("#phoneOverlay").count() == 0)
     ag.mouse.click(700, 500); ag.wait_for_timeout(200)
 
-    # Panneau Liens : les 7 pages publiées sur GitHub Pages, ouvertes dans un nouvel onglet.
+    # Panneau Liens : les 8 pages publiées sur GitHub Pages, ouvertes dans un nouvel onglet.
     opened = []
     ag.on("popup", lambda p: opened.append(p.url))
     ag.locator("#linksBtn").click(); ag.wait_for_timeout(300)
     items = ag.locator("#linksPanel .xp-phone")
-    check(f"{did} : panneau Liens liste les 7 pages publiées", items.count() == 7, str(items.count()))
+    check(f"{did} : panneau Liens liste les 8 pages publiées", items.count() == 8, str(items.count()))
     labels = items.all_inner_texts()
     for k in ("Accueil", "Aide", "Agenda en ligne", "Importer mes données", "404"):
         check(f"{did} : panneau Liens → « {k} »", any(k in t for t in labels), str(labels))

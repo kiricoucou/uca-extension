@@ -36,6 +36,8 @@ jobs:
         run: python -I -X utf8 tests/grades.py
       - name: Agenda (raccourcis, couleurs, design automatique)
         run: python -I -X utf8 tests/agenda.py
+      - name: Paquets des magasins (contenu, manifestes, Android simulé)
+        run: python -I -X utf8 tests/store.py
       - name: Statut des sites
         run: python -I -X utf8 tests/status.py
       - name: Pont extension / app
@@ -48,6 +50,8 @@ jobs:
         run: |
           python -I -X utf8 tests/build_chrome.py
           python -I -X utf8 tests/build_firefox.py
+          python -I -X utf8 tests/build_chrome.py --store
+          python -I -X utf8 tests/build_firefox.py --store
       - uses: actions/upload-artifact@v4
         with:
           name: paquets-extension

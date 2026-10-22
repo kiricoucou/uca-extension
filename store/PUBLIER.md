@@ -80,3 +80,17 @@ concernés sont masqués).
 - **Ce que je n'ai pas pu tester** : l'installation réelle sur Firefox Android et sur AMO (pas d'appareil Android ni
   de compte ici). Les gardes nécessaires sont en place (pas de fenêtre séparée, pas de notifications) et testées
   par simulation ; vérifie en premier la connexion CAS sur ton téléphone après l'installation.
+- **Fenêtre de connexion CAS absente depuis l'app (téléphone/ordinateur)** : vérifié de bout en bout avec de vrais
+  composants (extension réelle + pont `content-bridge.js`/`core/env.js` réel, serveur Odin/CAS simulé localement,
+  jamais le vrai serveur — voir `tests/cas_login_window.py` et `tests/cas_login_window_app.py`) — le mécanisme
+  fonctionne : si l'extension est installée et active dans le même navigateur que l'app, cliquer « Synchroniser »
+  ouvre bien une vraie fenêtre CAS quand la session a expiré. Un vrai bug trouvé au passage : le bouton du menu
+  mobile (☰) affichait toujours « Importer mes données » même quand l'extension était détectée, au lieu de
+  « Synchroniser » (corrigé dans `core/agenda.js`, `buildMobileMenu`) — ça n'empêchait pas le clic de fonctionner,
+  mais le libellé était trompeur. Si le problème persiste en vrai sur ton téléphone/ordinateur après mise à jour,
+  la cause la plus probable est que l'extension n'est pas installée (ou pas activée) dans **le même navigateur**
+  que l'app — sans elle, l'app ne peut techniquement pas atteindre Odin (pas d'accès cookies cross-origine depuis
+  une page web seule) et propose seulement un transfert manuel (lien/QR/fichier).
+- **Installabilité PWA (téléphone)** : `app.webmanifest` et `sw.js` vérifiés par simulation (`tests/pwa.py`,
+  77/77) — nom, icônes 192/512 + maskable, `display: standalone`, service worker hors ligne. L'installation réelle
+  sur un téléphone (icône sur l'écran d'accueil, ouverture en plein écran) reste à confirmer en vrai.

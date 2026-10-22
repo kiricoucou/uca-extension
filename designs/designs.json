@@ -84,6 +84,48 @@
     ]
   },
   {
+    "id": "bulletin",
+    "name": "Design bulletin",
+    "description": "Clair et dense, notes mises en avant, esprit carnet de notes scolaire",
+    "folder": "designs/bulletin",
+    "badgeColor": "#1e7a46",
+    "preview": {
+      "background": "#ffffff",
+      "surface": "#ffffff",
+      "accent": "#1e7a46",
+      "text": "#1f1f1f",
+      "textDim": "#5f6368",
+      "border": "#dadce0",
+      "onAccent": "#ffffff"
+    },
+    "screenshots": [
+      {
+        "src": "designs/bulletin/previews/1-semaine.jpg",
+        "label": "Agenda de la semaine"
+      },
+      {
+        "src": "designs/bulletin/previews/2-notes.jpg",
+        "label": "Relevé de notes et moyenne"
+      },
+      {
+        "src": "designs/bulletin/previews/3-popup.jpg",
+        "label": "Popup de la barre d'outils"
+      },
+      {
+        "src": "designs/bulletin/previews/4-mobile.jpg",
+        "label": "Vue Jour sur téléphone"
+      },
+      {
+        "src": "designs/bulletin/previews/5-mois.jpg",
+        "label": "Vue Mois"
+      },
+      {
+        "src": "designs/bulletin/previews/6-detail.jpg",
+        "label": "Détail d'un cours et note perso"
+      }
+    ]
+  },
+  {
     "id": "carnet",
     "name": "Design carnet",
     "description": "Papier crème, écriture manuscrite, cours en post-it",

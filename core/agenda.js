@@ -483,7 +483,11 @@ function buildMobileMenu() {
   if (!window.UCA_APP) m.appendChild(menuButton("mi", D.icon("link") + "Statut des sites (Odin, CAS…)", () => UCA_CORE.openSettings("#statusSection")));
   m.appendChild(menuButton("mi", D.icon("design") + "Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
-  m.appendChild(menuButton("mi msync primary", D.icon("sync") + (window.UCA_APP ? "Importer mes données" : "Synchroniser"), triggerSync));
+  // Même logique que le bouton desktop (setSyncLabel ci-dessous) : "Importer" seulement si on est
+  // dans l'app ET que l'extension n'est pas détectée dans ce navigateur ; sinon "Synchroniser" fait
+  // une vraie synchro Odin via le pont (voir core/env.js). Le menu est reconstruit à chaque ouverture,
+  // donc ce test reflète toujours l'état courant d'extensionReady sans écouteur supplémentaire.
+  m.appendChild(menuButton("mi msync primary", D.icon("sync") + (window.UCA_APP && !window.UCA_APP.extensionReady ? "Importer mes données" : "Synchroniser"), triggerSync));
   const r = $("menuBtn").getBoundingClientRect();
   m.style.top = (r.bottom + 6) + "px"; m.style.left = r.left + "px";
 }

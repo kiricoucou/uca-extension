@@ -6,13 +6,13 @@ Non officielle, non affiliée à l'Université Clermont Auvergne. Aucune donnée
 
 **📥 Installer :** [l'extension (ordinateur, Chrome/Edge)](#tutoriel-dinstallation) · [l'app (téléphone)](https://kiricoucou.github.io/uca-extension/install.html)
 
-Faite pour rendre l'emploi du temps plus simple à lire au quotidien, avec un affichage qui s'adapte à chaque étudiant : trois designs au choix, vue jour/semaine/mois, filtres, rappels, et tout ce qui est listé ci-dessous.
+Faite pour rendre l'emploi du temps plus simple à lire au quotidien, avec un affichage qui s'adapte à chaque étudiant : quatre designs au choix, vue jour/semaine/mois, filtres, rappels, et tout ce qui est listé ci-dessous.
 
 ## Captures d'écran
 
-| Animé | Professionnel | Carnet |
-|---|---|---|
-| ![Design animé](designs/anime/previews/1-semaine.jpg) | ![Design professionnel](designs/professionnel/previews/1-semaine.jpg) | ![Design carnet](designs/carnet/previews/1-semaine.jpg) |
+| Animé | Professionnel | Bulletin | Carnet |
+|---|---|---|---|
+| ![Design animé](designs/anime/previews/1-semaine.jpg) | ![Design professionnel](designs/professionnel/previews/1-semaine.jpg) | ![Design bulletin](designs/bulletin/previews/1-semaine.jpg) | ![Design carnet](designs/carnet/previews/1-semaine.jpg) |
 
 | Relevé de notes | Vue mobile | Popup |
 |---|---|---|
@@ -47,7 +47,7 @@ D'autres captures de chaque design (vue mois, détail d'un cours...) sont dans `
 - **Fiabilité de la lecture d'Odin** : page d'erreur d'Odin (404/500/503/maintenance) détectée aussi pour les notes et les absences, page méconnaissable signalée dans le panneau concerné (les anciennes données restent), **journal de diagnostic** local copiable (Paramètres → Diagnostic), sans aucun contenu de page.
 - **Tests et CI** : `tests/scrape.py` (pages Odin factices dans `tests/pages/`), GitHub Actions (`.github/workflows/tests.yml`) lance toutes les suites à chaque push et produit les paquets Chrome/Firefox (`tests/build_chrome.py`, `tests/build_firefox.py`) ; un tag `vX.Y.Z` publie une version GitHub avec les deux zips.
 - Responsive (menu hamburger sous 820px).
-- **Trois designs au choix** : animé (sombre turquoise), professionnel (clair épuré), carnet (papier crème, écriture manuscrite, post-it).
+- **Quatre designs au choix** : animé (sombre turquoise), professionnel (clair épuré), bulletin (clair et dense, esprit carnet de notes scolaire), carnet (papier crème, écriture manuscrite, post-it).
 - **Plusieurs designs au choix** : au premier lancement l'extension demande quel design utiliser (changeable ensuite). Les fonctionnalités sont identiques, seul l'affichage change.
 
 ## App téléphone (Android et iPhone)
@@ -59,7 +59,7 @@ Le site est servi par GitHub Pages : <https://kiricoucou.github.io/uca-extension
   - **Générer le lien** (popup) ou **Copier un lien** (Exporter) — colle-le dans un SMS, un mail ou n'importe quelle appli, et ouvre-le sur ton téléphone. Les données voyagent **chiffrées** dans le lien lui-même (AES-GCM 256, clé dérivée par PBKDF2 du **code de partage** réglé dans Paramètres, jamais inclus dans un lien ni un export), après le `#` : jamais transmises dans une requête HTTP, ni GitHub Pages ni aucun serveur ne les voit ni ne les garde. La **durée de validité** (1 h à 7 jours, Paramètres) est authentifiée par le chiffrement : l'app refuse un lien expiré ou modifié. Le code est demandé une fois sur le téléphone (mémorisable). Dans l'app, **Importer → Coller un lien de partage** fait pareil en collant le texte à la main.
   - **QR code animé** — pratique à la première installation : dans l'app, **Importer → Scanner**.
   - **Fichier `.ucasync`** en secours (Drive, AirDrop, ou « Partager → EDT UCA » sur Android).
-- Les trois designs, les filtres, les notes, les absences et l'export `.ics` fonctionnent dans l'app. Les rappels passent par l'export `.ics` (avec alarmes) importé dans le calendrier du téléphone.
+- Les quatre designs, les filtres, les notes, les absences et l'export `.ics` fonctionnent dans l'app. Les rappels passent par l'export `.ics` (avec alarmes) importé dans le calendrier du téléphone.
 - Refais un transfert après chaque synchro sur l'ordinateur pour mettre l'app à jour.
 - **Mise à jour de l'app** (installée sur ordinateur ou téléphone, raccourci, onglet : même service worker) : tout est servi **réseau d'abord** (`sw.js`), le cache ne sert qu'hors ligne — en ligne, la dernière version s'affiche sans rien faire. Si la page a démarré sur sa copie hors ligne alors qu'une version plus récente est publiée, un écran plein écran avec un seul bouton **Mettre à jour** vide le cache et recharge.
 
@@ -73,7 +73,7 @@ Pas de Chrome Web Store (extension non publiée) : l'installation se fait « en 
 2. Ouvre un nouvel onglet et tape `chrome://extensions` dans la barre d'adresse (sur Edge : `edge://extensions`).
 3. En haut à droite, active **Mode développeur**.
 4. Clique **Charger l'extension non empaquetée**, puis sélectionne le dossier décompressé (celui qui contient `manifest.json`).
-5. L'icône de l'extension apparaît dans la barre d'outils (épingle-la pour la garder visible). Un onglet s'ouvre automatiquement pour **choisir un design** (animé, professionnel ou carnet) — rien n'empêche d'en changer plus tard avec le bouton **Design**.
+5. L'icône de l'extension apparaît dans la barre d'outils (épingle-la pour la garder visible). Un onglet s'ouvre automatiquement pour **choisir un design** (animé, professionnel, bulletin ou carnet) — rien n'empêche d'en changer plus tard avec le bouton **Design**.
 6. Clique l'icône de l'extension → **Se connecter**. Une fenêtre CAS UCA s'ouvre : connecte-toi normalement (identifiant, mot de passe, double authentification). L'emploi du temps se charge automatiquement une fois connecté.
 
 ### Firefox

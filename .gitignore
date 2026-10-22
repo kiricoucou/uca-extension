@@ -3,3 +3,4 @@ __pycache__/
 .claude/
 dist/
 tests/.axe/
+tests/.out/

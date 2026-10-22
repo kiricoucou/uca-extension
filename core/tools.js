@@ -201,7 +201,57 @@ function buildLinksPanel(panel) {
   });
 }
 
+
+/* ============================= Prochain cours / jours fériés ============================= */
+function startMs(ev) { return new Date(ev.year, ev.month, ev.day, ev.startH, ev.startM).getTime(); }
+function endMs(ev) { return new Date(ev.year, ev.month, ev.day, ev.endH, ev.endM).getTime(); }
+
+/* Cours en cours, sinon prochain cours (n'importe quel jour), en respectant les filtres actifs.
+   -> { ev, ongoing, minutes } : minutes avant la fin (en cours) ou avant le début. */
+function nextCourse(evs, now) {
+  const t = now === undefined ? Date.now() : now;
+  const list = evs.filter((e) => passes(e) && endMs(e) > t).sort((a, b) => startMs(a) - startMs(b));
+  const cur = list.find((e) => startMs(e) <= t);
+  if (cur) return { ev: cur, ongoing: true, minutes: Math.max(1, Math.ceil((endMs(cur) - t) / 60000)) };
+  const next = list[0];
+  return next ? { ev: next, ongoing: false, minutes: Math.max(1, Math.ceil((startMs(next) - t) / 60000)) } : null;
+}
+function durationText(min) {
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return h < 24 ? `${h} h${m ? " " + pad(m) : ""}` : "";
+}
+function nextCourseText(res, now) {
+  if (!res) return "";
+  const ev = res.ev, place = ev.room ? " · " + ev.room : "";
+  if (res.ongoing) return `En cours : ${ev.title}${place} (fin dans ${durationText(res.minutes)})`;
+  const d = durationText(res.minutes);
+  if (d) return `Prochain : ${ev.title}${place} · dans ${d}`;
+  const when = new Date(ev.year, ev.month, ev.day).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" });
+  return `Prochain : ${ev.title}${place} · ${when} ${pad(ev.startH)}h${pad(ev.startM)}`;
+}
+
+/* Jours fériés français (calculés, aucune donnée externe) : fixes + lundi de Pâques, Ascension, lundi de Pentecôte.
+   Les vacances ne sont pas listées : le calendrier universitaire diffère de celui des écoles. */
+const holidayCache = {};
+function holidaysOf(year) {
+  if (holidayCache[year]) return holidayCache[year];
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100, d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30, i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31), day = ((h + l - 7 * m + 114) % 31) + 1;
+  const map = {};
+  const put = (dt, name) => { map[`${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`] = name; };
+  [[0, 1, "Jour de l'an"], [4, 1, "Fête du Travail"], [4, 8, "Victoire 1945"], [6, 14, "Fête nationale"], [7, 15, "Assomption"],
+    [10, 1, "Toussaint"], [10, 11, "Armistice 1918"], [11, 25, "Noël"]].forEach(([mo, dd, n]) => put(new Date(year, mo, dd), n));
+  [[1, "Lundi de Pâques"], [39, "Ascension"], [50, "Lundi de Pentecôte"]].forEach(([plus, n]) => put(new Date(year, month - 1, day + plus), n));
+  holidayCache[year] = map;
+  return map;
+}
+function holidayName(date) { return holidaysOf(date.getFullYear())[`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`] || ""; }
+
 window.UCA_TOOLS = {
+  nextCourse, nextCourseText, holidayName,
   TYPES, typeOf, subjectOf, passes, activeCount, buildFilterPanel, buildExportPanel, buildIcs, buildLinksPanel,
   load(cb) {
     chrome.storage.local.get("uca_filters", (d) => { filters = Object.assign({ q: "", types: [], hidden: [] }, d.uca_filters); cb(); });

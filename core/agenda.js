@@ -13,6 +13,7 @@ let absences = null;
 let scrapeIssues = {};
 let releveNotes = null;
 let notesHistory = [];
+let subjectColors = {};
 let simScope = "", simTarget = 10, chartScope = "general";
 let notesSeen = {};
 let edtChanges = new Map(); // eventKey -> changement (ajouté / déplacé / salle) ; annulés : fantômes
@@ -55,7 +56,7 @@ function toast(msg, type) {
 function setEdtChanges(list) {
   edtChanges = new Map(); cancelledGhosts = []; cancelledChanges.clear();
   (list || []).forEach(c => {
-    if (c.type === "cancelled") { cancelledGhosts.push({ ...c.ev, cancelled: true, color: D.eventColor(eventColorKey(c.ev.title)) }); cancelledChanges.set(c.key, c); }
+    if (c.type === "cancelled") { cancelledGhosts.push({ ...c.ev, cancelled: true, color: colorOf(c.ev.title) }); cancelledChanges.set(c.key, c); }
     else edtChanges.set(c.key, c);
   });
 }
@@ -132,11 +133,40 @@ function openDetail(ev) {
     ${ev.room ? `<p>${D.icon("pin")}<strong>Salle :</strong> ${escapeHtml(ev.room)}</p>` : ""}
     ${ev.raw ? `<p style="margin-bottom:4px;"><strong>${escapeHtml(T("rawData"))}</strong></p>
     <pre style="white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:11.5px;font-family:'Cascadia Code',Consolas,monospace;color:var(--text-dim);margin:0 0 4px;">${escapeHtml(ev.raw)}</pre>` : ""}
+    <div class="subject-color" id="subjectColor"></div>
     <div class="note-label">${D.icon("note")}Note personnelle (visible seulement par toi) :</div>
     <textarea id="noteArea" placeholder="Ex: réviser le chapitre 3 avant ce cours..."></textarea>
   `;
   $("noteArea").value = noteVal;
+  renderSubjectColorPicker(ev);
   $("detailOverlay").classList.add("open");
+}
+/* Couleur d'une matière : 10 pastilles tirées de la palette du design (ou « Auto »), mémorisées par matière
+   et appliquées à tous ses cours. */
+function renderSubjectColorPicker(ev) {
+  const box = $("subjectColor"); if (!box) return;
+  const key = eventColorKey(ev.title), cur = subjectColors[key];
+  box.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 4px;";
+  const lab = document.createElement("span"); lab.textContent = "Couleur de la matière :"; lab.style.cssText = "font-size:13px;margin-right:4px;";
+  box.appendChild(lab);
+  const pick = (slot) => {
+    if (slot === null) delete subjectColors[key]; else subjectColors[key] = slot;
+    chrome.storage.local.set({ uca_subject_colors: subjectColors });
+    events.forEach((e) => { e.color = colorOf(e.title); });
+    cancelledGhosts.forEach((e) => { e.color = colorOf(e.title); });
+    box.innerHTML = ""; renderSubjectColorPicker(ev);
+    render();
+  };
+  const mk = (label, bg, active, slot) => {
+    const b = document.createElement("button"); b.type = "button"; b.title = label; b.setAttribute("aria-label", label); b.setAttribute("aria-pressed", active ? "true" : "false");
+    b.className = "sc-swatch";
+    b.style.cssText = `width:24px;height:24px;border-radius:50%;padding:0;cursor:pointer;background:${bg};border:2px solid ${active ? "var(--text, #222)" : "var(--border, #bbb)"};${active ? "box-shadow:0 0 0 2px var(--surface, #fff) inset;" : ""}font:inherit;font-size:11px;line-height:1;color:var(--text, #222);`;
+    if (slot === null) b.textContent = "A";
+    b.addEventListener("click", () => pick(slot));
+    box.appendChild(b);
+  };
+  mk("Couleur automatique", "transparent", !Number.isInteger(cur), null);
+  for (let i = 0; i < 10; i++) mk("Couleur " + (i + 1), D.swatch(i), cur === i, i);
 }
 function closeDetailAndSaveNote() {
   const area = $("noteArea");
@@ -153,6 +183,14 @@ $("closeDetail").addEventListener("click", closeDetailAndSaveNote);
 $("detailOverlay").addEventListener("click", (e) => { if (e.target === $("detailOverlay")) closeDetailAndSaveNote(); });
 
 /* ============================= RENDER: MONTH ============================= */
+/* Jour férié : infobulle + numéro du jour en couleur d'alerte ; le nom est aussi dit aux lecteurs d'écran. */
+function markHoliday(node, d, numSel) {
+  const name = UCA_TOOLS.holidayName(d);
+  if (!name) return;
+  node.classList.add("holiday"); node.title = name; node.setAttribute("aria-label", `${d.getDate()}, jour férié : ${name}`);
+  const n = numSel ? node.querySelector(numSel) : node;
+  if (n) n.style.color = "var(--danger, #c5221f)";
+}
 function renderMonth() {
   const el = $("monthView"); el.innerHTML = "";
   const grid = document.createElement("div"); grid.className = "month-grid";
@@ -165,6 +203,7 @@ function renderMonth() {
     if (d.getMonth() !== month) cell.classList.add("other-month");
     if (sameDay(d, today)) cell.classList.add("today");
     const num = document.createElement("div"); num.className = "month-daynum"; num.textContent = d.getDate(); cell.appendChild(num);
+    markHoliday(cell, d, ".month-daynum");
     const evs = eventsOnDate(d);
     if (isMobileUI()) {
       if (evs.length) {
@@ -189,11 +228,12 @@ function layoutOverlaps(evs) {
 }
 
 function metaHtml(ev, tag) {
+  const teacher = settings.compactCards ? "" : ev.teacher;
   if (D.grid.metaMerged) {
-    const meta = [ev.teacher, ev.room].filter(Boolean).join(" · ");
+    const meta = [teacher, ev.room].filter(Boolean).join(" · ");
     return meta ? `<${tag} class="ev-sub" title="${escapeHtml(meta)}">${escapeHtml(meta)}</${tag}>` : "";
   }
-  return (ev.teacher ? `<${tag} class="ev-sub">${escapeHtml(T("teacherPrefix") + ev.teacher)}</${tag}>` : "")
+  return (teacher ? `<${tag} class="ev-sub">${escapeHtml(T("teacherPrefix") + teacher)}</${tag}>` : "")
     + (ev.room ? `<${tag} class="ev-sub">${escapeHtml(T("roomPrefix") + ev.room)}</${tag}>` : "");
 }
 
@@ -229,7 +269,7 @@ function renderTimeGrid(containerId, days) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const headRow = document.createElement("div"); headRow.className = "grid-headrow";
   const gutterHead = document.createElement("div"); gutterHead.className = "grid-timegutter-head"; headRow.appendChild(gutterHead);
-  days.forEach(d => { const dh = document.createElement("div"); dh.className = "grid-daycol-head" + (sameDay(d, today) ? " today" : ""); dh.innerHTML = `<div class="dname">${DAY_NAMES_SHORT[d.getDay()]}</div><div class="dnum">${d.getDate()}</div>`; headRow.appendChild(dh); });
+  days.forEach(d => { const dh = document.createElement("div"); dh.className = "grid-daycol-head" + (sameDay(d, today) ? " today" : ""); dh.innerHTML = `<div class="dname">${DAY_NAMES_SHORT[d.getDay()]}</div><div class="dnum">${d.getDate()}</div>`; markHoliday(dh, d, ".dnum"); headRow.appendChild(dh); });
   const scroll = document.createElement("div"); scroll.className = "grid-scroll";
   scroll.appendChild(headRow);
   const body = document.createElement("div"); body.className = "grid-body";
@@ -334,7 +374,7 @@ function renderMobileDay() {
   view.appendChild(strip);
   const list = document.createElement("div"); list.className = "m-list";
   const head = document.createElement("div"); head.className = "m-date";
-  head.textContent = capitalize(refDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" }));
+  head.textContent = capitalize(refDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })) + (UCA_TOOLS.holidayName(refDate) ? " · " + UCA_TOOLS.holidayName(refDate) : "");
   list.appendChild(head);
   const evs = eventsOnDate(refDate);
   if (!evs.length) {
@@ -438,7 +478,8 @@ function buildMobileMenu() {
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   if ($("filterPanel")) m.appendChild(menuButton("mi", D.icon("filter") + "Filtres" + (UCA_TOOLS.activeCount() ? ` (${UCA_TOOLS.activeCount()})` : ""), () => openToolPanel("filterPanel", true)));
   if ($("exportPanel")) m.appendChild(menuButton("mi", D.icon("export") + "Exporter (.ics)", () => openToolPanel("exportPanel", true)));
-  m.appendChild(menuButton("mi", D.icon("settings") + "Paramètres", UCA_CORE.openSettings));
+  m.appendChild(menuButton("mi", D.icon("settings") + "Paramètres", () => UCA_CORE.openSettings()));
+  if (!window.UCA_APP) m.appendChild(menuButton("mi", D.icon("link") + "Statut des sites (Odin, CAS…)", () => UCA_CORE.openSettings("#statusSection")));
   m.appendChild(menuButton("mi", D.icon("design") + "Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   m.appendChild(menuButton("mi msync primary", D.icon("sync") + (window.UCA_APP ? "Importer mes données" : "Synchroniser"), triggerSync));
@@ -476,15 +517,28 @@ function renderSyncInfo(iso, importedAt) {
   }
   $("syncInfo").textContent = iso ? "Dernière synchro : " + new Date(iso).toLocaleString("fr-FR") : "Jamais synchronisé";
 }
+/* Prochain cours (ou cours en cours) dans la ligne d'info, mis à jour chaque 30 s. */
+function renderNextInfo() {
+  const info = $("syncInfo"); if (!info) return;
+  const old = info.querySelector("#nextInfo"); if (old) old.remove();
+  const text = UCA_TOOLS.nextCourseText(UCA_TOOLS.nextCourse(events));
+  if (!text) return;
+  const span = document.createElement("span"); span.id = "nextInfo"; span.textContent = text;
+  span.style.cssText = "margin-left:14px;font-weight:600;";
+  info.appendChild(span);
+}
+setInterval(renderNextInfo, 30000);
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors"], (data) => {
     if (window.UCA_APP && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) { location.href = chrome.runtime.getURL("app/import.html"); return; }
     settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, data.uca_settings);
-    events = (data.uca_events || []).map(ev => ({ ...ev, color: D.eventColor(eventColorKey(ev.title)) }));
+    subjectColors = data.uca_subject_colors || {};
+    events = (data.uca_events || []).map(ev => ({ ...ev, color: colorOf(ev.title) }));
     notes = data.uca_notes || {};
     absences = data.uca_absences || null;
     scrapeIssues = data.uca_scrape_issues || {};
     notesHistory = data.uca_notes_history || [];
+    subjectColors = data.uca_subject_colors || {};
     releveNotes = data.uca_releve_notes || null;
     notesSeen = data.uca_notes_seen || {};
     setEdtChanges(data.uca_edt_changes);
@@ -499,6 +553,7 @@ function loadFromStorage() {
       else if (eventsOnDate(refDate).length === 0 && availableViews().includes("5day")) currentView = "5day";
     }
     renderSyncInfo(data.uca_last_sync, data.uca_app_imported_at);
+    renderNextInfo();
     renderSessionState(!!data.uca_session_expired);
     renderAbsencesPanel();
     renderNotesPanel();
@@ -506,6 +561,10 @@ function loadFromStorage() {
   });
 }
 function eventColorKey(title) { return title.replace(/\b(CM|TD|TDA|TP|TPA)\b/gi, "").trim() || title; }
+function colorOf(title) {
+  const key = eventColorKey(title), slot = subjectColors[key];
+  return Number.isInteger(slot) ? D.swatch(slot) : D.eventColor(key);
+}
 
 /* Un panneau ancré à droite de son bouton peut sortir de l'écran si le header passe
    sur plusieurs lignes : on le recale dans la fenêtre à l'ouverture. */
@@ -702,13 +761,13 @@ function countdownText(n) { return n <= 0 ? "Aujourd'hui" : n === 1 ? "Demain" :
 function upcomingExams() {
   const now = Date.now();
   return events.filter((ev) => UCA_TOOLS.typeOf(ev.title) === "Examen" && new Date(ev.year, ev.month, ev.day, ev.endH, ev.endM).getTime() > now)
-    .sort((a, b) => new Date(a.year, a.month, a.day, a.startH, a.startM) - new Date(b.year, b.month, b.day, b.startH, b.startM)).slice(0, 4);
+    .sort((a, b) => new Date(a.year, a.month, a.day, a.startH, a.startM) - new Date(b.year, b.month, b.day, b.startH, b.startM)).slice(0, 12);
 }
 function examsBlock() {
   const exams = upcomingExams();
   if (!exams.length) return null;
   const box = npEl("div", "np-exams");
-  box.appendChild(npEl("div", "fp-h", "Prochains examens"));
+  box.appendChild(npEl("div", "fp-h", "Examens à venir"));
   exams.forEach((ev) => {
     const row = npEl("div", "np-exam"); row.style.cssText = NP_EXAM;
     const left = npEl("b", "", ev.title);
@@ -717,6 +776,10 @@ function examsBlock() {
     const right = npEl("span", "", `${countdownText(daysUntil(ev))} · ${date} ${hm}${ev.room ? " · " + ev.room : ""}`);
     right.style.opacity = ".85";
     row.append(left, right); box.appendChild(row);
+    // Un clic ouvre le jour de l'examen dans l'agenda.
+    row.tabIndex = 0; row.setAttribute("role", "button"); row.style.cursor = "pointer"; row.title = "Voir ce jour dans l'agenda";
+    const go = () => { refDate = new Date(ev.year, ev.month, ev.day); $("notesPanel").classList.remove("open"); if (currentView === "month") switchView("day"); else render(); };
+    row.addEventListener("click", go); row.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
   });
   return box;
 }
@@ -1021,6 +1084,25 @@ async function openPhoneModal() {
 }
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePhoneModal(); });
 
+/* Raccourcis clavier : ← → période précédente / suivante, T aujourd'hui, F filtres, M mois, S semaine, J jour.
+   Ignorés dans un champ de saisie, avec Ctrl/Alt/Méta ou quand une fenêtre de détail est ouverte. */
+document.addEventListener("keydown", (e) => {
+  if (e.ctrlKey || e.altKey || e.metaKey || e.defaultPrevented) return;
+  const t = e.target, tag = t && t.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || (t && t.isContentEditable)) return;
+  if ($("detailOverlay").classList.contains("open") || ($("ucaSheetBackdrop") && !$("ucaSheetBackdrop").hidden)) return;
+  const k = e.key.toLowerCase();
+  if (k === "arrowleft") navigate(-1);
+  else if (k === "arrowright") navigate(1);
+  else if (k === "t") { refDate = new Date(); refDate.setHours(0, 0, 0, 0); render(); }
+  else if (k === "f" && $("filterBtn")) { e.preventDefault(); $("filterBtn").click(); }
+  else if (k === "m" && availableViews().includes("month")) switchView("month");
+  else if (k === "s" && availableViews().includes("week")) switchView("week");
+  else if (k === "j" && availableViews().includes("day")) switchView("day");
+  else return;
+  e.preventDefault();
+});
+
 /* ============================= Navigation / zoom ============================= */
 $("viewTabs").addEventListener("click", (e) => { const btn = e.target.closest("button[data-view]"); if (!btn) return; switchView(btn.dataset.view); });
 $("prevBtn").addEventListener("click", () => navigate(-1));
@@ -1119,6 +1201,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 UCA_CORE.initUpdate();
 UCA_CORE.initDesignSwitch(true);
+UCA_CORE.initAutoDesign();
 UCA_CORE.initSettings();
 renderFilterButton();
 chrome.storage.onChanged.addListener((changes, area) => {
@@ -1131,9 +1214,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
   if (changes.uca_notes_history) { notesHistory = changes.uca_notes_history.newValue || []; renderNotesPanel(); }
   if (changes.uca_scrape_issues) { scrapeIssues = changes.uca_scrape_issues.newValue || {}; renderAbsencesPanel(); renderNotesPanel(); }
+  if (changes.uca_subject_colors) { subjectColors = changes.uca_subject_colors.newValue || {}; events.forEach((e) => { e.color = colorOf(e.title); }); render(); }
   if (changes.uca_edt_changes) { setEdtChanges(changes.uca_edt_changes.newValue); render(); }
   // Réinitialisation (ou son annulation) depuis Paramètres, dans un autre onglet : reflète tout de suite.
-  if (changes.uca_events) { events = (changes.uca_events.newValue || []).map(ev => ({ ...ev, color: D.eventColor(eventColorKey(ev.title)) })); render(); }
+  if (changes.uca_events) { events = (changes.uca_events.newValue || []).map(ev => ({ ...ev, color: colorOf(ev.title) })); render(); renderNextInfo(); }
   if (changes.uca_notes) { notes = changes.uca_notes.newValue || {}; render(); }
   if (changes.uca_absences) { absences = changes.uca_absences.newValue || null; renderAbsencesPanel(); }
 });

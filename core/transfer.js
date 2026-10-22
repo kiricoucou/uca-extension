@@ -12,7 +12,7 @@ const APP_URL = "https://kiricoucou.github.io/uca-extension/";
 // toujours le guide d'installation, peu importe l'état de l'appareil qui scanne.
 const DOWNLOAD_URL = "https://kiricoucou.github.io/uca-extension/install.html";
 const KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_releve_notes", "uca_releve_notes_sync", "uca_absences",
-  "uca_notes_seen", "uca_notes_history", "uca_edt_changes", "uca_settings", "uca_filters", "uca_design"];
+  "uca_notes_seen", "uca_notes_history", "uca_subject_colors", "uca_edt_changes", "uca_settings", "uca_filters", "uca_design"];
 const CHUNK = 480;
 const PREFIX = "UCA1";
 

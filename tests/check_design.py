@@ -12,7 +12,7 @@ from harness import ROOT, designs  # noqa: E402
 # id optionnels : le core vérifie leur présence avant de s'en servir.
 OPTIONAL = {"notesAvg", "moreBtn", "morePanel", "moreWrap", "updateOverlay", "updateBar", "updCurrent", "updLatest",
             "updApplyBtn", "designBtn", "settingsBtn", "noteArea", "lbImg", "ucaSheetBackdrop", "phoneBtn", "phoneOverlay", "phoneClose", "phoneQrApp", "phoneFile", "phoneStart", "phoneQrData", "phoneCounter",
-            "phoneLink", "phoneLinkFallback", "phoneShareInfo", "appImportBtn"}
+            "subjectColor", "nextCourse", "phoneLink", "phoneLinkFallback", "phoneShareInfo", "appImportBtn"}
 VIEW_IDS = {"dayView", "threeDayView", "fiveDayView", "sixDayView", "weekView", "monthView"}
 
 
@@ -32,6 +32,8 @@ def main():
             missing = sorted(required - present)
             scripts = re.findall(r'<script src="([^"]+)"', html)
             order_ok = scripts[-2:] == ["design.js", f"../../core/{page.replace('.html', '.js')}"] and "../../core/shared.js" in scripts
+            if page == "popup.html":
+                order_ok = order_ok and "../../core/settings.js" in scripts
             if page == "agenda.html":
                 order_ok = order_ok and scripts[0] == "../../core/env.js" and all(x in scripts for x in ("../../core/settings.js", "../../core/transfer.js", "../../vendor/qrcode.js"))
                 if not (VIEW_IDS & present):

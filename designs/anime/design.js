@@ -14,6 +14,7 @@ UCA_defineDesign({
     const file = ICONS[name];
     return file ? `<img class="gi${variant === "title" ? " lg" : ""}" src="svg/${file}.svg" alt="">` : "";
   },
+  swatch(i) { return `hsl(${(i * 36) % 360},68%,40%)`; },
   eventColor(key) {
     return `hsl(${UCA_DESIGN.hashString(key) % 360},68%,40%)`;
   },

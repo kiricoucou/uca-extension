@@ -8,8 +8,14 @@ const SECTIONS = [
     { key: "startView", type: "select", label: "Vue à l'ouverture", hint: "« Automatique » : Semaine sur ordinateur (5 jours si rien aujourd'hui), Jour sur téléphone.",
       options: [["auto", "Automatique"], ["day", "Jour"], ["3day", "3 jours"], ["5day", "5 jours"], ["6day", "6 jours"], ["week", "Semaine"], ["month", "Mois"]] },
     { key: "hideWeekend", type: "switch", label: "Masquer le week-end", hint: "Vue Semaine : samedi et dimanche n'apparaissent que s'il y a cours." },
+    { key: "compactCards", type: "switch", label: "Blocs de cours compacts", hint: "Masque le nom de l'enseignant dans les blocs de l'agenda (il reste dans le détail du cours)." },
     { key: "noteNewDays", type: "select", label: "Nouvelles notes en orange", hint: "Une note nouvelle (ou modifiée) reste orange pendant ce délai, puis jaune pendant le même délai.",
       options: [[1, "1 jour"], [2, "2 jours"], [3, "3 jours"], [5, "5 jours"], [7, "7 jours"]] },
+  ] },
+  { title: "Design automatique", fields: [
+    { key: "autoDesign", type: "switch", label: "Suivre le thème clair/sombre du système", hint: "Le design change tout seul quand ton ordinateur ou ton téléphone passe du clair au sombre. Quand c'est activé, il remplace le design choisi à la main." },
+    { key: "designLight", type: "select", label: "Design en thème clair", optionsFrom: "designs", options: [] },
+    { key: "designDark", type: "select", label: "Design en thème sombre", optionsFrom: "designs", options: [] },
   ] },
   { title: "Partage vers le téléphone", fields: [
     { ext: true, key: "shareLinkHours", type: "select", label: "Durée de validité d'un lien",
@@ -109,6 +115,7 @@ function control(field, value) {
   return select;
 }
 
+let DESIGN_OPTIONS = [];
 function render(settings) {
   const root = $("sections"); root.innerHTML = "";
   SECTIONS.forEach((sec) => {
@@ -121,7 +128,8 @@ function render(settings) {
       const lbl = el("label", "lbl", f.label); lbl.htmlFor = "f-" + f.key;
       txt.appendChild(lbl);
       if (f.hint) txt.appendChild(el("div", "hint", f.hint));
-      row.append(txt, control(f, settings[f.key]));
+      const ctl = f.optionsFrom === "designs" ? control(Object.assign({}, f, { options: DESIGN_OPTIONS }), settings[f.key]) : control(f, settings[f.key]);
+      row.append(txt, ctl);
       s.appendChild(row);
     });
     root.appendChild(s);
@@ -313,5 +321,6 @@ setInterval(() => { if (!document.hidden) runStatus(); }, 30000);
 document.addEventListener("visibilitychange", () => { if (!document.hidden) runStatus(); });
 runStatus();
 
-UCA_getSettings().then(render);
+fetch(chrome.runtime.getURL("designs/designs.json")).then((r) => r.json()).then((designs) => { DESIGN_OPTIONS = designs.map((d) => [d.id, d.name || d.id]); }).catch(() => {})
+  .then(() => UCA_getSettings()).then(render);
 })();

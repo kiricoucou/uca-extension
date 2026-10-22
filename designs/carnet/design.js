@@ -9,6 +9,7 @@ const NOTE_BADGE = `<span class="ev-note-badge" title="Tu as écrit une note sur
 
 UCA_defineDesign({
   icon(name) { return svg("i-" + name, "ic sm"); },
+  swatch(i) { return PASTELS[i % PASTELS.length]; },
   eventColor(key) { return PASTELS[UCA_DESIGN.hashString(key) % PASTELS.length]; },
   noteBadge(context) {
     return context === "grid" ? `<div class="ev-note">${NOTE_BADGE}</div>` : `<div class="day-note">${NOTE_BADGE}</div>`;

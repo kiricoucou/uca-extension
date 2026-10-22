@@ -38,6 +38,8 @@ const DEFAULTS = {
   // pin, note, chart, link, mail, sync, alert, key, logout, design. variant : "title" | undefined.
   icon: () => "",
   eventColor: (key) => DEFAULT_PALETTE[hashString(key) % DEFAULT_PALETTE.length],
+  // Les 10 couleurs proposées pour une matière (détail d'un cours) ; chaque design donne les siennes.
+  swatch: (i) => DEFAULT_PALETTE[i % DEFAULT_PALETTE.length],
   // Indicateur "note personnelle" sur un cours. context : "grid" | "day".
   noteBadge: () => "",
   // Badge d'un cours modifié depuis la dernière synchro. type : clé de CHANGE_LABELS.
@@ -110,9 +112,25 @@ window.UCA_CORE = {
     document.body.appendChild(bar);
   },
   /* Bouton #settingsBtn : ouvre la page Paramètres (commune à tous les designs). */
-  openSettings() { chrome.tabs.create({ url: chrome.runtime.getURL("settings.html") }); },
+  openSettings(hash) { chrome.tabs.create({ url: chrome.runtime.getURL("settings.html") + (typeof hash === "string" ? hash : "") }); },
   initSettings() {
     if ($("settingsBtn")) $("settingsBtn").addEventListener("click", UCA_CORE.openSettings);
+  },
+  /* Design automatique (Paramètres) : le design suit le thème clair/sombre du système. Un design clair
+     et un design sombre au choix ; la page courante est rechargée dans l'autre design quand le système bascule. */
+  initAutoDesign() {
+    const mq = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)");
+    if (!mq) return;
+    const apply = () => Promise.all([UCA_getSettings(), fetch(chrome.runtime.getURL("designs/designs.json")).then((r) => r.json())]).then(([st, designs]) => {
+      if (!st.autoDesign) return;
+      const want = designs.find((d) => d.id === (mq.matches ? st.designDark : st.designLight));
+      const here = designs.find((d) => location.pathname.includes("/" + d.folder + "/"));
+      if (!want || !here || want.id === here.id) return;
+      const page = location.pathname.split("/").pop() || "agenda.html";
+      chrome.storage.local.set({ uca_design: want.id }).then(() => { location.replace(chrome.runtime.getURL(`${want.folder}/${page}`) + location.search + location.hash); });
+    }).catch(() => {});
+    apply();
+    if (mq.addEventListener) mq.addEventListener("change", apply);
   },
   /* Bouton #designBtn : rouvre le sélecteur. tabMode : page plein onglet (agenda). */
   initDesignSwitch(tabMode) {

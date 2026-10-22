@@ -13,6 +13,10 @@ const DEFAULTS = {
   notifyEdtChanges: true, // notification quand un cours est ajouté / annulé / déplacé / change de salle
   notifyNewGrades: true,  // notification quand une nouvelle note apparaît
   shareLinkHours: 48,     // durée de validité d'un lien de partage chiffré (core/transfer.js)
+  compactCards: false,    // blocs de cours sans le nom de l'enseignant (visible dans le détail)
+  autoDesign: false,      // le design suit le thème clair/sombre du système
+  designLight: "professionnel",
+  designDark: "anime",
   absenceAlert: 0,        // 0 = désactivée ; sinon alerte à N absences non justifiées
   statusWatch: false,     // surveille Odin et la connexion toutes les 5 min, notifie panne / retour
   noteNewDays: 2,         // note affichée en orange pendant N jours, puis en jaune pendant autant

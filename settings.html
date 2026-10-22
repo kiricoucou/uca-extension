@@ -8,13 +8,13 @@
 <style>
 :root{
   color-scheme:light;
-  --bg:#f6f7f9;--surface:#ffffff;--border:#dfe1e5;--text:#1f1f1f;--text-dim:#5f6368;--focus:#0b57d0;--on-focus:#ffffff;--ok:#146c2e;--danger:#b3261e;--on-danger:#ffffff;
+  --bg:#f6f7f9;--surface:#ffffff;--border:#dfe1e5;--text:#1f1f1f;--text-dim:#5f6368;--focus:#0b57d0;--on-focus:#ffffff;--ok:#146c2e;--warn:#8a5200;--danger:#b3261e;--on-danger:#ffffff;
   --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
 }
 @media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;--on-focus:#0b1d3a;--ok:#6dd58c;--danger:#f2b8b5;--on-danger:#601410;}
+  :root:not([data-theme="light"]){color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;--on-focus:#0b1d3a;--ok:#6dd58c;--warn:#f0b44c;--danger:#f2b8b5;--on-danger:#601410;}
 }
-:root[data-theme="dark"]{color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;--on-focus:#0b1d3a;--ok:#6dd58c;--danger:#f2b8b5;--on-danger:#601410;}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;--on-focus:#0b1d3a;--ok:#6dd58c;--warn:#f0b44c;--danger:#f2b8b5;--on-danger:#601410;}
 *{box-sizing:border-box;}
 body{margin:0;font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.45;}
 main{max-width:720px;margin:40px auto;padding:0 20px 40px;}
@@ -58,6 +58,21 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
 .foot button.primary{background:var(--focus);color:var(--on-focus);border-color:transparent;font-weight:600;}
 .undo-bar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1f2125;color:#fff;padding:10px 12px 10px 18px;border-radius:999px;display:flex;align-items:center;gap:14px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.3);z-index:4000;}
 .undo-bar .upd-btn{background:#8ab4f8;color:#0b1d3a;border-color:transparent;}
+.st-sum{margin:0 18px 6px;padding:10px 14px;border-radius:12px;font-weight:600;border:1px solid var(--border);background:var(--bg);}
+.st-sum.ok{color:var(--ok);}.st-sum.bad{color:var(--danger);}
+.st-row{display:flex;align-items:center;gap:12px;padding:10px 18px;border-top:1px solid var(--border);}
+.st-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;background:var(--text-dim);}
+.st-row[data-state="ok"] .st-dot{background:var(--ok);}
+.st-row[data-state="slow"] .st-dot{background:var(--warn);border-radius:3px;}
+.st-row[data-state="down"] .st-dot{background:var(--danger);border-radius:2px;transform:rotate(45deg);}
+.st-row .txt{flex:1;min-width:0;}
+.st-state{font-weight:600;white-space:nowrap;}
+.st-row[data-state="ok"] .st-state{color:var(--ok);}
+.st-row[data-state="slow"] .st-state{color:var(--warn);}
+.st-row[data-state="down"] .st-state{color:var(--danger);}
+.st-spark{width:84px;height:22px;flex-shrink:0;}
+.st-spark rect{fill:var(--text-dim);opacity:.55;}.st-spark rect.down{fill:var(--danger);opacity:1;}
+@media (max-width:560px){.st-spark{display:none;}}
 </style>
 </head>
 <body>
@@ -65,6 +80,15 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
   <button type="button" class="back-btn" id="backBtn">← Retour</button>
   <h1>Paramètres</h1>
   <p class="lead">Ces réglages s'appliquent à tous les designs. Ils sont enregistrés tout de suite, sur cet appareil uniquement.</p>
+  <section id="statusSection">
+    <h2>Statut des sites</h2>
+    <div class="st-sum" id="stSummary" role="status" aria-live="polite">Test en cours…</div>
+    <div id="stRows"></div>
+    <div class="row">
+      <div class="txt"><div class="hint">Mis à jour toutes les 30 s tant que cette page est ouverte. Les sondes sont anonymes : aucune donnée perso n'est envoyée.</div></div>
+      <div class="foot-right"><button type="button" class="upd-btn primary" id="stTestBtn">Tester maintenant</button></div>
+    </div>
+  </section>
   <div id="sections"></div>
   <section>
     <h2>Mises à jour</h2>
@@ -95,6 +119,7 @@ select:focus-visible,.switch input:focus-visible + span{outline:2px solid var(--
 <div class="saved" id="saved" role="status">Enregistré</div>
 <script src="core/env.js"></script>
 <script src="core/settings.js"></script>
+<script src="core/status.js"></script>
 <script src="core/transfer.js"></script>
 <script src="settings.js"></script>
 </body>

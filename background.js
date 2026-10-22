@@ -1,5 +1,6 @@
 // Firefox charge core/settings.js via manifest.background.scripts ; Chrome (service worker) ici.
 if (typeof UCA_getSettings === "undefined" && typeof importScripts === "function") importScripts("core/settings.js");
+if (typeof UCA_STATUS === "undefined" && typeof importScripts === "function") importScripts("core/status.js");
 
 const EDT_URL = "https://odin.iut.uca.fr/etudiants/?p=edt";
 const ABSENCES_URL = "https://odin.iut.uca.fr/etudiants/?p=absences";
@@ -774,16 +775,44 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name.startsWith(REMINDER_PREFIX)) onReminderAlarm(alarm.name);
   else if (alarm.name === AUTO_SYNC_ALARM) runBackgroundSync();
   else if (alarm.name === BADGE_ALARM) updateBadge();
+  else if (alarm.name === STATUS_ALARM) runStatusWatch();
 });
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
   if (changes.uca_events || changes.uca_settings) scheduleReminders();
-  if (changes.uca_settings) configureAutoSync();
+  if (changes.uca_settings) { configureAutoSync(); configureStatusWatch(); }
   if (changes.uca_events || changes.uca_settings || changes.uca_session_expired || changes.uca_design) updateBadge();
 });
 chrome.alarms.create(BADGE_ALARM, { periodInMinutes: 1 });
-chrome.runtime.onStartup.addListener(() => { scheduleReminders(); configureAutoSync(); updateBadge(); });
-chrome.runtime.onInstalled.addListener(() => { scheduleReminders(); configureAutoSync(); updateBadge(); });
+
+/* Surveillance du statut (réglage statusWatch) : Odin et la connexion toutes les 5 min,
+   notification seulement quand l'état passe de en ligne à en panne, ou l'inverse. */
+const STATUS_ALARM = "uca_status";
+async function configureStatusWatch() {
+  const { statusWatch } = await UCA_getSettings();
+  await chrome.alarms.clear(STATUS_ALARM);
+  if (statusWatch) chrome.alarms.create(STATUS_ALARM, { periodInMinutes: 5 });
+}
+async function runStatusWatch() {
+  if (!(await UCA_getSettings()).statusWatch) return;
+  const ids = UCA_STATUS.SITES.filter((s) => s.watch).map((s) => s.id);
+  const { previous, current } = await UCA_STATUS.checkAll(ids);
+  const design = await currentDesign();
+  ids.forEach((id) => {
+    const before = previous[id] && previous[id].state, now = current[id].state;
+    if (!before || (before === "down") === (now === "down")) return;
+    const label = UCA_STATUS.SITES.find((s) => s.id === id).label;
+    chrome.notifications.create("uca_status|" + id + "|" + Date.now(), {
+      type: "basic",
+      iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
+      title: now === "down" ? `${label} est en panne` : `${label} est de nouveau disponible`,
+      message: now === "down" ? current[id].reason || "Le service ne répond pas." : "Tu peux relancer ta synchronisation.",
+      priority: 1,
+    });
+  });
+}
+chrome.runtime.onStartup.addListener(() => { scheduleReminders(); configureAutoSync(); configureStatusWatch(); updateBadge(); });
+chrome.runtime.onInstalled.addListener(() => { scheduleReminders(); configureAutoSync(); configureStatusWatch(); updateBadge(); });
 
 /* ============ Changements d'emploi du temps ============
    Comparaison sur la plage de dates couverte par les deux synchros et à partir

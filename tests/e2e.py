@@ -391,6 +391,9 @@ def main():
         service_error_checks(sw)
         sync_cooldown_checks(ctx, sw, base)
         sw.evaluate("(s) => chrome.storage.local.set(s)", data)
+        # Les sondes de statut ne doivent jamais toucher les vrais sites pendant les tests.
+        for host in ("odin.iut.uca.fr", "ent.uca.fr", "moodle.uca.fr", "mail.uca.fr", "kiricoucou.github.io", "raw.githubusercontent.com"):
+            ctx.route(f"https://{host}/**", lambda r: r.fulfill(status=200, headers={"access-control-allow-origin": "*"}, content_type="text/html", body="<title>ok</title>"))
         settings = ctx.new_page(); watch(settings, "settings")
         settings.goto(f"{base}/settings.html"); settings.wait_for_timeout(600)
         settings.select_option("#f-startView", "week"); settings.wait_for_timeout(300)

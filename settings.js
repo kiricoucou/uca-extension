@@ -31,6 +31,7 @@ const SECTIONS = [
   ] },
   { title: "Alertes", fields: [
     { ext: true, key: "notifyEdtChanges", type: "switch", label: "Changement d'emploi du temps", hint: "Cours ajouté, annulé, déplacé ou changement de salle, détecté à chaque synchro. Les cours concernés sont aussi marqués dans l'agenda pendant 7 jours." },
+    { ext: true, key: "statusWatch", type: "switch", label: "Surveiller Odin en arrière-plan", hint: "Teste Odin et la connexion toutes les 5 minutes et te prévient quand ils tombent en panne, puis quand ils reviennent." },
     { ext: true, key: "notifyNewGrades", type: "switch", label: "Nouvelle note", hint: "Notification quand une note apparaît (ou change) dans ton relevé." },
   ] },
 ];
@@ -220,6 +221,65 @@ $("checkUpdBtn").addEventListener("click", () => {
   }), 4000);
 });
 chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
+
+/* Statut des sites : sonde au chargement puis toutes les 30 s tant que la page est visible ;
+   le service worker (surveillance) écrit aussi dans uca_status, d'où l'écoute du stockage. */
+const ST_LABEL = { ok: "En ligne", slow: "Lent", down: "En panne", unknown: "Inconnu" };
+function ago(at) {
+  const s = Math.max(0, Math.round((Date.now() - at) / 1000));
+  return s < 5 ? "à l'instant" : s < 60 ? `il y a ${s} s` : `il y a ${Math.round(s / 60)} min`;
+}
+function sparkline(history) {
+  const NS = "http://www.w3.org/2000/svg", svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("class", "st-spark"); svg.setAttribute("viewBox", "0 0 84 22"); svg.setAttribute("aria-hidden", "true");
+  const max = Math.max(1000, ...history.map((h) => h.ms));
+  history.forEach((h, i) => {
+    const r = document.createElementNS(NS, "rect"), down = h.state === "down";
+    const ht = down ? 22 : Math.max(3, Math.round(22 * Math.min(h.ms, max) / max));
+    r.setAttribute("x", i * 4.2); r.setAttribute("width", 3); r.setAttribute("y", 22 - ht); r.setAttribute("height", ht);
+    if (down) r.setAttribute("class", "down");
+    svg.appendChild(r);
+  });
+  return svg;
+}
+function renderStatus(data) {
+  const sites = (data && data.sites) || {};
+  const rows = $("stRows"); rows.innerHTML = "";
+  const down = []; let measured = 0;
+  UCA_STATUS.SITES.forEach((site) => {
+    const r = sites[site.id], state = r ? r.state : "unknown";
+    if (r) measured++;
+    if (state === "down") down.push(site.label);
+    const row = el("div", "st-row"); row.dataset.state = state; row.id = "st-" + site.id;
+    const txt = el("div", "txt");
+    txt.appendChild(el("div", "lbl", site.label));
+    const detail = r
+      ? (state === "down" ? r.reason : `${r.ms} ms${r.exact ? "" : " · joignable (état exact non lisible)"}`) + " · " + ago(r.at)
+      : site.host;
+    txt.appendChild(el("div", "hint", detail));
+    row.append(el("span", "st-dot"), txt);
+    if (r && r.history && r.history.length > 1) row.appendChild(sparkline(r.history));
+    row.appendChild(el("span", "st-state", ST_LABEL[state]));
+    rows.appendChild(row);
+  });
+  const sum = $("stSummary");
+  sum.className = "st-sum" + (down.length ? " bad" : measured ? " ok" : "");
+  sum.textContent = !measured ? "Test en cours…" : down.length ? `En panne : ${down.join(", ")}` : "Tout fonctionne";
+}
+let stBusy = false;
+async function runStatus() {
+  if (stBusy) return;
+  stBusy = true;
+  const b = $("stTestBtn"); b.disabled = true; b.textContent = "Test en cours…";
+  try { await UCA_STATUS.checkAll(); } catch (e) { /* l'affichage garde le dernier état */ }
+  stBusy = false; b.disabled = false; b.textContent = "Tester maintenant";
+}
+$("stTestBtn").addEventListener("click", runStatus);
+chrome.storage.local.get("uca_status").then(({ uca_status }) => renderStatus(uca_status));
+chrome.storage.onChanged.addListener((c, area) => { if (area === "local" && c.uca_status) renderStatus(c.uca_status.newValue); });
+setInterval(() => { if (!document.hidden) runStatus(); }, 30000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) runStatus(); });
+runStatus();
 
 UCA_getSettings().then(render);
 })();

@@ -36,7 +36,7 @@ def main():
             if page == "popup.html":
                 order_ok = order_ok and "../../core/settings.js" in scripts
             if page == "agenda.html":
-                order_ok = order_ok and scripts[0] == "../../core/env.js" and all(x in scripts for x in ("../../core/settings.js", "../../core/tasks.js", "../../core/transfer.js", "../../vendor/qrcode.js"))
+                order_ok = order_ok and scripts[0] == "../../core/env.js" and all(x in scripts for x in ("../../core/settings.js", "../../core/tasks.js", "../../core/shareimage.js", "../../core/transfer.js", "../../vendor/qrcode.js"))
                 if not (VIEW_IDS & present):
                     missing.append("(au moins une vue)")
             for shot in d.get("screenshots", []):

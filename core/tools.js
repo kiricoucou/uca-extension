@@ -162,6 +162,25 @@ function buildExportPanel(panel, opts) {
     info.textContent = `${evs.length} cours${tk.length ? ` et ${tk.length} devoir${tk.length > 1 ? "s" : ""}` : ""} exportés. Ouvre le fichier pour l'ajouter à ton agenda. Il reflète ta dernière synchro : réexporte-le après une synchro.`;
   });
   panel.append(btn, info);
+  // Image à envoyer à un camarade : feuille de partage du téléphone si possible, sinon fichier PNG.
+  if (opts.shareImage && window.UCA_SHARE_IMAGE) {
+    panel.appendChild(el("div", "fp-h", "Partager une image"));
+    const imgInfo = el("div", "fp-empty"); imgInfo.setAttribute("role", "status");
+    [["day", "Le jour affiché"], ["week", "La semaine affichée"]].forEach(([kind, label]) => {
+      const b = el("button", "xp-phone xp-image", label); b.type = "button"; b.dataset.kind = kind;
+      b.addEventListener("click", async () => {
+        b.disabled = true; imgInfo.textContent = "Création de l'image…";
+        try {
+          const r = await window.UCA_SHARE_IMAGE.render(kind, opts.shareImage[kind]());
+          const res = await window.UCA_SHARE_IMAGE.share(r);
+          imgInfo.textContent = res === "shared" ? "Image partagée." : res === "cancelled" ? "" : `Image enregistrée (${r.name}).`;
+        } catch (e) { imgInfo.textContent = "Impossible de créer l'image."; }
+        b.disabled = false;
+      });
+      panel.appendChild(b);
+    });
+    panel.appendChild(imgInfo);
+  }
   // Lien direct : seulement en dehors de l'app (l'app n'a pas besoin de s'envoyer un lien à elle-même).
   if (opts.shareLink) {
     panel.appendChild(el("div", "fp-h", "Sur ton téléphone"));
@@ -224,6 +243,13 @@ function buildLinksPanel(panel) {
     btn.addEventListener("click", () => window.open(SITE_ROOT + p.path, "_blank", "noopener"));
     panel.appendChild(btn);
   });
+  // App ouverte dans un navigateur (pas encore installée) : rappel du guide d'installation, à tout moment.
+  if (window.UCA_APP && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone === true)) {
+    const inst = el("button", "xp-phone", "Installer l'app sur l'écran d'accueil"); inst.type = "button"; inst.id = "installLink";
+    inst.title = "Guide d'installation (Android, iPhone)";
+    inst.addEventListener("click", () => { location.href = chrome.runtime.getURL("app/install.html?force=1"); });
+    panel.appendChild(inst);
+  }
 }
 
 

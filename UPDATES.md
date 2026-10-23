@@ -44,3 +44,14 @@ Ajouté :
 - Pas de lien d'abonnement `.ics` automatique : il faudrait héberger l'emploi du temps sur un serveur, ce que le projet s'interdit ; le fichier reflète la dernière synchro, à réexporter après une synchro.
 - Tests : `tests/lots.py` (devoirs dans les 4 designs, XSS, rappels, examen, absences, .ics), `tests/grades.py` (projection, priorités), `tests/pwa.py` (notification épinglée), a11y étendu à la fenêtre Devoirs.
 
+## 1.42.0 — app / PWA (lot 3)
+
+Déjà en place (vérifié, non refait) : manifeste installable avec icônes maskable et raccourcis, service worker « réseau d'abord » avec repli sur le cache, guide d'installation Android / iPhone au premier lancement, import par lien, QR ou fichier.
+
+Ajouté :
+- **Hors ligne complet** : l'installation met maintenant en cache tout ce que chaque design et chaque page référencent (scripts, styles, icônes SVG, polices, pages d'aide), pas seulement ce qui a déjà été ouvert. Test : on installe, on coupe le réseau sans rien ouvrir d'autre, puis les 4 designs, les réglages, l'aide et le guide s'ouvrent sans requête échouée. Cache passé en `uca-app-v5`.
+- **Guide d'installation rappelable** : entrée « Installer l'app sur l'écran d'accueil » dans le menu mobile et le panneau Liens (tant que l'app est dans un navigateur) ; le guide s'affiche même si un design est déjà choisi (`?force=1`) ; conseils selon le navigateur (iPhone hors Safari : « ouvre la page dans Safari » ; Firefox Android : menu ⋮ → Installer).
+- **Partage en image** (panneau Exporter, tous les designs) : image PNG du jour ou de la semaine dessinée localement (aucune requête, sans les notes personnelles), envoyée par la feuille de partage native quand le navigateur sait partager un fichier, sinon enregistrée.
+- Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
+- Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
+

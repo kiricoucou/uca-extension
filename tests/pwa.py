@@ -442,6 +442,98 @@ def pinned_next(pw, base, errors):
     browser.close()
 
 
+def offline_complete(browser, base, errors):
+    """Hors ligne complet : on installe l'app, on attend la fin du précache, on coupe le réseau SANS avoir ouvert
+    d'autre page, puis on ouvre chaque design, les réglages, l'aide et le choix du design : tout vient du cache."""
+    ctx = browser.new_context(viewport={"width": 412, "height": 900})
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[hors ligne] {e}"))
+    failed = []
+    page.on("requestfailed", lambda r: failed.append(r.url) if "?latest=" not in r.url and r.url.startswith(base) else None)
+    page.on("response", lambda r: failed.append(f"{r.status} {r.url}") if r.url.startswith(base) and r.status >= 400 else None)
+    data = seed(); data["uca_design"] = "carnet"
+    page.goto(base + "app/import.html"); page.wait_for_timeout(300)
+    page.evaluate("""(data) => {
+      localStorage.setItem('uca_install_seen', '1');
+      localStorage.setItem('uca_store', JSON.stringify(Object.assign({}, data, { uca_app_imported_at: new Date().toISOString() })));
+    }""", data)
+    page.evaluate("() => navigator.serviceWorker.ready")
+    last, stable = -1, 0
+    for _ in range(60):
+        n = page.evaluate("async () => { const ks = await caches.keys(); let t = 0; for (const k of ks) t += (await (await caches.open(k)).keys()).length; return t; }")
+        stable = stable + 1 if n == last else 0
+        last = n
+        if stable >= 4 and n > 20:
+            break
+        page.wait_for_timeout(500)
+    check("hors ligne : précache terminé (plus de 60 fichiers)", last > 60, str(last))
+    failed.clear()
+    ctx.set_offline(True)
+    for d in designs():
+        page.evaluate("(id) => { const s = JSON.parse(localStorage.getItem('uca_store')); s.uca_design = id; localStorage.setItem('uca_store', JSON.stringify(s)); }", d["id"])
+        page.goto(base + d["folder"] + "/agenda.html"); page.wait_for_timeout(900)
+        check(f"hors ligne : design {d['id']} jamais ouvert, cours affichés", page.locator(".m-card, .view.active .event-card").count() > 0)
+        check(f"hors ligne : {d['id']} charge ses icônes, polices et scripts", not failed, str(failed[:4]))
+        failed.clear()
+        page.goto(base + d["folder"] + "/aide.html"); page.wait_for_timeout(400)
+        check(f"hors ligne : aide du design {d['id']}", page.locator("h1, h2").count() > 0 and not failed, str(failed[:3]))
+        failed.clear()
+    for path in ("settings.html", "choose.html", "app/install.html", "app/import.html", "aide.html", "index.html"):
+        page.goto(base + path); page.wait_for_timeout(500)
+        check(f"hors ligne : {path}", page.locator("body").inner_text().strip() != "" and not failed, str(failed[:3]))
+        failed.clear()
+    ctx.set_offline(False)
+    ctx.close()
+
+
+def install_guide(browser, base, errors):
+    """Guide d'installation rappelable à tout moment (menu et Liens), conseils selon le navigateur."""
+    ctx = browser.new_context(viewport={"width": 412, "height": 900})
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[installation] {e}"))
+    data = seed(); data["uca_design"] = "carnet"
+    page.goto(base + "app/import.html"); page.wait_for_timeout(300)
+    page.evaluate("""(data) => {
+      localStorage.setItem('uca_install_seen', '1');
+      localStorage.setItem('uca_store', JSON.stringify(Object.assign({}, data, { uca_app_imported_at: new Date().toISOString() })));
+    }""", data)
+    page.goto(base + "designs/carnet/agenda.html"); page.wait_for_timeout(900)
+    page.locator("#menuBtn").click(); page.wait_for_timeout(300)
+    item = page.locator("#mobileMenu .mi", has_text="Installer l'app")
+    check("installation : entrée « Installer l'app » dans le menu (app ouverte dans un navigateur)", item.count() == 1)
+    item.click(); page.wait_for_url("**/app/install.html?force=1", timeout=8000); page.wait_for_timeout(600)
+    check("installation : le guide s'affiche même avec un design déjà choisi", page.locator("#androidCard").is_visible() and "/app/install.html" in page.url)
+    shot(page, "installation-android")
+    page.goto(base + "app/install.html"); page.wait_for_timeout(800)
+    check("installation : sans ?force=1, un design choisi renvoie vers l'app", "install.html" not in page.url, page.url)
+    ctx.close()
+    for label, ua, expect in (
+        ("iPhone Safari", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", ("iosCard", None)),
+        ("iPhone Chrome", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0 Mobile/15E148 Safari/604.1", ("iosCard", "iosOther")),
+        ("Firefox Android", "Mozilla/5.0 (Android 14; Mobile; rv:130.0) Gecko/130.0 Firefox/130.0", ("androidCard", "installHint")),
+    ):
+        ctx = browser.new_context(viewport={"width": 412, "height": 900}, user_agent=ua)
+        page = ctx.new_page()
+        page.goto(base + "app/install.html"); page.wait_for_timeout(900)
+        card, extra = expect
+        ok = page.locator("#" + card).is_visible() and (extra is None or page.locator("#" + extra).is_visible())
+        check(f"installation : conseils pour {label}", ok, page.locator("main").inner_text()[:200])
+        if label == "iPhone Chrome":
+            shot(page, "installation-ios-chrome")
+        ctx.close()
+    ctx = browser.new_context(viewport={"width": 1280, "height": 800})
+    page = ctx.new_page()
+    page.goto(base + "app/import.html"); page.wait_for_timeout(300)
+    page.evaluate("""(data) => {
+      localStorage.setItem('uca_install_seen', '1');
+      localStorage.setItem('uca_store', JSON.stringify(Object.assign({}, data, { uca_app_imported_at: new Date().toISOString() })));
+    }""", data)
+    page.goto(base + "designs/carnet/agenda.html"); page.wait_for_timeout(900)
+    page.locator("#linksBtn").click(); page.wait_for_timeout(300)
+    check("installation : lien « Installer l'app » dans le panneau Liens", page.locator("#linksPanel #installLink").count() == 1)
+    ctx.close()
+
+
 def main():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(ROOT)],
@@ -467,6 +559,8 @@ def main():
             stale_reminder(chromium, base, errors)
             paste_clipboard(chromium, base, errors)
             pinned_next(p, base, errors)
+            offline_complete(chromium, base, errors)
+            install_guide(chromium, base, errors)
             app_accessibility(chromium, base, errors)
             chromium.close()
             try:

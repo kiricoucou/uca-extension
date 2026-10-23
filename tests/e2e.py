@@ -75,7 +75,7 @@ def tool_checks(ag, did):
     shot(ag, f"{did}-export")
     ag.locator("#exportPanel .xp-phone", has_text="Copier un lien").click(); ag.wait_for_timeout(400)
     link_val = ag.evaluate("() => { const b = document.querySelector('.xp-link-fallback'); return b ? b.value : ''; }")
-    link_btn_text = ag.locator("#exportPanel .xp-phone").first.inner_text()
+    link_btn_text = ag.locator("#exportPanel .xp-phone:not(.xp-image)").first.inner_text()
     check(f"{did} : export → lien copié (bouton) ou affiché (secours)", "#e=" in link_val or "copié" in link_btn_text, link_val or link_btn_text)
     info = ag.locator("#exportPanel .fp-empty").last.inner_text()
     check(f"{did} : export → code de partage et durée affichés", "Code : " in info and "expire dans" in info, info)

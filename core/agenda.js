@@ -484,6 +484,7 @@ function buildMobileMenu() {
   if ($("exportPanel")) m.appendChild(menuButton("mi", D.icon("export") + "Exporter (.ics)", () => openToolPanel("exportPanel", true)));
   m.appendChild(menuButton("mi", D.icon("settings") + "Paramètres", () => UCA_CORE.openSettings()));
   if (!window.UCA_APP) m.appendChild(menuButton("mi", D.icon("link") + "Statut des sites (Odin, CAS…)", () => UCA_CORE.openSettings("#statusSection")));
+  if (window.UCA_APP && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone === true)) m.appendChild(menuButton("mi", D.icon("phone") + "Installer l'app sur l'écran d'accueil", () => { location.href = chrome.runtime.getURL("app/install.html?force=1"); }));
   m.appendChild(menuButton("mi", D.icon("design") + "Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   // Même logique que le bouton desktop (setSyncLabel ci-dessous) : "Importer" seulement si on est
@@ -1114,7 +1115,7 @@ const TOOL_PANELS = {
   notesPanel: { wrap: "notesWrap", build: () => {} },
   absencesPanel: { wrap: "absencesWrap", build: () => {} },
   filterPanel: { wrap: "filterWrap", build: (p) => UCA_TOOLS.buildFilterPanel(p, events) },
-  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { tasks, allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.makeShareLink(), canShare: window.UCA_APP ? null : UCA_TRANSFER.canShare, sendLink: UCA_TRANSFER.shareLink }) },
+  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { tasks, shareImage: { day: () => ({ date: new Date(refDate), events: events.filter(UCA_TOOLS.passes) }), week: () => ({ days: Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(refDate), i)), events: events.filter(UCA_TOOLS.passes) }) }, allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.makeShareLink(), canShare: window.UCA_APP ? null : UCA_TRANSFER.canShare, sendLink: UCA_TRANSFER.shareLink }) },
   linksPanel: { wrap: "linksWrap", build: (p) => UCA_TOOLS.buildLinksPanel(p) },
 };
 function openToolPanel(id, asSheet) {

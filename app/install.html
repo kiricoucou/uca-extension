@@ -24,6 +24,7 @@
 
   <section class="card hidden" id="iosCard">
     <h2><span class="step-num">1</span>Ajouter à l'écran d'accueil</h2>
+    <p class="hidden" id="iosOther"><b>Sur iPhone, seul Safari peut installer l'app.</b> Copie l'adresse de cette page puis ouvre-la dans Safari.</p>
     <p>Dans Safari :</p>
     <ol class="ios-steps">
       <li><span class="ios-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg></span>Appuie sur <b>Partager</b>, en bas de l'écran.</li>
@@ -56,7 +57,12 @@
   // autrement qu'avec le bouton ci-dessous) : un design déjà choisi sur cet appareil veut dire
   // qu'il a déjà servi, donc jamais revoir ce guide — sinon l'app resterait bloquée dessus.
   const { uca_design } = await new Promise((r) => chrome.storage.local.get("uca_design", r));
-  if (standalone || uca_design) { localStorage.setItem("uca_install_seen", "1"); location.replace("index.html"); return; }
+  // ?force=1 : demandé depuis l'app (menu « Installer l'app ») : le guide s'affiche même si un design est déjà choisi.
+  const force = new URLSearchParams(location.search).get("force") === "1";
+  if (standalone || (uca_design && !force)) { localStorage.setItem("uca_install_seen", "1"); location.replace("index.html"); return; }
+  const ua = navigator.userAgent;
+  const iosOther = /crios|fxios|edgios|opios/i.test(ua);
+  const firefoxAndroid = /android/i.test(ua) && /firefox/i.test(ua);
   // App déjà installée côté système (détecté sans passer par le stockage, ex. autre profil/onglet
   // qui n'a pas ses données ici) : plus la peine de proposer d'installer, juste de vérifier la maj.
   let alreadyInstalled = false;
@@ -78,6 +84,12 @@
   }
   document.getElementById("iosCard").classList.toggle("hidden", !ios);
   document.getElementById("androidCard").classList.toggle("hidden", ios);
+  document.getElementById("iosOther").classList.toggle("hidden", !(ios && iosOther));
+  if (firefoxAndroid) {
+    const hint = document.getElementById("installHint");
+    hint.textContent = "Dans Firefox : menu ⋮ → « Installer » (ou « Ajouter à l'écran d'accueil »).";
+    hint.classList.remove("hidden");
+  }
   let deferred = null;
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; });
   window.addEventListener("appinstalled", () => { localStorage.setItem("uca_install_seen", "1"); });

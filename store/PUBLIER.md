@@ -3,7 +3,7 @@
 Tout est prêt : paquets, textes, captures, notes pour le relecteur. Il ne reste que **tes** actions sur les sites
 des magasins (compte, formulaire, bouton « Soumettre »), que je ne peux ni ne dois faire à ta place.
 
-Version préparée : **1.38.0** · Extension : « Emploi du temps UCA (non officiel) »
+Version préparée : **1.42.0** · Extension : « Emploi du temps UCA (non officiel) »
 
 ## 0. Avant tout : pousser le code
 
@@ -20,8 +20,8 @@ Attends 1 à 2 minutes puis vérifie que ceci s'ouvre :
 ## 1. Fabriquer les paquets
 
 ```
-python -I -X utf8 tests/build_firefox.py --store      # -> dist/uca-extension-firefox-store-1.38.0.zip
-python -I -X utf8 tests/build_chrome.py --store       # -> dist/uca-extension-chrome-store-1.38.0.zip
+python -I -X utf8 tests/build_firefox.py --store      # -> dist/uca-extension-firefox-store-1.42.0.zip
+python -I -X utf8 tests/build_chrome.py --store       # -> dist/uca-extension-chrome-store-1.42.0.zip
 python -I -X utf8 tests/gen_store.py                  # -> store/screenshots/*.png (1280x800, à refaire si le visuel change)
 ```
 
@@ -34,7 +34,7 @@ magasin met à jour tout seul), pas d'accès à `raw.githubusercontent.com`, pon
 1. Crée / ouvre ton compte sur <https://addons.mozilla.org> (compte Firefox gratuit).
 2. Ouvre <https://addons.mozilla.org/developers/addon/submit/distribution> et choisis **« Sur ce site »**
    (liste publique, mises à jour automatiques). « Par moi-même » donnerait un fichier signé non listé.
-3. Envoie `dist/uca-extension-firefox-store-1.38.0.zip`. Le contrôle automatique doit passer sans erreur
+3. Envoie `dist/uca-extension-firefox-store-1.42.0.zip`. Le contrôle automatique doit passer sans erreur
    (des avertissements sont normaux, voir `NOTES-RELECTEUR.md`). Coche **Firefox pour ordinateur et Firefox pour Android**.
 4. « Dois-tu soumettre le code source ? » → **Non** : le code n'est ni minifié ni généré (voir les notes).
 5. Remplis la fiche en copiant `store/FICHE-FIREFOX.md` (nom, résumé, description, catégories, adresses, licence).
@@ -51,7 +51,7 @@ concernés sont masqués).
 ## 3. Chrome Web Store (facultatif)
 
 1. Compte développeur : <https://chrome.google.com/webstore/devconsole> (frais uniques de 5 USD).
-2. « Nouvel élément » → envoie `dist/uca-extension-chrome-store-1.38.0.zip`.
+2. « Nouvel élément » → envoie `dist/uca-extension-chrome-store-1.42.0.zip`.
 3. Fiche : `store/FICHE-CHROME.md` (textes, justification de chaque permission, déclaration d'usage des données).
 4. Captures 1280×800 : `store/screenshots/` (5 maximum pour Chrome).
 5. Soumets pour examen.
@@ -94,3 +94,33 @@ concernés sont masqués).
 - **Installabilité PWA (téléphone)** : `app.webmanifest` et `sw.js` vérifiés par simulation (`tests/pwa.py`,
   77/77) — nom, icônes 192/512 + maskable, `display: standalone`, service worker hors ligne. L'installation réelle
   sur un téléphone (icône sur l'écran d'accueil, ouverture en plein écran) reste à confirmer en vrai.
+
+## 6. Synchro directe sur Firefox Android : ce qui dépend de la publication
+
+Sur un téléphone, l'app web (PWA) ne peut pas lire Odin à elle seule (cookies d'un autre site, double authentification dans une
+fenêtre CAS). La **vraie synchro sur le téléphone** passe donc par l'extension **Firefox pour Android**, qui n'accepte que les
+modules **publiés sur addons.mozilla.org** (ou une collection personnalisée sur Firefox Nightly) : c'est la seule étape qui dépend
+de la publication (point 2 ci-dessus).
+
+Ce qui est déjà prêt côté code (testé par simulation dans `tests/store.py`, pas sur un vrai Android) :
+- `gecko_android` déclaré (`strict_min_version` 142) et `data_collection_permissions: none` dans le paquet `--store` ;
+- connexion CAS dans un **onglet normal** (pas de fenêtre séparée sur Android) et attente de fin de connexion par le bouton « J'y suis » ;
+- réglages de notifications masqués (API absentes sur Android), pastille d'icône et alarmes ignorées sans erreur ;
+- pont avec l'app (`content-bridge.js`) limité au site publié.
+
+Après publication, sur le téléphone : installer l'extension depuis la page AMO (Firefox ≥ 142), ouvrir l'agenda de l'extension, « Synchroniser »,
+te connecter au CAS dans l'onglet qui s'ouvre, puis revenir à l'agenda. Sans publication, le téléphone reste sur le **transfert**
+(lien chiffré, QR ou fichier) depuis l'ordinateur, qui fonctionne déjà.
+
+À tester **en vrai** (je n'ai ni Android ni compte AMO ici) : l'installation depuis AMO, la connexion CAS dans l'onglet, le retour automatique à l'agenda.
+
+## 7. App web : ce qui a été vérifié et ce qui reste à tester sur ton téléphone
+
+Vérifié par simulation (Chromium Android, WebKit iPhone, `tests/pwa.py`) : manifeste et icônes (dont maskable), service worker, **hors ligne complet**
+(on installe, on coupe le réseau sans rien ouvrir d'autre, puis chaque design, les réglages, l'aide et le guide s'ouvrent), guide d'installation
+rappelable depuis le menu, conseils selon le navigateur (Safari, Chrome/Firefox sur iPhone, Firefox Android), notification « prochain cours ».
+
+À vérifier **sur ton téléphone** : l'installation réelle (Android : bouton « Installer l'application » ; iPhone : Partager → Sur l'écran d'accueil),
+l'ouverture en mode avion après installation, la feuille de partage native pour l'image d'un jour ou d'une semaine, et l'autorisation
+de notification pour le prochain cours (mise à jour à l'ouverture de l'app seulement, pas en continu).
+

@@ -185,6 +185,43 @@ def lot2_ics(ctx, sw, base):
     sw.evaluate("() => chrome.storage.local.set({uca_tasks: []})")
 
 
+def png_size(path):
+    import struct
+    b = open(path, "rb").read(32)
+    return struct.unpack(">II", b[16:24]) if b[:8] == bytes([137, 80, 78, 71, 13, 10, 26, 10]) else (0, 0)
+
+
+def lot3_image(ctx, sw, base, errors):
+    sw.evaluate("(d) => chrome.storage.local.set(d)", seed())
+    for d in designs():
+        sw.evaluate("(id) => chrome.storage.local.set({uca_design: id, uca_settings: {}})", d["id"])
+        pg = open_agenda(ctx, base, d["folder"], {"width": 1400, "height": 860})
+        pg.on("pageerror", lambda e: errors.append(str(e)))
+        pg.evaluate("() => { navigator.canShare = () => false; }")
+        pg.locator("#exportBtn").click(); pg.wait_for_timeout(300)
+        check(f"{d['id']} : boutons « Partager une image » (jour, semaine)", pg.locator("#exportPanel .xp-image").count() == 2)
+        for kind, minw in (("day", 1080), ("week", 1800)):
+            with pg.expect_download() as dl:
+                pg.locator(f"#exportPanel .xp-image[data-kind={kind}]").click()
+            w, h = png_size(dl.value.path())
+            check(f"{d['id']} : image {kind} téléchargée en PNG ({w}x{h})", w == minw and h > 500 and dl.value.suggested_filename.startswith("edt-uca-"), dl.value.suggested_filename)
+            if d["id"] in ("professionnel", "carnet", "anime") and OUT:
+                OUT.mkdir(parents=True, exist_ok=True)
+                dl.value.save_as(str(OUT / f"lot3-image-{kind}-{d['id']}.png"))
+        pg.close()
+    # Partage natif : fichier PNG remis à navigator.share
+    pg = open_agenda(ctx, base, "designs/professionnel", {"width": 390, "height": 844})
+    pg.evaluate("() => { window.__shared = null; navigator.canShare = (d) => !!(d && d.files && d.files.length); navigator.share = async (d) => { window.__shared = { type: d.files[0].type, name: d.files[0].name, size: d.files[0].size }; }; }")
+    pg.locator("#menuBtn").click(); pg.wait_for_timeout(300)
+    pg.locator("#mobileMenu .mi", has_text="Exporter").click(); pg.wait_for_timeout(400)
+    pg.locator("#exportPanel .xp-image[data-kind=day]").click(); pg.wait_for_timeout(800)
+    shared = pg.evaluate("() => window.__shared")
+    check("partage natif : le PNG est remis à la feuille de partage", shared and shared["type"] == "image/png" and shared["size"] > 3000 and shared["name"].endswith(".png"), str(shared))
+    check("partage natif : message de confirmation", "Image partagée" in pg.locator("#exportPanel").inner_text())
+    shot(pg, "lot3-export-mobile")
+    pg.close()
+
+
 def main():
     errors = []
     data = seed()
@@ -194,6 +231,7 @@ def main():
         lot1(ctx, sw, base, errors)
         lot2(ctx, sw, base, errors)
         lot2_ics(ctx, sw, base)
+        lot3_image(ctx, sw, base, errors)
         check("aucune erreur JavaScript", not errors, " | ".join(errors[:3]))
         ctx.close()
     print(f"\n{sum(results)}/{len(results)} vérifications OK")

@@ -47,6 +47,7 @@ D'autres captures de chaque design (vue mois, détail d'un cours...) sont dans `
 - **Fiabilité de la lecture d'Odin** : page d'erreur d'Odin (404/500/503/maintenance) détectée aussi pour les notes et les absences, page méconnaissable signalée dans le panneau concerné (les anciennes données restent), **journal de diagnostic** local copiable (Paramètres → Diagnostic), sans aucun contenu de page.
 - **Données périmées** : bandeau « Données vieilles de X h » (plus de 24 h) dans l'extension avec bouton Resynchroniser ; emploi du temps méconnaissable (Odin a changé) : l'ancien est conservé avec un message clair.
 - **Devoirs et examens** : bouton « Devoirs » (liste de tâches liée aux matières, compte à rebours, examens de l'emploi du temps ajoutés tout seuls, rappel la veille à 18 h, export .ics des devoirs). **Prochain cours** : « Examen dans X h » ; **pastille d'absences** orange / rouge près du seuil ; **objectifs de moyenne** (projection du semestre, matières à prioriser). Dans l'app, notification « prochain cours » épinglée (mise à jour à l'ouverture, pas en continu).
+- **App / PWA** : **hors ligne complet** (tous les designs, réglages et pages d'aide mis en cache à l'installation), guide d'installation rappelable depuis le menu (conseils Safari / Chrome iPhone / Firefox Android), **partage d'un jour ou d'une semaine en image** (PNG dessiné localement, feuille de partage native sinon fichier).
 - **Tests et CI** : `tests/scrape.py` (pages Odin factices dans `tests/pages/`), GitHub Actions (`.github/workflows/tests.yml`) lance toutes les suites à chaque push et produit les paquets Chrome/Firefox (`tests/build_chrome.py`, `tests/build_firefox.py`) ; un tag `vX.Y.Z` publie une version GitHub avec les deux zips.
 - Responsive (menu hamburger sous 820px).
 - **Quatre designs au choix** : animé (sombre turquoise), professionnel (clair épuré), bulletin (clair et dense, esprit carnet de notes scolaire), carnet (papier crème, écriture manuscrite, post-it).
@@ -121,6 +122,7 @@ Une seule extension (la racine du dépôt). La logique est commune ; chaque doss
 | `core/shared.js` | API de design (`UCA_defineDesign`) + briques communes (mise à jour, changement de design) |
 | `core/tools.js` | Filtres et export .ics |
 | `core/tasks.js` | Devoirs et examens (liste de tâches locale) |
+| `core/shareimage.js` | Image PNG d'un jour ou d'une semaine (partage natif ou téléchargement) |
 | `core/popup.js` / `core/agenda.js` | Logique du popup et de l'agenda, identique pour tous les designs |
 | `designs/designs.json` | Registre des designs disponibles |
 | `designs/<id>/` | Un design : `popup.html`, `agenda.html`, `aide.html`, `confidentialite.html`, `design.js`, `icons/`, assets |

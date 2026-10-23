@@ -649,7 +649,25 @@ async function syncNotesQuietly() {
   }
 }
 
+/* Page lue, en-têtes de date présents, mais aucun cours reconnu alors que l'ancien emploi du temps en contient
+   encore à venir : Odin a sans doute changé son affichage. On garde l'ancien emploi du temps (jamais écrasé
+   par du vide) et on le dit clairement. Une vraie semaine vide (vacances) passe : plus rien à venir dans l'ancien. */
+async function looksLikeStructureChange(text) {
+  if (parseScheduleText(text).length) return false;
+  const { uca_events } = await chrome.storage.local.get("uca_events");
+  const today = dateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  return (uca_events || []).some((e) => e.date >= today);
+}
+const STRUCTURE_MESSAGE = "Odin a peut-être changé son affichage : aucun cours reconnu. Ton ancien emploi du temps est conservé.";
+
 async function syncSucceeded(text, silent) {
+  if (await looksLikeStructureChange(text)) {
+    await diag("sync-structure", silent ? "silencieuse" : "connexion");
+    await recordScrapeIssue("edt", { issue: "structure" });
+    broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: STRUCTURE_MESSAGE, retryAfterMs: SYNC_RETRY_COOLDOWN_MS });
+    return;
+  }
+  await recordScrapeIssue("edt", { issue: null });
   const { events, lastSync } = await storeResult(text);
   await diag("sync-ok", `${silent ? "silencieuse" : "connexion"} · ${events.length} cours`);
   await chrome.storage.local.set({ uca_session_expired: false });
@@ -679,7 +697,7 @@ async function handleSync(mode) {
   }
   text = await fullLogin();
   if (!text || !DATE_HEADER_RE.test(text)) {
-    broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: "Aucun emploi du temps détecté sur la page.", retryAfterMs: SYNC_RETRY_COOLDOWN_MS });
+    broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: "Aucun emploi du temps reconnu sur la page : Odin a peut-être changé son affichage. Ton ancien emploi du temps est conservé.", retryAfterMs: SYNC_RETRY_COOLDOWN_MS });
     return;
   }
   await syncSucceeded(text, false);

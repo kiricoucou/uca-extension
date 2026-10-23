@@ -374,6 +374,7 @@ function renderMobileDay() {
   }
   view.appendChild(strip);
   const list = document.createElement("div"); list.className = "m-list";
+  list.tabIndex = 0; list.setAttribute("role", "region"); list.setAttribute("aria-label", "Cours du jour");
   const head = document.createElement("div"); head.className = "m-date";
   head.textContent = capitalize(refDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })) + (UCA_TOOLS.holidayName(refDate) ? " · " + UCA_TOOLS.holidayName(refDate) : "");
   list.appendChild(head);
@@ -516,23 +517,30 @@ function renderSessionState(expired) {
 /* ============================= Sync & chargement ============================= */
 let syncInfoArgs = [null, null];
 const STALE_HOURS = 24;
-/* App : des données de plus de 24 h ne reflètent plus l'emploi du temps (l'app ne se synchronise pas toute seule) :
-   rappel en rouge dans la ligne d'info, avec un lien direct vers l'import ; recalculé toutes les 10 min. */
+/* Des données de plus de 24 h ne reflètent plus l'emploi du temps : rappel en rouge dans la ligne d'info.
+   App : lien direct vers l'import (elle ne se synchronise pas seule). Extension : bouton « Resynchroniser »
+   (même chemin que le bouton Synchroniser). Recalculé toutes les 10 min. */
 function renderStaleReminder(iso, importedAt) {
   const info = $("syncInfo"), old = info.querySelector("#staleInfo"); if (old) old.remove();
-  const t = new Date(iso || importedAt).getTime();
-  if (!window.UCA_APP || !importedAt || Number.isNaN(t)) return;
+  const t = new Date(window.UCA_APP ? (iso || importedAt) : iso).getTime();
+  if ((window.UCA_APP && !importedAt) || Number.isNaN(t)) return;
   const hours = (Date.now() - t) / 3600000;
   if (hours < STALE_HOURS) return;
   const span = document.createElement("span"); span.id = "staleInfo"; span.setAttribute("role", "status");
   span.style.cssText = "margin-left:12px;font-weight:600;color:var(--danger, #b3261e);";
   const days = Math.floor(hours / 24);
-  span.append(document.createTextNode(days >= 2 ? `Données vieilles de ${days} jours. ` : "Données de plus de 24 h. "));
-  const a = document.createElement("a"); a.href = chrome.runtime.getURL("app/import.html"); a.textContent = "Refaire un transfert";
-  a.style.cssText = "color:inherit;text-decoration:underline;"; span.appendChild(a);
+  span.append(document.createTextNode(days >= 2 ? `Données vieilles de ${days} jours. ` : window.UCA_APP ? "Données de plus de 24 h. " : `Données vieilles de ${Math.floor(hours)} h. `));
+  let a;
+  if (window.UCA_APP) { a = document.createElement("a"); a.href = chrome.runtime.getURL("app/import.html"); a.textContent = "Refaire un transfert"; }
+  else {
+    a = document.createElement("button"); a.type = "button"; a.id = "staleSyncBtn"; a.textContent = "Resynchroniser";
+    a.addEventListener("click", () => { if (!syncBtn.disabled) triggerSync(); });
+  }
+  a.style.cssText = "color:inherit;text-decoration:underline;background:none;border:none;font:inherit;font-weight:600;cursor:pointer;padding:0 2px;";
+  span.appendChild(a);
   info.appendChild(span);
 }
-setInterval(() => { if (window.UCA_APP) { renderSyncInfo(...syncInfoArgs); renderNextInfo(); } }, 10 * 60 * 1000);
+setInterval(() => { renderSyncInfo(...syncInfoArgs); renderNextInfo(); }, 10 * 60 * 1000);
 function renderSyncInfo(iso, importedAt) {
   syncInfoArgs = [iso, importedAt];
   const fmt = (d) => new Date(d).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -542,6 +550,7 @@ function renderSyncInfo(iso, importedAt) {
     return;
   }
   $("syncInfo").textContent = iso ? "Dernière synchro : " + new Date(iso).toLocaleString("fr-FR") : "Jamais synchronisé";
+  renderStaleReminder(iso, null);
 }
 /* Prochain cours (ou cours en cours) dans la ligne d'info, mis à jour chaque 30 s. */
 function renderNextInfo() {

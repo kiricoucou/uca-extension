@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UCA Timetable — your Odin schedule, readable everywhere</title>
+<meta name="description" content="Timetable, grades, absences and homework from IUT Clermont Auvergne (Odin), readable anywhere: browser extension, phone app, online agenda. Unofficial student project, no data sent to any server.">
+<link rel="canonical" href="https://kiricoucou.github.io/uca-extension/en/">
+<link rel="alternate" hreflang="fr" href="https://kiricoucou.github.io/uca-extension/">
+<link rel="alternate" hreflang="en" href="https://kiricoucou.github.io/uca-extension/en/">
+<link rel="alternate" hreflang="x-default" href="https://kiricoucou.github.io/uca-extension/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Emploi du temps UCA">
+<meta property="og:locale" content="en_GB">
+<meta property="og:title" content="UCA Timetable — your Odin schedule, readable everywhere">
+<meta property="og:description" content="Classes, grades, absences and homework from IUT Clermont Auvergne: extension, phone app, online agenda. No data sent to any server. Unofficial student project.">
+<meta property="og:url" content="https://kiricoucou.github.io/uca-extension/en/">
+<meta property="og:image" content="https://kiricoucou.github.io/uca-extension/app/icons/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="../app/icons/icon-192.png">
+<link rel="stylesheet" href="../site.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="./" aria-label="UCA Timetable"><img src="../app/icons/icon-192.png" alt=""><span>UCA Timetable</span></a>
+    <nav class="nav" aria-label="Main navigation">
+      <a href="./" aria-current="page" class="hide-sm">Home</a>
+      <a href="#demo">Demo</a>
+      <a href="#compare">Compare</a>
+      <a href="#faq" class="hide-sm">FAQ</a>
+      <a href="../aide.html" hreflang="fr" lang="fr">Help (French)</a>
+      <a href="../app/index.html" hreflang="fr" lang="fr">Online agenda</a>
+      <a href="../" hreflang="fr" lang="fr">Français</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <img class="logo" src="../app/icons/icon-192.png" alt="">
+      <h1>Your IUT timetable,<br>readable everywhere.</h1>
+      <p class="lead">Classes, grades, average and absences from Odin, in a clear agenda on computer and phone. With alerts when a class changes room or time, when a grade drops, and reminders for homework and exams.</p>
+      <div class="btns">
+        <a class="btn primary" href="../app/index.html" hreflang="fr" lang="fr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Open the online agenda</a>
+        <a class="btn" href="../install.html" hreflang="fr" lang="fr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>Install the app</a>
+        <a class="btn" href="../aide.html#installer-extension" hreflang="fr" lang="fr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4.5a2 2 0 1 1 4 0V6h3a1 1 0 0 1 1 1v3h-1.5a2 2 0 1 0 0 4H18v3a1 1 0 0 1-1 1h-3v-1.5a2 2 0 1 0-4 0V18H7a1 1 0 0 1-1-1v-3h1.5a2 2 0 1 0 0-4H6V7a1 1 0 0 1 1-1h3z"/></svg>Install the extension</a>
+      </div>
+      <p style="margin-top:22px"><span class="tag">Unofficial student project</span></p>
+      <p class="legend">The app, the extension and their help pages are in French, the language of Odin. This page presents the project.</p>
+    </div>
+  </section>
+
+  <section class="block" id="demo" data-prefix="../">
+    <div class="wrap">
+      <h2>Try it, nothing to install</h2>
+      <p class="sub">The real agenda, filled with made-up data (the interface is in French). Click a class, switch to week or month, open Notes, add homework, press "Synchroniser". Nothing is sent anywhere.</p>
+      <div class="demo-controls">
+        <div class="demo-group" role="group" aria-label="Demo design" data-tabs></div>
+        <div class="demo-group" role="group" aria-label="Demo device">
+          <button type="button" class="seg" data-device="phone" aria-pressed="false">Phone</button>
+          <button type="button" class="seg" data-device="desktop" aria-pressed="true">Computer</button>
+        </div>
+      </div>
+      <div class="demo-stage">
+        <div class="demo-frame">
+          <iframe title="Interactive demo of the agenda (fictional data)" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"></iframe>
+        </div>
+      </div>
+      <noscript><p class="legend">The demo needs JavaScript. You can also <a href="../app/index.html" hreflang="fr" lang="fr">open the online agenda</a>.</p></noscript>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <h2>Four ways to use it</h2>
+      <p class="sub">Same features and same four designs everywhere. What changes: how the data arrives.</p>
+      <div class="cards">
+        <article class="card">
+          <h3>Extension</h3>
+          <p>On a computer (Chrome, Edge, Brave, Firefox). The only one that connects straight to Odin: one-click sync, automatic sync, reminders and notifications.</p>
+          <a class="btn" href="../aide.html#installer-extension" hreflang="fr" lang="fr">How to install it</a>
+        </article>
+        <article class="card">
+          <h3>App</h3>
+          <p>Installed on a phone (Android, iPhone) or computer, full screen and fully offline. It receives the extension's data through an encrypted link, a QR code or a file.</p>
+          <a class="btn" href="../install.html" hreflang="fr" lang="fr">Install the app</a>
+        </article>
+        <article class="card">
+          <h3>Online agenda</h3>
+          <p>The same app in a plain browser tab, nothing to install. Handy on a school computer or to try it out.</p>
+          <a class="btn" href="../app/index.html" hreflang="fr" lang="fr">Open the agenda</a>
+        </article>
+        <article class="card">
+          <h3>Website</h3>
+          <p>These pages: overview, comparison, full help and install links. They contain no personal data.</p>
+          <a class="btn" href="../aide.html" hreflang="fr" lang="fr">Read the help (French)</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="compare">
+    <div class="wrap">
+      <h2>Compare</h2>
+      <p class="sub">The big difference: only the extension connects straight to Odin. The app and the online agenda receive their data from the extension, through an encrypted share link (or an animated QR code, or a file).</p>
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Comparison table">
+        <table class="compare">
+          <thead>
+            <tr>
+              <th scope="col"><span class="sr-only">Feature</span></th>
+              <th scope="col">Website<small>info pages</small></th>
+              <th scope="col">Online agenda<small>browser tab</small></th>
+              <th scope="col">Extension<small>Chrome / Firefox, computer</small></th>
+              <th scope="col">App<small>installed, phone or computer</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="key">
+              <th scope="row">Connect straight to Odin</th>
+              <td><span class="pill no">No</span><br>No data.</td>
+              <td><span class="pill part">Via the extension</span><br>Yes if the extension is installed in the same browser. Otherwise: share link.</td>
+              <td><span class="pill yes">Yes</span><br>University login (CAS) in a tab, then one-click sync.</td>
+              <td><span class="pill part">Via the extension</span><br>On a computer with the extension in the same browser: yes. On a phone: share link.</td>
+            </tr>
+            <tr class="key">
+              <th scope="row">Receive data through a share link</th>
+              <td><span class="pill no">—</span></td>
+              <td><span class="pill yes">Yes</span><br>Encrypted link, animated QR or file.</td>
+              <td><span class="pill yes">Creates the links</span><br>Share code, validity of your choice.</td>
+              <td><span class="pill yes">Yes</span><br>Encrypted link (code typed once), animated QR or file.</td>
+            </tr>
+            <tr>
+              <th scope="row">Installation</th>
+              <td>None</td>
+              <td>None</td>
+              <td>Load the folder in the browser (5 min)</td>
+              <td>"Add to home screen" / "Install"</td>
+            </tr>
+            <tr>
+              <th scope="row">On a phone</th>
+              <td><span class="pill yes">Yes</span></td>
+              <td><span class="pill yes">Yes</span></td>
+              <td><span class="pill part">Not yet</span><br>Firefox Android planned.</td>
+              <td><span class="pill yes">Yes</span><br>Android and iPhone.</td>
+            </tr>
+            <tr>
+              <th scope="row">Automatic sync</th>
+              <td>—</td>
+              <td><span class="pill no">No</span><br>Except via the extension.</td>
+              <td><span class="pill yes">Yes</span><br>Every 1 to 12 h, silently.</td>
+              <td><span class="pill no">No</span><br>Make a new link after a sync.</td>
+            </tr>
+            <tr>
+              <th scope="row">Timetable changes (room, time, teacher…)</th>
+              <td>—</td>
+              <td><span class="pill yes">Shown</span><br>Badges on classes.</td>
+              <td><span class="pill yes">Notified</span><br>Notification and badges, before/after detail.</td>
+              <td><span class="pill yes">Shown</span><br>Badges on classes.</td>
+            </tr>
+            <tr>
+              <th scope="row">Homework and exams</th>
+              <td>—</td>
+              <td><span class="pill yes">Yes</span><br>List with countdown.</td>
+              <td><span class="pill yes">Yes</span><br>Plus an evening-before notification.</td>
+              <td><span class="pill yes">Yes</span><br>List with countdown.</td>
+            </tr>
+            <tr>
+              <th scope="row">Offline</th>
+              <td><span class="pill part">Partial</span></td>
+              <td><span class="pill yes">Yes</span><br>After a first visit.</td>
+              <td><span class="pill yes">Yes</span></td>
+              <td><span class="pill yes">Yes</span><br>Everything cached at install.</td>
+            </tr>
+            <tr>
+              <th scope="row">Where your data lives</th>
+              <td>Nowhere</td>
+              <td>In this browser</td>
+              <td>In this browser</td>
+              <td>On this device</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="legend">All versions show the same views (day, 3/5/6 days, week, month), grades, average, absences, filters, .ics export and week/day images to share.</p>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <h2>Your data stays with you</h2>
+      <p class="sub">No server, no account, nothing stored on GitHub.</p>
+      <div class="cards">
+        <article class="card"><h3>No server</h3><p>The extension reads Odin in your browser and keeps everything in your browser. This site only hosts the code.</p></article>
+        <article class="card"><h3>Encrypted links</h3><p>A share link carries your data encrypted (AES-256). Without your share code it is unreadable. GitHub never receives it: the part after "#" never leaves the browser.</p></article>
+        <article class="card"><h3>Chosen lifetime</h3><p>You choose how long a link stays valid (1 hour to 7 days). After that, the app refuses it.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="faq">
+    <div class="wrap">
+      <h2>Frequently asked questions</h2>
+      <p class="sub">Short answers. The <a href="../aide.html" hreflang="fr" lang="fr">full help</a> (in French) has more than fifty, with search. <a href="../nouveautes.html" hreflang="fr" lang="fr">Release notes</a> are in French too.</p>
+      <details class="qa"><summary>Is it official?</summary><div class="a"><p>No. It is a student project, not affiliated with Université Clermont Auvergne or the IUT. It simply reads the Odin pages you can already view yourself.</p></div></details>
+      <details class="qa"><summary>Where does my data go?</summary><div class="a"><p>Nowhere. There is no server and no account: the extension keeps everything in your browser, the app on your device. A share link carries your encrypted data and GitHub never receives it (the part after "#" stays in the browser).</p></div></details>
+      <details class="qa"><summary>Do I have to give my password?</summary><div class="a"><p>No. You sign in on the university's real login page (CAS), with your two-factor authentication; the extension never sees your password. It then re-reads the Odin page that is displayed, like a copy-paste.</p></div></details>
+      <details class="qa"><summary>Does it work on my phone?</summary><div class="a"><p>Yes, with the app (Android, iPhone, offline). Data comes from the extension on your computer through an encrypted link, QR code or file. Direct sync on a phone will come with Firefox for Android.</p></div></details>
+      <details class="qa"><summary>What if Odin changes or goes down?</summary><div class="a"><p>The extension notices: it shows a clear message and keeps your previous timetable instead of erasing it. A "site status" widget in Settings shows live what is answering.</p></div></details>
+      <details class="qa"><summary>Is it free?</summary><div class="a"><p>Yes, with no ads and no account. The code is on GitHub.</p></div></details>
+    </div>
+  </section>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Is it official?", "acceptedAnswer": {"@type": "Answer", "text": "No. It is a student project, not affiliated with Université Clermont Auvergne or the IUT. It simply reads the Odin pages you can already view yourself."}}, {"@type": "Question", "name": "Where does my data go?", "acceptedAnswer": {"@type": "Answer", "text": "Nowhere. There is no server and no account: the extension keeps everything in your browser, the app on your device. A share link carries your encrypted data and GitHub never receives it."}}, {"@type": "Question", "name": "Do I have to give my password?", "acceptedAnswer": {"@type": "Answer", "text": "No. You sign in on the university's real login page (CAS), with your two-factor authentication; the extension never sees your password."}}, {"@type": "Question", "name": "Is it free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes, with no ads and no account. The code is on GitHub."}}]}</script>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <span>UCA Timetable — student project, not affiliated with Université Clermont Auvergne.</span>
+    <span><a href="../aide.html" hreflang="fr" lang="fr">Help (French)</a> · <a href="../confidentialite.html" hreflang="fr" lang="fr">Privacy (French)</a> · <a href="https://github.com/kiricoucou/uca-extension">Source code</a> · <a href="../" hreflang="fr" lang="fr">Français</a></span>
+  </div>
+</footer>
+<script src="../site-demo.js"></script>
+</body>
+</html>

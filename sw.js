@@ -7,7 +7,7 @@
      ligne (ou si le réseau ne répond pas en NETWORK_TIMEOUT_MS).
    - Requêtes « no-store » (vérification de version, core/env.js) : jamais servies par le cache.
    - Android « Partager → EDT UCA » : le fichier .ucasync reçu est déposé en cache pour app/import.html. */
-const CACHE = "uca-app-v5";
+const CACHE = "uca-app-v6";
 const NETWORK_TIMEOUT_MS = 4000;
 const SHELL = [
   "index.html", "install.html", "aide.html", "404.html", "site.css", "app/index.html", "app/import.html", "app/install.html", "app/import.js", "app/app.css", "app.webmanifest", "manifest.json",
@@ -33,17 +33,21 @@ function refsOf(text, base) {
   }
   return out;
 }
+// Un échec réseau isolé est réessayé une fois ; il n'abandonne jamais les autres fichiers (contrairement à cache.addAll).
 async function putUrl(cache, url, wantText) {
-  try {
-    const res = await fetch(new Request(url, { cache: "reload" }));
-    if (!res.ok) return "";
-    await cache.put(cacheKey({ url }), res.clone());
-    return wantText ? await res.text() : "";
-  } catch (e) { return ""; }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(new Request(url, { cache: "reload" }));
+      if (!res.ok) return "";
+      await cache.put(cacheKey({ url }), res.clone());
+      return wantText ? await res.text() : "";
+    } catch (e) { /* nouvel essai */ }
+  }
+  return "";
 }
 async function precacheAll() {
   const cache = await caches.open(CACHE);
-  await cache.addAll(SHELL.map((p) => new Request(scopeUrl(p), { cache: "reload" }))).catch(() => {});
+  await Promise.all(SHELL.map((p) => putUrl(cache, scopeUrl(p).href, false)));
   const todo = new Set();
   const pages = SHELL.filter((p) => p.endsWith(".html")).map((p) => scopeUrl(p).href);
   let designs = [];

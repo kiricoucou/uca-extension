@@ -3,7 +3,7 @@
 Tout est prêt : paquets, textes, captures, notes pour le relecteur. Il ne reste que **tes** actions sur les sites
 des magasins (compte, formulaire, bouton « Soumettre »), que je ne peux ni ne dois faire à ta place.
 
-Version préparée : **1.42.0** · Extension : « Emploi du temps UCA (non officiel) »
+Version préparée : **1.43.0** · Extension : « Emploi du temps UCA (non officiel) »
 
 ## 0. Avant tout : pousser le code
 
@@ -20,8 +20,8 @@ Attends 1 à 2 minutes puis vérifie que ceci s'ouvre :
 ## 1. Fabriquer les paquets
 
 ```
-python -I -X utf8 tests/build_firefox.py --store      # -> dist/uca-extension-firefox-store-1.42.0.zip
-python -I -X utf8 tests/build_chrome.py --store       # -> dist/uca-extension-chrome-store-1.42.0.zip
+python -I -X utf8 tests/build_firefox.py --store      # -> dist/uca-extension-firefox-store-1.43.0.zip
+python -I -X utf8 tests/build_chrome.py --store       # -> dist/uca-extension-chrome-store-1.43.0.zip
 python -I -X utf8 tests/gen_store.py                  # -> store/screenshots/*.png (1280x800, à refaire si le visuel change)
 ```
 
@@ -34,7 +34,7 @@ magasin met à jour tout seul), pas d'accès à `raw.githubusercontent.com`, pon
 1. Crée / ouvre ton compte sur <https://addons.mozilla.org> (compte Firefox gratuit).
 2. Ouvre <https://addons.mozilla.org/developers/addon/submit/distribution> et choisis **« Sur ce site »**
    (liste publique, mises à jour automatiques). « Par moi-même » donnerait un fichier signé non listé.
-3. Envoie `dist/uca-extension-firefox-store-1.42.0.zip`. Le contrôle automatique doit passer sans erreur
+3. Envoie `dist/uca-extension-firefox-store-1.43.0.zip`. Le contrôle automatique doit passer sans erreur
    (des avertissements sont normaux, voir `NOTES-RELECTEUR.md`). Coche **Firefox pour ordinateur et Firefox pour Android**.
 4. « Dois-tu soumettre le code source ? » → **Non** : le code n'est ni minifié ni généré (voir les notes).
 5. Remplis la fiche en copiant `store/FICHE-FIREFOX.md` (nom, résumé, description, catégories, adresses, licence).
@@ -51,7 +51,7 @@ concernés sont masqués).
 ## 3. Chrome Web Store (facultatif)
 
 1. Compte développeur : <https://chrome.google.com/webstore/devconsole> (frais uniques de 5 USD).
-2. « Nouvel élément » → envoie `dist/uca-extension-chrome-store-1.42.0.zip`.
+2. « Nouvel élément » → envoie `dist/uca-extension-chrome-store-1.43.0.zip`.
 3. Fiche : `store/FICHE-CHROME.md` (textes, justification de chaque permission, déclaration d'usage des données).
 4. Captures 1280×800 : `store/screenshots/` (5 maximum pour Chrome).
 5. Soumets pour examen.

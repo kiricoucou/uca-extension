@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quoi de neuf — Emploi du temps UCA</title>
+<meta name="description" content="Les nouveautés de chaque version de l'extension, de l'app et du site Emploi du temps UCA (projet étudiant non officiel).">
+<link rel="canonical" href="https://kiricoucou.github.io/uca-extension/nouveautes.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Quoi de neuf — Emploi du temps UCA">
+<meta property="og:description" content="Les nouveautés de chaque version de l'extension, de l'app et du site.">
+<meta property="og:url" content="https://kiricoucou.github.io/uca-extension/nouveautes.html">
+<meta property="og:image" content="https://kiricoucou.github.io/uca-extension/app/icons/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="app/icons/icon-192.png">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Emploi du temps UCA"><img src="app/icons/icon-192.png" alt=""><span>Emploi du temps UCA</span></a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="index.html" class="hide-sm">Accueil</a>
+      <a href="index.html#demo">Démo</a>
+      <a href="nouveautes.html" aria-current="page">Nouveautés</a>
+      <a href="aide.html">Aide</a>
+      <a href="app/index.html">Agenda en ligne</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap news">
+  <h1>Quoi de neuf</h1>
+  <p class="lead">Les nouveautés de chaque version, de la plus récente à la plus ancienne. Page générée depuis <code>UPDATES.md</code>.</p>
+<section class="news-item" id="v1-43-0"><h2>1.43.0 <small>site vitrine (lot 4)</small></h2>
+<p>Déjà en place (vérifié, non refait) : accueil avec comparatif des quatre façons d'utiliser le projet, aide complète de plus de cinquante questions avec recherche, page de confidentialité, 404.</p>
+<p>Ajouté :</p>
+<ul><li><strong>Démo interactive</strong> sur l'accueil : le vrai agenda des quatre designs, téléphone ou ordinateur, avec des données inventées (<code>core/demo.js</code>, calées sur la semaine en cours). Aucune requête hors du site, stockage de session à part (le stockage réel de l'app n'est jamais touché), « Synchroniser » simulé, aucune page de la démo ne peut sortir du cadre. Le cadre ne se charge que quand la section devient visible.</li><li><strong>FAQ</strong> de six questions sur l'accueil (avec données structurées FAQPage) ; l'aide complète reste la référence.</li><li><strong>« Quoi de neuf »</strong> généré depuis <code>UPDATES.md</code> : page <code>nouveautes.html</code> et trois dernières versions sur l'accueil (<code>python -I -X utf8 tests/gen_news.py</code>, <code>--check</code> en test et en CI). Aucun script côté visiteur.</li><li><strong>Version anglaise</strong> <code>/en/</code> de l'accueil (présentation, comparatif, FAQ, démo) avec <code>hreflang</code> ; l'aide, les nouveautés et les applications restent en français, ce qui est indiqué sur la page.</li><li><strong>Référencement et partage</strong> : <code>canonical</code>, balises Open Graph et Twitter, image de partage 1200×630 (<code>tests/gen_og.py</code>), <code>sitemap.xml</code>, <code>robots.txt</code>.</li><li><strong>Captures à jour</strong> (sélecteur de design, fiches des magasins avec la liste des devoirs) ; fiches AMO / Chrome et notes du relecteur mises à jour (4 designs, devoirs, partage en image, confidentialité des devoirs).</li><li>Accessibilité du site : <code>tests/a11y.py</code> audite aussi l'accueil, la version anglaise, les nouveautés et l'aide (ordinateur et téléphone) : nom du lien de marque, en-tête de tableau, zone de défilement du comparatif atteignable au clavier (32/32).</li><li>Tests : <code>tests/pwa.py</code> couvre la démo (4 designs, téléphone, hors-ligne de l'app intact, aucune requête externe), l'anglais, les métadonnées, les nouveautés et le sitemap.</li></ul>
+</section>
+<section class="news-item" id="v1-42-0"><h2>1.42.0 <small>app / PWA (lot 3)</small></h2>
+<p>Déjà en place (vérifié, non refait) : manifeste installable avec icônes maskable et raccourcis, service worker « réseau d'abord » avec repli sur le cache, guide d'installation Android / iPhone au premier lancement, import par lien, QR ou fichier.</p>
+<p>Ajouté :</p>
+<ul><li><strong>Hors ligne complet</strong> : l'installation met maintenant en cache tout ce que chaque design et chaque page référencent (scripts, styles, icônes SVG, polices, pages d'aide), pas seulement ce qui a déjà été ouvert. Test : on installe, on coupe le réseau sans rien ouvrir d'autre, puis les 4 designs, les réglages, l'aide et le guide s'ouvrent sans requête échouée. Cache passé en <code>uca-app-v5</code>.</li><li><strong>Guide d'installation rappelable</strong> : entrée « Installer l'app sur l'écran d'accueil » dans le menu mobile et le panneau Liens (tant que l'app est dans un navigateur) ; le guide s'affiche même si un design est déjà choisi (<code>?force=1</code>) ; conseils selon le navigateur (iPhone hors Safari : « ouvre la page dans Safari » ; Firefox Android : menu ⋮ → Installer).</li><li><strong>Partage en image</strong> (panneau Exporter, tous les designs) : image PNG du jour ou de la semaine dessinée localement (aucune requête, sans les notes personnelles), envoyée par la feuille de partage native quand le navigateur sait partager un fichier, sinon enregistrée.</li><li>Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.</li><li>Doc : <code>store/PUBLIER.md</code> explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.</li></ul>
+</section>
+<section class="news-item" id="v1-41-0"><h2>1.41.0 <small>fonctions étudiant (lot 2)</small></h2>
+<p>Déjà en place (vérifié, non refait) : rappel avant chaque cours avec salle et enseignant (délai réglable), détection des changements d'emploi du temps (cours ajouté, annulé, déplacé, salle changée) avec notification, alerte d'absences réglable, simulateur d'objectif, évolution des notes, export .ics (avec rappels), prochain cours.</p>
+<p>Ajouté :</p>
+<ul><li><strong>Devoirs et examens</strong> (bouton « Devoirs » après Notes dans les 4 designs, entrée du menu mobile) : liste de devoirs liée aux matières, avec date de rendu et compte à rebours, case à cocher, « Effacer les terminés » ; les examens de l'emploi du temps (Examen, DS, Partiel) y apparaissent tout seuls. Stockage local (<code>uca_tasks</code>), transmis dans les transferts chiffrés vers l'app, effacé par « Réinitialiser » (annulable).</li><li><strong>Rappels la veille à 18 h</strong> pour chaque devoir non terminé et chaque examen (réglage « Devoirs et examens la veille », extension).</li><li><strong>Prochain cours / examen</strong> : « Examen dans 3 h : … » quand c'est un examen, et « · Examen dans 2 jours » ajouté après le prochain cours (agenda et popup).</li><li><strong>Pastille d'absences</strong> sur le bouton Absences : orange à un pas du seuil réglé, rouge une fois atteint.</li><li><strong>Objectifs de moyenne</strong> (fenêtre Notes) : <em>projection du semestre</em> (moyenne générale selon la note obtenue sur tout le reste) et <em>matières à prioriser</em> (classées par effet possible sur la moyenne générale, avec la note à viser dans la matière).</li><li><strong>Export .ics</strong> : option « Ajouter mes devoirs à rendre » (événements journée entière, rappel la veille à 18 h).</li><li><strong>App</strong> : notification « prochain cours » épinglée (Paramètres, demande l'autorisation). Limite honnête : une page web ne peut pas se réveiller sans serveur de push, la notification se met à jour à chaque ouverture de l'app, retour au premier plan et chaque minute tant que l'app est ouverte, pas en continu.</li><li>Pas de lien d'abonnement <code>.ics</code> automatique : il faudrait héberger l'emploi du temps sur un serveur, ce que le projet s'interdit ; le fichier reflète la dernière synchro, à réexporter après une synchro.</li><li>Tests : <code>tests/lots.py</code> (devoirs dans les 4 designs, XSS, rappels, examen, absences, .ics), <code>tests/grades.py</code> (projection, priorités), <code>tests/pwa.py</code> (notification épinglée), a11y étendu à la fenêtre Devoirs.</li></ul>
+</section>
+<section class="news-item" id="v1-40-0"><h2>1.40.0 <small>fiabilité (lot 1)</small></h2>
+<p>Déjà en place avant cette version (vérifié, non refait) : détection des pannes d'Odin pour notes et absences, page méconnaissable signalée dans les panneaux Notes/Absences, journal de diagnostic copiable (Paramètres → Diagnostic), pages Odin factices (<code>tests/pages/</code>), CI GitHub Actions.</p>
+<p>Ajouté :</p>
+<ul><li><strong>Bandeau « Données vieilles de X h »</strong> dans l'extension (les 4 designs) quand la dernière synchro a plus de 24 h, avec un bouton <strong>Resynchroniser</strong> (même chemin que « Synchroniser »). L'app avait déjà son rappel (lien vers l'import).</li><li><strong>Emploi du temps méconnaissable</strong> : si Odin répond mais qu'aucun cours n'est reconnu alors que l'ancien emploi du temps en contient encore à venir, l'ancien est conservé (jamais écrasé par du vide), un message clair s'affiche et le problème est noté dans le journal. Une vraie semaine vide (rien à venir avant) reste acceptée.</li><li>Accessibilité : liste des cours du téléphone atteignable au clavier, contraste des cours passés corrigé (a11y 20/20).</li><li>Tests : <code>tests/lots.py</code> (bandeau dans les 4 designs, téléphone et ordinateur), <code>tests/scrape.py</code> étendu à l'emploi du temps.</li></ul>
+</section>
+</main>
+<footer class="site">
+  <div class="wrap">
+    <span>Emploi du temps UCA — projet étudiant, non affilié à l'Université Clermont Auvergne.</span>
+    <span><a href="aide.html">Aide</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="https://github.com/kiricoucou/uca-extension">Code source</a></span>
+  </div>
+</footer>
+</body>
+</html>

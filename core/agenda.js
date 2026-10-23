@@ -547,7 +547,7 @@ setInterval(() => { renderSyncInfo(...syncInfoArgs); renderNextInfo(); }, 10 * 6
 function renderSyncInfo(iso, importedAt) {
   syncInfoArgs = [iso, importedAt];
   const fmt = (d) => new Date(d).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-  if (window.UCA_APP) {
+  if (window.UCA_APP && !window.UCA_APP.demo) {
     $("syncInfo").textContent = importedAt ? `Données de l'ordinateur du ${fmt(iso || importedAt)} — refais un transfert après une synchro` : "Aucune donnée : importe-les depuis l'extension";
     renderStaleReminder(iso, importedAt);
     return;

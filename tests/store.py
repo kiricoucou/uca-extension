@@ -19,7 +19,7 @@ from harness import ROOT, launch  # noqa: E402
 
 results = []
 HOSTS = ("odin.iut.uca.fr", "ent.uca.fr", "moodle.uca.fr", "mail.uca.fr", "kiricoucou.github.io", "raw.githubusercontent.com")
-NOT_PACKAGED = ("index.html", "aide.html", "install.html", "404.html", "confidentialite.html", "site.css", "sw.js", "app.webmanifest")
+NOT_PACKAGED = ("index.html", "aide.html", "install.html", "404.html", "confidentialite.html", "site.css", "site-demo.js", "nouveautes.html", "sitemap.xml", "robots.txt", "en/index.html", "sw.js", "app.webmanifest")
 
 
 def check(name, ok, detail=""):

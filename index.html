@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Emploi du temps UCA</title>
 <meta name="description" content="Emploi du temps, notes et absences de l'IUT Clermont Auvergne (Odin), lisibles partout : extension, app téléphone, agenda en ligne. Non officiel.">
+<link rel="canonical" href="https://kiricoucou.github.io/uca-extension/">
+<link rel="alternate" hreflang="fr" href="https://kiricoucou.github.io/uca-extension/">
+<link rel="alternate" hreflang="en" href="https://kiricoucou.github.io/uca-extension/en/">
+<link rel="alternate" hreflang="x-default" href="https://kiricoucou.github.io/uca-extension/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Emploi du temps UCA">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="Emploi du temps UCA — ton EDT d'Odin, lisible partout">
+<meta property="og:description" content="Cours, notes, absences et devoirs de l'IUT Clermont Auvergne : extension, app téléphone, agenda en ligne. Aucune donnée envoyée à un serveur. Projet étudiant non officiel.">
+<meta property="og:url" content="https://kiricoucou.github.io/uca-extension/">
+<meta property="og:image" content="https://kiricoucou.github.io/uca-extension/app/icons/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="app/icons/icon-192.png">
 <script>
 /* Lien de partage chiffré (#e=…, core/transfer.js) : direction l'import, avant même d'afficher la page.
@@ -16,12 +30,16 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
 <body>
 <header class="topbar">
   <div class="wrap">
-    <a class="brand" href="index.html"><img src="app/icons/icon-192.png" alt=""><span>Emploi du temps UCA</span></a>
+    <a class="brand" href="index.html" aria-label="Emploi du temps UCA"><img src="app/icons/icon-192.png" alt=""><span>Emploi du temps UCA</span></a>
     <nav class="nav" aria-label="Navigation principale">
       <a href="index.html" aria-current="page" class="hide-sm">Accueil</a>
+      <a href="#demo">Démo</a>
       <a href="#comparatif">Comparatif</a>
+      <a href="#faq" class="hide-sm">FAQ</a>
+      <a href="nouveautes.html" class="hide-sm">Nouveautés</a>
       <a href="aide.html">Aide</a>
       <a href="app/index.html">Agenda en ligne</a>
+      <a href="en/" hreflang="en" lang="en">English</a>
     </nav>
   </div>
 </header>
@@ -39,6 +57,26 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
         <a class="btn" href="aide.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 17h.01"/></svg>Aide</a>
       </div>
       <p style="margin-top:22px"><span class="tag">Projet étudiant non officiel</span></p>
+    </div>
+  </section>
+
+  <section class="block" id="demo" data-prefix="">
+    <div class="wrap">
+      <h2>Essaie, sans rien installer</h2>
+      <p class="sub">Le vrai agenda, avec des données inventées. Clique un cours, passe en semaine ou en mois, ouvre Notes, ajoute un devoir, lance « Synchroniser ». Rien n'est envoyé nulle part.</p>
+      <div class="demo-controls">
+        <div class="demo-group" role="group" aria-label="Design de la démo" data-tabs></div>
+        <div class="demo-group" role="group" aria-label="Appareil de la démo">
+          <button type="button" class="seg" data-device="phone" aria-pressed="false">Téléphone</button>
+          <button type="button" class="seg" data-device="desktop" aria-pressed="true">Ordinateur</button>
+        </div>
+      </div>
+      <div class="demo-stage">
+        <div class="demo-frame">
+          <iframe title="Démo interactive de l'agenda (données fictives)" loading="lazy" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"></iframe>
+        </div>
+      </div>
+      <noscript><p class="legend">La démo demande JavaScript. Tu peux aussi <a href="app/index.html">ouvrir l'agenda en ligne</a>.</p></noscript>
     </div>
   </section>
 
@@ -75,11 +113,11 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
     <div class="wrap">
       <h2>Comparatif</h2>
       <p class="sub">La grande différence : seule l'extension se connecte directement à Odin. L'app et l'agenda en ligne reçoivent les données depuis l'extension, par lien de partage chiffré (ou QR code, ou fichier).</p>
-      <div class="table-scroll">
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Tableau comparatif">
         <table class="compare">
           <thead>
             <tr>
-              <th scope="col"></th>
+              <th scope="col"><span class="sr-only">Fonctionnalité</span></th>
               <th scope="col">Site<small>pages d'info</small></th>
               <th scope="col">Agenda en ligne<small>onglet du navigateur</small></th>
               <th scope="col">Extension<small>Chrome / Firefox, ordinateur</small></th>
@@ -171,6 +209,34 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
     </div>
   </section>
 
+  <section class="block" id="nouveautes">
+    <div class="wrap">
+      <h2>Quoi de neuf</h2>
+      <p class="sub">Les dernières versions. <a href="nouveautes.html">Tout l'historique</a>.</p>
+      <div class="cards">
+        <!--news:start-->
+        <article class="card"><h3>1.43.0</h3><p><strong>site vitrine (lot 4)</strong></p><ul class="news-list"><li>Démo interactive sur l'accueil : le vrai agenda des quatre designs, téléphone ou ordinateur, avec des données inventées (core/demo.js, calées sur la…</li><li>FAQ de six questions sur l'accueil (avec données structurées FAQPage) ; l'aide complète reste la référence.</li><li>« Quoi de neuf » généré depuis UPDATES.md : page nouveautes.html et trois dernières versions sur l'accueil (python -I -X utf8 tests/gen_news.py,…</li></ul></article>
+        <article class="card"><h3>1.42.0</h3><p><strong>app / PWA (lot 3)</strong></p><ul class="news-list"><li>Hors ligne complet : l'installation met maintenant en cache tout ce que chaque design et chaque page référencent (scripts, styles, icônes SVG,…</li><li>Guide d'installation rappelable : entrée « Installer l'app sur l'écran d'accueil » dans le menu mobile et le panneau Liens (tant que l'app est dans…</li><li>Partage en image (panneau Exporter, tous les designs) : image PNG du jour ou de la semaine dessinée localement (aucune requête, sans les notes…</li></ul></article>
+        <article class="card"><h3>1.41.0</h3><p><strong>fonctions étudiant (lot 2)</strong></p><ul class="news-list"><li>Devoirs et examens (bouton « Devoirs » après Notes dans les 4 designs, entrée du menu mobile) : liste de devoirs liée aux matières, avec date de…</li><li>Rappels la veille à 18 h pour chaque devoir non terminé et chaque examen (réglage « Devoirs et examens la veille », extension).</li><li>Prochain cours / examen : « Examen dans 3 h : … » quand c'est un examen, et « · Examen dans 2 jours » ajouté après le prochain cours (agenda et…</li></ul></article>
+        <!--news:end-->
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="faq">
+    <div class="wrap">
+      <h2>Questions fréquentes</h2>
+      <p class="sub">Les réponses courtes. <a href="aide.html">L'aide complète</a> en compte plus de cinquante, avec recherche.</p>
+      <details class="qa"><summary>C'est officiel ?</summary><div class="a"><p>Non. C'est un projet étudiant, non affilié à l'Université Clermont Auvergne ni à l'IUT. Il lit simplement les pages d'Odin que tu peux déjà consulter toi-même.</p></div></details>
+      <details class="qa"><summary>Où partent mes données ?</summary><div class="a"><p>Nulle part. Il n'y a ni serveur ni compte : l'extension garde tout dans ton navigateur, l'app sur ton appareil. Un lien de partage contient tes données chiffrées et GitHub ne le reçoit jamais (la partie après « # » reste dans le navigateur).</p></div></details>
+      <details class="qa"><summary>Dois-je donner mon mot de passe ?</summary><div class="a"><p>Non. Tu te connectes sur la vraie page de connexion de l'UCA (CAS), avec ta double authentification ; l'extension ne voit jamais ton mot de passe. Elle relit ensuite la page d'Odin affichée, comme un copier-coller.</p></div></details>
+      <details class="qa"><summary>Ça marche sur mon téléphone ?</summary><div class="a"><p>Oui, avec l'app (Android, iPhone, hors ligne). Les données arrivent depuis l'extension de l'ordinateur par lien chiffré, QR code ou fichier. La synchro directe sur téléphone viendra avec Firefox Android.</p></div></details>
+      <details class="qa"><summary>Et si Odin change ou tombe en panne ?</summary><div class="a"><p>L'extension le détecte : elle affiche un message clair et garde ton ancien emploi du temps au lieu de l'effacer. Un widget « Statut des sites » dans les Paramètres montre en direct ce qui répond.</p></div></details>
+      <details class="qa"><summary>C'est gratuit ?</summary><div class="a"><p>Oui, sans publicité ni compte. Le code est consultable sur GitHub.</p></div></details>
+    </div>
+  </section>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "C'est officiel ?", "acceptedAnswer": {"@type": "Answer", "text": "Non. C'est un projet étudiant, non affilié à l'Université Clermont Auvergne ni à l'IUT. Il lit simplement les pages d'Odin que tu peux déjà consulter toi-même."}}, {"@type": "Question", "name": "Où partent mes données ?", "acceptedAnswer": {"@type": "Answer", "text": "Nulle part. Il n'y a ni serveur ni compte : l'extension garde tout dans ton navigateur, l'app sur ton appareil. Un lien de partage contient tes données chiffrées et GitHub ne le reçoit jamais (la partie après « # » reste dans le navigateur)."}}, {"@type": "Question", "name": "Dois-je donner mon mot de passe ?", "acceptedAnswer": {"@type": "Answer", "text": "Non. Tu te connectes sur la vraie page de connexion de l'UCA (CAS), avec ta double authentification ; l'extension ne voit jamais ton mot de passe. Elle relit ensuite la page d'Odin affichée, comme un copier-coller."}}, {"@type": "Question", "name": "Ça marche sur mon téléphone ?", "acceptedAnswer": {"@type": "Answer", "text": "Oui, avec l'app (Android, iPhone, hors ligne). Les données arrivent depuis l'extension de l'ordinateur par lien chiffré, QR code ou fichier. La synchro directe sur téléphone viendra avec Firefox Android."}}, {"@type": "Question", "name": "Et si Odin change ou tombe en panne ?", "acceptedAnswer": {"@type": "Answer", "text": "L'extension le détecte : elle affiche un message clair et garde ton ancien emploi du temps au lieu de l'effacer. Un widget « Statut des sites » dans les Paramètres montre en direct ce qui répond."}}, {"@type": "Question", "name": "C'est gratuit ?", "acceptedAnswer": {"@type": "Answer", "text": "Oui, sans publicité ni compte. Le code est consultable sur GitHub."}}]}</script>
+
   <section class="block">
     <div class="wrap">
       <h2>Tes données restent chez toi</h2>
@@ -187,8 +253,9 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
 <footer class="site">
   <div class="wrap">
     <span>Emploi du temps UCA — projet étudiant, non affilié à l'Université Clermont Auvergne.</span>
-    <span><a href="aide.html">Aide</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="https://github.com/kiricoucou/uca-extension">Code source</a></span>
+    <span><a href="aide.html">Aide</a> · <a href="nouveautes.html">Nouveautés</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="en/" hreflang="en" lang="en">English</a> · <a href="https://github.com/kiricoucou/uca-extension">Code source</a></span>
   </div>
 </footer>
+<script src="site-demo.js"></script>
 </body>
 </html>

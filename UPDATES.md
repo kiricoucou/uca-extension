@@ -55,3 +55,17 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.43.0 — site vitrine (lot 4)
+
+Déjà en place (vérifié, non refait) : accueil avec comparatif des quatre façons d'utiliser le projet, aide complète de plus de cinquante questions avec recherche, page de confidentialité, 404.
+
+Ajouté :
+- **Démo interactive** sur l'accueil : le vrai agenda des quatre designs, téléphone ou ordinateur, avec des données inventées (`core/demo.js`, calées sur la semaine en cours). Aucune requête hors du site, stockage de session à part (le stockage réel de l'app n'est jamais touché), « Synchroniser » simulé, aucune page de la démo ne peut sortir du cadre. Le cadre ne se charge que quand la section devient visible.
+- **FAQ** de six questions sur l'accueil (avec données structurées FAQPage) ; l'aide complète reste la référence.
+- **« Quoi de neuf »** généré depuis `UPDATES.md` : page `nouveautes.html` et trois dernières versions sur l'accueil (`python -I -X utf8 tests/gen_news.py`, `--check` en test et en CI). Aucun script côté visiteur.
+- **Version anglaise** `/en/` de l'accueil (présentation, comparatif, FAQ, démo) avec `hreflang` ; l'aide, les nouveautés et les applications restent en français, ce qui est indiqué sur la page.
+- **Référencement et partage** : `canonical`, balises Open Graph et Twitter, image de partage 1200×630 (`tests/gen_og.py`), `sitemap.xml`, `robots.txt`.
+- **Captures à jour** (sélecteur de design, fiches des magasins avec la liste des devoirs) ; fiches AMO / Chrome et notes du relecteur mises à jour (4 designs, devoirs, partage en image, confidentialité des devoirs).
+- Accessibilité du site : `tests/a11y.py` audite aussi l'accueil, la version anglaise, les nouveautés et l'aide (ordinateur et téléphone) : nom du lien de marque, en-tête de tableau, zone de défilement du comparatif atteignable au clavier (32/32).
+- Tests : `tests/pwa.py` couvre la démo (4 designs, téléphone, hors-ligne de l'app intact, aucune requête externe), l'anglais, les métadonnées, les nouveautés et le sitemap.
+

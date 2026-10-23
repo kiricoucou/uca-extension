@@ -7,13 +7,17 @@
 if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.id) return;
 
 const ROOT = new URL("..", document.currentScript.src).href;
-const STORE = "uca_store";
-window.UCA_APP = { root: ROOT };
+/* Démo du site (?demo=1, dans un cadre de la page d'accueil) : données factices (core/demo.js) dans un stockage de
+   session à part, jamais celui de l'app ; aucune navigation hors de la démo ; la synchro est simulée. */
+const DEMO = /[?&]demo=1(?:&|$)/.test(location.search);
+const STORE = DEMO ? "uca_store_demo" : "uca_store";
+const mem = DEMO ? sessionStorage : localStorage;
+window.UCA_APP = { root: ROOT, demo: DEMO };
 
 /* ---------- chrome.storage.local sur localStorage (données de quelques centaines de Ko) ---------- */
 const listeners = [];
-function readAll() { try { return JSON.parse(localStorage.getItem(STORE) || "{}"); } catch (e) { return {}; } }
-function writeAll(all) { localStorage.setItem(STORE, JSON.stringify(all)); }
+function readAll() { try { return JSON.parse(mem.getItem(STORE) || "{}"); } catch (e) { return {}; } }
+function writeAll(all) { mem.setItem(STORE, JSON.stringify(all)); }
 function clone(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
 function notify(changes) { if (Object.keys(changes).length) setTimeout(() => listeners.forEach((fn) => fn(changes, "local")), 0); }
 function done(result, cb) { const p = Promise.resolve(result); if (cb) p.then(cb); return p; }
@@ -117,7 +121,7 @@ document.addEventListener("visibilitychange", () => {
    l'extension est là ; sinon, seul le transfert par lien/QR/fichier reste possible (pas de CORS
    ni d'accès aux cookies d'un autre domaine depuis une simple page web, voir README). */
 const msgListeners = [];
-window.UCA_APP.extensionReady = false;
+window.UCA_APP.extensionReady = DEMO; // la démo se comporte comme l'app avec l'extension : bouton « Synchroniser »
 window.addEventListener("message", (ev) => {
   if (ev.source !== window || !ev.data || ev.data.source !== "uca-extension") return;
   const msg = ev.data;
@@ -157,6 +161,16 @@ async function handle(msg) {
     await local.set({ uca_design: d.id });
     return { ok: true, folder: d.folder };
   }
+  if (DEMO) {
+    if (msg.type === "UCA_SYNC_REQUEST") {
+      msgListeners.forEach((fn) => fn({ type: "UCA_SYNC_PROGRESS", stage: "resync" }));
+      await sleep(900);
+      const lastSync = new Date().toISOString();
+      await local.set({ uca_last_sync: lastSync });
+      msgListeners.forEach((fn) => fn({ type: "UCA_SYNC_RESULT", ok: true, silent: true, events: readAll().uca_events || [], lastSync }));
+    }
+    return undefined; // mise à jour de l'app, design, alarmes : sans objet dans la démo
+  }
   if (msg.type === "UCA_SYNC_REQUEST") {
     // Extension détectée : vraie synchro via le pont, pas de redirection vers l'écran d'import.
     if (window.UCA_APP.extensionReady && (msg.mode === "resync" || msg.mode === "login")) {
@@ -174,12 +188,16 @@ window.chrome = {
   storage: { local, onChanged: { addListener: (fn) => listeners.push(fn) } },
   runtime: {
     id: null,
-    getURL: (p) => ROOT + String(p).replace(/^\//, ""),
+    // Démo : toute page qui sortirait de l'agenda (réglages, design, import, aide…) devient un simple ancrage, sans navigation.
+    getURL: (p) => (DEMO && /\.html(?:[?#]|$)/.test(String(p)) && !/agenda\.html/.test(String(p)) ? "#uca-demo" : ROOT + String(p).replace(/^\//, "")),
     sendMessage(msg, cb) { const p = handle(msg); if (typeof cb === "function") p.then(cb); return p; },
     onMessage: { addListener: (fn) => msgListeners.push(fn) },
   },
   tabs: { create: ({ url }) => { location.href = url; } },
 };
+
+document.documentElement.classList.add("uca-app");
+if (DEMO) return;
 
 /* ---------- Installation : manifeste, icônes, écrans de démarrage, thème ---------- */
 const head = document.head;
@@ -216,7 +234,6 @@ local.get("uca_design").then(({ uca_design }) => fetch(ROOT + "designs/designs.j
     });
   }
 })).catch(() => {});
-document.documentElement.classList.add("uca-app");
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register(ROOT + "sw.js", { scope: ROOT }).catch(() => {});
 })();

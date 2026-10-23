@@ -24,6 +24,8 @@ icon badge); `notifications` (reminders and alerts, user-configurable; not avail
 Content script on `https://kiricoucou.github.io/uca-extension/*` only: bridges the project's own web app and the extension (the web app can
 ask for a sync and receives the result). It is limited to the top frame and to a fixed set of message types (see `content-bridge.js`).
 
+**Homework list.** The "Devoirs" panel stores the student's own to-do items (title, subject, due date) in `storage.local` (`uca_tasks`) and rebuilds them with `textContent` only; an evening-before notification uses `alarms` + `notifications`. Nothing leaves the device. "Share a day/week as an image" draws a PNG in a local `<canvas>` and hands it to the system share sheet or downloads it.
+
 **Phone sharing.** Optional: the user generates a link whose data is AES-GCM-256 encrypted (key from a user-chosen share code, PBKDF2 150000
 iterations) and placed in the URL fragment (never sent over HTTP); see `core/transfer.js`.
 
@@ -40,6 +42,7 @@ const mk = (dh, sh, eh, title, room, teacher) => { const x = new Date(d.getFullY
     startH: sh, startM: 0, endH: eh, endM: 0, title, teacher, room, raw: title, color: "#888" }; };
 browser.storage.local.set({
   uca_events: [mk(0, 8, 10, "R1.01 Développement CM", "A101", "M. Dupont"), mk(0, 10, 12, "R1.02 Web TD", "B204", "Mme Martin"), mk(1, 14, 16, "R1.01 DS2 Examen", "Amphi B", "M. Dupont")],
+  uca_tasks: [{ id: "t1", title: "Rendre le TP 3", subject: "R1.01", due: mk(1, 0, 0, "", "", "").date, done: false, created: 1 }],
   uca_last_sync: new Date().toISOString(), uca_design: "professionnel"
 }).then(() => browser.tabs.create({ url: browser.runtime.getURL("designs/professionnel/agenda.html") }));
 ```

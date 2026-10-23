@@ -463,7 +463,7 @@ def offline_complete(browser, base, errors):
         n = page.evaluate("async () => { const ks = await caches.keys(); let t = 0; for (const k of ks) t += (await (await caches.open(k)).keys()).length; return t; }")
         stable = stable + 1 if n == last else 0
         last = n
-        if stable >= 4 and n > 20:
+        if stable >= 6 and n > 20:
             break
         page.wait_for_timeout(500)
     check("hors ligne : précache terminé (plus de 60 fichiers)", last > 60, str(last))
@@ -534,6 +534,72 @@ def install_guide(browser, base, errors):
     ctx.close()
 
 
+def site_demo(browser, base, errors):
+    """Accueil : démo interactive (données factices, aucune requête hors du site, stockage de l'app intact), FAQ,
+    métadonnées de partage, version anglaise, nouveautés générées, sitemap et robots."""
+    import re
+    import subprocess
+    ctx = browser.new_context(viewport={"width": 1280, "height": 900})
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[démo] {e}"))
+    foreign = []
+    page.on("request", lambda r: foreign.append(r.url) if not (r.url.startswith(base) or r.url.startswith("data:") or r.url.startswith("blob:") or r.url.startswith("about:")) else None)
+    page.goto(base); page.wait_for_timeout(500)
+    page.evaluate("() => document.getElementById('demo').scrollIntoView()"); page.wait_for_timeout(2500)
+    fr = page.frame_locator("#demo iframe")
+    check("démo : agenda factice affiché dans le cadre", fr.locator(".event-card, .m-card").count() > 0)
+    tabs = page.locator("#demo [data-tabs] button")
+    check("démo : un onglet par design du registre", tabs.count() == len(designs()), str(tabs.count()))
+    for i in range(tabs.count()):
+        tabs.nth(i).click(); page.wait_for_timeout(1800)
+        check(f"démo : design {designs()[i]['id']}, cours affichés", fr.locator(".event-card, .m-card").count() > 0)
+    shot(page, "accueil-demo")
+    frame = [f for f in page.frames if "agenda.html" in f.url][0]
+    check("démo : une page de réglages ne peut pas sortir du cadre", frame.evaluate("() => chrome.runtime.getURL('settings.html')") == "#uca-demo")
+    before = frame.evaluate("() => JSON.parse(sessionStorage.getItem('uca_store_demo')).uca_last_sync")
+    page.wait_for_timeout(50)
+    frame.evaluate("() => document.getElementById('syncBtn').click()")
+    page.wait_for_timeout(1800)
+    after = frame.evaluate("() => JSON.parse(sessionStorage.getItem('uca_store_demo')).uca_last_sync")
+    check("démo : « Synchroniser » simulé (date de synchro renouvelée, rien contacté)", after != before)
+    check("démo : le stockage réel de l'app n'est pas touché", page.evaluate("() => localStorage.getItem('uca_store')") is None)
+    check("démo : aucune requête hors de ce site", not foreign, str(foreign[:3]))
+    page.locator("#demo [data-device=phone]").click(); page.wait_for_timeout(2000)
+    w = page.evaluate("() => document.querySelector('#demo iframe').getBoundingClientRect().width")
+    check("démo : mode téléphone (390 px)", abs(w - 390) < 2, str(w))
+    shot(page, "accueil-demo-telephone")
+    check("accueil : FAQ de six questions", page.locator("#faq details.qa").count() >= 6)
+    ld = page.evaluate("() => JSON.parse(document.querySelector('script[type=\"application/ld+json\"]').textContent)['@type']")
+    check("accueil : données structurées FAQPage", ld == "FAQPage", str(ld))
+    metas = page.evaluate("() => [...document.querySelectorAll('meta[property^=\"og:\"], link[rel=canonical], link[hreflang]')].map(e => (e.getAttribute('property') || e.getAttribute('rel')) + (e.getAttribute('hreflang') ? ':' + e.getAttribute('hreflang') : ''))")
+    check("accueil : balises de partage, canonical et hreflang", all(k in metas for k in ("og:title", "og:image", "og:description", "canonical", "alternate:fr", "alternate:en", "alternate:x-default")), str(metas))
+    check("accueil : « Quoi de neuf » avec les trois dernières versions", page.locator("#nouveautes article.card").count() == 3)
+    check("accueil : liens Démo, FAQ, Nouveautés, English", all(page.locator(f".nav a[href='{h}']").count() == 1 for h in ("#demo", "#faq", "nouveautes.html", "en/")))
+    check("accueil : pas de défilement horizontal (ordinateur)", page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"))
+    ctx.close()
+    ctx = browser.new_context(viewport={"width": 390, "height": 844})
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[en] {e}"))
+    page.goto(base + "en/"); page.wait_for_timeout(800)
+    check("anglais : page en anglais avec hreflang vers le français", page.evaluate("document.documentElement.lang") == "en" and page.locator("link[hreflang=fr]").count() == 1 and "Timetable" in page.title())
+    check("anglais : pas de défilement horizontal (téléphone)", page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"))
+    page.evaluate("() => document.getElementById('demo').scrollIntoView()"); page.wait_for_timeout(2500)
+    check("anglais : démo chargée depuis ../designs", "/designs/" in page.evaluate("() => document.querySelector('#demo iframe').src") and page.frame_locator("#demo iframe").locator(".m-card, .event-card").count() > 0)
+    shot(page, "accueil-en")
+    page.goto(base); page.wait_for_timeout(500)
+    check("accueil : pas de défilement horizontal (téléphone)", page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"))
+    ctx.close()
+    out = subprocess.run([sys.executable, "-I", "-X", "utf8", str(ROOT / "tests" / "gen_news.py"), "--check"], capture_output=True, text=True, encoding="utf-8")
+    check("nouveautés : nouveautes.html et l'accueil correspondent à UPDATES.md", out.returncode == 0, out.stdout + out.stderr)
+    sm = (ROOT / "sitemap.xml").read_text(encoding="utf-8")
+    locs = re.findall(r"<loc>([^<]+)</loc>", sm)
+    root_url = "https://kiricoucou.github.io/uca-extension/"
+    missing = [u for u in locs if u != root_url and not (ROOT / u[len(root_url):]).exists() and not (ROOT / u[len(root_url):] / "index.html").exists()]
+    check("sitemap : toutes les adresses existent dans le dépôt", locs and not missing, str(missing))
+    rb = (ROOT / "robots.txt").read_text(encoding="utf-8")
+    check("robots.txt : indexation permise et sitemap déclaré", "Allow: /" in rb and "Sitemap: " + root_url + "sitemap.xml" in rb)
+
+
 def main():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(ROOT)],
@@ -552,6 +618,7 @@ def main():
             qr_roundtrip(chromium, base, errors)
             link_roundtrip(chromium, base, errors)
             site_pages(chromium, base, errors)
+            site_demo(chromium, base, errors)
             no_install_loop_once_configured(chromium, base, errors)
             network_first(chromium, base, errors)
             http_cache_bypass(chromium, base, errors)

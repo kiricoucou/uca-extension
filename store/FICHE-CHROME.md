@@ -16,14 +16,14 @@ Productivité → Éducation
 Français
 
 ## Objet unique (« single purpose »)
-Afficher l'emploi du temps, les notes et les absences de l'étudiant, lus sur Odin avec sa propre session, dans un agenda local.
+Afficher l'emploi du temps, les notes et les absences de l'étudiant, lus sur Odin avec sa propre session, dans un agenda local, avec sa liste de devoirs.
 
 ## Justification des permissions
-- **storage** : enregistre sur l'appareil l'emploi du temps, les notes, les absences et les réglages. Rien n'est envoyé ailleurs.
+- **storage** : enregistre sur l'appareil l'emploi du temps, les notes, les absences, les devoirs saisis par l'étudiant et les réglages. Rien n'est envoyé ailleurs.
 - **scripting** : lit le texte des pages Odin (emploi du temps, absences, notes) ouvertes en arrière-plan avec la session de l'étudiant.
 - **cookies** : lit la durée restante de la session UCA (affichage) et, sur clic « Déconnexion », supprime uniquement les cookies de ent.uca.fr et odin.iut.uca.fr.
-- **alarms** : rappels de cours, synchronisation automatique, mise à jour de la pastille de l'icône.
-- **notifications** : rappels avant les cours et alertes (changement d'emploi du temps, nouvelle note, absences). Désactivables.
+- **alarms** : rappels de cours et la veille des devoirs et examens, synchronisation automatique, mise à jour de la pastille de l'icône.
+- **notifications** : rappels avant les cours, la veille des devoirs et examens, et alertes (changement d'emploi du temps, nouvelle note, absences). Désactivables.
 - **Accès aux hôtes https://ent.uca.fr/\* et https://odin.iut.uca.fr/\*** : connexion CAS officielle et lecture des pages Odin de l'étudiant.
 - **Script de contenu sur https://kiricoucou.github.io/uca-extension/\*** : relie le site / l'application web de l'extension à l'extension (bouton « Synchroniser » du site). Il ne transmet aucune autre donnée.
 

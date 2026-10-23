@@ -48,6 +48,11 @@ def main():
     data["uca_events"].append({"date": exam_day.date().isoformat(), "year": exam_day.year, "month": exam_day.month - 1, "day": exam_day.day,
                                "startH": 8, "startM": 0, "endH": 10, "endM": 0, "title": "R1.01 DS2 Examen", "teacher": "M. Dupont", "room": "Amphi B", "raw": "x", "color": "#888"})
     data["uca_releve_notes"] = RELEVE
+    tomorrow = (now + datetime.timedelta(days=1)).date().isoformat()
+    data["uca_tasks"] = [
+        {"id": "s1", "title": "Rendre le compte rendu de TP", "subject": "SAE1.01", "due": tomorrow, "done": False, "created": 1},
+        {"id": "s2", "title": "Réviser le chapitre 3", "subject": "R1.01", "due": (now + datetime.timedelta(days=4)).date().isoformat(), "done": False, "created": 2},
+    ]
     data["uca_notes_history"] = [{"at": int((now - datetime.timedelta(days=60 - i * 12)).timestamp() * 1000), "avg": a} for i, a in enumerate([8.5, 9.4, 10.1, 9.8, 10.96])]
     with sync_playwright() as p:
         ctx, sw, base = launch(p, viewport=SIZE)
@@ -68,7 +73,7 @@ def main():
         pg = agenda("professionnel"); snap(pg, "1-semaine-professionnel.png")
         pg.locator("#notesBtn").click(); pg.wait_for_timeout(500); snap(pg, "4-notes-simulateur.png"); pg.close()
         pg = agenda("anime"); snap(pg, "2-semaine-anime.png"); pg.close()
-        pg = agenda("carnet"); snap(pg, "3-semaine-carnet.png"); pg.close()
+        pg = agenda("bulletin"); pg.locator("#tasksBtn").click(); pg.wait_for_timeout(500); snap(pg, "3-devoirs-bulletin.png"); pg.close()
         sw.evaluate("(id) => chrome.storage.local.set({uca_design: id})", "professionnel")
         pg = ctx.new_page(); pg.set_viewport_size(SIZE); pg.goto(f"{base}/settings.html"); pg.wait_for_function("() => document.querySelectorAll('.st-row[data-state=ok]').length === 6", timeout=20000)
         pg.wait_for_timeout(400); snap(pg, "5-parametres-statut.png")

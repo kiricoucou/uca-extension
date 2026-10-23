@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://kiricoucou.github.io/uca-extension/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kiricoucou.github.io/uca-extension/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kiricoucou.github.io/uca-extension/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kiricoucou.github.io/uca-extension/"/>
+  </url>
+  <url>
+    <loc>https://kiricoucou.github.io/uca-extension/en/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://kiricoucou.github.io/uca-extension/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://kiricoucou.github.io/uca-extension/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://kiricoucou.github.io/uca-extension/"/>
+  </url>
+  <url><loc>https://kiricoucou.github.io/uca-extension/aide.html</loc></url>
+  <url><loc>https://kiricoucou.github.io/uca-extension/nouveautes.html</loc></url>
+  <url><loc>https://kiricoucou.github.io/uca-extension/app/install.html</loc></url>
+  <url><loc>https://kiricoucou.github.io/uca-extension/confidentialite.html</loc></url>
+</urlset>

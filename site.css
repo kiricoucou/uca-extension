@@ -125,3 +125,30 @@ footer.site a{color:var(--text-dim);}
   .brand span{display:none;}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important;}}
+
+/* Démo interactive */
+.demo-controls{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;margin:0 0 14px;}
+.demo-group{display:inline-flex;flex-wrap:wrap;border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:3px;gap:2px;}
+.seg{min-height:40px;padding:0 14px;border:none;border-radius:11px;background:none;color:var(--text-dim);font:inherit;font-weight:600;font-size:14.5px;cursor:pointer;}
+.seg:hover{background:var(--surface-2);color:var(--text);}
+.seg[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);}
+.seg:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+.demo-stage{display:flex;justify-content:center;width:100%;overflow:hidden;}
+.demo-frame{position:relative;box-sizing:content-box;border:1px solid var(--border);border-radius:16px;overflow:hidden;overflow:clip;box-shadow:var(--shadow);background:var(--surface);}
+.demo-frame.is-phone{border-radius:34px;border:8px solid #11151c;box-shadow:0 10px 30px rgba(16,24,40,.25);}
+.demo-frame iframe{display:block;border:0;transform-origin:top left;background:var(--surface);}
+
+/* Nouveautés */
+.news-list{margin:6px 0 0;padding-left:18px;color:var(--text-dim);font-size:14.5px;}
+.news-list li{margin:4px 0;}
+.news{padding-bottom:60px;}
+.news h1{font-size:clamp(28px,4vw,38px);margin:32px 0 8px;letter-spacing:-.02em;}
+.news .lead{color:var(--text-dim);margin:0 0 24px;font-size:17px;}
+.news-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 22px;margin:0 0 14px;box-shadow:var(--shadow);}
+.news-item h2{margin:0 0 8px;font-size:22px;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;}
+.news-item h2 small{font-size:15px;font-weight:600;color:var(--text-dim);}
+.news-item p,.news-item li{color:var(--text-dim);}
+.news-item li{margin:5px 0;}
+.news-item ul{padding-left:22px;margin:6px 0 10px;}
+
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}

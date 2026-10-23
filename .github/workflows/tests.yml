@@ -24,7 +24,7 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Syntaxe JavaScript et JSON
         run: |
-          for f in background.js content-bridge.js settings.js choose.js sw.js core/*.js designs/*/design.js app/*.js; do node --check "$f"; done
+          for f in background.js content-bridge.js settings.js choose.js sw.js site-demo.js core/*.js designs/*/design.js app/*.js; do node --check "$f"; done
           python -c "import json,glob; [json.load(open(f, encoding='utf-8')) for f in ['manifest.json','manifest.firefox.json','designs/designs.json']]"
       - name: Parité des manifestes et des designs
         run: |
@@ -52,6 +52,8 @@ jobs:
         run: python -I -X utf8 tests/pwa.py
       - name: Extension de bout en bout
         run: python -I -X utf8 tests/e2e.py
+      - name: Nouveautés du site à jour
+        run: python -I -X utf8 tests/gen_news.py --check
       - name: Paquets Chrome et Firefox
         run: |
           python -I -X utf8 tests/build_chrome.py

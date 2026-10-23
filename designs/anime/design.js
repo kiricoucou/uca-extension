@@ -6,7 +6,7 @@ const ICONS = {
   book: "notes", clock: "time", calendar: "calendar", user: "user",
   pin: "pin", note: "pen", chart: "stats", link: "link",
   mail: "mail", sync: "sync", alert: "lock", key: "lock",
-  logout: "bolt", design: "rocket", settings: "gear", filter: "search", export: "calendar", phone: "phone",
+  logout: "bolt", tasks: "pen", design: "rocket", settings: "gear", filter: "search", export: "calendar", phone: "phone",
 };
 
 /* Couleur d'un cours : teinte au choix, lumière réduite juste ce qu'il faut pour que le texte blanc reste lisible

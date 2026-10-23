@@ -29,3 +29,18 @@ Ajouté :
 - Accessibilité : liste des cours du téléphone atteignable au clavier, contraste des cours passés corrigé (a11y 20/20).
 - Tests : `tests/lots.py` (bandeau dans les 4 designs, téléphone et ordinateur), `tests/scrape.py` étendu à l'emploi du temps.
 
+## 1.41.0 — fonctions étudiant (lot 2)
+
+Déjà en place (vérifié, non refait) : rappel avant chaque cours avec salle et enseignant (délai réglable), détection des changements d'emploi du temps (cours ajouté, annulé, déplacé, salle changée) avec notification, alerte d'absences réglable, simulateur d'objectif, évolution des notes, export .ics (avec rappels), prochain cours.
+
+Ajouté :
+- **Devoirs et examens** (bouton « Devoirs » après Notes dans les 4 designs, entrée du menu mobile) : liste de devoirs liée aux matières, avec date de rendu et compte à rebours, case à cocher, « Effacer les terminés » ; les examens de l'emploi du temps (Examen, DS, Partiel) y apparaissent tout seuls. Stockage local (`uca_tasks`), transmis dans les transferts chiffrés vers l'app, effacé par « Réinitialiser » (annulable).
+- **Rappels la veille à 18 h** pour chaque devoir non terminé et chaque examen (réglage « Devoirs et examens la veille », extension).
+- **Prochain cours / examen** : « Examen dans 3 h : … » quand c'est un examen, et « · Examen dans 2 jours » ajouté après le prochain cours (agenda et popup).
+- **Pastille d'absences** sur le bouton Absences : orange à un pas du seuil réglé, rouge une fois atteint.
+- **Objectifs de moyenne** (fenêtre Notes) : *projection du semestre* (moyenne générale selon la note obtenue sur tout le reste) et *matières à prioriser* (classées par effet possible sur la moyenne générale, avec la note à viser dans la matière).
+- **Export .ics** : option « Ajouter mes devoirs à rendre » (événements journée entière, rappel la veille à 18 h).
+- **App** : notification « prochain cours » épinglée (Paramètres, demande l'autorisation). Limite honnête : une page web ne peut pas se réveiller sans serveur de push, la notification se met à jour à chaque ouverture de l'app, retour au premier plan et chaque minute tant que l'app est ouverte, pas en continu.
+- Pas de lien d'abonnement `.ics` automatique : il faudrait héberger l'emploi du temps sur un serveur, ce que le projet s'interdit ; le fichier reflète la dernière synchro, à réexporter après une synchro.
+- Tests : `tests/lots.py` (devoirs dans les 4 designs, XSS, rappels, examen, absences, .ics), `tests/grades.py` (projection, priorités), `tests/pwa.py` (notification épinglée), a11y étendu à la fenêtre Devoirs.
+

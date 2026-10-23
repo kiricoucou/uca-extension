@@ -407,6 +407,41 @@ def app_accessibility(browser, base, errors):
     reduced.close(); ctx.close()
 
 
+def pinned_next(pw, base, errors):
+    """Notification « prochain cours » épinglée dans l'app (réglage pinNext) : créée, retirée.
+    Chromium « new headless » : le mode headless classique refuse d'accorder la permission des notifications."""
+    import datetime
+    browser = pw.chromium.launch(headless=False, args=["--headless=new"])
+    ctx = browser.new_context(viewport={"width": 412, "height": 900})
+    ctx.grant_permissions(["notifications"], origin=base.rstrip("/"))
+    page = ctx.new_page()
+    page.on("pageerror", lambda e: errors.append(f"[pinNext] {e}"))
+    data = seed(); data["uca_design"] = "carnet"
+    soon = datetime.datetime.now() + datetime.timedelta(minutes=90)
+    end = soon + datetime.timedelta(minutes=60)
+    data["uca_events"] = [{"date": soon.date().isoformat(), "year": soon.year, "month": soon.month - 1, "day": soon.day, "startH": soon.hour,
+        "startM": soon.minute, "endH": end.hour, "endM": end.minute, "title": "R9.99 Prochain TD", "teacher": "M. Test", "room": "Salle X", "raw": "x", "color": "#888"}]
+    data["uca_settings"] = {"pinNext": True}
+    page.goto(base + "app/import.html"); page.wait_for_timeout(300)
+    page.evaluate("""(data) => {
+      localStorage.setItem('uca_install_seen', '1');
+      localStorage.setItem('uca_store', JSON.stringify(Object.assign({}, data, { uca_app_imported_at: new Date().toISOString() })));
+    }""", data)
+    page.goto(base + "designs/carnet/agenda.html"); page.wait_for_timeout(2500)
+    get = "() => navigator.serviceWorker.ready.then(r => r.getNotifications({ tag: 'uca-next' })).then(l => l.map(n => n.body))"
+    bodies = page.evaluate(get)
+    check("notification épinglée : « prochain cours » créée", len(bodies) == 1 and "R9.99 Prochain TD" in bodies[0], str(bodies))
+    page.evaluate("() => chrome.storage.local.set({ uca_settings: { pinNext: false } })"); page.wait_for_timeout(1200)
+    check("notification épinglée : retirée quand le réglage est coupé", page.evaluate(get) == [])
+    ctx.close()
+    ctx = browser.new_context(viewport={"width": 412, "height": 900})
+    page = ctx.new_page()
+    page.goto(base + "settings.html"); page.wait_for_timeout(800)
+    check("réglages de l'app : option « prochain cours » proposée", page.locator("#f-pinNext").count() == 1)
+    ctx.close()
+    browser.close()
+
+
 def main():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(ROOT)],
@@ -431,6 +466,7 @@ def main():
             update_detection(chromium, base, errors)
             stale_reminder(chromium, base, errors)
             paste_clipboard(chromium, base, errors)
+            pinned_next(p, base, errors)
             app_accessibility(chromium, base, errors)
             chromium.close()
             try:

@@ -36,7 +36,7 @@ JS_HEADER = """() => {
     && !['absolute', 'fixed'].includes(getComputedStyle(e).position));
   const centers = keep.map(e => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; }).sort((a, b) => a - b);
   const rows = []; centers.forEach(c => { if (!rows.length || c - rows[rows.length - 1] > 14) rows.push(c); });
-  const KEYS = ['viewTabs', 'prevBtn', 'periodLabel', 'nextBtn', 'todayBtn', 'zoomCtrl', 'absencesWrap', 'linksWrap', 'notesWrap',
+  const KEYS = ['viewTabs', 'prevBtn', 'periodLabel', 'nextBtn', 'todayBtn', 'zoomCtrl', 'absencesWrap', 'linksWrap', 'notesWrap', 'tasksWrap',
                 'filterWrap', 'exportWrap', 'settingsBtn', 'designBtn', 'syncBtn'];
   const order = keep.map(e => { const h = e.getAttribute('href') || ''; if (h) return h.includes('moodle') ? 'moodle' : h.includes('mail') ? 'mail' : h.includes('aide') ? 'aide' : h;
     return KEYS.includes(e.id) ? e.id : null; }).filter(Boolean);

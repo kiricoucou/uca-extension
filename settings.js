@@ -38,6 +38,8 @@ const SECTIONS = [
   { title: "Alertes", fields: [
     { notif: true, ext: true, key: "notifyEdtChanges", type: "switch", label: "Changement d'emploi du temps", hint: "Cours ajouté, annulé, déplacé ou changement de salle, détecté à chaque synchro. Les cours concernés sont aussi marqués dans l'agenda pendant 7 jours." },
     { notif: true, ext: true, key: "statusWatch", type: "switch", label: "Surveiller Odin en arrière-plan", hint: "Teste Odin et la connexion toutes les 5 minutes et te prévient quand ils tombent en panne, puis quand ils reviennent." },
+    { notif: true, ext: true, key: "taskReminders", type: "switch", label: "Devoirs et examens la veille", hint: "Une notification la veille à 18 h pour chaque devoir à rendre (liste Devoirs) et chaque examen de ton emploi du temps." },
+    { app: true, key: "pinNext", type: "pinNext", label: "Notification « prochain cours »", hint: "Garde le prochain cours (ou « Examen dans X h ») dans tes notifications. Mise à jour à chaque ouverture de l'app, pas en continu : l'app n'a pas de serveur qui peut la réveiller. Autorisation demandée à l'activation." },
     { key: "absenceAlert", type: "select", label: "Alerte d'absences non justifiées", hint: "Quand ce nombre est atteint : message dans le panneau Absences et notification. Désactivée par défaut.",
       options: [[0, "Désactivée"], [2, "À 2 absences"], [3, "À 3 absences"], [4, "À 4 absences"], [5, "À 5 absences"], [6, "À 6 absences"], [8, "À 8 absences"], [10, "À 10 absences"]] },
     { notif: true, ext: true, key: "notifyNewGrades", type: "switch", label: "Nouvelle note", hint: "Notification quand une note apparaît (ou change) dans ton relevé." },
@@ -48,7 +50,7 @@ const SECTIONS = [
 // changements d'EDT), jamais les réglages ni le design. Une sauvegarde est gardée 10 min pour
 // pouvoir annuler (uca_reset_backup, hors uca_settings : jamais exportée ni dans un lien de partage).
 const RESET_KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_absences_sync",
-  "uca_releve_notes", "uca_releve_notes_sync", "uca_notes_seen", "uca_notes_history", "uca_absence_alert", "uca_edt_changes", "uca_app_imported_at", "uca_app_exported_at"];
+  "uca_releve_notes", "uca_releve_notes_sync", "uca_notes_seen", "uca_notes_history", "uca_tasks", "uca_absence_alert", "uca_edt_changes", "uca_app_imported_at", "uca_app_exported_at"];
 const UNDO_WINDOW_MS = 10 * 60 * 1000;
 
 function $(id) { return document.getElementById(id); }
@@ -98,6 +100,19 @@ function codeControl() {
 
 function control(field, value) {
   if (field.type === "code") return codeControl();
+  if (field.type === "pinNext") {
+    const wrap = el("label", "switch");
+    const input = el("input"); input.type = "checkbox"; input.checked = !!value && typeof Notification !== "undefined" && Notification.permission === "granted"; input.id = "f-" + field.key;
+    input.addEventListener("change", async () => {
+      if (input.checked && Notification.permission !== "granted") {
+        const res = await Notification.requestPermission().catch(() => "denied");
+        if (res !== "granted") { input.checked = false; return; }
+      }
+      save(field.key, input.checked);
+    });
+    wrap.append(input, el("span"));
+    return wrap;
+  }
   if (field.type === "switch") {
     const wrap = el("label", "switch");
     const input = el("input"); input.type = "checkbox"; input.checked = !!value; input.id = "f-" + field.key;
@@ -120,7 +135,7 @@ function render(settings) {
   const root = $("sections"); root.innerHTML = "";
   SECTIONS.forEach((sec) => {
     const noNotif = typeof chrome.notifications === "undefined";
-    const fields = sec.fields.filter((f) => !(window.UCA_APP && f.ext) && !(noNotif && f.notif));
+    const fields = sec.fields.filter((f) => !(window.UCA_APP && f.ext) && !(!window.UCA_APP && f.app) && !(noNotif && f.notif) && !(f.app && !("Notification" in window)));
     if (!fields.length) return;
     const s = el("section"); s.appendChild(el("h2", "", sec.title));
     fields.forEach((f) => {

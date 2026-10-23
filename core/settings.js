@@ -17,6 +17,8 @@ const DEFAULTS = {
   autoDesign: false,      // le design suit le thème clair/sombre du système
   designLight: "professionnel",
   designDark: "anime",
+  pinNext: false,         // app seulement : notification « prochain cours » épinglée (mise à jour à l'ouverture)
+  taskReminders: true,    // notification la veille à 18 h pour chaque devoir à rendre et chaque examen
   absenceAlert: 0,        // 0 = désactivée ; sinon alerte à N absences non justifiées
   statusWatch: false,     // surveille Odin et la connexion toutes les 5 min, notifie panne / retour
   noteNewDays: 2,         // note affichée en orange pendant N jours, puis en jaune pendant autant

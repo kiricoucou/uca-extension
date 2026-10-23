@@ -7,12 +7,12 @@
      ligne (ou si le réseau ne répond pas en NETWORK_TIMEOUT_MS).
    - Requêtes « no-store » (vérification de version, core/env.js) : jamais servies par le cache.
    - Android « Partager → EDT UCA » : le fichier .ucasync reçu est déposé en cache pour app/import.html. */
-const CACHE = "uca-app-v3";
+const CACHE = "uca-app-v4";
 const NETWORK_TIMEOUT_MS = 4000;
 const SHELL = [
   "index.html", "install.html", "aide.html", "404.html", "site.css", "app/index.html", "app/import.html", "app/install.html", "app/import.js", "app/app.css", "app.webmanifest", "manifest.json",
   "app/icons/icon-192.png", "app/icons/icon-512.png",
-  "core/env.js", "core/settings.js", "core/shared.js", "core/grades.js", "core/tools.js", "core/transfer.js", "core/agenda.js",
+  "core/env.js", "core/settings.js", "core/shared.js", "core/grades.js", "core/tools.js", "core/tasks.js", "core/transfer.js", "core/agenda.js",
   "choose.html", "choose.js", "settings.html", "settings.js", "designs/designs.json", "vendor/jsQR.js", "vendor/qrcode.js",
 ];
 
@@ -23,6 +23,11 @@ self.addEventListener("install", (e) => {
 });
 self.addEventListener("activate", (e) => {
   e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== "uca-share").map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+});
+// Notification « prochain cours » : un appui ouvre (ou ramène) l'app.
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => (list.length ? list[0].focus() : self.clients.openWindow(new URL("app/index.html", self.registration.scope).href))));
 });
 self.addEventListener("message", (e) => { if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting(); });
 

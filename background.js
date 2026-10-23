@@ -819,6 +819,40 @@ async function onReminderAlarm(name) {
   });
 }
 
+/* Devoirs et examens (réglage taskReminders) : une notification la veille à 18 h pour chaque devoir à rendre
+   (non terminé) et chaque examen de l'emploi du temps. Plan calculé à part pour pouvoir être testé. */
+const TASK_ALARM_PREFIXES = ["uca_tsk|", "uca_exm|"];
+function taskReminderPlan(tasks, events, now) {
+  const plan = [], horizon = now + 14 * 86400000;
+  const eve = (y, mo, d) => new Date(y, mo, d - 1, 18, 0, 0, 0).getTime();
+  (Array.isArray(tasks) ? tasks : []).forEach((t) => {
+    const m = t && !t.done && typeof t.title === "string" && /^(\d{4})-(\d{2})-(\d{2})$/.exec(t.due || "");
+    if (!m) return;
+    const when = eve(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    if (when > now + 5000 && when < horizon) plan.push({ name: "uca_tsk|" + t.id, when, title: "Demain : " + t.title.slice(0, 120), message: t.subject ? "Devoir · " + String(t.subject).slice(0, 60) : "Devoir à rendre" });
+  });
+  (events || []).forEach((ev) => {
+    if (ev.cancelled || !/\b(Examen|DS|Partiel)\b/i.test(ev.title || "")) return;
+    const when = eve(ev.year, ev.month, ev.day);
+    if (when > now + 5000 && when < horizon) plan.push({ name: "uca_exm|" + eventKey(ev), when, title: "Demain : " + ev.title, message: `Examen à ${pad(ev.startH)}h${pad(ev.startM)}${ev.room ? " · " + ev.room : ""}` });
+  });
+  return plan;
+}
+async function scheduleTaskReminders() {
+  const [settings, data, alarms] = await Promise.all([UCA_getSettings(), chrome.storage.local.get(["uca_tasks", "uca_events"]), chrome.alarms.getAll()]);
+  await Promise.all(alarms.filter((a) => TASK_ALARM_PREFIXES.some((p) => a.name.startsWith(p))).map((a) => chrome.alarms.clear(a.name)));
+  if (!settings.taskReminders) return;
+  taskReminderPlan(data.uca_tasks, data.uca_events, Date.now()).forEach((r) => chrome.alarms.create(r.name, { when: r.when }));
+}
+async function onTaskAlarm(name) {
+  const [settings, data, design] = await Promise.all([UCA_getSettings(), chrome.storage.local.get(["uca_tasks", "uca_events"]), currentDesign()]);
+  if (!settings.taskReminders) return;
+  // Le plan est recalculé juste avant l'heure : un devoir terminé ou supprimé entre-temps ne notifie plus.
+  const r = taskReminderPlan(data.uca_tasks, data.uca_events, Date.now() - 6 * 3600000).find((x) => x.name === name);
+  if (!r) return;
+  notify(name, { type: "basic", iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`), title: r.title, message: r.message, priority: 1 });
+}
+
 if (typeof chrome.notifications !== "undefined" && chrome.notifications.onClicked) chrome.notifications.onClicked.addListener(async (id) => {
   if (!id.startsWith("uca_")) return;
   const design = await currentDesign();
@@ -872,10 +906,12 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   else if (alarm.name === AUTO_SYNC_ALARM) runBackgroundSync();
   else if (alarm.name === BADGE_ALARM) updateBadge();
   else if (alarm.name === STATUS_ALARM) runStatusWatch();
+  else if (TASK_ALARM_PREFIXES.some((p) => alarm.name.startsWith(p))) onTaskAlarm(alarm.name);
 });
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
   if (changes.uca_events || changes.uca_settings) scheduleReminders();
+  if (changes.uca_events || changes.uca_tasks || changes.uca_settings) scheduleTaskReminders();
   if (changes.uca_settings) { configureAutoSync(); configureStatusWatch(); }
   if (changes.uca_events || changes.uca_settings || changes.uca_session_expired || changes.uca_design) updateBadge();
 });
@@ -907,8 +943,8 @@ async function runStatusWatch() {
     });
   });
 }
-chrome.runtime.onStartup.addListener(() => { scheduleReminders(); configureAutoSync(); configureStatusWatch(); updateBadge(); });
-chrome.runtime.onInstalled.addListener(() => { scheduleReminders(); configureAutoSync(); configureStatusWatch(); updateBadge(); });
+chrome.runtime.onStartup.addListener(() => { scheduleReminders(); scheduleTaskReminders(); configureAutoSync(); configureStatusWatch(); updateBadge(); });
+chrome.runtime.onInstalled.addListener(() => { scheduleReminders(); scheduleTaskReminders(); configureAutoSync(); configureStatusWatch(); updateBadge(); });
 
 /* ============ Changements d'emploi du temps ============
    Comparaison sur la plage de dates couverte par les deux synchros et à partir

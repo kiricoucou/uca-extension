@@ -69,6 +69,9 @@ def main():
                 if size["width"] > 800:
                     pg.wait_for_timeout(300)
                     audit(pg, f"{d['id']} agenda {label}, fenêtre Notes ouverte")
+                    pg.locator("#tasksBtn").evaluate("b => b.click()")
+                    pg.wait_for_timeout(300)
+                    audit(pg, f"{d['id']} agenda {label}, fenêtre Devoirs ouverte")
                 pg.close()
             pg = ctx.new_page(); pg.set_viewport_size({"width": 400, "height": 700})
             pg.goto(f"{base}/{d['folder']}/popup.html"); pg.wait_for_timeout(900)

@@ -14,6 +14,7 @@ let scrapeIssues = {};
 let releveNotes = null;
 let notesHistory = [];
 let subjectColors = {};
+let tasks = [];
 let simScope = "", simTarget = 10, chartScope = "general";
 let notesSeen = {};
 let edtChanges = new Map(); // eventKey -> changement (ajouté / déplacé / salle) ; annulés : fantômes
@@ -473,6 +474,7 @@ function buildMobileMenu() {
   m.appendChild(menuButton("mi", D.icon("book") + "Notes" + (avg != null ? ` — moyenne ${fmtNote(avg)}` : ""), () => openToolPanel("notesPanel", true)));
   m.appendChild(menuButton("mi", D.icon("chart") + escapeHtml(absences ? `Absences : ${plural(absences.declarees, "déclarée")}, ${plural(absences.nonJustifiees, "non justifiée")}` : "Absences"), () => openToolPanel("absencesPanel", true)));
   ((absences && absences.declarations) || []).slice(0, 3).forEach(d => { const n = declarationNode(d); n.classList.add("m-decl"); m.appendChild(n); });
+  m.appendChild(menuButton("mi", D.icon("tasks") + "Devoirs et examens" + (UCA_TASKS.openCount(tasks) ? ` (${UCA_TASKS.openCount(tasks)})` : ""), () => openToolPanel("tasksPanel", true)));
   m.appendChild(menuButton("mi", D.icon("link") + "Liens (accueil, aide, installation…)", () => openToolPanel("linksPanel", true)));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   m.appendChild(menuButton("mi", D.icon("link") + "Moodle", () => window.open(MOODLE_URL, "_blank", "noopener")));
@@ -556,6 +558,7 @@ function renderSyncInfo(iso, importedAt) {
 function renderNextInfo() {
   const info = $("syncInfo"); if (!info) return;
   const old = info.querySelector("#nextInfo"); if (old) old.remove();
+  updatePinnedNext();
   const text = UCA_TOOLS.nextCourseText(UCA_TOOLS.nextCourse(events));
   if (!text) return;
   const span = document.createElement("span"); span.id = "nextInfo"; span.textContent = text;
@@ -563,11 +566,29 @@ function renderNextInfo() {
   info.appendChild(span);
 }
 setInterval(renderNextInfo, 30000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") renderNextInfo(); });
+/* App : notification « prochain cours » épinglée (réglage pinNext). L'app n'a pas de serveur de push (rien ne part
+   de l'appareil) : le texte se met à jour à chaque ouverture, retour au premier plan et minute tant que l'app vit.
+   Ce n'est donc pas un widget : il reste ce qu'il affichait à la dernière mise à jour. */
+async function updatePinnedNext() {
+  if (!window.UCA_APP || !("Notification" in window) || !navigator.serviceWorker) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const old = await reg.getNotifications({ tag: "uca-next" });
+    if (!settings.pinNext || Notification.permission !== "granted") { old.forEach((n) => n.close()); return; }
+    const text = UCA_TOOLS.nextCourseText(UCA_TOOLS.nextCourse(events));
+    if (!text) { old.forEach((n) => n.close()); return; }
+    if (old.length && old[0].body === text) return;
+    await reg.showNotification("Prochain cours", { body: text, tag: "uca-next", renotify: false, silent: true, requireInteraction: true,
+      icon: chrome.runtime.getURL("app/icons/icon-192.png") });
+  } catch (e) { /* notification indisponible : sans conséquence */ }
+}
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks"], (data) => {
     if (window.UCA_APP && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) { location.href = chrome.runtime.getURL("app/import.html"); return; }
     settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, data.uca_settings);
     subjectColors = data.uca_subject_colors || {};
+    tasks = UCA_TASKS.sanitize(data.uca_tasks);
     events = (data.uca_events || []).map(ev => ({ ...ev, color: colorOf(ev.title) }));
     notes = data.uca_notes || {};
     absences = data.uca_absences || null;
@@ -592,6 +613,7 @@ function loadFromStorage() {
     renderSessionState(!!data.uca_session_expired);
     renderAbsencesPanel();
     renderNotesPanel();
+    renderTasksButton();
     render();
   });
 }
@@ -698,6 +720,18 @@ function renderAbsencesPanel() {
   set("apMotifs", "avecMotifs"); set("apJourneesNJ", "journeesNonJustifiees");
   renderDeclarations();
   $("absencesBtn").innerHTML = D.icon("chart") + '<span class="btn-label">Absences</span>' + (absences && absences.nonJustifiees ? ` (${absences.nonJustifiees})` : "");
+  renderAbsenceDot();
+}
+/* Pastille d'alerte sur le bouton Absences (réglage absenceAlert) : orange à un pas du seuil, rouge une fois atteint. */
+function renderAbsenceDot() {
+  const btn = $("absencesBtn"), th = Number(settings.absenceAlert) || 0, n = (absences && absences.nonJustifiees) || 0;
+  const level = !th || !n ? "" : n >= th ? "reached" : n >= th - 1 ? "near" : "";
+  if (!level) { btn.title = "Voir mes absences"; return; }
+  const dot = document.createElement("span"); dot.className = "abs-dot " + level; dot.setAttribute("role", "img");
+  const label = level === "reached" ? `Seuil d'absences atteint (${n} sur ${th})` : `Seuil d'absences bientôt atteint (${n} sur ${th})`;
+  dot.setAttribute("aria-label", label);
+  dot.style.cssText = `display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:6px;vertical-align:middle;background:${level === "reached" ? "var(--danger, #b3261e)" : "#f29900"};`;
+  btn.appendChild(dot); btn.title = label;
 }
 $("absencesBtn").addEventListener("click", (e) => {
   e.stopPropagation();
@@ -851,7 +885,48 @@ function simulatorBlock() {
   };
   sel.addEventListener("change", update); inp.addEventListener("input", update);
   box.append(sel, row, out); update();
+  box.appendChild(projectionBlock());
+  const prio = prioritiesBlock(() => simTarget);
+  box.appendChild(prio.node);
+  inp.addEventListener("input", prio.update);
   return box;
+}
+/* Projection du semestre : moyenne générale selon la note obtenue sur tout le reste. */
+function projectionBlock() {
+  const rows = UCA_GRADES.projection(releveNotes, [6, 8, 10, 12, 14, 16, 18]);
+  const node = npEl("div", "np-proj");
+  if (!rows.length) return node;
+  node.appendChild(npEl("div", "fp-h", "Projection du semestre"));
+  const ul = npEl("ul", "np-proj-list"); ul.setAttribute("aria-label", "Moyenne générale selon la note obtenue sur toutes les évaluations à venir");
+  ul.style.cssText = "list-style:none;margin:0;padding:0 16px;display:flex;flex-wrap:wrap;gap:6px;";
+  rows.forEach((r) => {
+    const li = npEl("li", "", `${fmtNote(r.x)} partout → ${fmtNote(r.avg)}`);
+    li.style.cssText = "font-size:12.5px;padding:3px 9px;border:1px solid var(--border);border-radius:12px;" + (r.avg >= 10 ? "font-weight:700;" : "color:var(--text-dim);");
+    ul.appendChild(li);
+  });
+  node.appendChild(ul);
+  return node;
+}
+/* Matières à prioriser : celles qui peuvent le plus faire bouger la moyenne générale. */
+function prioritiesBlock(getTarget) {
+  const node = npEl("div", "np-prio");
+  const update = () => {
+    node.textContent = "";
+    const list = UCA_GRADES.priorities(releveNotes, getTarget()).slice(0, 5);
+    if (!list.length) return;
+    node.appendChild(npEl("div", "fp-h", "Matières à prioriser"));
+    const ol = npEl("ol", "np-prio-list"); ol.setAttribute("aria-label", "Matières classées par effet possible sur la moyenne générale");
+    ol.style.cssText = "margin:0;padding:0 16px 0 34px;font-size:13px;line-height:1.45;";
+    list.forEach((p) => {
+      const hint = p.status === "reached" ? "objectif déjà atteint dans la matière" : p.status === "impossible" ? "objectif hors d'atteinte dans la matière" : `il faut ${fmtNote(p.needed)} / 20 pour ${fmtNote(getTarget())} dans la matière`;
+      const li = npEl("li", "", `${p.label} : jusqu'à ${fmtNote(p.lever)} pt sur la moyenne générale (${p.pending} évaluation${p.pending > 1 ? "s" : ""}, coeff ${fmtNote(p.coeff)}) — ${hint}.`);
+      li.style.marginBottom = "4px";
+      ol.appendChild(li);
+    });
+    node.appendChild(ol);
+  };
+  update();
+  return { node, update };
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -1005,11 +1080,41 @@ function displayedDays() {
   if (currentView === "day") return [new Date(refDate)];
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
+/* Devoirs : bouton et panneau ajoutés ici (même place et même ordre dans les 4 designs), juste après Notes. */
+(function setupTasksUI() {
+  const after = $("notesWrap"), tpl = $("linksWrap");
+  if (!after || !tpl || $("tasksWrap")) return;
+  if (!document.getElementById("i-tasks")) {
+    const sprite = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    sprite.setAttribute("style", "display:none"); sprite.setAttribute("aria-hidden", "true");
+    sprite.innerHTML = '<symbol id="i-tasks" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M9 6h11M9 12h11M9 18h11M3.5 6l1.5 1.5L7.5 5M3.5 12l1.5 1.5L7.5 11M3.5 18l1.5 1.5L7.5 17"/></symbol>';
+    document.body.appendChild(sprite);
+  }
+  const wrap = tpl.cloneNode(false); wrap.id = "tasksWrap";
+  const btn = document.createElement("button"); btn.id = "tasksBtn"; btn.type = "button"; btn.title = "Devoirs à rendre et examens à venir";
+  const panel = document.createElement("div"); panel.className = "absences-panel tool-panel"; panel.id = "tasksPanel";
+  wrap.append(btn, panel);
+  after.after(wrap);
+  const st = document.createElement("style");
+  st.textContent = "@media (min-width:821px) and (max-width:1180px){ #tasksBtn .li-txt{display:none;} #tasksBtn{padding:0 10px;} header{column-gap:5px;} }";
+  document.head.appendChild(st);
+})();
+function renderTasksButton() {
+  const btn = $("tasksBtn"); if (!btn) return;
+  const n = UCA_TASKS.openCount(tasks);
+  btn.innerHTML = D.icon("tasks") + '<span class="li-txt">Devoirs</span>' + (n ? ` <span class="filter-count">${n}</span>` : "");
+  btn.setAttribute("aria-label", n ? `Devoirs et examens, ${n} à faire` : "Devoirs et examens");
+}
+function saveTasks(list) {
+  tasks = list; renderTasksButton();
+  chrome.storage.local.set({ uca_tasks: list }, () => { if ($("tasksPanel") && $("tasksPanel").classList.contains("open")) TOOL_PANELS.tasksPanel.build($("tasksPanel")); });
+}
 const TOOL_PANELS = {
+  tasksPanel: { wrap: "tasksWrap", build: (p) => UCA_TASKS.buildPanel(p, { events, tasks, save: saveTasks }) },
   notesPanel: { wrap: "notesWrap", build: () => {} },
   absencesPanel: { wrap: "absencesWrap", build: () => {} },
   filterPanel: { wrap: "filterWrap", build: (p) => UCA_TOOLS.buildFilterPanel(p, events) },
-  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.makeShareLink(), canShare: window.UCA_APP ? null : UCA_TRANSFER.canShare, sendLink: UCA_TRANSFER.shareLink }) },
+  exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { tasks, allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.makeShareLink(), canShare: window.UCA_APP ? null : UCA_TRANSFER.canShare, sendLink: UCA_TRANSFER.shareLink }) },
   linksPanel: { wrap: "linksWrap", build: (p) => UCA_TOOLS.buildLinksPanel(p) },
 };
 function openToolPanel(id, asSheet) {
@@ -1038,7 +1143,7 @@ function renderFilterButton() {
   $("filterBtn").innerHTML = D.icon("filter") + '<span class="btn-label">Filtres</span>' + (n ? ` <span class="filter-count">${n}</span>` : "");
   $("filterBtn").classList.toggle("active", n > 0);
 }
-["filterPanel", "exportPanel", "linksPanel"].forEach(id => {
+["filterPanel", "exportPanel", "linksPanel", "tasksPanel"].forEach(id => {
   const btn = $(id.replace("Panel", "Btn"));
   if (!btn) return;
   btn.addEventListener("click", (e) => { e.stopPropagation(); openToolPanel(id, false); });
@@ -1260,7 +1365,7 @@ UCA_CORE.initSettings();
 renderFilterButton();
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
-  if (changes.uca_settings) { settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, changes.uca_settings.newValue); render(); renderNotesPanel(); renderAbsencesPanel(); }
+  if (changes.uca_settings) { settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, changes.uca_settings.newValue); render(); renderNotesPanel(); renderAbsencesPanel(); updatePinnedNext(); }
   if (changes.uca_notes_seen || changes.uca_releve_notes) {
     if (changes.uca_notes_seen) notesSeen = changes.uca_notes_seen.newValue || {};
     if (changes.uca_releve_notes) releveNotes = changes.uca_releve_notes.newValue || null;
@@ -1273,6 +1378,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   // Réinitialisation (ou son annulation) depuis Paramètres, dans un autre onglet : reflète tout de suite.
   if (changes.uca_events) { events = (changes.uca_events.newValue || []).map(ev => ({ ...ev, color: colorOf(ev.title) })); render(); renderNextInfo(); }
   if (changes.uca_notes) { notes = changes.uca_notes.newValue || {}; render(); }
+  if (changes.uca_tasks) { tasks = UCA_TASKS.sanitize(changes.uca_tasks.newValue); renderTasksButton(); }
   if (changes.uca_absences) { absences = changes.uca_absences.newValue || null; renderAbsencesPanel(); }
 });
 UCA_TOOLS.load(() => { renderFilterButton(); loadFromStorage(); });

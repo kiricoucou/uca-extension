@@ -89,6 +89,33 @@ function simulate(releve, scopeId, target) {
   return { ...base, status: "needed", needed: Math.min(20, needed) };
 }
 
+/* Projection du semestre : moyenne générale si toutes les évaluations à venir valaient x (x sur 20). */
+function projection(releve, values) {
+  if (!releve || !pendingEvals(releve, "general").length) return [];
+  return values.map((x) => ({ x, avg: valueIfAll(releve, "general", x) })).filter((r) => r.avg != null);
+}
+
+/* Moyenne générale si les évaluations à venir d'une seule matière valaient x, les autres restant sans note. */
+function generalIfFill(releve, matLabel, x) {
+  const pending = new Set(pendingEvals(releve, "mat:" + matLabel));
+  const filled = { ue: releve.ue.map((ue) => ({ ...ue, matieres: (ue.matieres || []).map((m) => ({ ...m, evals: (m.evals || []).map((e) => (pending.has(e) ? { ...e, note: x } : e)) })) })) };
+  return generalAvg(filled);
+}
+
+/* Classement des matières à prioriser : celles dont les évaluations à venir peuvent le plus faire bouger la
+   moyenne générale (levier = écart de moyenne générale entre 20 et 0 sur ces évaluations), avec la note à
+   viser pour atteindre `target` dans la matière elle-même. Décroissant ; vide s'il ne reste rien à venir. */
+function priorities(releve, target) {
+  const out = [];
+  scopes(releve).filter((sc) => sc.id.startsWith("mat:")).forEach((sc) => {
+    const label = sc.id.slice(4), hi = generalIfFill(releve, label, 20), lo = generalIfFill(releve, label, 0);
+    if (hi == null || lo == null) return;
+    const sim = simulate(releve, sc.id, target);
+    out.push({ label, pending: sim.pending, coeff: sim.coeff, lever: hi - lo, status: sim.status, needed: sim.needed == null ? null : sim.needed, max: sim.max == null ? null : sim.max, current: sim.current });
+  });
+  return out.sort((a, b) => b.lever - a.lever || a.label.localeCompare(b.label, "fr"));
+}
+
 /* Historique de la moyenne générale : un point seulement quand elle change. Renvoie la nouvelle liste,
    ou null s'il n'y a rien à ajouter. */
 function nextHistory(history, releve, now) {
@@ -116,5 +143,5 @@ function gradedMatieres(releve) {
   return out;
 }
 
-root.UCA_GRADES = { weightedAvg, matiereNote, ueNote, generalAvg, pendingEvals, scopes, simulate, nextHistory, matiereSeries, gradedMatieres };
+root.UCA_GRADES = { weightedAvg, matiereNote, ueNote, generalAvg, pendingEvals, scopes, simulate, projection, priorities, nextHistory, matiereSeries, gradedMatieres };
 })(self);

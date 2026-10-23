@@ -90,7 +90,7 @@ function fold(line) {
 function localStamp(ev, h, m) { return `${ev.year}${pad(ev.month + 1)}${pad(ev.day)}T${pad(h)}${pad(m)}00`; }
 function hash(str) { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0; return h.toString(36); }
 
-function buildIcs(evs, { alarmMinutes, eventKey }) {
+function buildIcs(evs, { alarmMinutes, eventKey, tasks }) {
   const now = new Date();
   const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
   const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//EDT UCA (non officiel)//FR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
@@ -102,6 +102,18 @@ function buildIcs(evs, { alarmMinutes, eventKey }) {
     if (ev.room) lines.push(`LOCATION:${icsEscape(ev.room)}`);
     if (ev.teacher) lines.push(`DESCRIPTION:${icsEscape("Enseignant : " + ev.teacher)}`);
     if (alarmMinutes) lines.push("BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${icsEscape(ev.title)}`, `TRIGGER:-PT${alarmMinutes}M`, "END:VALARM");
+    lines.push("END:VEVENT");
+  });
+  // Devoirs à rendre : événements « journée entière » avec rappel la veille à 18 h (6 h avant minuit).
+  (tasks || []).forEach((t) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t.due || "");
+    if (!m) return;
+    const next = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]) + 1);
+    const nextStamp = `${next.getFullYear()}${pad(next.getMonth() + 1)}${pad(next.getDate())}`;
+    lines.push("BEGIN:VEVENT", `UID:${hash("task|" + t.id)}-${t.due}@edt-uca`, `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${m[1]}${m[2]}${m[3]}`, `DTEND;VALUE=DATE:${nextStamp}`, `SUMMARY:${icsEscape("Devoir : " + t.title)}`);
+    if (t.subject) lines.push(`DESCRIPTION:${icsEscape("Matière : " + t.subject)}`);
+    if (alarmMinutes) lines.push("BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${icsEscape("Devoir : " + t.title)}`, "TRIGGER:-PT6H", "END:VALARM");
     lines.push("END:VEVENT");
   });
   lines.push("END:VCALENDAR");
@@ -132,6 +144,8 @@ function buildExportPanel(panel, opts) {
   const mkCheck = (label, checked) => { const row = el("label", "fp-item"); const cb = el("input"); cb.type = "checkbox"; cb.checked = checked; row.append(cb, el("span", "", label)); panel.appendChild(row); return cb; };
   const useFilters = mkCheck("Appliquer mes filtres", activeCount() > 0);
   const alarm = mkCheck(`Ajouter un rappel ${opts.reminderMinutes} min avant chaque cours`, true);
+  const openTasks = (opts.tasks || []).filter((t) => !t.done && t.due);
+  const withTasks = openTasks.length ? mkCheck(`Ajouter mes devoirs à rendre (${openTasks.length})`, true) : null;
   const btn = el("button", "xp-go", "Télécharger le fichier .ics"); btn.type = "button";
   const info = el("div", "fp-empty");
   btn.addEventListener("click", () => {
@@ -142,9 +156,10 @@ function buildExportPanel(panel, opts) {
     else if (range === "4w") { const lim = new Date(today.getTime() + 28 * 86400000); evs = evs.filter((e) => { const d = new Date(e.year, e.month, e.day); return d >= today && d < lim; }); }
     if (useFilters.checked) evs = evs.filter(passes);
     evs.sort((a, b) => a.date.localeCompare(b.date) || (a.startH * 60 + a.startM) - (b.startH * 60 + b.startM));
-    if (!evs.length) { info.textContent = "Aucun cours dans cette période."; return; }
-    download("emploi-du-temps-uca.ics", buildIcs(evs, { alarmMinutes: alarm.checked ? opts.reminderMinutes : 0, eventKey: opts.eventKey }));
-    info.textContent = `${evs.length} cours exportés. Ouvre le fichier pour l'ajouter à ton agenda.`;
+    const tk = withTasks && withTasks.checked ? openTasks : [];
+    if (!evs.length && !tk.length) { info.textContent = "Aucun cours dans cette période."; return; }
+    download("emploi-du-temps-uca.ics", buildIcs(evs, { alarmMinutes: alarm.checked ? opts.reminderMinutes : 0, eventKey: opts.eventKey, tasks: tk }));
+    info.textContent = `${evs.length} cours${tk.length ? ` et ${tk.length} devoir${tk.length > 1 ? "s" : ""}` : ""} exportés. Ouvre le fichier pour l'ajouter à ton agenda. Il reflète ta dernière synchro : réexporte-le après une synchro.`;
   });
   panel.append(btn, info);
   // Lien direct : seulement en dehors de l'app (l'app n'a pas besoin de s'envoyer un lien à elle-même).
@@ -222,23 +237,40 @@ function nextCourse(evs, now) {
   const t = now === undefined ? Date.now() : now;
   const list = evs.filter((e) => passes(e) && endMs(e) > t).sort((a, b) => startMs(a) - startMs(b));
   const cur = list.find((e) => startMs(e) <= t);
-  if (cur) return { ev: cur, ongoing: true, minutes: Math.max(1, Math.ceil((endMs(cur) - t) / 60000)) };
+  // Prochain examen (autre que le cours en tête), pour l'annoncer même quand un cours passe avant.
+  const examAfter = (head) => list.find((e) => e !== head && startMs(e) > t && typeOf(e.title) === "Examen");
+  const calDays = (e) => { const a = new Date(startMs(e)), b = new Date(t); a.setHours(0, 0, 0, 0); b.setHours(0, 0, 0, 0); return Math.round((a - b) / 86400000); };
+  const wrap = (ev, ongoing, minutes) => {
+    const r = { ev, ongoing, minutes: Math.max(1, Math.ceil(minutes)), isExam: typeOf(ev.title) === "Examen", days: calDays(ev) };
+    const ex = r.isExam ? null : examAfter(ev);
+    if (ex) r.exam = { ev: ex, minutes: Math.max(1, Math.ceil((startMs(ex) - t) / 60000)), days: calDays(ex) };
+    return r;
+  };
+  if (cur) return wrap(cur, true, (endMs(cur) - t) / 60000);
   const next = list[0];
-  return next ? { ev: next, ongoing: false, minutes: Math.max(1, Math.ceil((startMs(next) - t) / 60000)) } : null;
+  return next ? wrap(next, false, (startMs(next) - t) / 60000) : null;
 }
 function durationText(min) {
   if (min < 60) return `${min} min`;
   const h = Math.floor(min / 60), m = min % 60;
   return h < 24 ? `${h} h${m ? " " + pad(m) : ""}` : "";
 }
+// « 3 h 15 », « 40 min », « 2 jours » (jours du calendrier, comme la liste des examens) pour les examens, qui peuvent être loin.
+function untilText(min, days) {
+  const d = durationText(min);
+  if (d) return d;
+  return `${days} jour${days > 1 ? "s" : ""}`;
+}
 function nextCourseText(res, now) {
   if (!res) return "";
   const ev = res.ev, place = ev.room ? " · " + ev.room : "";
-  if (res.ongoing) return `En cours : ${ev.title}${place} (fin dans ${durationText(res.minutes)})`;
+  if (res.ongoing) return `En cours : ${res.isExam ? "Examen · " : ""}${ev.title}${place} (fin dans ${durationText(res.minutes)})`;
   const d = durationText(res.minutes);
-  if (d) return `Prochain : ${ev.title}${place} · dans ${d}`;
+  if (res.isExam) return `Examen dans ${untilText(res.minutes, res.days)} : ${ev.title}${place}`;
+  const exam = res.exam ? ` · Examen dans ${untilText(res.exam.minutes, res.exam.days)}` : "";
+  if (d) return `Prochain : ${ev.title}${place} · dans ${d}${exam}`;
   const when = new Date(ev.year, ev.month, ev.day).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "short" });
-  return `Prochain : ${ev.title}${place} · ${when} ${pad(ev.startH)}h${pad(ev.startM)}`;
+  return `Prochain : ${ev.title}${place} · ${when} ${pad(ev.startH)}h${pad(ev.startM)}${exam}`;
 }
 
 /* Jours fériés français (calculés, aucune donnée externe) : fixes + lundi de Pâques, Ascension, lundi de Pentecôte.

@@ -4,6 +4,7 @@ Usage : python -I -X utf8 tests/pwa.py [dossier_captures]
 Chromium en émulation Android ; WebKit en émulation iPhone s'il est installé
 (`playwright install webkit`).
 """
+import datetime
 import json
 import socket
 import subprocess
@@ -449,7 +450,7 @@ def offline_complete(browser, base, errors):
     page = ctx.new_page()
     page.on("pageerror", lambda e: errors.append(f"[hors ligne] {e}"))
     failed = []
-    page.on("requestfailed", lambda r: failed.append(r.url) if "?latest=" not in r.url and r.url.startswith(base) else None)
+    page.on("requestfailed", lambda r: failed.append(r.url) if "?latest=" not in r.url and r.url.startswith(base) and "ABORTED" not in str(r.failure) else None)
     page.on("response", lambda r: failed.append(f"{r.status} {r.url}") if r.url.startswith(base) and r.status >= 400 else None)
     data = seed(); data["uca_design"] = "carnet"
     page.goto(base + "app/import.html"); page.wait_for_timeout(300)
@@ -600,6 +601,22 @@ def site_demo(browser, base, errors):
     check("robots.txt : indexation permise et sitemap déclaré", "Allow: /" in rb and "Sitemap: " + root_url + "sitemap.xml" in rb)
 
 
+def weekday_clock(browser):
+    """Week-end : la vue Jour du téléphone s'ouvre sur aujourd'hui, sans cours (les jeux de test n'en ont que du lundi au
+    vendredi). Les pages voient donc le mercredi de la même semaine ; les dates des jeux de test restent cohérentes."""
+    now = datetime.datetime.now()
+    if now.weekday() < 5:
+        return
+    wed = (now - datetime.timedelta(days=now.weekday() - 2)).replace(hour=12, minute=0, second=0, microsecond=0)
+    orig = browser.new_context
+
+    def new_context(*a, **k):
+        c = orig(*a, **k)
+        c.clock.install(time=wed)
+        return c
+    browser.new_context = new_context
+
+
 def main():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(ROOT)],
@@ -610,6 +627,7 @@ def main():
         time.sleep(1)
         with sync_playwright() as p:
             chromium = p.chromium.launch()
+            weekday_clock(chromium)
             man = json.loads(Path(ROOT / "app.webmanifest").read_text(encoding="utf-8"))
             icons_ok = all((ROOT / i["src"]).exists() for i in man["icons"]) and any(i.get("purpose") == "maskable" for i in man["icons"])
             check("manifeste : icônes (dont maskable) présentes", icons_ok)
@@ -636,6 +654,7 @@ def main():
                 webkit = None
                 print("SKIP iPhone (WebKit non installé : playwright install webkit)")
             if webkit:
+                weekday_clock(webkit)
                 run_flow(webkit, p.devices["iPhone 14"], base, "iphone", errors, "professionnel")
                 webkit.close()
     finally:

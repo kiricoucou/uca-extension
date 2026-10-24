@@ -53,7 +53,7 @@ def permissions_check():
     hosts = manifest.get("host_permissions", [])
     check("host_permissions : pas de <all_urls>", "<all_urls>" not in hosts and not any(h in ("*://*/*", "https://*/*", "http://*/*") for h in hosts), str(hosts))
     check("host_permissions : seulement les domaines attendus", set(hosts) <= {
-        "https://ent.uca.fr/*", "https://odin.iut.uca.fr/*", "https://raw.githubusercontent.com/*",
+        "https://ent.uca.fr/*", "https://odin.iut.uca.fr/*", "http://odin.iut.uca.fr/*", "https://raw.githubusercontent.com/*",
     }, str(hosts))
 
 

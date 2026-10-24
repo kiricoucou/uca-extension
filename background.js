@@ -15,8 +15,24 @@ const SYNC_RETRY_COOLDOWN_MS = 10 * 1000;
 // Odin lui-même peut répondre par une page d'erreur (service en panne, maintenance...) plutôt que
 // par l'emploi du temps : repéré dans le texte de la page pour arrêter d'attendre tout de suite
 // (sinon on patiente jusqu'au bout des relances en pensant que la page finira par se charger).
+// Page de maintenance d'Odin (souvent servie en http, sans HTTPS) : « Site en maintenance. Les équipes sont
+// mobilisées… Merci de ne pas ouvrir de ticket au support. » -> pas une panne ordinaire : on le dit tel quel.
+function isMaintenance(text) {
+  if (!text) return false;
+  return /site en maintenance|[ée]quipes sont mobilis[ée]es|ne pas ouvrir de ticket|maintenance en cours/i.test(text.slice(0, 1500));
+}
+function isHttpOdin(url) {
+  try { const u = new URL(url); return u.protocol === "http:" && u.hostname === "odin.iut.uca.fr"; } catch (e) { return false; }
+}
+const MAINTENANCE_MESSAGE = "Odin est en maintenance (les équipes de l'IUT y travaillent, inutile d'ouvrir un ticket). Ton ancien emploi du temps est conservé.";
+function maintenanceError() {
+  const e = new Error(MAINTENANCE_MESSAGE);
+  e.serviceDown = true; e.maintenance = true;
+  return e;
+}
 function looksLikeServiceError(text) {
   if (!text) return false;
+  if (isMaintenance(text)) return true;
   const head = text.slice(0, 500);
   return /\b(404|500|502|503|504)\b/.test(head)
     || /page (introuvable|non trouv[ée]e)|erreur (serveur|interne)|service (indisponible|temporairement indisponible)|site (indisponible|en maintenance)|maintenance en cours|internal server error|not found|service unavailable|bad gateway|gateway timeout/i.test(head);
@@ -231,6 +247,7 @@ async function extractScheduleTextWithRetry(tabId, tries, delayMs) {
   for (let i = 0; i < tries; i++) {
     last = await extractScheduleText(tabId);
     if (DATE_HEADER_RE.test(last)) return last;
+    if (isMaintenance(last)) throw maintenanceError();
     if (looksLikeServiceError(last)) {
       const e = new Error("Le service Odin semble indisponible (erreur renvoyée par le site).");
       e.serviceDown = true;
@@ -396,12 +413,13 @@ async function scrapeOdinPage(url, isReady, extra) {
     for (let i = 0; i < 10; i++) {
       text = await extractScheduleText(tab.id);
       if (isReady(text)) { ready = true; break; }
-      if (looksLikeServiceError(text) && text.trim().length < 800) break;
+      if (isMaintenance(text) || (looksLikeServiceError(text) && text.trim().length < 800)) break;
       await sleep(500);
     }
     const more = ready && extra ? await extra(tab.id) : null;
     await chrome.tabs.remove(tab.id);
     if (ready) return { text, more, issue: null };
+    if (isMaintenance(text)) return { text, issue: "maintenance" };
     return { text, issue: looksLikeServiceError(text) && text.trim().length < 800 ? "serviceDown" : "structure" };
   } catch (e) {
     if (tab) { try { await chrome.tabs.remove(tab.id); } catch (_) {} }
@@ -561,7 +579,7 @@ async function diag(event, detail) {
     await chrome.storage.local.set({ uca_diag_log: log });
   } catch (e) { /* le journal ne doit jamais casser une synchro */ }
 }
-const ISSUE_LABEL = { session: "session expirée", serviceDown: "Odin indisponible", structure: "page non reconnue (Odin a peut-être changé)", error: "erreur de chargement" };
+const ISSUE_LABEL = { session: "session expirée", maintenance: "Odin en maintenance", serviceDown: "Odin indisponible", structure: "page non reconnue (Odin a peut-être changé)", error: "erreur de chargement" };
 
 /* Mémorise (ou efface) le problème rencontré sur une page secondaire ; les anciennes données restent. */
 async function recordScrapeIssue(kind, r) {
@@ -688,14 +706,20 @@ async function handleSync(mode) {
       // "background" (synchro auto) : échec silencieux, elle réessaiera à la prochaine alarme.
       // "resync" (bouton) : annulation ou service Odin en panne -> remonte tel quel, sans jamais
       // enchaîner sur une fenêtre de connexion complète que l'utilisateur n'a pas demandée.
-      await diag("sync-echec", `${mode} : ${e && e.serviceDown ? "Odin indisponible" : e && e.cancelled ? "annulée" : String((e && e.message) || e).slice(0, 80)}`);
+      if (e && e.maintenance) await recordScrapeIssue("edt", { issue: "maintenance" });
+      await diag("sync-echec", `${mode} : ${e && e.maintenance ? "Odin en maintenance" : e && e.serviceDown ? "Odin indisponible" : e && e.cancelled ? "annulée" : String((e && e.message) || e).slice(0, 80)}`);
       if (mode === "background") return;
       throw e;
     }
     if (text && DATE_HEADER_RE.test(text)) { await syncSucceeded(text, true); return; }
     if (mode === "background") return;
   }
-  text = await fullLogin();
+  try {
+    text = await fullLogin();
+  } catch (e) {
+    if (e && e.maintenance) { await recordScrapeIssue("edt", { issue: "maintenance" }); await diag("sync-echec", "login : Odin en maintenance"); }
+    throw e;
+  }
   if (!text || !DATE_HEADER_RE.test(text)) {
     broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: "Aucun emploi du temps reconnu sur la page : Odin a peut-être changé son affichage. Ton ancien emploi du temps est conservé.", retryAfterMs: SYNC_RETRY_COOLDOWN_MS });
     return;

@@ -24,7 +24,7 @@ Afficher l'emploi du temps, les notes et les absences de l'étudiant, lus sur Od
 - **cookies** : lit la durée restante de la session UCA (affichage) et, sur clic « Déconnexion », supprime uniquement les cookies de ent.uca.fr et odin.iut.uca.fr.
 - **alarms** : rappels de cours et la veille des devoirs et examens, synchronisation automatique, mise à jour de la pastille de l'icône.
 - **notifications** : rappels avant les cours, la veille des devoirs et examens, et alertes (changement d'emploi du temps, nouvelle note, absences). Désactivables.
-- **Accès aux hôtes https://ent.uca.fr/\* et https://odin.iut.uca.fr/\*** : connexion CAS officielle et lecture des pages Odin de l'étudiant.
+- **Accès aux hôtes https://ent.uca.fr/\* et https://odin.iut.uca.fr/\*** : connexion CAS officielle et lecture des pages Odin de l'étudiant. `http://odin.iut.uca.fr/*` (même hôte, sans HTTPS) sert uniquement à lire la page « Site en maintenance » qu'Odin affiche parfois en http, pour prévenir l'étudiant et garder son ancien emploi du temps.
 - **Script de contenu sur https://kiricoucou.github.io/uca-extension/\*** : relie le site / l'application web de l'extension à l'extension (bouton « Synchroniser » du site). Il ne transmet aucune autre donnée.
 
 ## Code distant

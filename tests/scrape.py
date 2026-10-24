@@ -63,7 +63,7 @@ def main():
         check("notes : évaluation lue", rel["ue"][0]["matieres"][0]["evals"][0]["note"] == 12.5, json.dumps(rel["ue"][0], ensure_ascii=False)[:200])
 
         # --- détection des pages d'erreur
-        for name in ("odin_404.txt", "odin_500.txt", "odin_503.txt", "odin_maintenance.txt"):
+        for name in ("odin_404.txt", "odin_500.txt", "odin_503.txt", "odin_maintenance.txt", "odin_maintenance_http.txt"):
             check(f"page d'erreur reconnue : {name}", sw.evaluate("(t) => looksLikeServiceError(t)", fx(name)))
         for name in ("odin_edt.txt", "odin_absences.txt", "odin_notes.txt"):
             check(f"page normale non prise pour une panne : {name}", not sw.evaluate("(t) => looksLikeServiceError(t)", fx(name)))
@@ -72,9 +72,12 @@ def main():
         for kind, good, parsed in (("absences", "odin_absences.txt", "nonJustifiees"), ("notes", "odin_notes.txt", "ue")):
             r = scrape(sw, kind, fx(good))
             check(f"{kind} : page normale -> données, pas de problème", r["issue"] is None and r["data"] is not None, str(r)[:200])
-            for err in ("odin_404.txt", "odin_500.txt", "odin_503.txt", "odin_maintenance.txt"):
+            for err in ("odin_404.txt", "odin_500.txt", "odin_503.txt"):
                 r = scrape(sw, kind, fx(err))
                 check(f"{kind} : {err} -> serviceDown", r["issue"] == "serviceDown" and r["data"] is None, str(r)[:200])
+            for err, url in (("odin_maintenance.txt", "https://odin.iut.uca.fr/etudiants/"), ("odin_maintenance_http.txt", "http://odin.iut.uca.fr/etudiants/")):
+                r = scrape(sw, kind, fx(err), url)
+                check(f"{kind} : {err} ({url[:5]}) -> maintenance", r["issue"] == "maintenance" and r["data"] is None, str(r)[:200])
             r = scrape(sw, kind, fx("odin_changee.txt"))
             check(f"{kind} : page méconnaissable -> structure", r["issue"] == "structure" and r["data"] is None, str(r)[:200])
             r = scrape(sw, kind, "", "https://ent.uca.fr/cas/login")
@@ -103,6 +106,16 @@ def main():
         ctx.pages[0].wait_for_timeout(300) if ctx.pages else None
         n = sw.evaluate("() => chrome.storage.local.get('uca_diag_log').then(d => d.uca_diag_log.length)")
         check("journal : borné à 200 lignes", n <= 200, str(n))
+        # --- synchro de l'emploi du temps pendant une maintenance (page en http) : erreur dédiée, ancien EDT gardé
+        sw.evaluate("() => chrome.storage.local.set({ uca_events: [{ date: '2099-01-05', year: 2099, month: 0, day: 5, startH: 8, startM: 0, endH: 10, endM: 0, title: 'ANCIEN', teacher: '', room: '' }], uca_scrape_issues: {}, uca_last_sync: '2020-01-01T00:00:00.000Z' })")
+        sw.evaluate(STUB, {"text": fx("odin_maintenance_http.txt"), "url": "http://odin.iut.uca.fr/etudiants/?p=edt"})
+        err = sw.evaluate("() => extractScheduleTextWithRetry(1, 3, 0).then(() => null, (e) => ({ maintenance: !!e.maintenance, serviceDown: !!e.serviceDown, message: e.message }))")
+        check("EDT : page de maintenance -> erreur maintenance", err and err["maintenance"] and err["serviceDown"] and "maintenance" in err["message"], str(err))
+        sw.evaluate("() => handleSync('background').catch(() => {})")
+        sw.evaluate("() => handleSync('resync').catch(() => {})")
+        st = sw.evaluate("() => chrome.storage.local.get(['uca_events', 'uca_scrape_issues', 'uca_last_sync'])")
+        check("EDT maintenance : ancien emploi du temps et date de synchro conservés", st["uca_events"][0]["title"] == "ANCIEN" and st["uca_last_sync"].startswith("2020"), str(st)[:200])
+        check("EDT maintenance : problème « maintenance » mémorisé", st["uca_scrape_issues"].get("edt", {}).get("issue") == "maintenance", str(st["uca_scrape_issues"]))
         # --- emploi du temps : page reconnue mais aucun cours lu -> ancien emploi du temps conservé
         sw.evaluate(STUB, {"text": fx("odin_edt.txt"), "url": "https://odin.iut.uca.fr/etudiants/"})
         sw.evaluate("() => chrome.storage.local.set({ uca_events: [{ date: '2099-01-05', year: 2099, month: 0, day: 5, startH: 8, startM: 0, endH: 10, endM: 0, title: 'ANCIEN', teacher: '', room: '' }], uca_scrape_issues: {}, uca_last_sync: '2020-01-01T00:00:00.000Z' })")

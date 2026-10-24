@@ -272,7 +272,7 @@ function renderTimeGrid(containerId, days) {
   const gutterHead = document.createElement("div"); gutterHead.className = "grid-timegutter-head"; headRow.appendChild(gutterHead);
   days.forEach(d => { const dh = document.createElement("div"); dh.className = "grid-daycol-head" + (sameDay(d, today) ? " today" : ""); dh.innerHTML = `<div class="dname">${DAY_NAMES_SHORT[d.getDay()]}</div><div class="dnum">${d.getDate()}</div>`; markHoliday(dh, d, ".dnum"); headRow.appendChild(dh); });
   const scroll = document.createElement("div"); scroll.className = "grid-scroll";
-  scroll.tabIndex = 0; scroll.setAttribute("role", "region"); scroll.setAttribute("aria-label", "Grille horaire des cours");
+  scroll.tabIndex = 0; scroll.setAttribute("role", "region"); scroll.setAttribute("aria-label", "Grille horaire des cours (" + days.length + (days.length > 1 ? " jours)" : " jour)"));
   scroll.appendChild(headRow);
   const body = document.createElement("div"); body.className = "grid-body";
   scroll.appendChild(body);
@@ -553,6 +553,12 @@ function renderSyncInfo(iso, importedAt) {
     return;
   }
   $("syncInfo").textContent = iso ? "Dernière synchro : " + new Date(iso).toLocaleString("fr-FR") : "Jamais synchronisé";
+  if (scrapeIssues.edt && scrapeIssues.edt.issue === "maintenance") {
+    const m = document.createElement("span"); m.id = "maintenanceInfo"; m.setAttribute("role", "status");
+    m.style.cssText = "margin-left:12px;font-weight:600;color:var(--danger, #b3261e);";
+    m.textContent = "Odin est en maintenance : ancien emploi du temps conservé.";
+    $("syncInfo").appendChild(m);
+  }
   renderStaleReminder(iso, null);
 }
 /* Prochain cours (ou cours en cours) dans la ligne d'info, mis à jour chaque 30 s. */
@@ -681,6 +687,7 @@ function renderDeclarations() {
    anciennes données et on le dit, au lieu d'afficher un résultat vide sans explication. */
 const SCRAPE_ISSUE_TEXT = {
   session: "Session Odin expirée : reconnecte-toi.",
+  maintenance: "Odin est en maintenance : ces données datent de la dernière synchro réussie.",
   serviceDown: "Odin est indisponible : ces données datent de la dernière synchro réussie.",
   structure: "Odin semble avoir changé sa page : ces données datent de la dernière synchro réussie. Signale-le dans l'aide si ça dure.",
   error: "Lecture impossible cette fois : ces données datent de la dernière synchro réussie.",
@@ -1373,7 +1380,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     renderNotesPanel();
   }
   if (changes.uca_notes_history) { notesHistory = changes.uca_notes_history.newValue || []; renderNotesPanel(); }
-  if (changes.uca_scrape_issues) { scrapeIssues = changes.uca_scrape_issues.newValue || {}; renderAbsencesPanel(); renderNotesPanel(); }
+  if (changes.uca_scrape_issues) { scrapeIssues = changes.uca_scrape_issues.newValue || {}; renderAbsencesPanel(); renderNotesPanel(); if (syncInfoArgs[0] || syncInfoArgs[1]) { renderSyncInfo(...syncInfoArgs); renderNextInfo(); } }
   if (changes.uca_subject_colors) { subjectColors = changes.uca_subject_colors.newValue || {}; events.forEach((e) => { e.color = colorOf(e.title); }); render(); }
   if (changes.uca_edt_changes) { setEdtChanges(changes.uca_edt_changes.newValue); render(); }
   // Réinitialisation (ou son annulation) depuis Paramètres, dans un autre onglet : reflète tout de suite.

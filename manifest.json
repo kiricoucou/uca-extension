@@ -1,12 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Emploi du temps UCA (non officiel)",
-  "version": "1.43.0",
+  "version": "1.44.0",
   "description": "Emploi du temps, notes et absences de l'UCA (Odin) dans ton navigateur. Non officiel, aucune donnée envoyée à un tiers.",
   "permissions": ["scripting", "storage", "cookies", "alarms", "notifications"],
   "host_permissions": [
     "https://ent.uca.fr/*",
     "https://odin.iut.uca.fr/*",
+    "http://odin.iut.uca.fr/*",
     "https://raw.githubusercontent.com/*"
   ],
   "icons": {

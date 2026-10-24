@@ -14,7 +14,7 @@ Fonts of the "carnet" design (Caveat, Nunito, SIL OFL 1.1) are bundled locally.
 
 **Data.** `data_collection_permissions: none`. Nothing is sent to the developer or any third party. Data is kept in
 `storage.local`. There is no server. Full list of network requests: https://kiricoucou.github.io/uca-extension/confidentialite.html
-- `ent.uca.fr`, `odin.iut.uca.fr`: CAS login (the user types credentials on the university page; the extension never reads them) and reading the student's pages (`tabs` + `scripting.executeScript`, text only).
+- `ent.uca.fr`, `odin.iut.uca.fr` (also its plain-http variant, only to read the maintenance page Odin sometimes serves without HTTPS): CAS login (the user types credentials on the university page; the extension never reads them) and reading the student's pages (`tabs` + `scripting.executeScript`, text only).
 - Settings → "Statut des sites": anonymous GET requests (`credentials: "omit"`) to odin.iut.uca.fr, ent.uca.fr, moodle.uca.fr, mail.uca.fr, kiricoucou.github.io and raw.githubusercontent.com, only to display whether they respond. No data sent.
 - This store package has no update checker (a development build that reads a public version file on GitHub is not what is submitted; the marker file `store-build.txt` disables it).
 

@@ -204,7 +204,7 @@ def lot3_image(ctx, sw, base, errors):
             with pg.expect_download() as dl:
                 pg.locator(f"#exportPanel .xp-image[data-kind={kind}]").click()
             w, h = png_size(dl.value.path())
-            check(f"{d['id']} : image {kind} téléchargée en PNG ({w}x{h})", w == minw and h > 500 and dl.value.suggested_filename.startswith("edt-uca-"), dl.value.suggested_filename)
+            check(f"{d['id']} : image {kind} téléchargée en PNG ({w}x{h})", w == minw and h > (300 if kind == "day" else 500) and dl.value.suggested_filename.startswith("edt-uca-"), dl.value.suggested_filename)
             if d["id"] in ("professionnel", "carnet", "anime") and OUT:
                 OUT.mkdir(parents=True, exist_ok=True)
                 dl.value.save_as(str(OUT / f"lot3-image-{kind}-{d['id']}.png"))

@@ -55,6 +55,15 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.44.0 — Odin en maintenance
+
+Quand Odin affiche sa page « Site en maintenance. Les équipes sont mobilisées pour procéder aux opérations de mise à jour dans les meilleurs délais. Merci de ne pas ouvrir de ticket au support. » (souvent en http, sans HTTPS), l'extension le reconnaît comme une maintenance et non comme une panne ordinaire.
+- **Ancienne synchro conservée** : ni l'emploi du temps, ni les notes, ni les absences ne sont touchés, et aucune fenêtre de connexion CAS ne s'ouvre pour rien.
+- **Message clair** : « Odin est en maintenance : ancien emploi du temps conservé » dans la ligne d'info de l'agenda (4 designs), et dans les panneaux Notes et Absences.
+- **Page en http** : l'hôte `http://odin.iut.uca.fr/*` est ajouté aux permissions (même hôte, uniquement pour lire cette page de maintenance servie sans HTTPS).
+- Accessibilité : chaque grille horaire a un nom propre selon le nombre de jours affichés (plus de repères en double pour les lecteurs d'écran).
+- Tests : pages de maintenance (https et http) pour l'emploi du temps, les notes et les absences ; tests d'images partagées et de l'app mobile qui ne dépendent plus du jour de la semaine (ils échouaient le week-end).
+
 ## 1.43.0 — site vitrine (lot 4)
 
 Déjà en place (vérifié, non refait) : accueil avec comparatif des quatre façons d'utiliser le projet, aide complète de plus de cinquante questions avec recherche, page de confidentialité, 404.

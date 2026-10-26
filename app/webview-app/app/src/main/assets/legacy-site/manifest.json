@@ -1,0 +1,49 @@
+{
+  "name": "Emploi du temps UCA",
+  "short_name": "Emploi du temps",
+  "description": "Outil non officiel, non affilié à l'Université Clermont Auvergne. Importez vos calendriers ICS, texte ou flux UCA et consultez-les en vues Jour, 3 jours, 5 jours, Semaine, Mois ou Liste. Données stockées uniquement sur votre appareil.",
+  "display": "standalone",
+  "orientation": "any",
+  "start_url": "/index.html",
+  "scope": "/",
+  "background_color": "#121418",
+  "theme_color": "#121418",
+  "lang": "fr",
+  "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Aujourd'hui",
+      "short_name": "Aujourd'hui",
+      "description": "Revenir à la date du jour",
+      "url": "/index.html?action=today",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Synchroniser",
+      "short_name": "Sync",
+      "description": "Resynchroniser l'emploi du temps UCA",
+      "url": "/index.html?action=sync",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

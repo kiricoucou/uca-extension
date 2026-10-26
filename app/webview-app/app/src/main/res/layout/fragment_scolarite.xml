@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg">
+
+    <include layout="@layout/topbar" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:text="DOCUMENTS ADMINISTRATIFS"
+                android:textColor="@color/text_dim"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.04"
+                android:layout_marginBottom="6dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="14dp"
+                android:layout_marginBottom="16dp">
+                <TextView
+                    android:text="Certificat de scolarité officiel 2026-2027"
+                    android:textColor="@color/text"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:text="Valable pour le régime étudiant, mutuelles, transports T2C et CROUS."
+                    android:textColor="@color/text_dim"
+                    android:textSize="13sp"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <Button
+                    android:id="@+id/btnDownloadCertificat"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_cta"
+                    android:text="Télécharger le certificat (PDF)"
+                    android:textAllCaps="false"
+                    android:textColor="@color/on_accent"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="8dp"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp" />
+            </LinearLayout>
+
+            <TextView
+                android:text="DONNÉES ÉTUDIANT &amp; INSCRIPTION"
+                android:textColor="@color/text_dim"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.04"
+                android:layout_marginBottom="6dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="14dp"
+                android:layout_marginBottom="16dp">
+                <TextView
+                    android:text="Numéro Étudiant : 22304891"
+                    android:textColor="@color/text"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:text="Numéro National INE : 091482910G"
+                    android:textColor="@color/text"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:text="Formation : BUT Informatique 2ème année (Aubière Cézeaux)"
+                    android:textColor="@color/text_dim"
+                    android:textSize="13sp"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <TextView
+                android:text="CONTACTS SCOLARITÉ"
+                android:textColor="@color/text_dim"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.04"
+                android:layout_marginBottom="6dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="14dp">
+                <TextView
+                    android:text="Secrétariat Pédagogique IUT Aubière"
+                    android:textColor="@color/text"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:text="Bâtiment Informatique · Bureau C-102\nEmail : scolarite.iut@uca.fr\nTéléphone : 04 73 40 76 00\nHoraires : Du lundi au vendredi 8h30 - 12h / 13h30 - 17h"
+                    android:textColor="@color/text_dim"
+                    android:textSize="12.5sp"
+                    android:lineSpacingExtra="3dp"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

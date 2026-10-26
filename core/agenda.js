@@ -27,6 +27,7 @@ let pendingEventKey = null;
 let zoomLevel = Math.max(0.6, Math.min(1.8, parseFloat(localStorage.getItem("uca_zoom_v1")) || 1));
 
 const DAY_NAMES_SHORT = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+const DAY_NAMES_FULL = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
 const VIEWS = ["day", "3day", "5day", "6day", "week", "month"];
 const VIEW_CONTAINERS = { day: "dayView", "3day": "threeDayView", "5day": "fiveDayView", "6day": "sixDayView", week: "weekView", month: "monthView" };
 const MOODLE_URL = "https://moodle.uca.fr/";
@@ -107,7 +108,24 @@ function fmtPeriodLabel() {
 }
 function fmtMonthLabel() { return capitalize(refDate.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })); }
 function updateHeader() {
-  $("periodLabel").textContent = isMobileUI() ? fmtMonthLabel() : fmtPeriodLabel();
+  const lbl = $("periodLabel");
+  if (lbl) {
+    lbl.textContent = isMobileUI() ? fmtMonthLabel() : fmtPeriodLabel();
+    lbl.style.whiteSpace = "nowrap";
+  }
+  let sub = $("weekSubLabel");
+  if (!sub) {
+    sub = document.createElement("div");
+    sub.id = "weekSubLabel";
+    sub.className = "week-sub-label";
+    const hdr = document.querySelector("header");
+    if (hdr && hdr.nextSibling) hdr.parentNode.insertBefore(sub, hdr.nextSibling);
+    else if (hdr) hdr.appendChild(sub);
+  }
+  const mon = startOfWeek(refDate);
+  const sun = addDays(mon, 6);
+  const fmtD = (d) => `${DAY_NAMES_FULL[d.getDay()]} ${d.getDate()} ${monthShort(d)}`;
+  sub.textContent = `Semaine du ${fmtD(mon)} au ${fmtD(sun)}`;
   document.querySelectorAll("#viewTabs button").forEach(b => b.classList.toggle("active", b.dataset.view === currentView));
 }
 function navigate(dir) {
@@ -321,10 +339,15 @@ function renderTimeGrid(containerId, days) {
       else { card.style.left = `calc(${(colIdx / cols) * 100}% + 2px)`; card.style.width = `calc(${100 / cols}% - 4px)`; }
       card.style.background = ev.color; card.style.setProperty("--evc", ev.color);
       const badge = notes[eventKey(ev)] ? D.noteBadge("grid") : "";
+      const timeStr = `${pad(ev.startH)}:${pad(ev.startM)} – ${pad(ev.endH)}:${pad(ev.endM)}`;
+      const teacherPart = ev.teacher ? `<div class="ev-sub ev-prof">👤 ${escapeHtml(ev.teacher)}</div>` : "";
+      const roomPart = ev.room ? `<div class="ev-sub ev-room">📍 ${escapeHtml(ev.room)}</div>` : "";
       if (mobile) {
         card.classList.add("m");
-        card.innerHTML = `${badge}<div class="ev-title" title="${escapeHtml(ev.title)}">${escapeHtml(shortTitle(ev.title))}</div>${ev.room ? `<div class="ev-sub">${escapeHtml(ev.room)}</div>` : ""}`;
-      } else card.innerHTML = `${badge}<div class="ev-time">${pad(ev.startH)}:${pad(ev.startM)}–${pad(ev.endH)}:${pad(ev.endM)}</div><div class="ev-title" title="${escapeHtml(ev.title)}">${changeBadgeHtml(ev)}${escapeHtml(ev.title)}</div>${metaHtml(ev, "div")}`;
+        card.innerHTML = `${badge}<div class="ev-time">${timeStr}</div><div class="ev-title" title="${escapeHtml(ev.title)}">${changeBadgeHtml(ev)}${escapeHtml(ev.title)}</div>${teacherPart}${roomPart}`;
+      } else {
+        card.innerHTML = `${badge}<div class="ev-time">${timeStr}</div><div class="ev-title" title="${escapeHtml(ev.title)}">${changeBadgeHtml(ev)}${escapeHtml(ev.title)}</div>${metaHtml(ev, "div")}`;
+      }
       card.addEventListener("click", (e) => { e.stopPropagation(); openDetail(ev); });
       col.appendChild(card);
     });
@@ -404,10 +427,14 @@ function renderMobileDay() {
     const state = (isToday && nowMin >= em) || refDate < today ? "past" : (isToday && nowMin >= sm ? "current" : "");
     const card = document.createElement("div"); card.className = "m-card" + (state ? " " + state : "") + (ev.cancelled ? " ev-cancelled" : changeOf(ev) ? " ev-changed" : "");
     card.style.setProperty("--evc", ev.color);
+    card.style.flexShrink = "0";
+    card.style.minHeight = "fit-content";
+    const teacherHtml = `<div class="m-meta">${D.icon("user")}<span>${escapeHtml(ev.teacher || "Enseignant non précisé")}</span></div>`;
+    const roomHtml = `<div class="m-meta">${D.icon("pin")}<span>${escapeHtml(ev.room || "Salle à définir")}</span></div>`;
     card.innerHTML = `<div class="m-time"><b>${pad(ev.startH)}:${pad(ev.startM)}</b><span>${pad(ev.endH)}:${pad(ev.endM)}</span></div>
       <div class="m-body">${state === "current" ? `<span class="m-badge">${escapeHtml(T("current"))}</span>` : ""}<div class="m-title">${changeBadgeHtml(ev)}${escapeHtml(ev.title)}</div>
-      ${ev.teacher ? `<div class="m-meta">${D.icon("user")}<span>${escapeHtml(ev.teacher)}</span></div>` : ""}
-      ${ev.room ? `<div class="m-meta">${D.icon("pin")}<span>${escapeHtml(ev.room)}</span></div>` : ""}</div>
+      ${teacherHtml}
+      ${roomHtml}</div>
       ${notes[eventKey(ev)] ? D.noteBadge("day") : ""}`;
     card.addEventListener("click", () => openDetail(ev));
     list.appendChild(card);
@@ -467,31 +494,60 @@ function menuButton(cls, html, onClick) {
 }
 function buildMobileMenu() {
   const m = $("mobileMenu"); m.innerHTML = "";
-  availableViews().forEach(v => m.appendChild(menuButton("mi" + (v === currentView ? " active" : ""), escapeHtml(T("view_" + v)), () => switchView(v))));
-  m.appendChild(menuButton("mi", escapeHtml(T("today")), () => { refDate = new Date(); refDate.setHours(0, 0, 0, 0); render(); }));
+
+  const head = document.createElement("div");
+  head.className = "mobile-menu-header";
+  let curDesign = "Design Actuel";
+  try {
+    const p = location.pathname;
+    if (p.includes("bulletin")) curDesign = "Design Bulletin (Académique)";
+    else if (p.includes("professionnel")) curDesign = "Design Professionnel (Tech & Slate)";
+    else if (p.includes("anime")) curDesign = "Design Animé (Studio)";
+    else if (p.includes("carnet")) curDesign = "Design Carnet (Papier)";
+  } catch(e) {}
+  head.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;padding:12px 14px 10px;border-bottom:1px solid var(--border);background:var(--accent-tint, rgba(0,191,165,0.08));">
+      <span style="font-size:20px;">🎓</span>
+      <div>
+        <div style="font-size:13.5px;font-weight:800;color:var(--text);">My UCA — Emploi du temps</div>
+        <div style="font-size:11px;color:var(--accent, #00bfa5);font-weight:700;">${curDesign}</div>
+      </div>
+    </div>
+  `;
+  m.appendChild(head);
+
+  const viewIcons = {
+    day: "☀️",
+    "3day": "📆",
+    "5day": "🗓️",
+    "6day": "🗓️",
+    week: "📅",
+    month: "🗓️"
+  };
+
+  availableViews().forEach(v => {
+    const icon = viewIcons[v] || "📅";
+    m.appendChild(menuButton("mi" + (v === currentView ? " active" : ""), `${icon} ${escapeHtml(T("view_" + v))}`, () => switchView(v)));
+  });
+  m.appendChild(menuButton("mi", "📍 " + escapeHtml(T("today")), () => { refDate = new Date(); refDate.setHours(0, 0, 0, 0); render(); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   const avg = generalAverage();
-  m.appendChild(menuButton("mi", D.icon("book") + "Notes" + (avg != null ? ` — moyenne ${fmtNote(avg)}` : ""), () => openToolPanel("notesPanel", true)));
-  m.appendChild(menuButton("mi", D.icon("chart") + escapeHtml(absences ? `Absences : ${plural(absences.declarees, "déclarée")}, ${plural(absences.nonJustifiees, "non justifiée")}` : "Absences"), () => openToolPanel("absencesPanel", true)));
+  m.appendChild(menuButton("mi", "🎓 Notes & Moyennes" + (avg != null ? ` — moyenne ${fmtNote(avg)}` : ""), () => openToolPanel("notesPanel", true)));
+  m.appendChild(menuButton("mi", "📊 " + escapeHtml(absences ? `Absences : ${plural(absences.declarees, "déclarée")}, ${plural(absences.nonJustifiees, "non justifiée")}` : "Absences"), () => openToolPanel("absencesPanel", true)));
   ((absences && absences.declarations) || []).slice(0, 3).forEach(d => { const n = declarationNode(d); n.classList.add("m-decl"); m.appendChild(n); });
-  m.appendChild(menuButton("mi", D.icon("tasks") + "Devoirs et examens" + (UCA_TASKS.openCount(tasks) ? ` (${UCA_TASKS.openCount(tasks)})` : ""), () => openToolPanel("tasksPanel", true)));
-  m.appendChild(menuButton("mi", D.icon("link") + "Liens (accueil, aide, installation…)", () => openToolPanel("linksPanel", true)));
+  m.appendChild(menuButton("mi", "📝 Devoirs et examens" + (UCA_TASKS.openCount(tasks) ? ` (${UCA_TASKS.openCount(tasks)})` : ""), () => openToolPanel("tasksPanel", true)));
+  m.appendChild(menuButton("mi", "🔗 Liens utiles (accueil, aide…)", () => openToolPanel("linksPanel", true)));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
-  m.appendChild(menuButton("mi", D.icon("link") + "Moodle", () => window.open(MOODLE_URL, "_blank", "noopener")));
-  m.appendChild(menuButton("mi", D.icon("mail") + "Messagerie (Zimbra)", () => window.open(MAIL_URL, "_blank", "noopener")));
+  m.appendChild(menuButton("mi", "🌐 Moodle UCA", () => window.open(MOODLE_URL, "_blank", "noopener")));
+  m.appendChild(menuButton("mi", "✉️ Messagerie Zimbra", () => window.open(MAIL_URL, "_blank", "noopener")));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
-  if ($("filterPanel")) m.appendChild(menuButton("mi", D.icon("filter") + "Filtres" + (UCA_TOOLS.activeCount() ? ` (${UCA_TOOLS.activeCount()})` : ""), () => openToolPanel("filterPanel", true)));
-  if ($("exportPanel")) m.appendChild(menuButton("mi", D.icon("export") + "Exporter (.ics)", () => openToolPanel("exportPanel", true)));
-  m.appendChild(menuButton("mi", D.icon("settings") + "Paramètres", () => UCA_CORE.openSettings()));
-  if (!window.UCA_APP) m.appendChild(menuButton("mi", D.icon("link") + "Statut des sites (Odin, CAS…)", () => UCA_CORE.openSettings("#statusSection")));
-  if (window.UCA_APP && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone === true)) m.appendChild(menuButton("mi", D.icon("phone") + "Installer l'app sur l'écran d'accueil", () => { location.href = chrome.runtime.getURL("app/install.html?force=1"); }));
-  m.appendChild(menuButton("mi", D.icon("design") + "Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
+  if ($("filterPanel")) m.appendChild(menuButton("mi", "🔍 Filtres" + (UCA_TOOLS.activeCount() ? ` (${UCA_TOOLS.activeCount()})` : ""), () => openToolPanel("filterPanel", true)));
+  if ($("exportPanel")) m.appendChild(menuButton("mi", "📤 Exporter (.ics)", () => openToolPanel("exportPanel", true)));
+  m.appendChild(menuButton("mi", "⚙️ Paramètres", () => UCA_CORE.openSettings()));
+  if (!window.UCA_APP) m.appendChild(menuButton("mi", "🚦 Statut des sites (Odin, CAS…)", () => UCA_CORE.openSettings("#statusSection")));
+  m.appendChild(menuButton("mi", "🎨 Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
-  // Même logique que le bouton desktop (setSyncLabel ci-dessous) : "Importer" seulement si on est
-  // dans l'app ET que l'extension n'est pas détectée dans ce navigateur ; sinon "Synchroniser" fait
-  // une vraie synchro Odin via le pont (voir core/env.js). Le menu est reconstruit à chaque ouverture,
-  // donc ce test reflète toujours l'état courant d'extensionReady sans écouteur supplémentaire.
-  m.appendChild(menuButton("mi msync primary", D.icon("sync") + (window.UCA_APP && !window.UCA_APP.extensionReady ? "Importer mes données" : "Synchroniser"), triggerSync));
+  m.appendChild(menuButton("mi msync primary", "🔄 Synchroniser Odin", triggerSync));
   const r = $("menuBtn").getBoundingClientRect();
   m.style.top = (r.bottom + 6) + "px"; m.style.left = r.left + "px";
 }
@@ -592,7 +648,10 @@ async function updatePinnedNext() {
 }
 function loadFromStorage() {
   chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks"], (data) => {
-    if (window.UCA_APP && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) { location.href = chrome.runtime.getURL("app/import.html"); return; }
+    // Si pas encore d'événements, on continue normalement sur l'agenda sans rediriger
+    if (window.UCA_APP && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) {
+      sessionStorage.setItem("uca_import_skip", "1");
+    }
     settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, data.uca_settings);
     subjectColors = data.uca_subject_colors || {};
     tasks = UCA_TASKS.sanitize(data.uca_tasks);
@@ -778,9 +837,72 @@ function noteAgeClass(seenKey, note) {
   const age = Date.now() - seen.at, day = 86400000;
   return age < noteDays() * day ? " note-new" : age < 2 * noteDays() * day ? " note-recent" : "";
 }
+function openGradeDetailModal(label, row) {
+  let overlay = $("gradeDetailOverlay");
+  if (!overlay) {
+    overlay = document.createElement("div");
+    overlay.id = "gradeDetailOverlay";
+    overlay.className = "modal-overlay";
+    overlay.innerHTML = `
+      <div class="modal grade-modal-box">
+        <div class="modal-head">
+          <h3 id="gdmTitle">Évaluation</h3>
+          <button class="close-x" id="closeGdm" aria-label="Fermer">✕</button>
+        </div>
+        <div class="modal-body" id="gdmBody"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector("#closeGdm").onclick = () => overlay.classList.remove("open");
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.classList.remove("open"); };
+  }
+  $("gdmTitle").textContent = label;
+  const note = row.note != null ? fmtNote(row.note) + " / 20" : "En attente de notation";
+  const coeff = row.coeff != null ? fmtNote(row.coeff) : "1.0";
+  const moy = row.moy != null ? fmtNote(row.moy) + " / 20" : "—";
+  const maxi = row.maxi != null ? fmtNote(row.maxi) + " / 20" : "—";
+  const mini = row.mini != null ? fmtNote(row.mini) + " / 20" : "—";
+  const diff = (row.note != null && row.moy != null) ? (row.note - row.moy) : null;
+  const diffHtml = diff != null ? `<span style="font-weight:700;color:${diff >= 0 ? '#2fd68f' : '#f87171'};">${diff >= 0 ? '+' : ''}${diff.toFixed(2)} pts</span> par rapport à la moyenne de promo` : "";
+
+  $("gdmBody").innerHTML = `
+    <div style="background:var(--accent-light, rgba(0,191,165,0.12));border:1px solid var(--accent,#00bfa5);border-radius:12px;padding:14px;text-align:center;margin-bottom:12px;">
+      <div style="font-size:11.5px;color:var(--text-dim);font-weight:700;text-transform:uppercase;">Note obtenue</div>
+      <div style="font-size:26px;font-weight:900;color:var(--accent,#00bfa5);margin:4px 0;">${note}</div>
+      <div style="font-size:12px;color:var(--text);">${diffHtml}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px;">
+      <div style="background:var(--surface,#1e2229);border:1px solid var(--border);padding:9px 11px;border-radius:8px;">
+        <span style="color:var(--text-dim);font-size:11px;display:block;">Coefficient</span>
+        <strong>${coeff}</strong>
+      </div>
+      <div style="background:var(--surface,#1e2229);border:1px solid var(--border);padding:9px 11px;border-radius:8px;">
+        <span style="color:var(--text-dim);font-size:11px;display:block;">Moyenne promo</span>
+        <strong>${moy}</strong>
+      </div>
+      <div style="background:var(--surface,#1e2229);border:1px solid var(--border);padding:9px 11px;border-radius:8px;">
+        <span style="color:var(--text-dim);font-size:11px;display:block;">Note la plus haute</span>
+        <strong style="color:#2fd68f;">${maxi}</strong>
+      </div>
+      <div style="background:var(--surface,#1e2229);border:1px solid var(--border);padding:9px 11px;border-radius:8px;">
+        <span style="color:var(--text-dim);font-size:11px;display:block;">Note la plus basse</span>
+        <strong style="color:#f87171;">${mini}</strong>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:11.5px;color:var(--text-dim);text-align:center;">
+      Données officielles synchronisées avec le portail Odin UCA.
+    </div>
+  `;
+  overlay.classList.add("open");
+}
+
 function ntRow(cls, label, row, seenKey) {
   const tr = document.createElement("tr");
-  tr.className = cls;
+  tr.className = cls + " clickable-grade-row";
+  tr.title = "Cliquer pour voir le détail de cette évaluation";
+  tr.addEventListener("click", () => {
+    openGradeDetailModal(label, row);
+  });
   tr.appendChild(ntCell(label, "lbl"));
   tr.appendChild(ntCell(fmtNote(row.coeff), "num"));
   const ageCls = noteAgeClass(seenKey, row.note);
@@ -1031,6 +1153,10 @@ function renderNotesPanel() {
       content.appendChild(avgBar);
     }
     [examsBlock(), simulatorBlock(), chartBlock(), npEl("div", "fp-h", "Détail des notes")].forEach((b) => { if (b) content.appendChild(inkify(b)); });
+    const hintPill = document.createElement("div");
+    hintPill.className = "notes-hint-pill";
+    hintPill.textContent = "💡 Touche une ligne du tableau pour afficher le détail officiel (coeff, promo, min/max)";
+    content.appendChild(hintPill);
     const table = document.createElement("table");
     table.className = "notes-table";
     const thead = document.createElement("thead");
@@ -1076,6 +1202,12 @@ $("notesBtn").addEventListener("click", (e) => {
   togglePanel($("notesPanel"));
 });
 closeOnOutsideClick("notesPanel", "notesWrap");
+if (/[?&]openNotes=1/.test(location.search)) {
+  setTimeout(() => { if ($("notesBtn")) $("notesBtn").click(); }, 300);
+}
+if (/[?&]openAbsences=1/.test(location.search)) {
+  setTimeout(() => { if ($("absencesBtn")) $("absencesBtn").click(); }, 300);
+}
 
 /* ============================= Filtres / export =============================
    Panneau déroulant sur ordinateur ; sur téléphone, feuille en bas d'écran. */
@@ -1125,11 +1257,34 @@ const TOOL_PANELS = {
   exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { tasks, shareImage: { day: () => ({ date: new Date(refDate), events: events.filter(UCA_TOOLS.passes) }), week: () => ({ days: Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(refDate), i)), events: events.filter(UCA_TOOLS.passes) }) }, allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.makeShareLink(), canShare: window.UCA_APP ? null : UCA_TRANSFER.canShare, sendLink: UCA_TRANSFER.shareLink }) },
   linksPanel: { wrap: "linksWrap", build: (p) => UCA_TOOLS.buildLinksPanel(p) },
 };
+function ensurePanelHeader(panel, id) {
+  if (panel.querySelector(".panel-modal-topbar")) return;
+  const titles = {
+    notesPanel: "📊 Relevé de Notes",
+    absencesPanel: "⚠️ Mes Absences",
+    tasksPanel: "📝 Devoirs & Examens",
+    filterPanel: "🔍 Filtres de Cours",
+    exportPanel: "📅 Exporter l'Agenda",
+    linksPanel: "🔗 Liens Universitaires"
+  };
+  const top = document.createElement("div");
+  top.className = "panel-modal-topbar";
+  top.innerHTML = `<button type="button" class="panel-back-btn" title="Retour">← Retour</button><span class="panel-modal-title">${titles[id] || "Détails"}</span><button type="button" class="panel-close-x" title="Fermer">✕</button>`;
+  const close = () => { panel.classList.remove("open"); const bd = $("ucaSheetBackdrop"); if (bd) bd.hidden = true; };
+  top.querySelector(".panel-back-btn").onclick = close;
+  top.querySelector(".panel-close-x").onclick = close;
+  panel.insertBefore(top, panel.firstChild);
+}
 function openToolPanel(id, asSheet) {
   const panel = $(id), conf = TOOL_PANELS[id];
   if (!panel) return;
   Object.keys(TOOL_PANELS).forEach(o => { if (o !== id && $(o)) $(o).classList.remove("open"); });
-  if (asSheet) { document.body.appendChild(panel); panel.classList.add("as-sheet"); showSheetBackdrop(panel); }
+  if (asSheet) {
+    document.body.appendChild(panel);
+    panel.classList.add("as-sheet");
+    ensurePanelHeader(panel, id);
+    showSheetBackdrop(panel);
+  }
   else if (panel.parentNode !== $(conf.wrap)) { $(conf.wrap).appendChild(panel); panel.classList.remove("as-sheet"); }
   if (!panel.classList.contains("open")) conf.build(panel);
   if (asSheet) panel.classList.add("open"); else togglePanel(panel);
@@ -1292,24 +1447,24 @@ if (window.UCA_APP) {
   // (pas d'accès à Odin depuis une page web) -> "Importer" (transfert par lien/QR/fichier).
   // Si l'extension répond (core/env.js, pont avec content-bridge.js), le bouton redevient une
   // vraie synchro Odin, exactement comme dans l'extension.
-  const setSyncLabel = (importer) => {
-    const walker = document.createTreeWalker(syncBtn, NodeFilter.SHOW_TEXT);
-    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-      if (importer && /Synchroniser/.test(n.textContent)) n.textContent = n.textContent.replace("Synchroniser", "Importer");
-      else if (!importer && /Importer/.test(n.textContent)) n.textContent = n.textContent.replace("Importer", "Synchroniser");
-    }
-    syncBtn.title = importer ? "Importer les données depuis l'extension de l'ordinateur" : "Synchroniser avec Odin (extension détectée dans ce navigateur)";
+  const setSyncLabel = () => {
+    syncBtn.innerHTML = D.icon("sync") + "Synchroniser";
+    syncBtn.title = "Synchroniser avec le portail Odin UCA";
   };
-  setSyncLabel(!window.UCA_APP.extensionReady);
+  setSyncLabel();
   window.addEventListener("uca-extension-ready", () => {
     setSyncLabel(false);
     // "Synchroniser" passe par l'extension : on garde quand même un bouton Importer (lien/QR/fichier).
-    if (!$("appImportBtn")) {
+    if (!$("appImportBtn") && !isMobileUI() && !window.UCA_APP) {
       const imp = document.createElement("button");
-      imp.id = "appImportBtn"; imp.type = "button"; imp.className = syncBtn.className.replace("primary", "").trim();
+      imp.id = "appImportBtn"; imp.type = "button"; imp.className = syncBtn.className.replace("primary", "").trim() + " mobile-hide-zoom";
       imp.innerHTML = D.icon("export") + "Importer";
       imp.title = "Importer un lien, un QR ou un fichier .ucasync";
-      imp.addEventListener("click", () => { location.href = chrome.runtime.getURL("app/import.html"); });
+      imp.addEventListener("click", () => {
+        if (chrome && chrome.runtime && chrome.runtime.getURL) {
+          location.href = chrome.runtime.getURL("app/import.html");
+        }
+      });
       syncBtn.before(imp);
     }
     // Synchro automatique si la dernière date de plus que le réglage "synchro auto" (0 = jamais).
@@ -1336,7 +1491,13 @@ chrome.runtime.onMessage.addListener((msg) => {
   } else if (msg.type === "UCA_SYNC_RESULT") {
     UCA_CORE.loginHelp(false);
     if (!msg.ok) {
-      toast(T("errorPrefix") + (msg.error || "Erreur"), "warn");
+      if (msg.error && /maintenance/i.test(msg.error)) {
+        toast("⚠️ Site Odin en maintenance : le portail IUT est temporairement indisponible.", "warn");
+      } else if (msg.error && (/aucun/i.test(msg.error) || /emploi/i.test(msg.error))) {
+        toast("ℹ️ Authentification réussie, mais aucun emploi du temps disponible pour votre groupe.", "warn");
+      } else {
+        toast(T("errorPrefix") + (msg.error || "Erreur"), "warn");
+      }
       // Annulation (onglet/fenêtre fermé par l'utilisateur) : le bouton redevient cliquable tout
       // de suite. Échec réel (Odin en panne, rien détecté...) : pause avant de réessayer.
       if (msg.retryAfterMs) UCA_CORE.syncCooldown([syncBtn], msg.retryAfterMs);
@@ -1356,6 +1517,11 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 UCA_CORE.initUpdate();
+if (!window.UCA_GITHUB_UPDATER) {
+  const updScript = document.createElement("script");
+  updScript.src = (window.UCA_APP && window.UCA_APP.root ? window.UCA_APP.root : "../../") + "core/github-updater.js";
+  document.head.appendChild(updScript);
+}
 /* Lecteurs d'écran : titre de page, zone de synchro repérée, bouton « Aujourd'hui » nommé même sans libellé visible. */
 (function () {
   if (!document.querySelector("h1")) {

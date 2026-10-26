@@ -1,24 +1,53 @@
-/* Design bulletin (inspiré de l'interface d'un carnet de notes scolaire type Pronote) : clair et épuré, icônes SVG (sprite #i-* / #s-* dans chaque page). */
+/* Design Bulletin (Inspiré d'un relevé officiel académique UCA) : Grille structurée, esthétique universitaire formelle */
 (function () {
 "use strict";
 
-const svg = (id, cls) => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
-const NOTE_BADGE = `<span class="ev-note-badge" title="Tu as écrit une note sur ce cours">${svg("i-note", "ic")}</span>`;
+const ICONS = {
+  book: "notes", clock: "time", calendar: "calendar", user: "user",
+  pin: "pin", note: "pen", chart: "stats", link: "link",
+  mail: "mail", sync: "sync", alert: "lock", key: "lock",
+  logout: "bolt", tasks: "pen", design: "rocket", settings: "gear", filter: "search", export: "calendar", phone: "phone",
+};
 
 UCA_defineDesign({
-  icon(name) {
-    return svg("i-" + name, "ic sm");
+  icon(name, variant) {
+    const file = ICONS[name];
+    return file ? `<img class="gi${variant === "title" ? " lg" : ""}" src="svg/${file}.svg" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px;">` : "";
   },
   noteBadge(context) {
     return context === "grid"
-      ? `<div class="ev-note">${NOTE_BADGE}</div>`
-      : `<div class="day-note">${NOTE_BADGE}</div>`;
+      ? `<div class="ev-note" title="Note personnelle">📝</div>`
+      : `<div class="day-note" title="Note personnelle">📝</div>`;
   },
   emptyHtml(kind) {
-    if (kind === "notes") return `<svg class="sticker" style="width:56px;height:56px;display:block;margin:0 auto 8px" aria-hidden="true"><use href="#s-empty-notes"/></svg>`;
-    return svg(kind === "popup" ? "s-empty-sync" : "s-empty-day", "sticker");
+    return kind === "notes" ? "" : "📜";
   },
   grid: { overlap: "cascade", fontScale: false, metaMerged: true },
-  dayView: "grid",
+  dayView: "list",
+  text: {
+    view_day: "Jour (Relevé)",
+    view_3day: "3 Jours",
+    view_5day: "5 Jours",
+    view_6day: "6 Jours",
+    view_week: "Semaine Académique",
+    view_month: "Mois",
+    today: "Aujourd'hui",
+    rawData: "Données officielles :",
+    noCourse: "Aucun cours programmé ce jour",
+    teacherPrefix: "Enseignant : ",
+    roomPrefix: "Salle : ",
+    timeSep: "–",
+    syncing: "Synchronisation Odin…",
+    loginOpening: "Authentification CAS UCA…",
+    "stage_resync": "Contrôle session CAS…",
+    "stage_login-opening": "Connexion SSO…",
+    "stage_login-waiting": "Saisissez vos identifiants ENT…",
+    "stage_scraping": "Récupération de l'emploi du temps…",
+    syncOk: "Emploi du temps synchronisé",
+    syncSilent: "Actualisé en arrière-plan",
+    errorPrefix: "",
+    loggedOut: "Déconnecté",
+    current: "Cours en cours",
+  },
 });
 })();

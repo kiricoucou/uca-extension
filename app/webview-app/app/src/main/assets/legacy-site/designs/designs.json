@@ -1,0 +1,170 @@
+[
+  {
+    "id": "anime",
+    "name": "Design animé",
+    "description": "Sombre turquoise, icônes animées",
+    "folder": "designs/anime",
+    "badgeColor": "#18b7b0",
+    "preview": {
+      "background": "#121418",
+      "surface": "#1b1e24",
+      "accent": "#18b7b0",
+      "text": "#f2f3f5",
+      "textDim": "#9aa0ab",
+      "border": "#2a2e37",
+      "onAccent": "#05211f"
+    },
+    "screenshots": [
+      {
+        "src": "designs/anime/previews/1-semaine.jpg",
+        "label": "Agenda de la semaine"
+      },
+      {
+        "src": "designs/anime/previews/2-notes.jpg",
+        "label": "Relevé de notes et moyenne"
+      },
+      {
+        "src": "designs/anime/previews/3-popup.jpg",
+        "label": "Popup de la barre d'outils"
+      },
+      {
+        "src": "designs/anime/previews/4-mobile.jpg",
+        "label": "Vue Jour sur téléphone"
+      },
+      {
+        "src": "designs/anime/previews/5-mois.jpg",
+        "label": "Vue Mois"
+      },
+      {
+        "src": "designs/anime/previews/6-detail.jpg",
+        "label": "Détail d'un cours et note perso"
+      }
+    ]
+  },
+  {
+    "id": "professionnel",
+    "name": "Design professionnel",
+    "description": "Clair et épuré, icônes vectorielles",
+    "folder": "designs/professionnel",
+    "badgeColor": "#0b57d0",
+    "preview": {
+      "background": "#ffffff",
+      "surface": "#ffffff",
+      "accent": "#0b57d0",
+      "text": "#1f1f1f",
+      "textDim": "#5f6368",
+      "border": "#dadce0",
+      "onAccent": "#ffffff"
+    },
+    "screenshots": [
+      {
+        "src": "designs/professionnel/previews/1-semaine.jpg",
+        "label": "Agenda de la semaine"
+      },
+      {
+        "src": "designs/professionnel/previews/2-notes.jpg",
+        "label": "Relevé de notes et moyenne"
+      },
+      {
+        "src": "designs/professionnel/previews/3-popup.jpg",
+        "label": "Popup de la barre d'outils"
+      },
+      {
+        "src": "designs/professionnel/previews/4-mobile.jpg",
+        "label": "Vue Jour sur téléphone"
+      },
+      {
+        "src": "designs/professionnel/previews/5-mois.jpg",
+        "label": "Vue Mois"
+      },
+      {
+        "src": "designs/professionnel/previews/6-detail.jpg",
+        "label": "Détail d'un cours et note perso"
+      }
+    ]
+  },
+  {
+    "id": "bulletin",
+    "name": "Design bulletin",
+    "description": "Clair et dense, notes mises en avant, esprit carnet de notes scolaire",
+    "folder": "designs/bulletin",
+    "badgeColor": "#1e7a46",
+    "preview": {
+      "background": "#ffffff",
+      "surface": "#ffffff",
+      "accent": "#1e7a46",
+      "text": "#1f1f1f",
+      "textDim": "#5f6368",
+      "border": "#dadce0",
+      "onAccent": "#ffffff"
+    },
+    "screenshots": [
+      {
+        "src": "designs/bulletin/previews/1-semaine.jpg",
+        "label": "Agenda de la semaine"
+      },
+      {
+        "src": "designs/bulletin/previews/2-notes.jpg",
+        "label": "Relevé de notes et moyenne"
+      },
+      {
+        "src": "designs/bulletin/previews/3-popup.jpg",
+        "label": "Popup de la barre d'outils"
+      },
+      {
+        "src": "designs/bulletin/previews/4-mobile.jpg",
+        "label": "Vue Jour sur téléphone"
+      },
+      {
+        "src": "designs/bulletin/previews/5-mois.jpg",
+        "label": "Vue Mois"
+      },
+      {
+        "src": "designs/bulletin/previews/6-detail.jpg",
+        "label": "Détail d'un cours et note perso"
+      }
+    ]
+  },
+  {
+    "id": "carnet",
+    "name": "Design carnet",
+    "description": "Papier crème, écriture manuscrite, cours en post-it",
+    "folder": "designs/carnet",
+    "badgeColor": "#2f4fa2",
+    "preview": {
+      "background": "#f6f0e1",
+      "surface": "#fffaf0",
+      "accent": "#2f4fa2",
+      "text": "#2d2a26",
+      "textDim": "#6e6658",
+      "border": "#e2d5b8",
+      "onAccent": "#ffffff"
+    },
+    "screenshots": [
+      {
+        "src": "designs/carnet/previews/1-semaine.jpg",
+        "label": "Agenda de la semaine"
+      },
+      {
+        "src": "designs/carnet/previews/2-notes.jpg",
+        "label": "Relevé de notes et moyenne"
+      },
+      {
+        "src": "designs/carnet/previews/3-popup.jpg",
+        "label": "Popup de la barre d'outils"
+      },
+      {
+        "src": "designs/carnet/previews/4-mobile.jpg",
+        "label": "Vue Jour sur téléphone"
+      },
+      {
+        "src": "designs/carnet/previews/5-mois.jpg",
+        "label": "Vue Mois"
+      },
+      {
+        "src": "designs/carnet/previews/6-detail.jpg",
+        "label": "Détail d'un cours et note perso"
+      }
+    ]
+  }
+]

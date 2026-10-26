@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">My UCA</string>
+
+    <string-array name="ufr_groupes">
+        <item>Synchronisé automatiquement (TD A · TP 2)</item>
+        <item>BUT Informatique — TD A · TP 1</item>
+        <item>BUT Informatique — TD A · TP 2</item>
+        <item>BUT Informatique — TD B · TP 3</item>
+        <item>BUT Informatique — TD B · TP 4</item>
+        <item>ISIMA — Groupe 1</item>
+        <item>ISIMA — Groupe 2</item>
+    </string-array>
+</resources>

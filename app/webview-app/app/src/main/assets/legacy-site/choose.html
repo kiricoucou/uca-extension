@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Choisis ton design — Emploi du temps UCA</title>
+<link rel="icon" type="image/png" href="icons/icon32.png">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#ffffff;--surface:#f6f7f9;--border:#dfe1e5;--text:#1f1f1f;--text-dim:#5f6368;--focus:#0b57d0;--on-focus:#ffffff;
+  --font:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;--on-focus:#0b1d3a;}
+}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#16171a;--surface:#1f2125;--border:#33363c;--text:#ececec;--text-dim:#a2a6ad;--focus:#8ab4f8;--on-focus:#0b1d3a;}
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.45;}
+body.popup{width:400px;}
+main{padding:18px 16px 18px;}
+body.page main{max-width:1180px;margin:40px auto;padding:0 20px;}
+h1{font-size:17px;font-weight:600;margin:0 0 4px;}
+body.page h1{font-size:26px;}
+.lead{color:var(--text-dim);font-size:13px;margin:0 0 16px;}
+body.page .lead{font-size:15px;margin-bottom:24px;}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+body.page .cards{grid-template-columns:repeat(2,1fr);gap:14px;}
+@media (max-width: 480px){
+  body.page main{padding: 12px 10px; margin: 10px auto;}
+  .cards{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .card{border-radius:12px;}
+  .info{padding:8px;flex-direction:column;align-items:stretch;gap:6px;}
+  .name{font-size:13px;}
+  .desc{display:none;}
+  .choose-btn{height:34px;font-size:11.5px;padding:0 8px;border-radius:10px;}
+  .track{aspect-ratio:16/10;max-height:110px;}
+  .nav{display:none;}
+  .caption{font-size:10px;padding:2px 6px;bottom:4px;left:4px;}
+  .dots{display:none;}
+}
+.card{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:16px;background:var(--surface);overflow:hidden;}
+.card.current{border-color:var(--focus);box-shadow:0 0 0 1px var(--focus) inset;}
+
+/* Galerie */
+.gallery{position:relative;background:#0e0f11;}
+.track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;aspect-ratio:16/10;}
+.track::-webkit-scrollbar{display:none;}
+.slide{flex:0 0 100%;scroll-snap-align:center;display:flex;align-items:center;justify-content:center;margin:0;cursor:zoom-in;}
+.slide img{max-width:100%;max-height:100%;object-fit:contain;display:block;}
+.nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:none;background:rgba(0,0,0,.55);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,opacity .15s;}
+.nav:hover{background:rgba(0,0,0,.8);}
+.nav:disabled{opacity:0;pointer-events:none;}
+.nav.prev{left:8px;}
+.nav.next{right:8px;}
+.nav:focus-visible,.dot:focus-visible,.choose-btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px;}
+.caption{position:absolute;left:10px;bottom:10px;padding:3px 10px;border-radius:999px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;}
+.dots{position:absolute;right:6px;bottom:6px;display:flex;align-items:center;gap:0;padding:0 4px;border-radius:999px;background:rgba(0,0,0,.55);}
+.dot{width:24px;height:24px;border-radius:50%;border:none;padding:0;background:rgba(255,255,255,.45);background-clip:content-box;padding:8.5px;cursor:pointer;}
+.dot.on{background:#fff;background-clip:content-box;width:36px;border-radius:12px;padding:8.5px 8.5px;}
+
+.info{display:flex;align-items:center;gap:12px;padding:12px 14px;}
+.info .txt{flex:1;min-width:0;}
+.name{font-weight:600;font-size:15px;display:flex;align-items:center;gap:8px;}
+.tag{font-size:11px;color:var(--focus);font-weight:600;border:1px solid var(--focus);border-radius:999px;padding:0 7px;}
+.desc{color:var(--text-dim);font-size:12.5px;}
+.choose-btn{flex-shrink:0;height:44px;padding:0 16px;border-radius:18px;border:none;background:var(--focus);color:var(--on-focus);font:inherit;font-weight:600;cursor:pointer;}
+.choose-btn:hover{filter:brightness(1.08);}
+.error{color:#c5221f;font-size:13px;margin-top:12px;}
+
+/* Agrandissement */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;z-index:10;cursor:zoom-out;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:94vw;max-height:88vh;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.6);}
+.lightbox .lb-cap{position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#ddd;font-size:13px;}
+.lightbox .nav{width:44px;height:44px;font-size:22px;background:rgba(255,255,255,.14);}
+.lightbox .nav.prev{left:16px;}
+.lightbox .nav.next{right:16px;}
+</style>
+</head>
+<body>
+<main>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <button type="button" onclick="history.back() || location.replace('index.html')" style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:700;cursor:pointer;">← Retour</button>
+    <span style="font-size:12px;font-weight:700;color:var(--focus);">My UCA · 4 Thèmes</span>
+  </div>
+  <h1>Choisis ton design</h1>
+  <p class="lead">Même extension, mêmes fonctionnalités : seul l'affichage change. Fais défiler les captures, puis choisis. Tu pourras changer plus tard avec le bouton « Design ».</p>
+  <div class="cards" id="cards"></div>
+  <div class="error" id="error" hidden></div>
+</main>
+<div class="lightbox" id="lightbox" role="dialog" aria-label="Capture agrandie">
+  <button class="nav prev" id="lbPrev" aria-label="Capture précédente">‹</button>
+  <button class="nav next" id="lbNext" aria-label="Capture suivante">›</button>
+  <div class="lb-cap" id="lbCap"></div>
+</div>
+<script src="core/env.js"></script>
+<script src="choose.js"></script>
+<script src="core/github-updater.js"></script>
+</body>
+</html>

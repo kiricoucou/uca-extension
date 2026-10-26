@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg">
+
+    <include layout="@layout/topbar" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- PROFIL ÉTUDIANT (Synchronisé via Odin / CAS UCA) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="14dp"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:text="PROFIL ÉTUDIANT (ODIN / CAS UCA)"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="10dp">
+
+                    <!-- Photo officielle étudiante -->
+                    <ImageView
+                        android:id="@+id/imgStudentPhoto"
+                        android:layout_width="54dp"
+                        android:layout_height="64dp"
+                        android:background="@drawable/bg_pin"
+                        android:padding="3dp"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_person"
+                        android:contentDescription="Photo officielle étudiante" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginStart="14dp">
+
+                        <TextView
+                            android:id="@+id/studentName"
+                            android:text="Étudiant UCA"
+                            android:textColor="@color/text"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:id="@+id/studentBirthDate"
+                            android:text="Compte universitaire certifié"
+                            android:textColor="@color/accent2"
+                            android:textSize="12.5sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="2dp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:id="@+id/studentFormation"
+                            android:text="Université Clermont Auvergne"
+                            android:textColor="@color/text_dim"
+                            android:textSize="12.5sp"
+                            android:layout_marginTop="2dp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+
+                        <TextView
+                            android:id="@+id/studentId"
+                            android:text="N° Étudiant : Connecté SSO"
+                            android:textColor="@color/text_dim"
+                            android:textSize="11.5sp"
+                            android:layout_marginTop="2dp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:text="✓ Carte étudiante européenne (ESCN) certifiée UCA"
+                    android:textColor="#10b981"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="10dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+            <!-- GROUPE DE TP SYNCHRONISÉ -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="14dp"
+                android:layout_marginBottom="12dp">
+
+                <TextView
+                    android:text="GROUPE DE TP (SYNCHRONISÉ AVEC L'EMPLOI DU TEMPS)"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <TextView
+                    android:text="Détecté automatiquement depuis votre emploi du temps Odin :"
+                    android:textColor="@color/text_dim"
+                    android:textSize="12sp"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+
+                <Spinner
+                    android:id="@+id/ufrSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_card"
+                    android:paddingVertical="8dp"
+                    android:popupBackground="@color/surface" />
+            </LinearLayout>
+
+            <!-- PRÉFÉRENCES -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="14dp"
+                android:layout_marginBottom="12dp">
+                <TextView
+                    android:text="PRÉFÉRENCES &amp; RÉGLAGES"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:text="Mode sombre/clair, synchronisation agenda téléphone, alertes cours"
+                    android:textColor="@color/text"
+                    android:textSize="13.5sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <Button
+                    android:id="@+id/btnPreferences"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_cta"
+                    android:text="Ouvrir les préférences"
+                    android:textAllCaps="false"
+                    android:textColor="@color/on_accent"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="7dp"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp" />
+            </LinearLayout>
+
+            <!-- COMPTE MESSAGERIE -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="14dp"
+                android:layout_marginBottom="12dp">
+                <TextView
+                    android:text="COMPTE MESSAGERIE ZIMBRA"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:id="@+id/zimbraEmail"
+                    android:text="etudiant@etu.uca.fr"
+                    android:textColor="@color/text"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="3dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <Button
+                    android:id="@+id/btnMessagerie"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_cta"
+                    android:text="Accéder à ma messagerie UCA"
+                    android:textAllCaps="false"
+                    android:textColor="@color/on_accent"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="7dp"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp" />
+            </LinearLayout>
+
+            <!-- DÉCONNEXION (Retravaillé avec angles arrondis et couleur propre) -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="14dp"
+                android:layout_marginBottom="12dp">
+                <TextView
+                    android:text="SESSION &amp; DÉCONNEXION"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:text="Déconnecte la session CAS Odin et efface le cache local sécurisé"
+                    android:textColor="@color/text_dim"
+                    android:textSize="12.5sp"
+                    android:layout_marginTop="3dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <Button
+                    android:id="@+id/btnLogoutCompte"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_btn_logout"
+                    android:text="Se déconnecter de My UCA"
+                    android:textAllCaps="false"
+                    android:textColor="#ef4444"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="8dp"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp" />
+            </LinearLayout>
+
+            <!-- AIDE -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:padding="14dp">
+                <TextView
+                    android:text="AIDE &amp; CONDITIONS"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11.5sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:text="Centre d'aide · Conditions Générales d'Utilisation · Version 1.1.0 (Bêta)"
+                    android:textColor="@color/text"
+                    android:textSize="13.5sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Sombre/turquoise : LE thème du projet (site, extension, app), pas une option.
+         Dupliqué dans values/colors.xml (qualifiant "jour") pour qu'il n'y ait jamais
+         de résidu clair, même si un cas limite résolvait les ressources avant que
+         EdtUcaApp force MODE_NIGHT_YES. -->
+    <color name="bg">#121418</color>
+    <color name="surface">#1B1E24</color>
+    <color name="border">#2A2E37</color>
+    <color name="text">#F2F3F5</color>
+    <color name="text_dim">#9AA0AB</color>
+    <color name="accent">#18B7B0</color>
+    <color name="accent2">#2FD6CD</color>
+    <color name="on_accent">#05211F</color>
+    <color name="danger">#FF6B6B</color>
+</resources>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aide — Emploi du temps UCA</title>
+<link rel="icon" type="image/png" href="icons/icon32.png">
+<style>
+:root{
+  --bg:#121418;--surface:#1b1e24;--border:#2a2e37;--text:#f2f3f5;--text-dim:#9aa0ab;
+  --accent:#18b7b0;--accent2:#2fd6cd;--accent-light:rgba(24,183,176,.14);--on-accent:#05211f;
+  --danger:#ff6b6b;--radius:14px;--radius-sm:9px;
+  --shadow-lg:0 8px 28px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);}
+::selection{background:var(--accent);color:var(--on-accent);}
+*:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+::-webkit-scrollbar{width:11px;height:11px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;border:2px solid var(--bg);}
+::-webkit-scrollbar-thumb:hover{background:var(--text-dim);}
+*{scrollbar-color:var(--border) var(--bg);}
+
+@keyframes floatY{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(24,183,176,.45);}50%{box-shadow:0 0 0 10px rgba(24,183,176,0);}}
+@keyframes shimmer{0%{background-position:-200px 0;}100%{background-position:200px 0;}}
+
+header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:10px;padding:14px 20px;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow-lg);}
+header .brand{font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px;}
+header .brand img{width:22px;height:22px;border-radius:5px;animation:floatY 2.6s ease-in-out infinite;}
+header .spacer{flex:1;}
+header a.back{white-space:nowrap;font-family:inherit;text-decoration:none;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:var(--radius-sm);padding:8px 13px;font-size:13px;}
+header a.back:hover{background:var(--accent-light);border-color:var(--accent);}
+
+.hero{text-align:center;padding:46px 20px 36px;position:relative;overflow:hidden;}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% -10%,var(--accent-light),transparent 60%);pointer-events:none;}
+.hero img{position:relative;width:74px;height:74px;border-radius:16px;box-shadow:var(--shadow-lg);animation:floatY 2.8s ease-in-out infinite,pulseGlow 2.8s ease-in-out infinite;}
+.hero h1{font-size:26px;margin:18px 0 6px;animation:fadeUp .5s ease both;}
+.hero p{color:var(--text-dim);font-size:14px;max-width:460px;margin:0 auto;animation:fadeUp .6s .05s ease both;}
+
+.wrap{max-width:760px;margin:0 auto;padding:0 20px 60px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:10px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;opacity:0;animation:fadeUp .5s ease forwards;transition:transform .2s,border-color .2s,box-shadow .2s;}
+.card:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:var(--shadow-lg);}
+.card .ch{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.card img.gi{width:30px;height:30px;border-radius:8px;flex-shrink:0;}
+.card h3{font-size:14.5px;margin:0;}
+.card p{font-size:12.5px;color:var(--text-dim);margin:0;line-height:1.55;}
+.card .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--accent);background:var(--accent-light);padding:2px 8px;border-radius:999px;margin-bottom:8px;}
+
+h2.section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:40px 0 4px;}
+
+.faq{margin-top:10px;}
+.faq details{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;}
+.faq summary{cursor:pointer;font-weight:700;font-size:13px;list-style:none;display:flex;align-items:center;gap:8px;}
+.faq summary::-webkit-details-marker{display:none;}
+.faq summary::before{content:"▶";font-size:10px;color:var(--accent);transition:transform .15s;}
+.faq details[open] summary::before{transform:rotate(90deg);}
+.faq p{font-size:12.5px;color:var(--text-dim);margin:8px 0 0;line-height:1.6;}
+
+footer{text-align:center;padding:30px 20px 46px;color:var(--text-dim);font-size:11.5px;}
+footer a{color:var(--accent2);}
+
+.i0{animation-delay:.05s;} .i1{animation-delay:.1s;} .i2{animation-delay:.15s;} .i3{animation-delay:.2s;}
+.i4{animation-delay:.25s;} .i5{animation-delay:.3s;} .i6{animation-delay:.35s;} .i7{animation-delay:.4s;}
+
+/* Palette du design professionnel (clair par défaut, sombre selon le système). */
+:root{--bg:#f8fafd;--surface:#ffffff;--border:#dde3ea;--text:#1f1f1f;--text-dim:#5f6368;
+  --accent:#0b57d0;--accent2:#0b57d0;--accent-light:#e8f0fe;--on-accent:#ffffff;--shadow-lg:0 4px 16px rgba(60,64,67,.12);}
+@media (prefers-color-scheme:dark){:root{--bg:#131314;--surface:#1e1f20;--border:#333537;--text:#e3e3e3;--text-dim:#a8abaf;
+  --accent:#a8c7fa;--accent2:#a8c7fa;--accent-light:#182638;--on-accent:#062e6f;--shadow-lg:0 4px 16px rgba(0,0,0,.4);}}
+body{font-family:'Google Sans','Segoe UI',Roboto,system-ui,sans-serif;}
+header .brand img,.hero img{animation:none;}
+.hero img{box-shadow:none;}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><img src="svg/calendar.svg" alt="">Emploi du temps UCA</div>
+  <div class="spacer"></div>
+  <a class="back" href="agenda.html">← Retour à l'agenda</a>
+</header>
+
+<div class="hero">
+  <img src="svg/rocket.svg" alt="">
+  <h1>Comment ça marche ?</h1>
+  <p>Petit guide des fonctionnalités de l'extension — tout reste dans ton navigateur, rien n'est envoyé ailleurs.</p>
+</div>
+
+<div class="wrap">
+  <h2 class="section-title">Fonctionnalités</h2>
+  <div class="grid">
+    <div class="card i0">
+      <div class="ch"><img class="gi" src="svg/sync.svg" alt=""><h3>Synchroniser</h3></div>
+      <p>Clique <strong>Synchroniser</strong> pour récupérer ton emploi du temps depuis Odin. La session reste ouverte en silence tant que possible ; si elle a expiré, une fenêtre de connexion CAS s'ouvre (15 min pour valider la double authentification).</p>
+    </div>
+    <div class="card i1">
+      <div class="ch"><img class="gi" src="svg/calendar.svg" alt=""><h3>Vues & zoom</h3></div>
+      <p>Jour, 3 jours, 5 jours, semaine ou mois — bascule avec les onglets en haut. Les boutons − / + ajustent la hauteur des créneaux dans la grille.</p>
+    </div>
+    <div class="card i2">
+      <div class="ch"><img class="gi" src="svg/stats.svg" alt=""><h3>Absences</h3></div>
+      <p>Le bouton <strong>Absences</strong> affiche déclarées, justifiées, non justifiées, avec motif présenté et journées non justifiées — synchronisé automatiquement en même temps que l'emploi du temps.</p>
+    </div>
+    <div class="card i3">
+      <div class="ch"><img class="gi" src="svg/notes.svg" alt=""><h3>Relevé de notes</h3></div>
+      <p>Le bouton <strong>Notes</strong> montre le tableau UE → matière → évaluation (Coeff / Note / Moy / Maxi / Mini), copié tel quel depuis Odin. La colonne Note ressort en rouge pour la repérer d'un coup d'œil. L'en-tête du tableau reste fixé en haut quand tu scrolles.</p>
+    </div>
+    <div class="card i4">
+      <div class="ch"><img class="gi" src="svg/pen.svg" alt=""><h3>Notes personnelles</h3></div>
+      <p>Clique un cours dans la grille pour ouvrir son détail : un champ texte permet d'y laisser une note perso (révisions, rappel...), sauvegardée automatiquement et liée à ce cours précis.</p>
+    </div>
+    <div class="card i4">
+      <div class="ch"><img class="gi" src="svg/pen.svg" alt=""><h3>Devoirs et examens</h3></div>
+      <p>Le bouton <strong>Devoirs</strong> garde ta liste de devoirs à rendre (matière + date) et affiche les examens de ton emploi du temps avec leur compte à rebours. Une notification te prévient la veille à 18&nbsp;h (réglable dans Paramètres), et l'export .ics peut inclure tes devoirs. Tout reste dans ton navigateur.</p>
+    </div>
+    <div class="card i5">
+      <div class="ch"><img class="gi" src="svg/lock.svg" alt=""><h3>Session expirée</h3></div>
+      <p>Si ta session Odin/CAS a expiré, un message "Session expirée" apparaît (bulle en bas à gauche sur mobile) — reclique Synchroniser pour te reconnecter.</p>
+    </div>
+  </div>
+
+  <h2 class="section-title">Questions fréquentes</h2>
+  <div class="faq">
+    <details>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/user.svg" alt="">Mes données partent-elles vers un serveur ?</summary>
+      <p>Non. Tout reste stocké localement dans ton navigateur (<code>chrome.storage.local</code>). L'extension parle uniquement à <code>odin.iut.uca.fr</code> et <code>ent.uca.fr</code> avec ta propre session.</p>
+    </details>
+    <details>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/time.svg" alt="">La synchro silencieuse échoue parfois, pourquoi ?</summary>
+      <p>Odin déconnecte la session après un certain temps d'inactivité. Dans ce cas l'extension détecte la redirection vers la page de connexion et te le signale au lieu d'afficher de fausses données.</p>
+    </details>
+    <details>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/search.svg" alt="">Le relevé de notes affiche "Aucun relevé", que faire ?</summary>
+      <p>Clique Synchroniser une fois — le relevé n'est récupéré qu'au moment d'une synchro, pas automatiquement à l'ouverture.</p>
+    </details>
+    <details>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/trash.svg" alt="">Comment effacer mes notes personnelles ?</summary>
+      <p>Ouvre le détail du cours concerné, vide le champ texte : la note est supprimée au prochain enregistrement.</p>
+    </details>
+  </div>
+</div>
+
+<footer>
+  Outil non officiel, non affilié à l'UCA. <a href="confidentialite.html">Confidentialité</a>
+</footer>
+</body>
+</html>

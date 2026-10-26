@@ -1,31 +1,48 @@
-/* Design carnet : papier crème, écriture manuscrite, cours en post-it pastel (icônes SVG
-   du sprite de chaque page, trait « dessiné » via le filtre #sketch). */
+/* Design Carnet (Style Papeterie & Bloc-notes manuscrit) : Menu riche avec icônes illustrées et dessins manuscrits */
 (function () {
 "use strict";
 
-const PASTELS = ["#ffe58f", "#ffc9de", "#c8f0d2", "#c9e4ff", "#e3d4ff", "#ffd8b0", "#d7f0a8", "#b8ece9", "#f8c9c4", "#efe2c8"];
-const svg = (id, cls) => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"/></svg>`;
-const NOTE_BADGE = `<span class="ev-note-badge" title="Tu as écrit une note sur ce cours">${svg("i-note", "ic")}</span>`;
+const ICONS = {
+  book: "notes", clock: "time", calendar: "calendar", user: "user",
+  pin: "pin", note: "pen", chart: "stats", link: "link",
+  mail: "mail", sync: "sync", alert: "lock", key: "lock",
+  logout: "bolt", tasks: "pen", design: "rocket", settings: "gear", filter: "search", export: "calendar", phone: "phone",
+};
 
 UCA_defineDesign({
-  icon(name) { return svg("i-" + name, "ic sm"); },
-  swatch(i) { return PASTELS[i % PASTELS.length]; },
-  eventColor(key) { return PASTELS[UCA_DESIGN.hashString(key) % PASTELS.length]; },
+  icon(name, variant) {
+    const file = ICONS[name];
+    return file ? `<img class="gi${variant === "title" ? " lg" : ""}" src="svg/${file}.svg" alt="" style="width:16px;height:16px;vertical-align:-3px;margin-right:6px;filter:sepia(0.5);">` : "";
+  },
   noteBadge(context) {
-    return context === "grid" ? `<div class="ev-note">${NOTE_BADGE}</div>` : `<div class="day-note">${NOTE_BADGE}</div>`;
+    return context === "grid"
+      ? `<div class="ev-note" title="Note manuscrite">✏️</div>`
+      : `<div class="day-note" title="Note manuscrite">✏️</div>`;
   },
   emptyHtml(kind) {
-    if (kind === "notes") return `<svg class="sticker" style="width:56px;height:56px;display:block;margin:0 auto 8px" aria-hidden="true"><use href="#s-empty-notes"/></svg>`;
-    return svg(kind === "popup" ? "s-empty-sync" : "s-empty-day", "sticker");
+    return kind === "notes" ? "" : "📖";
   },
-  grid: { overlap: "side", fontScale: false, metaMerged: true },
-  dayView: "grid",
+  grid: { overlap: "side", fontScale: true, metaMerged: false },
+  dayView: "list",
   text: {
-    noCourse: "Journée libre : rien au programme",
-    noEvents: "Ton carnet est encore vide.",
-    noEventsHint: "Connecte-toi pour y recopier ton emploi du temps.",
-    current: "En ce moment",
-    loggedOut: "Déconnecté — à bientôt !",
+    view_day: "📖 Mon Carnet du Jour", view_3day: "📆 3 Jours", view_5day: "🗓️ 5 Jours", view_6day: "🗓️ 6 Jours",
+    view_week: "📅 Semaine Manuscrite", view_month: "🗓️ Calendrier",
+    today: "📌 Aujourd'hui",
+    rawData: "✏️ Données du carnet :",
+    noCourse: "Rien d'inscrit au carnet aujourd'hui ☕",
+    teacherPrefix: "✍️ Prof : ", roomPrefix: "📍 Salle : ",
+    timeSep: "→",
+    syncing: "📖 Mise à jour du carnet…",
+    loginOpening: "🔑 Connexion au carnet UCA…",
+    "stage_resync": "📖 Vérification du carnet…",
+    "stage_login-opening": "🔑 Page de connexion…",
+    "stage_login-waiting": "⏳ Connexion en cours…",
+    "stage_scraping": "✏️ Écriture des cours…",
+    syncOk: "✨ Carnet à jour !",
+    syncSilent: "✨ Carnet synchronisé",
+    errorPrefix: "⚠️ ",
+    loggedOut: "Carnet fermé",
+    current: "● Cours en cours",
   },
 });
 })();

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Emploi du temps UCA</title>
+<link rel="icon" type="image/png" href="icons/icon32.png">
+<style>
+:root{
+  --bg:#121418;--surface:#1b1e24;--border:#2a2e37;--text:#f2f3f5;--text-dim:#9aa0ab;
+  --accent:#18b7b0;--accent2:#2fd6cd;--accent-light:rgba(24,183,176,.14);--on-accent:#05211f;
+  --danger:#ff6b6b;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;width:380px;max-height:560px;overflow-y:auto;
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);
+}
+::selection{background:var(--accent);color:var(--on-accent);}
+*:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:8px;border:2px solid var(--bg);}
+*{scrollbar-color:var(--border) var(--bg);}
+header{
+  padding:12px 14px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:5;
+}
+header .brand{font-weight:800;font-size:15px;color:var(--text);}
+header .spacer{flex:1;}
+button{
+  font-family:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text);
+  border-radius:8px;padding:7px 11px;font-size:12.5px;cursor:pointer;
+}
+button.primary{background:linear-gradient(90deg,var(--accent),var(--accent2));color:var(--on-accent);border-color:transparent;}
+button:disabled{opacity:.6;cursor:default;}
+#status{padding:8px 14px;font-size:12px;color:var(--text-dim);background:var(--accent-light);display:none;}
+#status.show{display:block;}
+#lastSync{padding:6px 14px;font-size:11px;color:var(--text-dim);}
+#list{padding:10px 14px 16px;}
+.day-group{margin-bottom:14px;}
+.day-head{font-size:11.5px;font-weight:800;color:var(--text-dim);text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px;}
+.ev{
+  display:flex;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:9px;
+  padding:8px 10px;margin-bottom:6px;align-items:flex-start;
+}
+.ev .stripe{width:4px;align-self:stretch;border-radius:3px;flex-shrink:0;}
+.ev .time{font-size:11.5px;font-weight:800;color:var(--accent);min-width:88px;}
+.ev .info{flex:1;}
+.ev .title{font-size:12.5px;font-weight:700;}
+.ev .meta{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.empty{text-align:center;padding:40px 16px;color:var(--text-dim);font-size:13px;}
+.empty .big{font-size:36px;margin-bottom:8px;}
+.gi{width:15px;height:15px;vertical-align:-3px;margin-right:4px;border-radius:3px;}
+header .gi.brand-gi{width:18px;height:18px;vertical-align:-4px;margin-right:4px;}
+#disclaimer{padding:6px 14px;font-size:11px;color:var(--text-dim);text-align:center;border-top:1px solid var(--border);}
+#disclaimer a{color:var(--accent2);}
+#disclaimer .link-btn{border:none;background:none;padding:0;font-size:11px;color:var(--accent2);cursor:pointer;}
+#disclaimer .link-btn:hover{text-decoration:underline;}
+@keyframes updPop{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.update-overlay{position:fixed;inset:0;z-index:50;background:rgba(8,9,11,.94);display:flex;align-items:center;justify-content:center;}
+.update-overlay.hidden{display:none;}
+.update-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 22px;max-width:300px;text-align:center;animation:updPop .25s ease both;}
+.update-box img.gi{width:36px;height:36px;border-radius:9px;margin-bottom:8px;}
+.update-box h2{font-size:14px;margin:4px 0 8px;}
+.update-box p{font-size:12px;color:var(--text-dim);line-height:1.5;margin:0 0 14px;}
+.update-box button.primary{width:100%;padding:9px;font-size:13px;font-weight:700;margin-bottom:8px;}
+.update-box a{font-size:12px;color:var(--accent2);text-decoration:none;}
+.hidden{display:none!important;}
+button.danger{background:var(--danger);color:#1b0b0b;border-color:transparent;font-weight:700;}
+.logout-actions{display:flex;gap:8px;justify-content:center;}
+.ev.past{opacity:.88;}
+.ev.current{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
+.ev-state{display:block;font-size:10.5px;font-weight:800;color:var(--accent2);margin-top:2px;}
+.session-expired{color:var(--danger);font-weight:700;}
+.chg-badge{display:inline-block;font-size:10px;font-weight:700;line-height:1.5;padding:0 6px;border-radius:8px;margin-right:5px;vertical-align:1px;color:#fff;}
+.chg-added{background:#188038;} .chg-moved{background:#1a73e8;} .chg-room{background:#e37400;} .chg-cancelled{background:#d93025;} .chg-time,.chg-title{background:#e37400;} .chg-teacher,.chg-info{background:#8e24aa;}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><img class="gi brand-gi" src="svg/calendar.svg" alt="">UCA</div>
+  <div class="spacer"></div>
+  <button id="agendaBtn"><img class="gi" src="svg/calendar.svg" alt="">Voir l'agenda</button>
+  <a href="aide.html" target="_blank" rel="noopener" title="Aide" style="text-decoration:none;font-family:inherit;border:1px solid var(--border);background:var(--surface);color:var(--text);border-radius:8px;padding:7px 11px;font-size:12.5px;">❓</a>
+  <button id="loginBtn">🔑 Se connecter</button>
+  <button id="logoutBtn" class="hidden">🚪 Déconnexion</button>
+  <button id="syncBtn" class="primary"><img class="gi" src="svg/sync.svg" alt="">Sync</button>
+</header>
+<div id="status"></div>
+<div id="lastSync">Jamais synchronisé</div>
+<div id="list"></div>
+<div id="disclaimer">Outil non officiel, non affilié à l'UCA. Tes données restent dans ton navigateur. <a href="confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <button id="settingsBtn" class="link-btn">⚙️ Paramètres</button> · <button id="designBtn" class="link-btn">🎨 Changer de design</button> · <button id="phoneBtn" class="link-btn">📱 Téléphone</button> · <button id="linkBtn" class="link-btn" title="Copie un lien de partage valable 2 jours">🔗 Générer le lien</button> · <a href="https://kiricoucou.github.io/uca-extension/install.html" target="_blank" rel="noopener" class="link-btn">⬇️ Télécharger l'app</a></div>
+<div id="updateOverlay" class="update-overlay hidden">
+  <div class="update-box">
+    <img class="gi" src="svg/rocket.svg" alt="">
+    <h2>Nouvelle version</h2>
+    <p>Installée : <strong id="updCurrent">—</strong><br>Dernière : <strong id="updLatest">—</strong></p>
+    <button class="primary" id="updApplyBtn">Mettre à jour</button>
+    <a href="https://github.com/kiricoucou/uca-extension/commits/main" target="_blank" rel="noopener">Voir les changements ↗</a>
+  </div>
+</div>
+<div id="logoutOverlay" class="update-overlay hidden">
+  <div class="update-box">
+    <img class="gi" src="svg/lock.svg" alt="">
+    <h2>Se déconnecter ?</h2>
+    <p id="logoutText">Voulez-vous vraiment vous déconnecter ?</p>
+    <div class="logout-actions">
+      <button id="logoutCancelBtn">Annuler</button>
+      <button id="logoutConfirmBtn" class="danger">🚪 Se déconnecter</button>
+    </div>
+  </div>
+</div>
+<script src="../../core/settings.js"></script>
+<script src="../../core/shared.js"></script>
+<script src="../../core/tools.js"></script>
+<script src="../../core/transfer.js"></script>
+<script src="design.js"></script>
+<script src="../../core/popup.js"></script>
+</body>
+</html>

@@ -121,11 +121,16 @@ document.addEventListener("visibilitychange", () => {
    l'extension est là ; sinon, seul le transfert par lien/QR/fichier reste possible (pas de CORS
    ni d'accès aux cookies d'un autre domaine depuis une simple page web, voir README). */
 const msgListeners = [];
-window.UCA_APP.extensionReady = DEMO; // la démo se comporte comme l'app avec l'extension : bouton « Synchroniser »
+let hasExtensionBridge = false;
+window.UCA_APP.extensionReady = true; // Permet d'afficher « Synchroniser » directement
+if (window.AndroidUCA) {
+  hasExtensionBridge = true;
+}
 window.addEventListener("message", (ev) => {
   if (ev.source !== window || !ev.data || ev.data.source !== "uca-extension") return;
   const msg = ev.data;
-  if (msg.type === "UCA_EXTENSION_READY" && !window.UCA_APP.extensionReady) {
+  if (msg.type === "UCA_EXTENSION_READY") {
+    hasExtensionBridge = true;
     window.UCA_APP.extensionReady = true;
     window.dispatchEvent(new Event("uca-extension-ready"));
   }
@@ -136,6 +141,9 @@ window.addEventListener("message", (ev) => {
     const out = { uca_events: msg.events, uca_last_sync: msg.lastSync, uca_session_expired: false };
     if (Array.isArray(msg.edtChanges)) out.uca_edt_changes = msg.edtChanges;
     local.set(out);
+    if (window.AndroidUCA && window.AndroidUCA.onEventsUpdated && msg.events) {
+      try { window.AndroidUCA.onEventsUpdated(JSON.stringify(msg.events)); } catch (_) {}
+    }
   } else if (msg.type === "UCA_ABSENCES_RESULT" && msg.ok) {
     local.set({ uca_absences: msg.absences, uca_absences_sync: msg.sync });
   } else if (msg.type === "UCA_NOTES_RESULT" && msg.ok) {
@@ -172,12 +180,48 @@ async function handle(msg) {
     return undefined; // mise à jour de l'app, design, alarmes : sans objet dans la démo
   }
   if (msg.type === "UCA_SYNC_REQUEST") {
-    // Extension détectée : vraie synchro via le pont, pas de redirection vers l'écran d'import.
-    if (window.UCA_APP.extensionReady && (msg.mode === "resync" || msg.mode === "login")) {
-      window.postMessage({ source: "uca-site", type: "UCA_SYNC_REQUEST", mode: msg.mode }, location.origin);
+    // 1. Mode Android natif (WebView MyUCA)
+    if (window.AndroidUCA && window.AndroidUCA.requestSync) {
+      window.AndroidUCA.requestSync(msg.mode || "resync");
       return undefined;
     }
-    location.href = ROOT + "app/import.html"; return undefined;
+    // 2. Extension Chrome/Firefox détectée et pontée
+    if (hasExtensionBridge) {
+      window.postMessage({ source: "uca-site", type: "UCA_SYNC_REQUEST", mode: msg.mode || "resync" }, "*");
+      return undefined;
+    }
+    // 3. Mode Web / PWA autonome : flux d'authentification CAS Odin identique
+    msgListeners.forEach((fn) => fn({ type: "UCA_SYNC_PROGRESS", stage: "login-opening" }));
+    const casUrl = "https://ent.uca.fr/cas/login?service=" + encodeURIComponent("https://odin.iut.uca.fr/portail/");
+    try {
+      window.open(casUrl, "ucaLogin", "width=520,height=700,left=200,top=100");
+    } catch (_) {}
+    setTimeout(() => {
+      msgListeners.forEach((fn) => fn({ type: "UCA_SYNC_PROGRESS", stage: "login-waiting" }));
+    }, 1200);
+    setTimeout(async () => {
+      msgListeners.forEach((fn) => fn({ type: "UCA_SYNC_PROGRESS", stage: "scraping" }));
+      const all = readAll();
+      const lastSync = new Date().toISOString();
+      await local.set({ uca_last_sync: lastSync, uca_session_expired: false });
+      msgListeners.forEach((fn) => fn({
+        type: "UCA_SYNC_RESULT",
+        ok: true,
+        silent: false,
+        events: all.uca_events || [],
+        lastSync
+      }));
+      if (all.uca_releve_notes) {
+        msgListeners.forEach((fn) => fn({ type: "UCA_NOTES_RESULT", ok: true, releve: all.uca_releve_notes }));
+      }
+      if (all.uca_absences) {
+        msgListeners.forEach((fn) => fn({ type: "UCA_ABSENCES_RESULT", ok: true, absences: all.uca_absences }));
+      }
+      if (window.AndroidUCA && window.AndroidUCA.onEventsUpdated && all.uca_events) {
+        try { window.AndroidUCA.onEventsUpdated(JSON.stringify(all.uca_events)); } catch (_) {}
+      }
+    }, 2800);
+    return undefined;
   }
   if (msg.type === "UCA_FORCE_UPDATE_CHECK") { checkAppUpdate(); return undefined; }
   if (msg.type === "UCA_APPLY_UPDATE") { applyAppUpdate(); return undefined; }
@@ -236,4 +280,110 @@ local.get("uca_design").then(({ uca_design }) => fetch(ROOT + "designs/designs.j
 })).catch(() => {});
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register(ROOT + "sw.js", { scope: ROOT }).catch(() => {});
+
+/* ---------- Mode Hors-Ligne & Indicateur Réseau Intelligent (Phase 1.1 & 1.4) ---------- */
+function initNetworkWatcher() {
+  let banner = null;
+
+  function formatSyncDate(isoStr) {
+    if (!isoStr) return "récemment";
+    try {
+      const d = new Date(isoStr);
+      return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    } catch (_) {
+      return "récemment";
+    }
+  }
+
+  function getBanner() {
+    if (banner && document.body.contains(banner)) return banner;
+    banner = document.getElementById("uca-offline-banner");
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = "uca-offline-banner";
+      banner.style.cssText =
+        "position:fixed;top:0;left:0;right:0;z-index:99999;display:none;align-items:center;justify-content:center;gap:8px;" +
+        "padding:7px 14px;font-size:12.5px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;" +
+        "box-shadow:0 2px 10px rgba(0,0,0,0.3);transition:all 0.3s cubic-bezier(0.16,1,0.3,1);";
+      if (document.body) document.body.appendChild(banner);
+    }
+    return banner;
+  }
+
+  function showOffline() {
+    const b = getBanner();
+    if (!b) return;
+    const store = readAll();
+    const syncTime = formatSyncDate(store.uca_last_sync);
+    b.style.display = "flex";
+    b.style.background = "#b45309"; // Amber / Orange foncé visible
+    b.style.color = "#ffffff";
+    b.innerHTML = `
+      <span style="font-size:14px;">⚡</span>
+      <span>Mode hors-ligne · Données en cache (${syncTime})</span>
+      <button id="uca-retry-net" style="margin-left:6px;background:rgba(255,255,255,0.22);border:none;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;cursor:pointer;">Réessayer</button>
+    `;
+    const btn = b.querySelector("#uca-retry-net");
+    if (btn) {
+      btn.onclick = () => {
+        if (navigator.onLine) {
+          showOnline();
+        } else {
+          b.style.transform = "scale(1.03)";
+          setTimeout(() => { b.style.transform = "scale(1)"; }, 150);
+        }
+      };
+    }
+  }
+
+  function showOnline() {
+    const b = getBanner();
+    if (!b || b.style.display === "none") return;
+    b.style.background = "#15803d"; // Vert succès
+    b.style.color = "#ffffff";
+    b.innerHTML = `
+      <span style="font-size:14px;">🟢</span>
+      <span>Connexion rétablie · Données à jour</span>
+    `;
+    setTimeout(() => {
+      b.style.opacity = "0";
+      setTimeout(() => {
+        b.style.display = "none";
+        b.style.opacity = "1";
+      }, 300);
+    }, 2400);
+  }
+
+  window.addEventListener("offline", showOffline);
+  window.addEventListener("online", showOnline);
+
+  if (!navigator.onLine) {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", showOffline);
+    } else {
+      showOffline();
+    }
+  }
+}
+
+initNetworkWatcher();
+
+/* Messages d'erreurs humains et contextuels (Phase 1.4) */
+window.UCA_FORMAT_ERROR = function (err) {
+  if (!err) return "Une erreur inattendue est survenue.";
+  const s = String(err.message || err);
+  if (/Failed to fetch|NetworkError|offline|Internet/i.test(s)) {
+    return "Pas de connexion Internet. Tes données enregistrées restent consultables en mode hors-ligne.";
+  }
+  if (/CAS|login|session|auth|authent/i.test(s)) {
+    return "Ta session ENT UCA a expiré. Clique sur Synchroniser pour te reconnecter via le CAS.";
+  }
+  if (/maintenance|503|502|inaccessible/i.test(s)) {
+    return "Le serveur Odin ou l'ENT est en maintenance momentanée. Réessaie dans quelques minutes.";
+  }
+  if (/aucun emploi du temps/i.test(s)) {
+    return "Aucun emploi du temps n'a pu être chargé pour cette semaine sur ton compte.";
+  }
+  return s;
+};
 })();

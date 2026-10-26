@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<style>.t{fill:#eaf7f0}.i{fill:none;stroke:#1e7a46;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+@media (prefers-color-scheme:dark){.t{fill:#15422b}.i{stroke:#7ad9a6}}</style>
+<rect class="t" width="32" height="32" rx="8"/><g class="i" transform="translate(4 4)"><circle cx="10.8" cy="10.8" r="6.6"/><path d="m15.6 15.6 4.9 4.9"/></g></svg>

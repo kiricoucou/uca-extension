@@ -13,6 +13,7 @@ from harness import ROOT, designs  # noqa: E402
 OPTIONAL = {"notesAvg", "moreBtn", "morePanel", "moreWrap", "updateOverlay", "updateBar", "updCurrent", "updLatest",
             "updApplyBtn", "designBtn", "settingsBtn", "noteArea", "lbImg", "ucaSheetBackdrop", "phoneBtn", "phoneOverlay", "phoneClose", "phoneQrApp", "phoneFile", "phoneStart", "phoneQrData", "phoneCounter",
             "subjectColor", "nextCourse", "phoneShare", "phoneLink", "phoneLinkFallback", "phoneShareInfo", "appImportBtn",
+            "gdmBody", "gdmTitle", "gradeDetailOverlay", "weekSubLabel",
             "tasksBtn", "tasksPanel", "tasksWrap"}  # ces trois-là sont créés par le core (setupTasksUI)
 VIEW_IDS = {"dayView", "threeDayView", "fiveDayView", "sixDayView", "weekView", "monthView"}
 

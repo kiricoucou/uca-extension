@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/updateBlockerRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:background="@color/bg"
+    android:clickable="true"
+    android:focusable="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center_horizontal">
+
+        <!-- En-tête Icone & Badge Rouge Bloquant -->
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginTop="20dp"
+            android:src="@drawable/ic_update_alert"
+            android:contentDescription="Alerte mise à jour" />
+
+        <TextView
+            android:id="@+id/txtUpdateBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="⚡ MISE À JOUR RAPIDE (OTA)"
+            android:textColor="@color/accent"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:letterSpacing="0.08"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:background="@drawable/bg_card" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Nouvelle version détectée sur GitHub"
+            android:textColor="@color/text"
+            android:textStyle="bold"
+            android:textSize="20sp"
+            android:gravity="center" />
+
+        <TextView
+            android:id="@+id/txtUpdateSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Un nouveau push a été validé sur la branche main. L'application va se synchroniser à chaud en quelques secondes sans réinstaller l'APK."
+            android:textColor="@color/text_dim"
+            android:textSize="13.5sp"
+            android:lineSpacingExtra="3dp"
+            android:gravity="center" />
+
+        <!-- Boite d'informations de Version -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:orientation="vertical"
+            android:background="@drawable/bg_card"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/txtVersionsComparison"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Version installée : v1.1.0 ➔ Nouvelle : v1.1.1"
+                android:textColor="@color/text"
+                android:textStyle="bold"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/txtCommitDetails"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Branche : main · Commit : dcf1390"
+                android:textColor="@color/accent"
+                android:textSize="12.5sp" />
+
+            <TextView
+                android:id="@+id/txtPublishedDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Publication GitHub : 25/10/2026"
+                android:textColor="@color/text_dim"
+                android:textSize="12sp" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="12dp"
+                android:background="@color/border" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Nouveautés &amp; Correctifs :"
+                android:textColor="@color/text"
+                android:textStyle="bold"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/txtChangelog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="• Forçage et blocage des mises à jour via GitHub\n• Statut en direct des services universitaires UCA\n• Emploi du temps haute précision et groupe TP synchronisé"
+                android:textColor="@color/text_dim"
+                android:textSize="12.5sp"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
+
+        <!-- Barre de progression du téléchargement de l'APK -->
+        <LinearLayout
+            android:id="@+id/layoutDownloadProgress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:id="@+id/progressBarDownload"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:indeterminate="false"
+                android:max="100"
+                android:progress="0"
+                android:progressBackgroundTint="@color/border"
+                android:progressTint="@color/accent" />
+
+            <TextView
+                android:id="@+id/txtDownloadStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="Téléchargement du nouvel APK... 0%"
+                android:textColor="@color/accent"
+                android:textSize="12sp"
+                android:gravity="center" />
+        </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:minHeight="20dp" />
+
+        <!-- Bouton Principal : Forcer la Mise à Jour -->
+        <Button
+            android:id="@+id/btnForceUpdate"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:text="Mettre à jour l'application"
+            android:textColor="@color/on_accent"
+            android:textStyle="bold"
+            android:textSize="15sp"
+            android:background="@drawable/bg_cta" />
+
+        <!-- Bouton Secondaire : GitHub -->
+        <Button
+            android:id="@+id/btnOpenGithub"
+            android:layout_width="match_parent"
+            android:layout_height="46dp"
+            android:layout_marginTop="10dp"
+            android:text="Voir les changements sur GitHub"
+            android:textColor="@color/text"
+            android:textSize="13.5sp"
+            android:background="@drawable/bg_card" />
+
+        <!-- Lien Développeur pour test -->
+        <TextView
+            android:id="@+id/btnDevBypassTest"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:padding="8dp"
+            android:text="Ignorer temporairement (Mode Test Dev)"
+            android:textColor="@color/text_dim"
+            android:textSize="11.5sp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+</ScrollView>

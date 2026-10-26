@@ -1,9 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Emploi du temps UCA (non officiel)",
-  "version": "1.44.0",
+  "version": "1.45.0",
   "description": "Emploi du temps, notes et absences de l'UCA (Odin) dans ton navigateur. Non officiel, aucune donnée envoyée à un tiers.",
-  "permissions": ["scripting", "storage", "cookies", "alarms", "notifications"],
+  "permissions": [
+    "scripting",
+    "storage",
+    "cookies",
+    "alarms",
+    "notifications"
+  ],
   "host_permissions": [
     "https://ent.uca.fr/*",
     "https://odin.iut.uca.fr/*",
@@ -31,8 +37,15 @@
   },
   "content_scripts": [
     {
-      "matches": ["file:///*", "http://localhost/*", "http://127.0.0.1/*", "https://kiricoucou.github.io/uca-extension/*"],
-      "js": ["content-bridge.js"],
+      "matches": [
+        "file:///*",
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "https://kiricoucou.github.io/uca-extension/*"
+      ],
+      "js": [
+        "content-bridge.js"
+      ],
       "run_at": "document_idle"
     }
   ]

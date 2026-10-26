@@ -21,7 +21,7 @@ DIST = ROOT / "dist" / "firefox"
 EXCLUDE_DIRS = {".git", ".github", ".claude", ".impeccable", "tests", "app", "dist", "store", "en", "__pycache__"}
 EXCLUDE_FILES = {"manifest.firefox.json", ".gitignore", ".nojekyll", "app.webmanifest", "sw.js"}
 # Pages du site public, à la racine seulement (designs/<id>/aide.html reste dans le paquet).
-EXCLUDE_ROOT_FILES = {"index.html", "install.html", "aide.html", "404.html", "confidentialite.html", "site.css", "site-demo.js", "nouveautes.html", "sitemap.xml", "robots.txt"}
+EXCLUDE_ROOT_FILES = {"index.html", "install.html", "aide.html", "404.html", "confidentialite.html", "site.css", "site-demo.js", "nouveautes.html", "sitemap.xml", "robots.txt", "transport.html"}
 EXCLUDE_SUFFIXES = {".pyc"}
 
 

@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Mobilité & Transports — My UCA</title>
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="stylesheet" href="site.css">
+<style>
+  :root {
+    --bg-page: #080d1a;
+    --bg: #0d1527;
+    --surface: #131f37;
+    --surface-elevated: #1a2b4c;
+    --surface-card: #15223c;
+    --border: #223559;
+    --border-light: #2d4573;
+    --text: #f8fafc;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --accent: #00bfa5;
+    --accent2: #2fd6cd;
+    --accent-glow: rgba(0, 191, 165, 0.35);
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg-page);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.45;
+  }
+  .app-container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 16px;
+    min-height: 100vh;
+  }
+  header.trans-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 16px;
+  }
+  .brand-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .brand-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+  .brand-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+  .brand-sub {
+    font-size: 11px;
+    color: var(--accent2);
+    font-weight: 700;
+  }
+  .back-link {
+    color: var(--accent2);
+    font-size: 12.5px;
+    font-weight: 700;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+  }
+  .back-link:hover {
+    border-color: var(--accent);
+  }
+  .search-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+  }
+  .card-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 14.5px;
+    font-weight: 800;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .input-wrap {
+    position: relative;
+  }
+  .input-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .trans-input {
+    width: 100%;
+    height: 42px;
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 0 12px;
+    outline: none;
+    transition: all 0.15s ease;
+  }
+  .trans-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .suggestions-box {
+    position: absolute;
+    top: 68px;
+    left: 0;
+    right: 0;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-light);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    z-index: 50;
+    max-height: 220px;
+    overflow-y: auto;
+    display: none;
+  }
+  .sugg-item {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .sugg-item:hover {
+    background: rgba(0, 191, 165, 0.15);
+    color: var(--accent2);
+  }
+  .sugg-sub {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  .quick-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .chip-btn {
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .chip-btn:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .filters-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .filter-pill {
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+  }
+  .filter-pill.active {
+    background: rgba(0, 191, 165, 0.18);
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+  .btn-search-main {
+    width: 100%;
+    height: 44px;
+    margin-top: 14px;
+    background: linear-gradient(135deg, var(--accent), #009688);
+    border: none;
+    border-radius: 11px;
+    color: #031c18;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 14px var(--accent-glow);
+    transition: all 0.15s ease;
+  }
+  .btn-search-main:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px var(--accent-glow);
+  }
+  .departures-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .dep-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .dep-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .dep-row:last-child {
+    border-bottom: none;
+  }
+  .line-tag {
+    font-size: 11px;
+    font-weight: 900;
+    padding: 2px 7px;
+    border-radius: 6px;
+    min-width: 44px;
+    text-align: center;
+    display: inline-block;
+  }
+  .eta-pill {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--accent2);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .trip-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    transition: all 0.15s ease;
+  }
+  .trip-card:hover {
+    border-color: var(--border-light);
+  }
+  .trip-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .trip-times {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .time-large {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--text);
+  }
+  .time-dur {
+    font-size: 11.5px;
+    color: var(--text-dim);
+    font-weight: 700;
+  }
+  .trip-price {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--accent2);
+    text-align: right;
+  }
+  .status-badge {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .badge-realtime { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .badge-scheduled { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+  .badge-disrupted { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .badge-expired { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+  .leg-item {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+  }
+  .leg-icon {
+    font-size: 16px;
+    width: 26px;
+    text-align: center;
+  }
+  .leg-details {
+    flex: 1;
+    min-width: 0;
+  }
+  .leg-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .leg-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+  .source-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10.5px;
+    color: var(--text-muted);
+    margin-top: 10px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- EN-TÊTE MOBILITÉ -->
+  <header class="trans-header">
+    <div class="brand-group">
+      <img src="icon-192.png" class="brand-logo" alt="My UCA" onerror="this.src='icon-512.png'">
+      <div>
+        <div class="brand-title">My UCA · Mobilité &amp; Transports</div>
+        <div class="brand-sub">Clermont-Ferrand &amp; Région Auvergne-Rhône-Alpes</div>
+      </div>
+    </div>
+    <a href="phone-preview.html?tab=agenda" class="back-link">← Retour Agenda</a>
+  </header>
+
+  <!-- FORMULAIRE DE RECHERCHE D'ITINÉRAIRE -->
+  <div class="search-card">
+    <div class="card-title-row">
+      <div class="card-title">
+        <span>🔍 Rechercher un itinéraire multimodal</span>
+      </div>
+      <span class="status-badge badge-realtime">🟢 T2C &amp; SNCF Direct</span>
+    </div>
+
+    <div class="field-group">
+      <div class="input-wrap">
+        <label class="input-label" for="inputOrigin">Point de départ (Campus, Arrêt ou Gare) :</label>
+        <input type="text" id="inputOrigin" class="trans-input" value="Campus Cézeaux" autocomplete="off" oninput="handleStopsInput('origin', this.value)">
+        <div id="originSuggs" class="suggestions-box"></div>
+        <div class="quick-chips">
+          <button class="chip-btn" onclick="selectQuickStop('origin', 'cezeaux_campus', 'Campus Cézeaux')">📍 Cézeaux</button>
+          <button class="chip-btn" onclick="selectQuickStop('origin', 'universites', 'Universités (Carnot)')">📍 Carnot</button>
+          <button class="chip-btn" onclick="selectQuickStop('origin', 'dunant_medecine', 'Dunant (Médecine)')">📍 Dunant</button>
+          <button class="chip-btn" onclick="selectQuickStop('origin', 'gare_sncf', 'Gare SNCF')">🚉 Gare SNCF</button>
+        </div>
+      </div>
+
+      <div class="input-wrap">
+        <label class="input-label" for="inputDest">Destination (Campus, Gare ou Ville) :</label>
+        <input type="text" id="inputDest" class="trans-input" value="Gare SNCF Clermont-Ferrand" autocomplete="off" oninput="handleStopsInput('dest', this.value)">
+        <div id="destSuggs" class="suggestions-box"></div>
+        <div class="quick-chips">
+          <button class="chip-btn" onclick="selectQuickStop('dest', 'gare_sncf', 'Gare SNCF')">🚉 Gare SNCF</button>
+          <button class="chip-btn" onclick="selectQuickStop('dest', 'jaude', 'Place de Jaude')">🏙️ Jaude</button>
+          <button class="chip-btn" onclick="selectQuickStop('dest', 'lyon_partdieu', 'Lyon Part-Dieu')">🚅 Lyon</button>
+          <button class="chip-btn" onclick="selectQuickStop('dest', 'paris_bercy', 'Paris Bercy')">🗼 Paris</button>
+          <button class="chip-btn" onclick="selectQuickStop('dest', 'riom_gare', 'Gare de Riom')">📍 Riom</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATE & HEURE DE DÉPART -->
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
+      <div>
+        <label class="input-label" for="inputDate">Date :</label>
+        <input type="date" id="inputDate" class="trans-input" style="font-size:12.5px;">
+      </div>
+      <div>
+        <label class="input-label" for="inputTime">Heure de départ :</label>
+        <input type="time" id="inputTime" class="trans-input" style="font-size:12.5px;">
+      </div>
+    </div>
+
+    <!-- FILTRES PAR MODE DE TRANSPORT -->
+    <div class="input-label">Modes de transport acceptés :</div>
+    <div class="filters-row" id="modesFilterRow">
+      <div class="filter-pill active" data-mode="tram" onclick="toggleFilter(this)">🚊 Tram A</div>
+      <div class="filter-pill active" data-mode="bus" onclick="toggleFilter(this)">🚌 Bus T2C</div>
+      <div class="filter-pill active" data-mode="train" onclick="toggleFilter(this)">🚆 Train SNCF (TER)</div>
+      <div class="filter-pill active" data-mode="covoit" onclick="toggleFilter(this)">🚗 Covoiturage</div>
+      <div class="filter-pill active" data-mode="car" onclick="toggleFilter(this)">🚍 Autocars (FlixBus)</div>
+    </div>
+
+    <!-- TRI -->
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
+      <span class="input-label" style="margin:0;">Trier les résultats par :</span>
+      <select id="selectSort" class="trans-input" style="width:190px; height:34px; font-size:12px;" onchange="runSearch()">
+        <option value="fastest">⚡ Le plus rapide</option>
+        <option value="departure">⏰ Départ le plus proche</option>
+        <option value="cheapest">💶 Prix le plus bas</option>
+      </select>
+    </div>
+
+    <!-- BOUTON RECHERCHER -->
+    <button class="btn-search-main" onclick="runSearch()">
+      <span>Rechercher les itinéraires disponibles</span>
+    </button>
+  </div>
+
+  <!-- PROCHAINS DÉPARTS DEPUIS LE CAMPUS (TEMPS RÉEL) -->
+  <div class="departures-card">
+    <div class="dep-title">
+      <span>Prochains Départs en direct : <strong id="depStopName" style="color:var(--text);">Campus Cézeaux</strong></span>
+      <span style="color:var(--accent2); cursor:pointer;" onclick="refreshDepartures()">🔄 Actualiser</span>
+    </div>
+    <div id="departuresList">
+      <!-- Rempli en direct par JS -->
+    </div>
+  </div>
+
+  <!-- LISTE DES RÉSULTATS D'ITINÉRAIRES -->
+  <div style="font-size:12px; font-weight:800; text-transform:uppercase; color:var(--text-dim); letter-spacing:0.04em; margin-bottom:10px;">
+    Itinéraires Disponibles (<span id="resultsCount">0</span>)
+  </div>
+
+  <div id="resultsList">
+    <!-- Rempli par runSearch() -->
+  </div>
+</div>
+
+<script src="core/mobility.js"></script>
+<script>
+  let currentOriginId = "cezeaux_campus";
+  let currentDestId = "gare_sncf";
+
+  // Initialisation de la date et heure actuelles
+  function initDateTime() {
+    const now = new Date();
+    document.getElementById("inputDate").value = now.toISOString().split("T")[0];
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    document.getElementById("inputTime").value = `${hh}:${mm}`;
+  }
+
+  function handleStopsInput(kind, query) {
+    const box = document.getElementById(kind === "origin" ? "originSuggs" : "destSuggs");
+    if (!window.UCA_MOBILITY) return;
+    const results = window.UCA_MOBILITY.searchStops(query);
+    if (!results.length) {
+      box.style.display = "none";
+      return;
+    }
+    box.innerHTML = results.map(s => `
+      <div class="sugg-item" onclick="selectStop('${kind}', '${s.id}', '${s.name.replace(/'/g, "\\'")}')">
+        <div>
+          <div>${s.name}</div>
+          <div class="sugg-sub">${s.city} · ${s.lines ? s.lines.join(", ") : ""}</div>
+        </div>
+        <span style="font-size:11px; color:var(--accent2);">Sélectionner</span>
+      </div>
+    `).join("");
+    box.style.display = "block";
+  }
+
+  function selectStop(kind, id, name) {
+    if (kind === "origin") {
+      currentOriginId = id;
+      document.getElementById("inputOrigin").value = name;
+      document.getElementById("originSuggs").style.display = "none";
+      refreshDepartures();
+    } else {
+      currentDestId = id;
+      document.getElementById("inputDest").value = name;
+      document.getElementById("destSuggs").style.display = "none";
+    }
+    runSearch();
+  }
+
+  function selectQuickStop(kind, id, name) {
+    selectStop(kind, id, name);
+  }
+
+  function toggleFilter(el) {
+    el.classList.toggle("active");
+    runSearch();
+  }
+
+  function getActiveModes() {
+    return Array.from(document.querySelectorAll("#modesFilterRow .filter-pill.active")).map(p => p.dataset.mode);
+  }
+
+  function refreshDepartures() {
+    const container = document.getElementById("departuresList");
+    const nameEl = document.getElementById("depStopName");
+    if (!window.UCA_MOBILITY || !container) return;
+
+    const stop = window.UCA_MOBILITY.getStopById(currentOriginId) || window.UCA_MOBILITY.stops[0];
+    if (nameEl) nameEl.textContent = stop.name;
+
+    const deps = window.UCA_MOBILITY.getNextDepartures(currentOriginId);
+    container.innerHTML = deps.map(d => `
+      <div class="dep-row">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="line-tag" style="background:${d.color}; color:#fff;">${d.label}</span>
+          <span style="font-size:12.5px; font-weight:700;">Direction : ${d.destination}</span>
+        </div>
+        <span class="eta-pill">
+          ${d.realtime ? '<span style="color:#10b981;">🟢</span>' : '🗓️'}
+          <span>Dans <strong>${d.etaMinutes} min</strong></span>
+        </span>
+      </div>
+    `).join("");
+  }
+
+  function runSearch() {
+    const list = document.getElementById("resultsList");
+    const countEl = document.getElementById("resultsCount");
+    if (!window.UCA_MOBILITY || !list) return;
+
+    const activeModes = getActiveModes();
+    const sort = document.getElementById("selectSort").value;
+    const dateVal = document.getElementById("inputDate").value;
+    const timeVal = document.getElementById("inputTime").value;
+
+    const routes = window.UCA_MOBILITY.findRoutes({
+      fromId: currentOriginId,
+      toId: currentDestId,
+      date: dateVal,
+      time: timeVal,
+      modes: activeModes,
+      sortBy: sort
+    });
+
+    if (countEl) countEl.textContent = String(routes.length);
+
+    if (!routes.length) {
+      list.innerHTML = `
+        <div style="background:var(--surface); border:1px dashed var(--border); border-radius:14px; padding:24px; text-align:center; color:var(--text-dim); font-size:13px;">
+          <div style="font-size:32px; margin-bottom:8px;">🚍</div>
+          <strong>Aucun itinéraire direct trouvé avec ces filtres.</strong>
+          <div style="font-size:11.5px; margin-top:4px;">Essaie d'activer d'autres modes de transport ou de modifier ton horaire de départ.</div>
+        </div>
+      `;
+      return;
+    }
+
+    list.innerHTML = routes.map(r => {
+      const legsHtml = (r.legs || []).map(l => {
+        const icon = l.type === "tram" ? "🚊" : l.type === "bus" ? "🚌" : l.type === "train" ? "🚆" : l.type === "covoit" ? "🚗" : l.type === "car" ? "🚍" : "🚶";
+        return `
+          <div class="leg-item">
+            <span class="leg-icon">${icon}</span>
+            <div class="leg-details">
+              <div class="leg-title">${l.title}</div>
+              <div class="leg-meta">De <b>${l.from}</b> à <b>${l.to}</b> (${l.depTime} ➔ ${l.arrTime} · ${l.durationMin} min)</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      return `
+        <div class="trip-card">
+          <div class="trip-head">
+            <div>
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                <span class="line-tag" style="background:${r.lineColor}; color:${r.lineTextColor};">${r.line}</span>
+                <span class="status-badge ${r.realtime.badgeClass}">${r.realtime.label}</span>
+              </div>
+              <div class="trip-times">
+                <span class="time-large">${r.departureTime}</span>
+                <span style="color:var(--text-dim);">➔</span>
+                <span class="time-large">${r.arrivalTime}</span>
+                <span class="time-dur">(${r.durationMin} min)</span>
+              </div>
+            </div>
+            <div class="trip-price">
+              ${r.price}
+              <div style="font-size:10px; color:var(--text-dim); font-weight:600;">${r.operator}</div>
+            </div>
+          </div>
+
+          <!-- ÉTAPES DU TRAJET & CORRESPONDANCES -->
+          <div>
+            ${legsHtml}
+          </div>
+
+          <!-- PROVENANCE DES DONNÉES & HORODATAGE DE FRAÎCHEUR -->
+          <div class="source-meta-row">
+            <span>📡 ${r.source}</span>
+            <span>⏱️ ${r.updatedAt}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // Fermer les suggestions si on clique ailleurs
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".input-wrap")) {
+      document.getElementById("originSuggs").style.display = "none";
+      document.getElementById("destSuggs").style.display = "none";
+    }
+  });
+
+  // Initialisation au chargement
+  initDateTime();
+  refreshDepartures();
+  runSearch();
+</script>
+
+</body>
+</html>

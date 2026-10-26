@@ -713,6 +713,218 @@ button.primary:hover{background:#26418a;box-shadow:2px 2px 0 var(--highlight);}
   .view .event-card.m{border-radius:2px 2px 8px 2px;}
 }
 .ic{filter:url(#sketch);}
+
+/* Fixes V3: Centered modals, no cutoff, single line month, week sublabel */
+.period-label { white-space: nowrap !important; font-size: 14px !important; text-align: center; }
+.week-sub-label {
+  display: block;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-dim, #94a3b8);
+  padding: 4px 8px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.02em;
+}
+.m-card {
+  flex-shrink: 0 !important;
+  min-height: fit-content !important;
+  overflow: visible !important;
+  padding: 14px 14px 14px 18px !important;
+}
+.m-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.m-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  word-break: break-word !important;
+}
+.m-meta {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 13px !important;
+  color: var(--text-dim, #94a3b8) !important;
+  line-height: 1.3 !important;
+}
+.absences-panel.as-sheet,
+.notes-panel.as-sheet,
+.tool-panel.as-sheet {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  bottom: auto !important;
+  right: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(92vw, 440px) !important;
+  max-width: 92vw !important;
+  max-height: 82vh !important;
+  overflow-y: auto !important;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7) !important;
+  border: 1px solid var(--border) !important;
+  z-index: 150 !important;
+  padding: 16px !important;
+}
+.panel-modal-topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 12px !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.panel-back-btn {
+  background: var(--surface, #1e293b) !important;
+  border: 1px solid var(--border, #334155) !important;
+  color: var(--accent2, var(--accent, #00bfa5)) !important;
+  font-weight: 700 !important;
+  font-size: 12.5px !important;
+  padding: 5px 12px !important;
+  border-radius: 999px !important;
+  cursor: pointer !important;
+}
+.panel-modal-title {
+  font-weight: 800 !important;
+  font-size: 14px !important;
+  color: var(--text, #f8fafc) !important;
+}
+.panel-close-x {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-dim, #94a3b8) !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  padding: 4px 8px !important;
+}
+.clickable-grade-row {
+  cursor: pointer !important;
+  transition: background 0.15s ease !important;
+}
+.clickable-grade-row:hover {
+  background: rgba(0, 191, 165, 0.12) !important;
+}
+
+
+/* Fixes Header & Modales & Notes cliquables */
+#periodLabel {
+  white-space: nowrap !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  text-align: center !important;
+  padding: 0 4px !important;
+  margin: 0 !important;
+  flex: 0 0 auto !important;
+}
+#periodLabel::after {
+  display: none !important;
+}
+#nextBtn {
+  margin-right: 14px !important;
+  margin-left: 2px !important;
+}
+#prevBtn {
+  margin-right: 2px !important;
+}
+#appImportBtn {
+  display: none !important;
+}
+.absences-panel.as-sheet,
+.notes-panel.as-sheet,
+.tool-panel.as-sheet {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  bottom: auto !important;
+  right: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(92vw, 440px) !important;
+  max-width: 92vw !important;
+  max-height: 75vh !important;
+  overflow-y: auto !important;
+  border-radius: 18px !important;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6) !important;
+  border: 1px solid var(--border-strong, var(--border)) !important;
+  background: var(--surface, #1e2229) !important;
+  z-index: 150 !important;
+  padding: 16px !important;
+}
+.panel-modal-topbar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding-bottom: 10px !important;
+  margin-bottom: 12px !important;
+  border-bottom: 1px solid var(--border) !important;
+  position: sticky !important;
+  top: -16px !important;
+  background: inherit !important;
+  z-index: 10 !important;
+}
+.panel-back-btn {
+  background: var(--accent-light, rgba(0, 191, 165, 0.15)) !important;
+  border: 1px solid var(--accent, #00bfa5) !important;
+  color: var(--accent, #00bfa5) !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  padding: 6px 14px !important;
+  border-radius: 999px !important;
+  cursor: pointer !important;
+}
+.clickable-grade-row {
+  cursor: pointer !important;
+  transition: background 0.15s ease !important;
+}
+.clickable-grade-row:hover, .clickable-grade-row:active {
+  background: rgba(0, 191, 165, 0.15) !important;
+}
+.notes-hint-pill {
+  background: var(--accent-light, rgba(0, 191, 165, 0.12));
+  color: var(--accent, #00bfa5);
+  border: 1px solid var(--accent, #00bfa5);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  margin: 8px 0;
+  text-align: center;
+}
+.grade-modal-box {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(90vw, 400px) !important;
+  max-height: 80vh !important;
+  border-radius: 18px !important;
+  z-index: 200 !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7) !important;
+}
+.event-card .ev-title {
+  white-space: normal !important;
+  line-height: 1.25 !important;
+  font-weight: 700 !important;
+}
+.event-card .ev-sub {
+  white-space: normal !important;
+  font-size: 11px !important;
+  opacity: 0.9 !important;
+}
+.m-card .m-title {
+  white-space: normal !important;
+  line-height: 1.3 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+}
+
 </style>
 </head>
 <body>

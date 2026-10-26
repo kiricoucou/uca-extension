@@ -1,0 +1,24 @@
+{
+  "app_name": "My UCA",
+  "version": "1.3.0",
+  "version_code": 3,
+  "bundle_version": "1.3.0",
+  "commit_sha": "f8a92bc54e31267890abcdef1234567890abcdef",
+  "branch": "main",
+  "published_at": "2026-10-26T21:30:00Z",
+  "min_apk_version_code": 2,
+  "ota_enabled": true,
+  "ota_bundle_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/core-bundle.zip",
+  "raw_base_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/",
+  "apk_download_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/EdtUca.apk",
+  "github_repo_url": "https://github.com/kiricoucou/uca-extension",
+  "changelog": [
+    "Synchronisation unifiée 1-clic : Emploi du temps + Notes + Absences + Profil étudiant en une seule passe",
+    "Suppression intégrale des données de test fictives en mode production",
+    "Carte interactive des campus et BU avec OpenStreetMap / Leaflet (zoom, itinéraires et repères dynamiques)",
+    "Profil étudiant dynamique lié au compte connecté (Alexandre Martin remplacé par les données réelles du compte)",
+    "Affichage agenda perfectionné : titre, horaire, professeur et salle visibles sans chevauchement",
+    "Modales de notes, absences et devoirs centrées avec bouton retour '← Retour' et lignes cliquables",
+    "Notifications utilisateur personnalisées et interactives redirigeant vers chaque écran"
+  ]
+}

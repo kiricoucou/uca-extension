@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg">
+
+    <include layout="@layout/topbar" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Notification active / beta test info -->
+            <LinearLayout
+                android:id="@+id/bannerNotification"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/bg_card"
+                android:clickable="true"
+                android:focusable="true"
+                android:padding="12dp"
+                android:layout_marginBottom="16dp">
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_marginEnd="10dp"
+                    android:src="@drawable/ic_bell"
+                    android:tint="@color/accent2"
+                    android:contentDescription="" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:text="Notifications UCA en direct"
+                        android:textColor="@color/text"
+                        android:textSize="13.5sp"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                    <TextView
+                        android:text="3 nouvelles notifications (notes, changement de salle)"
+                        android:textColor="@color/accent2"
+                        android:textSize="12sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/ic_chevron_right"
+                    android:contentDescription="" />
+            </LinearLayout>
+
+            <!-- STATUT DES SERVICES UCA (Demandé par l'utilisateur) -->
+            <TextView
+                android:text="STATUT DES SERVICES UCA"
+                android:textColor="@color/text_dim"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.04"
+                android:layout_marginBottom="6dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:divider="@drawable/divider_row"
+                android:showDividers="middle"
+                android:layout_marginBottom="20dp">
+
+                <!-- ENT UCA -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="9dp">
+                    <TextView
+                        android:text="Site ENT UCA (ent.uca.fr)"
+                        android:textColor="@color/text"
+                        android:textSize="13.5sp"
+                        android:textStyle="bold"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
+                    <TextView
+                        android:text="● Ouvert"
+                        android:textColor="#10b981"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Messagerie Zimbra -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="9dp">
+                    <TextView
+                        android:text="Site Mail Zimbra (mail.uca.fr)"
+                        android:textColor="@color/text"
+                        android:textSize="13.5sp"
+                        android:textStyle="bold"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
+                    <TextView
+                        android:text="● Ouvert"
+                        android:textColor="#10b981"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Portail Odin IUT -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="9dp">
+                    <TextView
+                        android:text="Portail Odin IUT (EDT / Absences)"
+                        android:textColor="@color/text"
+                        android:textSize="13.5sp"
+                        android:textStyle="bold"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
+                    <TextView
+                        android:text="● Ouvert"
+                        android:textColor="#10b981"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Récupération des Notes -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="9dp">
+                    <TextView
+                        android:text="Serveur Relevé de Notes (Tomuss/Odin)"
+                        android:textColor="@color/text"
+                        android:textSize="13.5sp"
+                        android:textStyle="bold"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
+                    <TextView
+                        android:text="● Ouvert"
+                        android:textColor="#10b981"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Infos Restaurants CROUS -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingVertical="9dp">
+                    <TextView
+                        android:text="Serveur CROUS Restos U (Menus/Affluence)"
+                        android:textColor="@color/text"
+                        android:textSize="13.5sp"
+                        android:textStyle="bold"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"/>
+                    <TextView
+                        android:text="● Ouvert"
+                        android:textColor="#10b981"
+                        android:textSize="12.5sp"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Légende des couleurs demandée : Vert = Ouvert, Rouge = Fermé, Orange = Maintenance, Bleu = Non accessible -->
+                <TextView
+                    android:text="Légende : Vert = Ouvert · Rouge = Fermé · Orange = En maintenance · Bleu = Non accessible"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11sp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="4dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"/>
+
+            </LinearLayout>
+
+            <TextView
+                android:text="RACCOURCIS"
+                android:textColor="@color/text_dim"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.04"
+                android:layout_marginBottom="6dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@drawable/bg_card"
+                android:paddingHorizontal="6dp"
+                android:divider="@drawable/divider_row"
+                android:showDividers="middle"
+                android:layout_marginBottom="20dp">
+
+                <LinearLayout
+                    android:id="@+id/rowMessagerie"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="10dp">
+                    <ImageView android:layout_width="34dp" android:layout_height="34dp" android:background="@drawable/bg_pin" android:padding="7dp" android:src="@drawable/ic_mail" android:contentDescription="" />
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="12dp">
+                        <TextView android:text="Messagerie Zimbra UCA" android:textColor="@color/text" android:textSize="14.5sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                        <TextView android:text="3 mails non lus · Boîte de réception" android:textColor="@color/text_dim" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_chevron_right" android:contentDescription="" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/rowLivres"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="10dp">
+                    <ImageView android:layout_width="34dp" android:layout_height="34dp" android:background="@drawable/bg_pin" android:padding="7dp" android:src="@drawable/ic_library" android:contentDescription="" />
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="12dp">
+                        <TextView android:text="Bibliothèques Universitaires" android:textColor="@color/text" android:textSize="14.5sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                        <TextView android:text="BU Cézeaux ouverte jusqu'à 20h" android:textColor="@color/text_dim" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_chevron_right" android:contentDescription="" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/rowLieux"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="10dp">
+                    <ImageView android:layout_width="34dp" android:layout_height="34dp" android:background="@drawable/bg_pin" android:padding="7dp" android:src="@drawable/ic_restaurant" android:contentDescription="" />
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="12dp">
+                        <TextView android:text="Restaurants U et Cafétérias" android:textColor="@color/text" android:textSize="14.5sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                        <TextView android:text="Marie-Hélène Lafon ouvert (62% affluence)" android:textColor="@color/text_dim" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_chevron_right" android:contentDescription="" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/rowTransport"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground"
+                    android:padding="10dp">
+                    <ImageView android:layout_width="34dp" android:layout_height="34dp" android:background="@drawable/bg_pin" android:padding="7dp" android:src="@drawable/ic_bus" android:contentDescription="" />
+                    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:layout_marginStart="12dp">
+                        <TextView android:text="Transports &amp; Mobilité UCA" android:textColor="@color/text" android:textSize="14.5sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                        <TextView android:text="T2C Tram &amp; Bus, SNCF TER, Covoiturage, Autocars" android:textColor="@color/text_dim" android:textSize="12sp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                    <ImageView android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_chevron_right" android:contentDescription="" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

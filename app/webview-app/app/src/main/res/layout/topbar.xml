@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:background="@color/bg"
+    android:padding="16dp">
+
+    <ImageButton
+        android:id="@+id/backBtn"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_marginEnd="6dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Retour"
+        android:src="@drawable/ic_back"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/topbarTitle"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="@color/text"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <ImageView
+        android:id="@+id/topbarBell"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:layout_marginEnd="12dp"
+        android:padding="3dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_bell"
+        android:contentDescription="Notifications" />
+
+    <ImageView
+        android:id="@+id/topbarPerson"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
+        android:padding="3dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_person"
+        android:contentDescription="Profil" />
+
+</LinearLayout>

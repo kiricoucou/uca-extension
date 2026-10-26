@@ -1,0 +1,3673 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>My UCA — Application Étudiante & Emploi du Temps</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="core/crous.js"></script>
+<script src="core/export.js"></script>
+<script src="core/mobility.js"></script>
+<script>
+let selectedCrousResto = 'cezeaux';
+let selectedCrousDay = 'lundi';
+let autoThemeEnabled = false;
+let currentFontScale = '100';
+let highContrastEnabled = false;
+let isMaxBrightness = false;
+
+// Variables Simulateur Interactif v2
+let simScope = 'general';
+let targetSimGrade = 14.0;
+let whatIfValues = {
+  r301: 14.0,
+  r302: 13.5,
+  sae301: 15.0,
+  r304: 12.0,
+  r305: 14.5
+};
+
+function openCrousMenuModal(restoIdOrName) {
+  if (restoIdOrName) {
+    if (restoIdOrName.includes('Cézeaux') || restoIdOrName.includes('Lafon') || restoIdOrName === 'cezeaux') selectedCrousResto = 'cezeaux';
+    else if (restoIdOrName.includes('Manège') || restoIdOrName.includes('Carnot') || restoIdOrName === 'manege') selectedCrousResto = 'manege';
+    else if (restoIdOrName.includes('Dunant') || restoIdOrName === 'dunant') selectedCrousResto = 'dunant';
+    else if (restoIdOrName.includes('STAPS') || restoIdOrName === 'staps') selectedCrousResto = 'staps';
+  }
+  const dayKey = (window.UCA_CROUS && window.UCA_CROUS.getDayKey()) || 'lundi';
+  selectedCrousDay = dayKey;
+  renderCrousModalContent();
+  const m = document.getElementById('crousMenuModal');
+  if (m) m.style.display = 'flex';
+}
+
+function openEscnModal() {
+  const m = document.getElementById('escnModal');
+  if (m) m.style.display = 'flex';
+}
+
+function openExportIcsModal() {
+  const m = document.getElementById('exportIcsModal');
+  if (m) m.style.display = 'flex';
+}
+
+function toggleEscnMaxBrightness() {
+  isMaxBrightness = !isMaxBrightness;
+  const overlay = document.getElementById('escnModal');
+  const btn = document.getElementById('btnEscnBright');
+  if (overlay) {
+    if (isMaxBrightness) {
+      overlay.style.background = '#ffffff';
+      if (btn) btn.textContent = '🔅 Réduire la luminosité';
+    } else {
+      overlay.style.background = 'rgba(0, 0, 0, 0.78)';
+      if (btn) btn.textContent = '☀️ Luminosité maximale (Scan)';
+    }
+  }
+}
+
+function toggleAutoTheme(btn) {
+  autoThemeEnabled = !autoThemeEnabled;
+  if (btn) btn.classList.toggle('on', autoThemeEnabled);
+  const hour = new Date().getHours();
+  if (autoThemeEnabled && (hour >= 19 || hour < 7)) {
+    document.documentElement.style.setProperty('--bg-page', '#050811');
+    document.documentElement.style.setProperty('--bg', '#090e1a');
+    toast("🌙 Thème nuit activé automatiquement (19h-07h)");
+  } else {
+    toast(autoThemeEnabled ? "🌙 Mode automatique activé" : "☀️ Mode automatique désactivé");
+  }
+}
+
+function setFontScale(scale) {
+  currentFontScale = scale;
+  document.body.classList.remove('font-scale-115', 'font-scale-130');
+  if (scale === '115') document.body.classList.add('font-scale-115');
+  else if (scale === '130') document.body.classList.add('font-scale-130');
+  toast(`Taille de texte ajustée (${scale}%)`);
+  if (currentTab === 'compte') switchTab('compte');
+}
+
+function toggleHighContrast(btn) {
+  highContrastEnabled = !highContrastEnabled;
+  if (btn) btn.classList.toggle('on', highContrastEnabled);
+  document.body.classList.toggle('high-contrast-mode', highContrastEnabled);
+  toast(highContrastEnabled ? "👁️ Contraste renforcé activé (WCAG)" : "Contraste standard rétabli");
+}
+
+</script>
+<script>
+function openNotificationsModal() {
+  const m = document.getElementById('notificationsModal');
+  if (m) m.style.display = 'flex';
+}
+function openStageEmploiModal() {
+  const m = document.getElementById('stageEmploiModal');
+  if (m) m.style.display = 'flex';
+}
+function openScolariteModal() {
+  const m = document.getElementById('scolariteModal');
+  if (m) m.style.display = 'flex';
+}
+function closeAppModal(id) {
+  const m = document.getElementById(id);
+  if (m) m.style.display = 'none';
+}
+function performLogout() {
+  if (confirm("Voulez-vous vraiment vous déconnecter de My UCA ?")) {
+    safeStorageSet('uca_store', '{}');
+    safeStorageSet('uca_logged_in', '0');
+    toast("Session clôturée avec succès.");
+    setTimeout(() => { switchTab('home'); }, 600);
+  }
+}
+
+</script>
+<style>
+  :root {
+    /* Palette Institutionnelle Université Clermont Auvergne (UCA) - Sombre & Teal */
+    --bg-page: #080d1a;
+    --bg: #0d1527;
+    --surface: #131f37;
+    --surface-elevated: #1a2b4c;
+    --surface-card: #15223c;
+    --border: #223559;
+    --border-light: #2d4573;
+    --text: #f8fafc;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --accent: #00bfa5;
+    --accent-glow: rgba(0, 191, 165, 0.35);
+    --accent2: #00d2b4;
+    --accent-light: rgba(0, 191, 165, 0.12);
+    --gold: #f59e0b;
+    --gold-bg: rgba(245, 158, 11, 0.15);
+    --danger: #ef4444;
+    --danger-bg: rgba(239, 68, 68, 0.15);
+    --warning: #f59e0b;
+    --warning-bg: rgba(245, 158, 11, 0.15);
+    --success: #10b981;
+    --success-bg: rgba(16, 185, 129, 0.15);
+    --radius-phone: 46px;
+    --radius-card: 16px;
+    --radius-sm: 10px;
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 100dvh;
+    background: var(--bg-page);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    color: var(--text);
+    overflow-x: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  /* ========================================================
+     BARRE DE CONTRÔLE SUPÉRIEURE (DESKTOP CONTROLS)
+     ======================================================== */
+  .preview-control-bar {
+    width: 100%;
+    max-width: 1080px;
+    margin: 12px auto 6px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: rgba(19, 31, 55, 0.88);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    z-index: 1000;
+    flex-wrap: wrap;
+  }
+
+  .control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .control-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+
+  .design-pills {
+    display: flex;
+    gap: 4px;
+    background: rgba(13, 21, 39, 0.7);
+    padding: 3px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+
+  .design-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+  }
+
+  .design-btn:hover {
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+  }
+
+  .design-btn.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #05211f;
+    box-shadow: 0 2px 10px var(--accent-glow);
+  }
+
+  .view-mode-toggle {
+    display: flex;
+    gap: 4px;
+    background: rgba(13, 21, 39, 0.7);
+    padding: 3px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+
+  .view-mode-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 5px 11px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .view-mode-btn.active {
+    background: var(--surface-elevated);
+    color: var(--accent2);
+    border: 1px solid var(--border-light);
+  }
+
+  .sync-action-btn {
+    border: 1px solid var(--accent);
+    background: var(--accent-light);
+    color: var(--accent2);
+    font-size: 12px;
+    font-weight: 800;
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .sync-action-btn:hover {
+    background: var(--accent);
+    color: #05211f;
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+
+  /* ========================================================
+     ZONE DE PRÉVISUALISATION & CADRE MOBILE SANS PROBLÈME DE TAILLE
+     ======================================================== */
+  .preview-stage {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 12px 16px;
+    min-height: 0;
+  }
+
+  /* Mode Téléphone Contenu & Auto-Scalé (ne déborde JAMAIS l'écran) */
+  .device-container {
+    width: 100%;
+    max-width: 410px;
+    height: min(840px, calc(100vh - 84px));
+    max-height: 860px;
+    aspect-ratio: 390 / 844;
+    background: #000000;
+    border-radius: var(--radius-phone);
+    padding: 10px;
+    box-shadow: 
+      0 0 0 2px #283756,
+      0 0 0 5px #121c32,
+      0 24px 70px rgba(0, 0, 0, 0.8),
+      0 0 60px rgba(0, 191, 165, 0.12);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.25s ease;
+  }
+
+  /* Mode Plein Écran (App Réelle ou Écrans Mobiles) */
+  body.fullscreen-mode .preview-control-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0;
+    border-radius: 0;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+    z-index: 2000;
+    padding: 6px 12px;
+  }
+
+  body.fullscreen-mode .preview-stage {
+    padding: 0;
+    height: 100%;
+    width: 100%;
+  }
+
+  body.fullscreen-mode .device-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    max-height: 100dvh !important;
+    aspect-ratio: auto !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  body.fullscreen-mode .dynamic-island {
+    display: none !important;
+  }
+
+  body.fullscreen-mode .statusbar {
+    display: none !important;
+  }
+
+  body.fullscreen-mode .app-shell {
+    border-radius: 0 !important;
+    height: 100% !important;
+  }
+
+  /* Dynamic Island */
+  .dynamic-island {
+    position: absolute;
+    top: 9px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 112px;
+    height: 28px;
+    background: #000000;
+    border-radius: 20px;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    pointer-events: none;
+  }
+
+  .island-cam {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #0f1624;
+    border: 1px solid #1a253b;
+  }
+
+  .island-sensor {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #0a0e17;
+  }
+
+  /* Coque de l'application interne */
+  .app-shell {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border-radius: 38px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* Statusbar native */
+  .statusbar {
+    height: 42px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding: 0 24px 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    z-index: 150;
+    pointer-events: none;
+  }
+
+  .statusbar-icons {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 11.5px;
+  }
+
+  /* ========================================================
+     HEADER INTERNE DE L'APPLICATION (ÉCRAN COURANT)
+     ======================================================== */
+  .app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px 10px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    gap: 8px;
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .uca-crest-box {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #00bfa5 0%, #008f7a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 10px rgba(0, 191, 165, 0.3);
+  }
+
+  .uca-crest-box img {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+  }
+
+  .header-titles {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .header-main-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text);
+    margin: 0;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .header-badge-tag {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent2);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 1px;
+    white-space: nowrap;
+  }
+
+  .header-btn-cluster {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .icon-action-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    padding: 0;
+  }
+
+  .icon-action-btn img {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+  }
+
+  .icon-action-btn:hover {
+    background: var(--surface-elevated);
+    border-color: var(--accent);
+  }
+
+  /* ========================================================
+     ZONE DE CONTENU DÉFILANTE (FLUIDE & RESPONSIVE)
+     ======================================================== */
+  .screen-viewport {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 14px 14px 20px;
+    min-height: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .screen-viewport.no-pad {
+    padding: 0;
+  }
+
+  .agenda-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    display: block;
+  }
+
+  /* ========================================================
+     COMPOSANTS VISUELS (AUTHENTIQUES & SANS EFFET "IA")
+     ======================================================== */
+  .content-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 14px 15px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .content-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+
+  .card-label-row {
+    font-size: 11.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .card-label-row img.gif-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .pill-badge {
+    font-size: 10.5px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .pill-success { background: var(--success-bg); color: var(--success); border: 1px solid rgba(16,185,129,0.3); }
+  .pill-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(245,158,11,0.3); }
+  .pill-danger  { background: var(--danger-bg);  color: var(--danger);  border: 1px solid rgba(239,68,68,0.3); }
+  .pill-accent  { background: var(--accent-light); color: var(--accent2); border: 1px solid rgba(0,191,165,0.3); }
+
+  /* Bannière Moyenne Générale & ECTS */
+  .gpa-card-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(0, 191, 165, 0.16) 0%, rgba(19, 31, 55, 0.95) 100%);
+    border: 1px solid rgba(0, 191, 165, 0.35);
+    border-radius: var(--radius-card);
+    margin-bottom: 12px;
+  }
+
+  .gpa-circle-meter {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: conic-gradient(var(--accent) 0% 71%, rgba(255,255,255,0.08) 71% 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 0 18px var(--accent-glow);
+  }
+
+  .gpa-circle-meter::before {
+    content: "";
+    position: absolute;
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    background: var(--surface);
+  }
+
+  .gpa-number-text {
+    position: relative;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--accent2);
+    letter-spacing: -0.02em;
+  }
+
+  .gpa-text-group h2 {
+    margin: 0 0 2px;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .gpa-desc-text {
+    font-size: 11.5px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  /* Grille des Absences */
+  .absences-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .absence-stat-tile {
+    background: rgba(13, 21, 39, 0.85);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 6px;
+    text-align: center;
+  }
+
+  .absence-num {
+    font-size: 18px;
+    font-weight: 900;
+  }
+
+  .absence-lbl {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    font-weight: 600;
+  }
+
+  /* Tableaux des Unités d'Enseignement & Matières */
+  .ue-foldable-card {
+    background: var(--surface-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+
+  .ue-foldable-head {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface-elevated);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+
+  .ue-foldable-title {
+    font-size: 12.5px;
+    font-weight: 800;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .ue-foldable-moy {
+    font-size: 13.5px;
+    font-weight: 900;
+    color: var(--success);
+    flex-shrink: 0;
+  }
+
+  .matiere-entry {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .matiere-entry:last-child {
+    border-bottom: none;
+  }
+
+  .matiere-head-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    gap: 6px;
+  }
+
+  .matiere-name-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .matiere-name-wrap img.gif-icon {
+    width: 15px;
+    height: 15px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .eval-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 8px;
+    font-size: 11px;
+    background: rgba(0,0,0,0.22);
+    border-radius: 7px;
+    margin-bottom: 4px;
+    gap: 8px;
+  }
+
+  .eval-item-left {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .eval-title {
+    color: var(--text);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .eval-submeta {
+    font-size: 9.5px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .eval-score-badge {
+    font-weight: 800;
+    font-size: 12px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .score-good { background: var(--success-bg); color: var(--success); }
+  .score-avg  { background: var(--warning-bg); color: var(--warning); }
+  .score-low  { background: var(--danger-bg);  color: var(--danger); }
+
+  /* Carte Étudiante ESCN */
+  .escn-student-card {
+    background: linear-gradient(145deg, #0f2747 0%, #09192f 100%);
+    border: 1px solid #1e3f6b;
+    border-radius: 18px;
+    padding: 16px;
+    color: #ffffff;
+    box-shadow: 0 14px 36px rgba(0,0,0,0.55);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+
+  .escn-student-card::before {
+    content: "";
+    position: absolute;
+    top: -40px;
+    right: -40px;
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0, 191, 165, 0.2) 0%, transparent 70%);
+  }
+
+  .escn-head-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .escn-brand-text {
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #93c5fd;
+  }
+
+  .escn-student-body {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+  }
+
+  .escn-photo-frame {
+    width: 70px;
+    height: 88px;
+    border-radius: 10px;
+    background: #152d4d;
+    border: 2px solid #3b82f6;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .escn-photo-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .escn-meta-group h3 {
+    margin: 0 0 2px;
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .escn-meta-group p {
+    margin: 1.5px 0;
+    font-size: 11px;
+    color: #bfdbfe;
+  }
+
+  .escn-bottom-code {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(255,255,255,0.18);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .escn-id-txt {
+    font-family: monospace;
+    font-size: 10.5px;
+    color: #93c5fd;
+    letter-spacing: 0.06em;
+  }
+
+  /* Bouton d'action institutionnel */
+  .btn-action-main {
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    color: #05211f;
+    border: none;
+    font-weight: 800;
+    font-size: 12.5px;
+    padding: 10px 16px;
+    border-radius: 11px;
+    cursor: pointer;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    transition: filter 0.15s, transform 0.15s;
+    box-shadow: 0 4px 12px var(--accent-glow);
+  }
+
+  .btn-action-main:hover {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+  }
+
+  .btn-action-secondary {
+    background: var(--surface-elevated);
+    color: var(--text);
+    border: 1px solid var(--border);
+    font-weight: 700;
+    font-size: 12px;
+    padding: 9px 14px;
+    border-radius: 11px;
+    cursor: pointer;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s;
+  }
+
+  .btn-action-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent2);
+  }
+
+  /* Ligne de paramètre avec switch */
+  .pref-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12.5px;
+    gap: 10px;
+  }
+
+  .pref-row:last-child {
+    border-bottom: none;
+  }
+
+  .pref-label {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .pref-label img.gif-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+  }
+
+  .toggle-knob-box {
+    width: 42px;
+    height: 23px;
+    border-radius: 12px;
+    background: var(--border-light);
+    border: none;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+
+  .toggle-knob-box.on {
+    background: var(--accent);
+  }
+
+  .toggle-knob-circle {
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #fff;
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    transition: left 0.2s;
+  }
+
+  .toggle-knob-box.on .toggle-knob-circle {
+    left: 22px;
+  }
+
+  /* Pulse Dot pour les cours en direct */
+  .live-pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 0 rgba(0, 191, 165, 0.7);
+    animation: livePulse 1.8s infinite;
+    display: inline-block;
+  }
+
+  @keyframes livePulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 191, 165, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 7px rgba(0, 191, 165, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 191, 165, 0); }
+  }
+
+  /* ========================================================
+     BARRE DE NAVIGATION INFÉRIEURE MOBILE
+     ======================================================== */
+  .bottom-tab-bar {
+    display: flex;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 12px));
+    flex-shrink: 0;
+  }
+
+  .bottom-tab-item {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 5px 0;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+  }
+
+  .bottom-tab-item img.tab-gif {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    transition: transform 0.2s;
+    opacity: 0.75;
+  }
+
+  .bottom-tab-item.active {
+    color: var(--accent2);
+  }
+
+  .bottom-tab-item.active img.tab-gif {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.08);
+  }
+
+  /* Toast Notification */
+  .toast-alert-box {
+    position: absolute;
+    bottom: 74px;
+    left: 16px;
+    right: 16px;
+    background: rgba(19, 31, 55, 0.96);
+    border: 1px solid var(--accent);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+    z-index: 500;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    animation: toastPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .toast-alert-box.show {
+    display: flex;
+  }
+
+  @keyframes toastPop {
+    from { transform: translateY(14px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  /* Helper Responsif : Écrans Mobiles Réels */
+  @media (max-width: 768px) {
+    .preview-control-bar {
+      border-radius: 0;
+      margin: 0;
+      padding: 6px 10px;
+    }
+    .preview-stage {
+      padding: 0;
+    }
+    .device-container {
+      width: 100%;
+      height: calc(100vh - 46px);
+      max-height: 100dvh;
+      border-radius: 0;
+      padding: 0;
+      border: none;
+      box-shadow: none;
+      aspect-ratio: auto;
+    }
+    .dynamic-island { display: none; }
+    .statusbar { display: none; }
+    .app-shell { border-radius: 0; }
+  }
+
+/* Services Status List */
+.services-status-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.service-status-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.service-status-row:last-child { border-bottom: none; }
+.service-info-col { display: flex; flex-direction: column; }
+.service-name { font-size: 12.5px; font-weight: 700; color: var(--text); }
+.service-url { font-size: 10.5px; color: var(--text-dim); }
+.service-state-tag { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; }
+.state-green { color: #10b981; background: rgba(16, 185, 129, 0.12); }
+.state-red { color: #ef4444; background: rgba(239, 68, 68, 0.12); }
+.state-orange { color: #f59e0b; background: rgba(245, 158, 11, 0.12); }
+.state-blue { color: #38bdf8; background: rgba(56, 189, 248, 0.12); }
+.status-legend-bar { display: flex; flex-wrap: wrap; gap: 10px; padding-top: 8px; margin-top: 6px; border-top: 1px solid var(--border); font-size: 10.5px; color: var(--text-dim); }
+.status-legend-bar .lg-tag { display: inline-flex; align-items: center; gap: 4px; }
+.status-legend-bar i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.dot-green { background: #10b981; }
+.dot-red { background: #ef4444; }
+.dot-orange { background: #f59e0b; }
+.dot-blue { background: #38bdf8; }
+
+/* Centered Modals */
+.app-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px; }
+.app-centered-modal { width: min(440px, 94vw); max-height: 85vh; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,0.8); display: flex; flex-direction: column; overflow: hidden; animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes modalPop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+.modal-top-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.modal-back-btn { background: var(--surface-card); border: 1px solid var(--border); color: var(--accent2); font-size: 12.5px; font-weight: 700; padding: 5px 12px; border-radius: 999px; cursor: pointer; }
+.modal-bar-title { font-weight: 800; font-size: 14.5px; color: var(--text); }
+.modal-close-x { background: transparent; border: none; color: var(--text-dim); font-size: 18px; cursor: pointer; padding: 4px 8px; }
+.modal-scroll-body { flex: 1; overflow-y: auto; padding: 16px; }
+
+/* Notification Items */
+.notif-item { background: var(--surface-card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.15s ease; }
+.notif-item:hover { border-color: var(--accent); }
+.notif-item.unread { border-left: 4px solid var(--accent); }
+.notif-badge-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.notif-tag { font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 999px; text-transform: uppercase; }
+.tag-green { color: #10b981; background: rgba(16,185,129,0.12); }
+.tag-orange { color: #f59e0b; background: rgba(245,158,11,0.12); }
+.tag-blue { color: #38bdf8; background: rgba(56,189,248,0.12); }
+.notif-time { font-size: 10.5px; color: var(--text-dim); }
+.notif-title { font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.notif-desc { font-size: 11.5px; color: var(--text-dim); line-height: 1.4; }
+
+/* Quick Tiles */
+.etudes-quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.etudes-quick-tile { background: var(--surface-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 8px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; transition: all 0.15s ease; }
+.etudes-quick-tile:hover { border-color: var(--accent); transform: translateY(-1px); }
+.eq-icon { font-size: 22px; margin-bottom: 4px; }
+.eq-title { font-size: 12px; font-weight: 800; color: var(--text); }
+.eq-sub { font-size: 10px; color: var(--text-dim); margin-top: 1px; }
+
+/* Unread dot in topbar */
+.bell-unread-dot { position: absolute; top: 4px; right: 4px; width: 7px; height: 7px; background: #ef4444; border-radius: 50%; }
+.icon-action-btn { position: relative; }
+.btn-logout-styled { display: inline-flex; align-items: center; gap: 8px; background: #261a1a; border: 1px solid #7f1d1d; color: #ef4444; font-size: 12.5px; font-weight: 700; padding: 8px 16px; border-radius: 12px; cursor: pointer; transition: all 0.15s ease; }
+.btn-logout-styled:hover { background: #3b1818; }
+
+
+/* ========================================================
+   STYLES AJOUTÉS : AMÉLIORATIONS MY UCA (PHASES 1, 2, 3, 5)
+   ======================================================== */
+.sim-quick-btn {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.sim-quick-btn:hover, .sim-quick-btn.active {
+  border-color: var(--accent);
+  background: rgba(0, 191, 165, 0.18);
+  color: var(--accent2);
+}
+.sim-eval-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.sim-eval-label-col {
+  display: flex;
+  flex-direction: column;
+  width: 135px;
+  min-width: 135px;
+}
+.sim-eval-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sim-eval-sub {
+  font-size: 9.5px;
+  color: var(--text-dim);
+}
+.sim-eval-val {
+  width: 36px;
+  text-align: right;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--accent2);
+}
+.crous-day-pills {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.crous-day-btn {
+  flex: 1;
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 7px 4px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.crous-day-btn.active {
+  background: var(--accent);
+  color: #061121;
+  border-color: var(--accent);
+  font-weight: 800;
+}
+.crous-category-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  margin: 12px 0 6px;
+}
+.crous-food-item {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.crous-food-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+}
+.crous-food-tag {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+.tag-vege { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+.tag-fish { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+.tag-meat { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+/* Modal ESCN Carte Étudiante */
+.escn-modal-card {
+  background: linear-gradient(135deg, #032b69 0%, #084c9e 50%, #0369a1 100%);
+  border-radius: 16px;
+  padding: 18px;
+  color: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+.escn-scan-zone {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+  margin-top: 14px;
+  color: #000000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.barcode-svg-wrap {
+  width: 100%;
+  max-width: 280px;
+  height: 52px;
+  margin: 0 auto;
+}
+
+/* Accessibilité et thèmes */
+body.font-scale-115 { font-size: 115% !important; }
+body.font-scale-130 { font-size: 130% !important; }
+body.high-contrast-mode { filter: contrast(125%); }
+body.high-contrast-mode .content-card,
+body.high-contrast-mode .app-centered-modal {
+  border: 2px solid #00bfa5 !important;
+}
+
+
+/* ========================================================
+   STYLES: ONGLET TRANSPORTS & MOBILITÉ MULTIPLATEFORME
+   ======================================================== */
+.trans-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.trans-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.trans-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.trans-input {
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.trans-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.trans-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+.trans-chip {
+  background: rgba(0, 191, 165, 0.1);
+  border: 1px solid rgba(0, 191, 165, 0.3);
+  color: var(--accent2);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.trans-chip:hover {
+  background: var(--accent);
+  color: #05211f;
+}
+.trans-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 6px 0;
+}
+.trans-pill-btn {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 9px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.trans-pill-btn.active {
+  background: var(--accent);
+  color: #05211f;
+  border-color: var(--accent);
+}
+.trans-route-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.trans-route-card:hover {
+  border-color: var(--accent);
+}
+.trans-badge-realtime {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid #10b981;
+  color: #10b981;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.trans-badge-scheduled {
+  background: rgba(148, 163, 184, 0.15);
+  border: 1px solid #64748b;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+}
+.trans-leg-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 11.5px;
+}
+.trans-leg-row:last-child {
+  border-bottom: none;
+}
+
+</style>
+</head>
+<body>
+
+<!-- BARRE DE CONTRÔLE SUPÉRIEURE (SÉLECTEUR DE DESIGN & PLEIN ÉCRAN) -->
+<header class="preview-control-bar">
+  <div class="control-group">
+    <div class="control-label">
+      <img src="gifs/settings.gif" style="width:16px;height:16px;" alt="">
+      <span>Design EDT :</span>
+    </div>
+    <div class="design-pills" id="designPills">
+      <button class="design-btn active" data-design="anime">Animé</button>
+      <button class="design-btn" data-design="professionnel">Professionnel</button>
+      <button class="design-btn" data-design="bulletin">Bulletin</button>
+      <button class="design-btn" data-design="carnet">Carnet</button>
+    </div>
+  </div>
+
+  <div class="control-group">
+    <div class="view-mode-toggle">
+      <button class="view-mode-btn active" id="btnModePhone" onclick="setViewMode('phone')">
+        📱 Mode Smartphone
+      </button>
+      <button class="view-mode-btn" id="btnModeFullscreen" onclick="setViewMode('fullscreen')">
+        🖥️ Plein Écran (App Réelle)
+      </button>
+    </div>
+
+    <button id="syncTriggerBtn" class="sync-action-btn" onclick="triggerOdinSync()">
+      <img src="gifs/loading.gif" style="width:14px;height:14px;" alt="">
+      <span>Synchro CAS Odin</span>
+    </button>
+  </div>
+</header>
+
+<!-- ZONE DE PRÉVISUALISATION -->
+<div class="preview-stage">
+  <div class="device-container" id="deviceContainer">
+    <!-- Dynamic Island (Mode téléphone seulement) -->
+    <div class="dynamic-island">
+      <div class="island-cam"></div>
+      <div class="island-sensor"></div>
+    </div>
+
+    <div class="app-shell">
+      <!-- Statusbar native -->
+      <div class="statusbar">
+        <span id="statusBarClock">08:42</span>
+        <div class="statusbar-icons">
+          <span>5G</span>
+          <span>📶</span>
+          <span>🔋 99%</span>
+        </div>
+      </div>
+
+      <!-- Header interne de l'application -->
+      <div class="app-header">
+        <div class="header-brand">
+          <div class="uca-crest-box">
+            <img src="gifs/calendar.gif" alt="EDT">
+          </div>
+          <div class="header-titles">
+            <h1 class="header-main-title" id="screenTitle">My UCA</h1>
+            <span class="header-badge-tag" id="activeDesignBadge">
+              <img src="gifs/green_check.gif" style="width:11px;height:11px;" alt="">
+              <span>Design Animé</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="header-btn-cluster">
+          <button class="icon-action-btn" id="topbarBellBtn" title="Centre de notifications UCA" onclick="openNotificationsModal()">
+            <img src="gifs/notification.gif" alt="Notif">
+            <span class="bell-unread-dot" id="bellUnreadDot"></span>
+          </button>
+          <button class="icon-action-btn" id="topbarProfileBtn" title="Mon Compte UCA" onclick="switchTab('compte')">
+            <img src="gifs/user.gif" alt="Profil">
+          </button>
+        </div>
+      </div>
+
+      <!-- Contenu défilant -->
+      <main class="screen-viewport" id="screenViewport"></main>
+
+      <!-- Barre de navigation inférieure avec GIFs officiels -->
+      <nav class="bottom-tab-bar" id="bottomTabBar">
+        <button class="bottom-tab-item" data-tab="home" onclick="switchTab('home')">
+          <img src="gifs/mail.gif" class="tab-gif" alt="Accueil">
+          <span>Accueil</span>
+        </button>
+        <button class="bottom-tab-item" data-tab="etudes" onclick="switchTab('etudes')">
+          <img src="gifs/stats.gif" class="tab-gif" alt="Études">
+          <span>Études</span>
+        </button>
+        <button class="bottom-tab-item active" data-tab="agenda" onclick="switchTab('agenda')">
+          <img src="gifs/calendar.gif" class="tab-gif" alt="Agenda">
+          <span>Agenda</span>
+        </button>
+        <button class="bottom-tab-item" data-tab="lieux" onclick="switchTab('lieux')">
+          <img src="gifs/Black_World.gif" class="tab-gif" alt="Lieux">
+          <span>Lieux</span>
+        </button>
+        <button class="bottom-tab-item" data-tab="transport" onclick="switchTab('transport')">
+          <img src="gifs/voiture.gif" class="tab-gif" alt="Transports">
+          <span>Transports</span>
+        </button>
+        <button class="bottom-tab-item" data-tab="compte" onclick="switchTab('compte')">
+          <img src="gifs/user.gif" class="tab-gif" alt="Compte">
+          <span>Compte</span>
+        </button>
+      </nav>
+
+      <!-- Toast contextuel -->
+      <div class="toast-alert-box" id="toastAlertBox">
+        <img id="toastGifIcon" src="gifs/green_check.gif" style="width:16px;height:16px;" alt="">
+        <span id="toastAlertMsg">Synchronisation Odin effectuée</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Gestionnaire d'erreurs global (évite tout crash silencieux ou écran blanc) ---
+window.addEventListener("error", function (e) {
+  console.warn("Erreur interceptée et traitée sans interruption :", e.message);
+});
+window.addEventListener("unhandledrejection", function (e) {
+  console.warn("Rejet asynchrone intercepté :", e.reason);
+});
+
+// --- Utilitaires de stockage sécurisé (protection navigation privée / quota) ---
+function safeStorageGet(key, def) {
+  try { return localStorage.getItem(key) || def; } catch (e) { return def; }
+}
+function safeStorageSet(key, val) {
+  try { localStorage.setItem(key, val); } catch (e) {}
+}
+
+// --- Horloge en temps réel ---
+function updateClock() {
+  const d = new Date();
+  const el = document.getElementById("statusBarClock");
+  if (el) el.textContent = String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
+}
+updateClock();
+setInterval(updateClock, 10000);
+
+// --- État de l'application & Validation stricte des paramètres URL ---
+const VALID_TABS = ["home", "mail", "etudes", "agenda", "lieux", "transport", "compte"];
+const urlParams = new URLSearchParams(location.search);
+function getStudentProfile() {
+  try {
+    const raw = localStorage.getItem("uca_profile");
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return {
+    name: "Étudiant UCA",
+    id: "Connecté SSO",
+    ine: "Validé UCA",
+    formation: "Université Clermont Auvergne",
+    annee: "Année universitaire en cours",
+    email: "etudiant@etu.uca.fr",
+    group: "Groupe synchronisé",
+    birth: "Compte certifié"
+  };
+}
+
+let currentTab = urlParams.get("tab") || "agenda";
+if (!VALID_TABS.includes(currentTab)) currentTab = "agenda";
+
+let activeDesign = urlParams.get("design") || safeStorageGet("uca_design", "anime");
+targetSimGrade = 14.0;
+
+const DESIGN_INFO = {
+  anime: { name: "Design Animé", icon: "gifs/calendar.gif" },
+  professionnel: { name: "Design Professionnel", icon: "gifs/calendar.gif" },
+  bulletin: { name: "Design Bulletin", icon: "gifs/calendar.gif" },
+  carnet: { name: "Design Carnet", icon: "gifs/a_hand_writing.gif" }
+};
+if (!DESIGN_INFO[activeDesign]) activeDesign = "anime";
+
+// --- Basculement Mode Téléphone / Mode Plein Écran (App Réelle) ---
+function setViewMode(mode) {
+  const isFull = mode === "fullscreen";
+  document.body.classList.toggle("fullscreen-mode", isFull);
+  document.getElementById("btnModePhone").classList.toggle("active", !isFull);
+  document.getElementById("btnModeFullscreen").classList.toggle("active", isFull);
+  if (currentTab === "lieux" && typeof mapInstance !== "undefined" && mapInstance) {
+    setTimeout(() => { mapInstance.invalidateSize(); }, 300);
+  }
+}
+
+// Détection automatique sur mobile
+if (window.innerWidth <= 768) {
+  setViewMode("fullscreen");
+}
+
+// --- Toast helper avec GIF ---
+function showToast(msg, gif = "gifs/green_check.gif") {
+  const t = document.getElementById("toastAlertBox");
+  document.getElementById("toastAlertMsg").textContent = msg;
+  document.getElementById("toastGifIcon").src = gif;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3200);
+}
+
+// --- Synchronisation Backend CAS / Odin ---
+function triggerOdinSync() {
+  showToast("Vérification session CAS UCA...", "gifs/loading.gif");
+  if (window.AndroidUCA && window.AndroidUCA.requestSync) {
+    window.AndroidUCA.requestSync("resync");
+    return;
+  }
+  // Protocole Web : CAS UCA
+  const casUrl = "https://ent.uca.fr/cas/login?service=" + encodeURIComponent("https://odin.iut.uca.fr/portail/");
+  try {
+    window.open(casUrl, "ucaLogin", "width=520,height=700,left=200,top=100");
+  } catch (_) {}
+  setTimeout(() => {
+    showToast("Collecte des notes & absences Odin...", "gifs/loading.gif");
+  }, 1200);
+  setTimeout(() => {
+    showToast("Emploi du temps & relevé à jour !", "gifs/trophy.gif");
+    if (currentTab === "agenda") {
+      const iframe = document.getElementById("agendaFrame");
+      if (iframe) iframe.src = `designs/${activeDesign}/agenda.html?demo=1&t=${Date.now()}`;
+    }
+  }, 2600);
+}
+
+// ========================================================
+// RENDU: ACCUEIL DASHBOARD (RÉALISTE & NON-IA)
+// ========================================================
+function renderHome() {
+  return `
+    <!-- WIDGET: STATUT DES SERVICES UCA (Vert=Ouvert, Rouge=Fermé, Orange=Maintenance, Bleu=Non accessible) -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/Black_World.gif" class="gif-icon" alt="">
+          <span>Statut des Services UCA</span>
+        </div>
+        <span class="pill-badge pill-success">En direct</span>
+      </div>
+      <div class="services-status-list">
+        <div class="service-status-row">
+          <div class="service-info-col">
+            <span class="service-name">Site ENT UCA</span>
+            <span class="service-url">ent.uca.fr · Authentification CAS SSO</span>
+          </div>
+          <span class="service-state-tag state-green">● Ouvert</span>
+        </div>
+        <div class="service-status-row">
+          <div class="service-info-col">
+            <span class="service-name">Messagerie Zimbra UCA</span>
+            <span class="service-url">mail.uca.fr · Boîte mail étudiante</span>
+          </div>
+          <span class="service-state-tag state-green">● Ouvert</span>
+        </div>
+        <div class="service-status-row">
+          <div class="service-info-col">
+            <span class="service-name">Portail Odin IUT (EDT / Absences)</span>
+            <span class="service-url">odin.iut.uca.fr · Emploi du temps</span>
+          </div>
+          <span class="service-state-tag state-green">● Ouvert</span>
+        </div>
+        <div class="service-status-row">
+          <div class="service-info-col">
+            <span class="service-name">Serveur Relevé de Notes</span>
+            <span class="service-url">Tomuss / Notes Odin · Évaluations</span>
+          </div>
+          <span class="service-state-tag state-green">● Ouvert</span>
+        </div>
+        <div class="service-status-row">
+          <div class="service-info-col">
+            <span class="service-name">CROUS Clermont Restos U</span>
+            <span class="service-url">crous-clermont.fr · Menus & Affluences</span>
+          </div>
+          <span class="service-state-tag state-green">● Ouvert</span>
+        </div>
+      </div>
+      <div class="status-legend-bar">
+        <span class="lg-tag"><i class="dot-green"></i> Ouvert</span>
+        <span class="lg-tag"><i class="dot-red"></i> Fermé</span>
+        <span class="lg-tag"><i class="dot-orange"></i> Maintenance</span>
+        <span class="lg-tag"><i class="dot-blue"></i> Non accessible</span>
+      </div>
+    </div>
+
+    <!-- Carte Prochain Cours en Direct -->
+    <div class="content-card" style="border-left: 4px solid var(--accent);">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <span class="live-pulse-dot"></span>
+          <span>Prochain cours · Aujourd'hui</span>
+        </div>
+        <span class="pill-badge pill-accent">Dans 32 min</span>
+      </div>
+      <div style="font-size: 15px; font-weight: 800; margin-bottom: 5px; color:var(--text);">
+        R3.01 Développement Web Avancé (TP)
+      </div>
+      <div style="font-size: 12px; color: var(--text-dim); display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+        <span style="display:flex;align-items:center;gap:4px;"><img src="gifs/RM_professor.gif" style="width:14px;height:14px;" alt=""> M. Vincent Boyer</span>
+        <span style="display:flex;align-items:center;gap:4px;"><img src="gifs/TP_owner.gif" style="width:14px;height:14px;" alt=""> Salle 104 (Lab Réseau - Cézeaux)</span>
+        <span style="display:flex;align-items:center;gap:4px;"><img src="gifs/calendar.gif" style="width:14px;height:14px;" alt=""> 08:00 - 10:00</span>
+      </div>
+      <button class="btn-action-main" onclick="switchTab('agenda')">
+        <img src="gifs/calendar.gif" style="width:15px;height:15px;" alt="">
+        <span>Ouvrir mon emploi du temps</span>
+      </button>
+    </div>
+
+    <!-- Carte Flash Notes & Moyenne -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/stat.gif" class="gif-icon" alt="">
+          <span>Relevé Flash Odin</span>
+        </div>
+        <span class="pill-badge pill-success">Moyenne : 14.22 / 20</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+        <div>
+          <div style="font-size:12px; font-weight:700;">Dernière note publiée sur Odin :</div>
+          <div style="font-size:11px; color:var(--text-dim);">TP noté API REST & TypeScript (R3.01)</div>
+        </div>
+        <div style="font-size:15px; font-weight:900; color:var(--success); background:var(--success-bg); border:1px solid rgba(16,185,129,0.3); padding:3px 9px; border-radius:7px;">
+          16.0 / 20
+        </div>
+      </div>
+      <button class="btn-action-secondary" onclick="switchTab('etudes')">
+        <img src="gifs/stats.gif" style="width:14px;height:14px;" alt="">
+        <span>Consulter le relevé complet & absences</span>
+      </button>
+    </div>
+
+    <!-- Carte Suivi des Absences -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/Alert_signal_.gif" class="gif-icon" alt="">
+          <span>Absences & Assiduité</span>
+        </div>
+        <span class="pill-badge pill-warning">1 non justifiée</span>
+      </div>
+      <div style="font-size: 11.5px; color: var(--text-dim); margin-bottom: 8px;">
+        3 déclarées · 2 justifiées par certificat médical · 1 en attente.
+      </div>
+      <div class="absences-stat-grid">
+        <div class="absence-stat-tile">
+          <div class="absence-num" style="color:var(--text);">3</div>
+          <div class="absence-lbl">Déclarées</div>
+        </div>
+        <div class="absence-stat-tile">
+          <div class="absence-num" style="color:var(--success);">2</div>
+          <div class="absence-lbl">Justifiées</div>
+        </div>
+        <div class="absence-stat-tile">
+          <div class="absence-num" style="color:var(--danger);">1</div>
+          <div class="absence-lbl">Injustifiée</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Affluence BU Cézeaux & Lafon -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/Student.png" class="gif-icon" alt="">
+          <span>Bibliothèques Universitaires (Affluence)</span>
+        </div>
+        <span class="pill-badge pill-success">En direct</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:3px;">
+            <span style="font-weight:700;">BU Cézeaux (Sciences & Tech)</span>
+            <span style="color:var(--success); font-weight:700;">Faible (24%)</span>
+          </div>
+          <div style="height:5px; background:var(--border); border-radius:999px; overflow:hidden;">
+            <div style="width:24%; height:100%; background:var(--success);"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex; justify-content:space-between; font-size:11.5px; margin-bottom:3px;">
+            <span style="font-weight:700;">BU Marie-Hélène Lafon</span>
+            <span style="color:var(--warning); font-weight:700;">Modérée (48%)</span>
+          </div>
+          <div style="height:5px; background:var(--border); border-radius:999px; overflow:hidden;">
+            <div style="width:48%; height:100%; background:var(--warning);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messagerie Universitaire Zimbra -->
+    <div class="content-card" style="cursor:pointer;" onclick="switchTab('mail')">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/New_Mail.gif" class="gif-icon" alt="">
+          <span>Messagerie Zimbra UCA</span>
+        </div>
+        <span class="pill-badge pill-accent">3 non lus</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div style="padding:7px 9px; background:rgba(0,0,0,0.2); border-radius:7px; border-left:3px solid var(--accent);">
+          <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim);">
+            <strong>Scolarité IUT Cézeaux</strong>
+            <span>08:15</span>
+          </div>
+          <div style="font-size:11.5px; font-weight:700; margin-top:2px;">Relevé de notes officiel semestriel disponible sur Odin</div>
+        </div>
+        <div style="padding:7px 9px; background:rgba(0,0,0,0.2); border-radius:7px; border-left:3px solid var(--accent);">
+          <div style="display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim);">
+            <strong>M. Thomas Clavel (Sécurité)</strong>
+            <span>Hier</span>
+          </div>
+          <div style="font-size:11.5px; font-weight:700; margin-top:2px;">Consignes pour le projet de cryptographie R3.07</div>
+        </div>
+      </div>
+      <button class="btn-action-secondary" style="margin-top:10px;" onclick="event.stopPropagation(); switchTab('mail')">
+        <img src="gifs/mail.gif" style="width:14px;height:14px;" alt="">
+        <span>Ouvrir la boîte de réception complète (Zimbra)</span>
+      </button>
+    </div>
+
+    <!-- Mobilité & Transports UCA (T2C, SNCF, BlaBlaCar, FlixBus) -->
+    <div class="content-card" style="cursor:pointer;" onclick="switchTab('transport')">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/voiture.gif" class="gif-icon" alt="">
+          <span>Transports & Mobilité UCA</span>
+        </div>
+        <span class="pill-badge pill-success">🟢 T2C & SNCF Direct</span>
+      </div>
+      <div style="font-size:11.5px; color:var(--text-dim); margin-bottom:8px;">
+        Prochains passages en temps réel depuis le <strong>Campus Cézeaux</strong> :
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:8px;">
+        <div style="padding:6px 8px; background:rgba(0,0,0,0.25); border-radius:8px; border-left:3px solid #e11422;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:800; font-size:12px; color:#e11422;">Tram A</span>
+            <span style="font-weight:800; font-size:11.5px; color:var(--accent);">dans 2 min</span>
+          </div>
+          <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">Dir. Champratel / Jaude</div>
+        </div>
+        <div style="padding:6px 8px; background:rgba(0,0,0,0.25); border-radius:8px; border-left:3px solid #289b38;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:800; font-size:12px; color:#289b38;">Bus 3</span>
+            <span style="font-weight:800; font-size:11.5px; color:var(--accent);">dans 11 min</span>
+          </div>
+          <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">Dir. Romagnat Gergovia</div>
+        </div>
+      </div>
+      <button class="btn-action-main" style="width:100%;" onclick="event.stopPropagation(); switchTab('transport')">
+        <img src="gifs/voiture.gif" style="width:14px;height:14px;" alt="">
+        <span>Rechercher un trajet (T2C, TER, Covoit, Bus)</span>
+      </button>
+    </div>
+  `;
+}
+
+// ========================================================
+// RENDU: ÉTUDES & NOTES (FONCTIONNALITÉ COMPLÈTE AVEC GIFS)
+// ========================================================
+function renderEtudes() {
+  return `
+    <!-- BANNIÈRE MOYENNE GÉNÉRALE -->
+    <div class="gpa-card-banner">
+      <div class="gpa-circle-meter">
+        <span class="gpa-number-text">14.22</span>
+      </div>
+      <div class="gpa-text-group">
+        <h2>
+          <span>Moyenne Générale</span>
+          <img src="gifs/trophy.gif" style="width:18px;height:18px;" alt="">
+          <img src="gifs/victoire.gif" style="width:18px;height:18px;" alt="">
+        </h2>
+        <div class="gpa-desc-text">
+          Semestre BUT Informatique S3 · <strong>Statut : Admis</strong><br>
+          <span style="color:var(--accent2); font-weight:700;">30 / 30 ECTS</span> validés · 3 UE
+        </div>
+      </div>
+    </div>
+
+    <!-- CARTE ASSIDUITÉ ET JUSTIFICATIONS -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/stat.gif" class="gif-icon" alt="">
+          <span>Synthèse des Absences (Odin)</span>
+        </div>
+        <a href="https://odin.iut.uca.fr/etudiants/?p=absences" target="_blank" rel="noopener" style="font-size:11px; color:var(--accent2); text-decoration:none; font-weight:700;">Accès Portail ↗</a>
+      </div>
+      <div class="absences-stat-grid">
+        <div class="absence-stat-tile">
+          <div class="absence-num" style="color:var(--text);">3</div>
+          <div class="absence-lbl">Déclarées</div>
+        </div>
+        <div class="absence-stat-tile">
+          <div class="absence-num" style="color:var(--success);">2</div>
+          <div class="absence-lbl">Justifiées</div>
+        </div>
+        <div class="absence-stat-tile">
+          <div class="absence-num" style="color:var(--danger);">1</div>
+          <div class="absence-lbl">Non justifiée</div>
+        </div>
+      </div>
+
+      <div style="margin-top:10px; padding-top:8px; border-top:1px solid var(--border);">
+        <div style="font-size:10.5px; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:5px;">Dernière justification déposée :</div>
+        <div style="background:rgba(0,0,0,0.2); border:1px solid var(--border); border-radius:7px; padding:7px 9px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:11.5px; font-weight:700;">14/10 · Certificat médical (Dr. Martin)</div>
+            <div style="font-size:10px; color:var(--text-dim);">Validé par la scolarité le 15/10</div>
+          </div>
+          <span class="pill-badge pill-success" style="display:flex;align-items:center;gap:3px;">
+            <img src="gifs/green_check.gif" style="width:11px;height:11px;" alt=""> Justifiée
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARTE SIMULATEUR DE NOTES INTERACTIF COMPLET (PHASE 3.1) -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/a_hand_writing.gif" class="gif-icon" alt="">
+          <span>Simulateur d'Objectif de Moyenne</span>
+        </div>
+        <span class="pill-badge pill-accent" id="simTargetBadge">Cible : ${targetSimGrade.toFixed(2)} / 20</span>
+      </div>
+
+      <!-- SÉLECTEUR DE PÉRIMÈTRE -->
+      <div style="margin-bottom:8px;">
+        <label style="font-size:11px; font-weight:700; color:var(--text-dim); display:block; margin-bottom:4px;">Périmètre visé :</label>
+        <select id="simScopeSelect" style="width:100%; height:34px; background:var(--surface); border:1px solid var(--border); border-radius:8px; color:var(--text); padding:0 8px; font-size:12px;" onchange="changeSimScope(this.value)">
+          <option value="general" ${simScope === 'general' ? 'selected' : ''}>🎯 Moyenne Générale Semestre BUT S3</option>
+          <option value="ue:UE 3.1" ${simScope === 'ue:UE 3.1' ? 'selected' : ''}>UE 3.1 — Développer des applications</option>
+          <option value="ue:UE 3.2" ${simScope === 'ue:UE 3.2' ? 'selected' : ''}>UE 3.2 — Optimiser des applications</option>
+          <option value="ue:UE 3.3" ${simScope === 'ue:UE 3.3' ? 'selected' : ''}>UE 3.3 — Administrer des systèmes communicants</option>
+          <option value="mat:R3.01" ${simScope === 'mat:R3.01' ? 'selected' : ''}>Matière R3.01 : Dév. Web & Frameworks</option>
+          <option value="mat:R3.02" ${simScope === 'mat:R3.02' ? 'selected' : ''}>Matière R3.02 : Dév. Efficace C++</option>
+        </select>
+      </div>
+
+      <!-- BOUTONS D'OBJECTIFS RAPIDES -->
+      <div style="display:flex; gap:5px; margin-bottom:10px;">
+        <button class="sim-quick-btn ${targetSimGrade === 10 ? 'active' : ''}" data-target="10" onclick="setSimTarget(10)">🎯 10 (Valider)</button>
+        <button class="sim-quick-btn ${targetSimGrade === 12 ? 'active' : ''}" data-target="12" onclick="setSimTarget(12)">🏅 12 (AB)</button>
+        <button class="sim-quick-btn ${targetSimGrade === 14 ? 'active' : ''}" data-target="14" onclick="setSimTarget(14)">🏆 14 (Bien)</button>
+        <button class="sim-quick-btn ${targetSimGrade === 16 ? 'active' : ''}" data-target="16" onclick="setSimTarget(16)">⭐ 16 (TB)</button>
+      </div>
+
+      <!-- CURSEUR PRINCIPAL D'OBJECTIF -->
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:11px; font-weight:700;">8</span>
+        <input type="range" id="simMainRange" min="8" max="18" step="0.1" value="${targetSimGrade}" style="flex:1; accent-color:var(--accent);" oninput="updateSimulator(this.value)">
+        <span style="font-size:11px; font-weight:700;">18</span>
+      </div>
+
+      <!-- RÉSULTAT DU CALCUL -->
+      <div id="simResultBox" style="font-size:12px; margin-top:10px; background:rgba(0,0,0,0.22); padding:10px 12px; border-radius:10px; border:1px solid var(--border);">
+        <div id="simResultText" style="line-height:1.45;">${getSimResultHtml(targetSimGrade, simScope)}</div>
+      </div>
+
+      <!-- MODE WHAT-IF : CURSEURS PAR ÉVALUATION RESTANTE -->
+      <div style="margin-top:12px; border-top:1px solid var(--border); padding-top:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="font-size:11.5px; font-weight:800; color:var(--text); display:flex; align-items:center; gap:5px;">
+            <span>⚡ Mode Simulation What-If (par épreuve)</span>
+          </span>
+          <button onclick="resetWhatIf()" style="background:none; border:none; color:var(--accent2); font-size:10.5px; font-weight:700; cursor:pointer;">Réinitialiser</button>
+        </div>
+        <div style="font-size:11px; color:var(--text-dim); margin-bottom:8px;">
+          Ajuste tes notes estimées pour voir ta moyenne finale en temps réel :
+        </div>
+
+        <div class="sim-eval-slider-row">
+          <div class="sim-eval-label-col">
+            <span class="sim-eval-name">DS R3.01 Dév Web</span>
+            <span class="sim-eval-sub">Coeff 2 · UE 3.1</span>
+          </div>
+          <input type="range" id="rng_r301" min="0" max="20" step="0.5" value="${whatIfValues.r301}" oninput="updateWhatIf('r301', this.value)" style="flex:1; accent-color:var(--accent);">
+          <span class="sim-eval-val" id="val_r301">${whatIfValues.r301.toFixed(1)}</span>
+        </div>
+
+        <div class="sim-eval-slider-row">
+          <div class="sim-eval-label-col">
+            <span class="sim-eval-name">Partiel R3.02 C++</span>
+            <span class="sim-eval-sub">Coeff 2 · UE 3.1</span>
+          </div>
+          <input type="range" id="rng_r302" min="0" max="20" step="0.5" value="${whatIfValues.r302}" oninput="updateWhatIf('r302', this.value)" style="flex:1; accent-color:var(--accent);">
+          <span class="sim-eval-val" id="val_r302">${whatIfValues.r302.toFixed(1)}</span>
+        </div>
+
+        <div class="sim-eval-slider-row">
+          <div class="sim-eval-label-col">
+            <span class="sim-eval-name">Projet SAE 3.01</span>
+            <span class="sim-eval-sub">Coeff 3 · UE 3.1 / 3.2</span>
+          </div>
+          <input type="range" id="rng_sae301" min="0" max="20" step="0.5" value="${whatIfValues.sae301}" oninput="updateWhatIf('sae301', this.value)" style="flex:1; accent-color:var(--accent);">
+          <span class="sim-eval-val" id="val_sae301">${whatIfValues.sae301.toFixed(1)}</span>
+        </div>
+
+        <div class="sim-eval-slider-row">
+          <div class="sim-eval-label-col">
+            <span class="sim-eval-name">DS R3.05 Réseaux</span>
+            <span class="sim-eval-sub">Coeff 2 · UE 3.3</span>
+          </div>
+          <input type="range" id="rng_r305" min="0" max="20" step="0.5" value="${whatIfValues.r305}" oninput="updateWhatIf('r305', this.value)" style="flex:1; accent-color:var(--accent);">
+          <span class="sim-eval-val" id="val_r305">${whatIfValues.r305.toFixed(1)}</span>
+        </div>
+
+        <div id="whatIfResultBox" style="margin-top:10px; background:linear-gradient(135deg, rgba(0,191,165,0.12), rgba(0,191,165,0.04)); border:1px solid rgba(0,191,165,0.3); border-radius:10px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:10px; text-transform:uppercase; font-weight:800; color:var(--accent2);">Moyenne Semestre Projetée :</div>
+            <div id="whatIfProjectedGrade" style="font-size:17px; font-weight:900; color:var(--text);">${computeWhatIfGpa()} / 20</div>
+          </div>
+          <div id="whatIfProjectedBadge" style="text-align:right;">${computeWhatIfBadge()}</div>
+        </div>
+      </div>
+
+      <!-- MATIÈRES À FORT LEVIER -->
+      <div style="margin-top:12px; padding-top:8px; border-top:1px solid var(--border); font-size:11px; color:var(--text-dim);">
+        <strong style="color:var(--text);">💡 Matières prioritaires (levier de points) :</strong>
+        <div style="display:flex; flex-wrap:wrap; gap:5px; margin-top:5px;">
+          <span class="pill-badge pill-accent">SAE 3.01 · Coeff 3 (Levier +1.8 pt)</span>
+          <span class="pill-badge pill-accent">R3.01 Web · Coeff 2 (Levier +1.2 pt)</span>
+          <span class="pill-badge pill-accent">R3.05 Réseaux · Coeff 2 (Levier +1.2 pt)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- HIÉRARCHIE DES NOTES ODIN (UE > MATIÈRES > ÉVALUATIONS) -->
+    <div style="font-size:12px; font-weight:800; text-transform:uppercase; color:var(--text-dim); margin:14px 2px 8px; display:flex; align-items:center; gap:6px;">
+      <img src="gifs/stat.gif" style="width:15px;height:15px;" alt="">
+      <span>Relevé Détaillé par Unité d'Enseignement (Odin)</span>
+    </div>
+
+    <!-- UE 3.1 -->
+    <div class="ue-foldable-card">
+      <div class="ue-foldable-head">
+        <div class="ue-foldable-title">
+          <img src="gifs/green_check.gif" style="width:13px;height:13px;" alt="">
+          <span>UE 3.1 Développer des applications informatiques</span>
+        </div>
+        <div class="ue-foldable-moy">15.08 / 20</div>
+      </div>
+      
+      <!-- Matière R3.01 -->
+      <div class="matiere-entry">
+        <div class="matiere-head-row">
+          <div class="matiere-name-wrap">
+            <img src="gifs/python.gif" class="gif-icon" alt="">
+            <span>R3.01 : Dév. Web & Frameworks</span>
+          </div>
+          <span style="color:var(--accent2); font-size:11px;">Coeff 3</span>
+        </div>
+        <div class="eval-item-row">
+          <div class="eval-item-left">
+            <span class="eval-title">TP Noté TypeScript / API REST</span>
+            <span class="eval-submeta">Coeff 1 · Promo: 13.4 · Min: 6.0 · Max: 19.5</span>
+          </div>
+          <span class="eval-score-badge score-good">16.0 / 20</span>
+        </div>
+        <div class="eval-item-row">
+          <div class="eval-item-left">
+            <span class="eval-title">Contrôle continu Architecture MVC</span>
+            <span class="eval-submeta">Coeff 2 · Promo: 11.2 · Min: 4.5 · Max: 17.5</span>
+          </div>
+          <span class="eval-score-badge score-good">14.5 / 20</span>
+        </div>
+      </div>
+
+      <!-- Matière R3.02 -->
+      <div class="matiere-entry">
+        <div class="matiere-head-row">
+          <div class="matiere-name-wrap">
+            <img src="gifs/python.gif" class="gif-icon" alt="">
+            <span>R3.02 : Dév. Efficace (C++ / Algorithmes)</span>
+          </div>
+          <span style="color:var(--accent2); font-size:11px;">Coeff 2</span>
+        </div>
+        <div class="eval-item-row">
+          <div class="eval-item-left">
+            <span class="eval-title">TP Arbres binaires & graphes</span>
+            <span class="eval-submeta">Coeff 1 · Promo: 12.0 · Min: 3.5 · Max: 18.0</span>
+          </div>
+          <span class="eval-score-badge score-good">15.0 / 20</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- UE 3.2 -->
+    <div class="ue-foldable-card">
+      <div class="ue-foldable-head">
+        <div class="ue-foldable-title">
+          <img src="gifs/green_check.gif" style="width:13px;height:13px;" alt="">
+          <span>UE 3.2 Optimiser & Sécuriser les réseaux</span>
+        </div>
+        <div class="ue-foldable-moy">13.25 / 20</div>
+      </div>
+
+      <!-- Matière R3.05 -->
+      <div class="matiere-entry">
+        <div class="matiere-head-row">
+          <div class="matiere-name-wrap">
+            <img src="gifs/reseaux.gif" class="gif-icon" alt="">
+            <span>R3.05 : Services Réseaux & Protocoles IP</span>
+          </div>
+          <span style="color:var(--accent2); font-size:11px;">Coeff 2</span>
+        </div>
+        <div class="eval-item-row">
+          <div class="eval-item-left">
+            <span class="eval-title">TP Routage BGP & OSPF</span>
+            <span class="eval-submeta">Coeff 1 · Promo: 10.8 · Min: 2.0 · Max: 18.0</span>
+          </div>
+          <span class="eval-score-badge score-good">13.0 / 20</span>
+        </div>
+      </div>
+
+      <!-- Matière R3.07 -->
+      <div class="matiere-entry">
+        <div class="matiere-head-row">
+          <div class="matiere-name-wrap">
+            <img src="gifs/security.gif" class="gif-icon" alt="">
+            <span>R3.07 : Sécurité & Cryptographie</span>
+          </div>
+          <span style="color:var(--accent2); font-size:11px;">Coeff 2</span>
+        </div>
+        <div class="eval-item-row">
+          <div class="eval-item-left">
+            <span class="eval-title">Partiel Chiffrement RSA & Certificats</span>
+            <span class="eval-submeta">Coeff 2 · Promo: 11.5 · Min: 5.0 · Max: 16.5</span>
+          </div>
+          <span class="eval-score-badge score-good">13.5 / 20</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- UE 3.3 -->
+    <div class="ue-foldable-card">
+      <div class="ue-foldable-head">
+        <div class="ue-foldable-title">
+          <img src="gifs/green_check.gif" style="width:13px;height:13px;" alt="">
+          <span>UE 3.3 Conduire un projet en équipe (SAE)</span>
+        </div>
+        <div class="ue-foldable-moy">14.50 / 20</div>
+      </div>
+      <div class="matiere-entry">
+        <div class="matiere-head-row">
+          <div class="matiere-name-wrap">
+            <img src="gifs/html.gif" class="gif-icon" alt="">
+            <span>SAE 3.01 : Application Communicante</span>
+          </div>
+          <span style="color:var(--accent2); font-size:11px;">Coeff 4</span>
+        </div>
+        <div class="eval-item-row clickable-grade-row" onclick="toast('📊 Soutenance SAE 3.01 : 14.5 / 20 (Coeff 2, Promo 13.8)')">
+          <div class="eval-item-left">
+            <span class="eval-title">Soutenance & Démonstration Sprint 2</span>
+            <span class="eval-submeta">Coeff 2 · Promo: 13.8 · Min: 8.0 · Max: 18.5 · 👆 Toucher</span>
+          </div>
+          <span class="eval-score-badge score-good">14.5 / 20</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RACCOURCIS FORMATION: STAGE, SCOLARITÉ, NOTIFICATIONS -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/Student.png" class="gif-icon" alt="">
+          <span>Parcours & Démarches BUT</span>
+        </div>
+      </div>
+      <div class="etudes-quick-grid">
+        <div class="etudes-quick-tile" onclick="openStageEmploiModal()">
+          <span class="eq-icon">💼</span>
+          <span class="eq-title">Stage & Emploi</span>
+          <span class="eq-sub">Offres & PStage</span>
+        </div>
+        <div class="etudes-quick-tile" onclick="openScolariteModal()">
+          <span class="eq-icon">🎓</span>
+          <span class="eq-title">Scolarité</span>
+          <span class="eq-sub">Certificat & INE</span>
+        </div>
+        <div class="etudes-quick-tile" onclick="openNotificationsModal()">
+          <span class="eq-icon">🔔</span>
+          <span class="eq-title">Notifications</span>
+          <span class="eq-sub">Alertes & Notes</span>
+        </div>
+      </div>
+    </div>
+
+  `;
+}
+
+
+function setSimTarget(t) {
+  targetSimGrade = parseFloat(t);
+  updateSimulator(targetSimGrade);
+  const badge = document.getElementById("simTargetBadge");
+  if (badge) badge.textContent = `Cible : ${targetSimGrade.toFixed(2)} / 20`;
+  const rng = document.getElementById("simMainRange");
+  if (rng) rng.value = String(targetSimGrade);
+  // Highlight quick buttons
+  document.querySelectorAll('.sim-quick-btn').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('data-target') === String(t));
+  });
+}
+
+function changeSimScope(s) {
+  simScope = s;
+  updateSimulator(targetSimGrade);
+}
+
+function getSimResultHtml(target, scope) {
+  // Calcul basé sur les notes actuelles (14.22 sur 8 coeffs déjà validés, 5 coeffs restants)
+  let needed = (target * 13 - 14.22 * 8) / 5;
+  if (scope.startsWith('ue:')) {
+    needed = (target * 6 - 15.08 * 3) / 3;
+  } else if (scope.startsWith('mat:')) {
+    needed = (target * 3 - 16.0 * 1) / 2;
+  }
+  
+  if (needed <= 0) {
+    return `<span style="color:#10b981;font-weight:800;">🎉 Objectif déjà validé !</span> Même avec 0/20 aux prochaines épreuves, ta note restera supérieure à <strong>${target.toFixed(2)} / 20</strong>.`;
+  } else if (needed > 20) {
+    return `<span style="color:#ef4444;font-weight:800;">⚠️ Mathématiquement inatteignable</span> : Il faudrait une note de <strong>${needed.toFixed(1)} / 20</strong> pour atteindre cet objectif. Vise une note plus équilibrée.`;
+  } else {
+    const col = needed <= 11 ? '#10b981' : needed <= 14 ? '#00bfa5' : '#f59e0b';
+    return `Il te faut au minimum <strong style="color:${col}; font-size:14.5px;">${needed.toFixed(2)} / 20</strong> de moyenne sur les évaluations restantes pour atteindre ta cible.`;
+  }
+}
+
+function updateSimulator(val) {
+  targetSimGrade = parseFloat(val);
+  const badge = document.getElementById("simTargetBadge");
+  if (badge) badge.textContent = `Cible : ${targetSimGrade.toFixed(2)} / 20`;
+  const resultEl = document.getElementById("simResultText");
+  if (resultEl) {
+    resultEl.innerHTML = getSimResultHtml(targetSimGrade, simScope);
+  }
+}
+
+function updateWhatIf(key, val) {
+  whatIfValues[key] = parseFloat(val);
+  const vEl = document.getElementById(`val_${key}`);
+  if (vEl) vEl.textContent = parseFloat(val).toFixed(1);
+  const gpaEl = document.getElementById("whatIfProjectedGrade");
+  if (gpaEl) gpaEl.textContent = `${computeWhatIfGpa()} / 20`;
+  const badgeEl = document.getElementById("whatIfProjectedBadge");
+  if (badgeEl) badgeEl.innerHTML = computeWhatIfBadge();
+}
+
+function resetWhatIf() {
+  whatIfValues = { r301: 14.0, r302: 13.5, sae301: 15.0, r304: 12.0, r305: 14.5 };
+  ['r301', 'r302', 'sae301', 'r304', 'r305'].forEach(k => {
+    const r = document.getElementById(`rng_${k}`);
+    if (r) r.value = String(whatIfValues[k]);
+    const v = document.getElementById(`val_${k}`);
+    if (v) v.textContent = whatIfValues[k].toFixed(1);
+  });
+  const gpaEl = document.getElementById("whatIfProjectedGrade");
+  if (gpaEl) gpaEl.textContent = `${computeWhatIfGpa()} / 20`;
+  const badgeEl = document.getElementById("whatIfProjectedBadge");
+  if (badgeEl) badgeEl.innerHTML = computeWhatIfBadge();
+  toast("Simulation réinitialisée.");
+}
+
+function computeWhatIfGpa() {
+  // Moyenne pondérée des épreuves simulées + notes acquises
+  const pastSw = 14.22 * 8;
+  const newSw = (whatIfValues.r301 * 2) + (whatIfValues.r302 * 2) + (whatIfValues.sae301 * 3) + (whatIfValues.r305 * 2);
+  const totalCoeff = 8 + 2 + 2 + 3 + 2;
+  const gpa = (pastSw + newSw) / totalCoeff;
+  return gpa.toFixed(2);
+}
+
+function computeWhatIfBadge() {
+  const gpa = parseFloat(computeWhatIfGpa());
+  if (gpa >= 16) return `<span class="pill-badge pill-success">Mention Très Bien 🌟</span>`;
+  if (gpa >= 14) return `<span class="pill-badge pill-accent">Mention Bien 🏆</span>`;
+  if (gpa >= 12) return `<span class="pill-badge pill-accent">Mention Assez Bien 🏅</span>`;
+  if (gpa >= 10) return `<span class="pill-badge pill-success">Semestre Validé ✓</span>`;
+  return `<span class="pill-badge pill-danger">Ajourné (&lt; 10) ⚠️</span>`;
+}
+
+
+function changeCrousDay(dayKey) {
+  selectedCrousDay = dayKey;
+  renderCrousModalContent();
+}
+
+function changeCrousResto(restoId) {
+  selectedCrousResto = restoId;
+  renderCrousModalContent();
+}
+
+function renderCrousModalContent() {
+  const container = document.getElementById('crousModalBody');
+  if (!container || !window.UCA_CROUS) return;
+  const resto = window.UCA_CROUS.getRestoById(selectedCrousResto);
+  const status = window.UCA_CROUS.getStatusNow(resto);
+  const menuDay = (resto.menus && resto.menus[selectedCrousDay]) || (resto.menus && resto.menus.lundi) || {};
+
+  const days = [
+    { key: 'lundi', label: 'Lun' },
+    { key: 'mardi', label: 'Mar' },
+    { key: 'mercredi', label: 'Mer' },
+    { key: 'jeudi', label: 'Jeu' },
+    { key: 'vendredi', label: 'Ven' }
+  ];
+
+  const dayButtons = days.map(d => `
+    <button class="crous-day-btn ${selectedCrousDay === d.key ? 'active' : ''}" onclick="changeCrousDay('${d.key}')">${d.label}</button>
+  `).join('');
+
+  const entreesHtml = (menuDay.entrees || []).map(e => `
+    <div class="crous-food-item">
+      <span class="crous-food-name">🥗 ${e}</span>
+      <span class="crous-food-tag tag-vege">Entrée Fraîche</span>
+    </div>
+  `).join('');
+
+  const platsHtml = (menuDay.plats || []).map(p => {
+    const tagClass = p.type === 'vege' ? 'tag-vege' : p.type === 'poisson' ? 'tag-fish' : 'tag-meat';
+    const tagEmoji = p.type === 'vege' ? '🌱' : p.type === 'poisson' ? '🐟' : '🥩';
+    return `
+      <div class="crous-food-item">
+        <span class="crous-food-name">${tagEmoji} ${p.nom}</span>
+        <span class="crous-food-tag ${tagClass}">${p.label || 'Plat chaud'}</span>
+      </div>
+    `;
+  }).join('');
+
+  const accompHtml = (menuDay.accompagnements || []).map(a => `
+    <div class="crous-food-item">
+      <span class="crous-food-name">🍚 ${a}</span>
+    </div>
+  `).join('');
+
+  const dessertsHtml = (menuDay.desserts || []).map(d => `
+    <div class="crous-food-item">
+      <span class="crous-food-name">🍰 ${d}</span>
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <!-- SÉLECTEUR DE RESTAURANT -->
+    <div style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px;">
+      <button class="sim-quick-btn ${selectedCrousResto === 'cezeaux' ? 'active' : ''}" onclick="changeCrousResto('cezeaux')">🍽️ Cézeaux (Lafon)</button>
+      <button class="sim-quick-btn ${selectedCrousResto === 'manege' ? 'active' : ''}" onclick="changeCrousResto('manege')">🍽️ Carnot (Manège)</button>
+      <button class="sim-quick-btn ${selectedCrousResto === 'dunant' ? 'active' : ''}" onclick="changeCrousResto('dunant')">🍽️ Dunant (Médecine)</button>
+      <button class="sim-quick-btn ${selectedCrousResto === 'staps' ? 'active' : ''}" onclick="changeCrousResto('staps')">☕ STAPS Cézeaux</button>
+    </div>
+
+    <!-- CARTE STATUT DU RESTO -->
+    <div class="content-card" style="margin-bottom:12px; border-color:var(--accent);">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
+        <div>
+          <div style="font-size:15px; font-weight:800; color:var(--text);">${resto.nom}</div>
+          <div style="font-size:11.5px; color:var(--text-dim); margin-top:2px;">📍 ${resto.adresse}</div>
+        </div>
+        <span class="pill-badge ${status.color === 'success' ? 'pill-success' : 'pill-danger'}">${status.badge}</span>
+      </div>
+      <div style="font-size:11.5px; color:var(--accent2); font-weight:700; margin-bottom:8px;">${status.label}</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; background:rgba(0,0,0,0.2); padding:8px 10px; border-radius:8px; font-size:11px;">
+        <div>⏰ Midi : <b>${resto.horairesMidi}</b></div>
+        <div>🌙 Soir : <b>${resto.horairesSoir}</b></div>
+        <div>👥 Affluence : <b>${resto.affluenceActuelle}%</b> (modérée)</div>
+        <div>💳 Tarif : <b>1.00 €</b> boursier / <b>3.30 €</b></div>
+      </div>
+    </div>
+
+    <!-- ONGLETS PAR JOUR DE LA SEMAINE -->
+    <div class="crous-day-pills">
+      ${dayButtons}
+    </div>
+
+    <!-- LISTE DU MENU -->
+    <div class="crous-category-title">🥗 Entrées &amp; Salades</div>
+    ${entreesHtml}
+
+    <div class="crous-category-title">🍲 Plats Chauds du Jour</div>
+    ${platsHtml}
+
+    <div class="crous-category-title">🍚 Accompagnements &amp; Légumes</div>
+    ${accompHtml}
+
+    <div class="crous-category-title">🍮 Desserts &amp; Fromages d'Auvergne</div>
+    ${dessertsHtml}
+  `;
+}
+
+function triggerIcsDownload(range) {
+  if (!window.UCA_EXPORT) {
+    toast("Module d'export indisponible.");
+    return;
+  }
+  const events = (window.ucaDemoEvents || []);
+  const icsStr = window.UCA_EXPORT.eventsToIcs(events, { calendarName: "Emploi du temps My UCA" });
+  window.UCA_EXPORT.downloadIcs(`edt_uca_${range || 'semaine'}.ics`, icsStr);
+  toast(`📥 Téléchargement du fichier .ics lancé (${range || 'semaine'}).`);
+  closeAppModal('exportIcsModal');
+}
+
+function triggerIcsShare(range) {
+  if (!window.UCA_EXPORT) {
+    toast("Module de partage indisponible.");
+    return;
+  }
+  const events = (window.ucaDemoEvents || []);
+  const icsStr = window.UCA_EXPORT.eventsToIcs(events, { calendarName: "Emploi du temps My UCA" });
+  window.UCA_EXPORT.shareIcs(`edt_uca_${range || 'semaine'}.ics`, icsStr, "Mon emploi du temps UCA");
+  closeAppModal('exportIcsModal');
+}
+
+
+// ========================================================
+// RENDU: AGENDA EMBARQUÉ (DESIGN MULTIPLE PRÉENREGISTRÉ)
+// ========================================================
+function renderAgenda() {
+  const src = `designs/${activeDesign}/agenda.html?demo=1`;
+  return `
+    <iframe class="agenda-frame" id="agendaFrame" src="${src}" title="Emploi du temps UCA"></iframe>
+  `;
+}
+
+// ========================================================
+// RENDU: LIEUX CAMPUS & RESTAURATION CROUS
+// ========================================================
+let mapInstance = null;
+let googleMapsCookiesAccepted = safeStorageGet('uca_maps_cookie_consent') === '1';
+
+const CAMPUS_PLACES = [
+  { nom: "Marie-Hélène Lafon", type: "resto", resto: true, ouvert: true, occ: 62, desc: "Resto U Cézeaux · Aubière", adresse: "27 Av. Blaise Pascal, Aubière", lat: 45.758487, lon: 3.113776 },
+  { nom: "BU Cézeaux (Sciences & Tech)", type: "biblio", resto: false, ouvert: true, occ: 48, desc: "Informatique, maths, physique", adresse: "6 Pl. Vasarely, Aubière", lat: 45.760228, lon: 3.113961 },
+  { nom: "Droit-Éco (Bd Mitterrand)", type: "biblio", resto: false, ouvert: true, occ: 41, desc: "Pôle tertiaire Carnot", adresse: "1 Bd Lafayette, Clermont-Fd", lat: 45.773964, lon: 3.088002 },
+  { nom: "Odontologie (Dentaire)", type: "biblio", resto: false, ouvert: false, occ: 0, desc: "UFR Odontologie · Réouverture 14h", adresse: "2 Rue de Braga, Clermont-Fd", lat: 45.782000, lon: 3.104000 },
+  { nom: "Sciences & STAPS Cézeaux", type: "resto", resto: true, ouvert: true, occ: 78, desc: "Cafétéria Cézeaux CROUS", adresse: "Campus Cézeaux", lat: 45.759100, lon: 3.114500 },
+  { nom: "Santé & Pharmacie", type: "biblio", resto: false, ouvert: true, occ: 23, desc: "Campus Dunant Santé", adresse: "28 Pl. Henri Dunant", lat: 45.769500, lon: 3.089000 },
+  { nom: "Le Dunant (Médecine)", type: "resto", resto: true, ouvert: true, occ: 70, desc: "Resto U Médecine CROUS", adresse: "28 Pl. Henri Dunant", lat: 45.769800, lon: 3.089500 },
+  { nom: "INSPÉ Chamalières", type: "resto", resto: true, ouvert: false, occ: 0, desc: "Campus d'Éducation", adresse: "36 Av. Jean Jaurès, Chamalières", lat: 45.774500, lon: 3.064000 },
+  { nom: "Le Manège Carnot", type: "resto", resto: true, ouvert: true, occ: 85, desc: "Resto U Centre-ville", adresse: "Rue d'Amboise, Clermont-Fd", lat: 45.772500, lon: 3.090500 },
+  { nom: "BU Lettres & SHS Gergovia", type: "biblio", resto: false, ouvert: true, occ: 52, desc: "Bd Gergovia · 8h30 - 19h30", adresse: "29 Bd Gergovia, Clermont-Fd", lat: 45.771869, lon: 3.091493 },
+  { nom: "IUT Aubière (Informatique)", type: "biblio", resto: false, ouvert: true, occ: 35, desc: "Bâtiment Info Cézeaux · Salles TP", adresse: "Campus Cézeaux, Aubière", lat: 45.761000, lon: 3.112500 },
+  { nom: "ISIMA (École d'Ingénieurs)", type: "biblio", resto: false, ouvert: true, occ: 29, desc: "Campus Cézeaux · Informatique", adresse: "Campus Cézeaux, Aubière", lat: 45.762100, lon: 3.111800 },
+  { nom: "SIGMA Clermont", type: "biblio", resto: false, ouvert: true, occ: 44, desc: "Chimie & Mécanique", adresse: "Campus Cézeaux, Aubière", lat: 45.763000, lon: 3.113200 }
+];
+
+function acceptGoogleMapsCookies() {
+  googleMapsCookiesAccepted = true;
+  safeStorageSet('uca_maps_cookie_consent', '1');
+  switchTab('lieux');
+}
+
+function refuseGoogleMapsCookies() {
+  googleMapsCookiesAccepted = false;
+  safeStorageSet('uca_maps_cookie_consent', '0');
+  switchTab('lieux');
+}
+
+
+// ========================================================
+// RENDU: TRANSPORTS & MOBILITÉ MULTIPLATEFORME
+// ========================================================
+let tabTransOrigin = "cezeaux_campus";
+let tabTransDest = "gare_sncf";
+let tabTransSort = "fastest";
+let tabTransModes = ["tram", "bus", "train", "car", "covoit"];
+
+function renderTransport() {
+  return `
+    <!-- CARTE D'ENTÊTE MOBILITÉ -->
+    <div class="trans-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <img src="gifs/voiture.gif" style="width:22px; height:22px;" alt="">
+          <strong style="font-size:14px; color:var(--text);">Mobilité Étudiante UCA</strong>
+        </div>
+        <span class="trans-badge-realtime">🟢 Réseau en direct</span>
+      </div>
+      <div style="font-size:11px; color:var(--text-dim); line-height:1.4;">
+        Réseaux intégrés : T2C (Tram A, Bus), SNCF TER Auvergne, BlaBlaCar (Covoiturage étudiant), FlixBus. Priorité au temps réel vérifié avec bascule automatique sur les horaires théoriques.
+      </div>
+    </div>
+
+    <!-- FORMULAIRE DE RECHERCHE MULTIMODAL -->
+    <div class="trans-card">
+      <div class="trans-field-group">
+        <label class="trans-label" for="tabTransFromSelect">Point de départ</label>
+        <select id="tabTransFromSelect" class="trans-input" onchange="onTabTransOriginChange(this.value)">
+          <option value="cezeaux_campus">Campus Cézeaux (Aubière)</option>
+          <option value="universites">Universités Carnot (Clermont-Ferrand)</option>
+          <option value="dunant_medecine">Dunant Fac de Médecine</option>
+          <option value="gergovia_lettres">Gergovia (Lettres & SHS)</option>
+          <option value="iut_aubiere">IUT Aubière (Informatique)</option>
+          <option value="gare_sncf">Gare SNCF Clermont-Ferrand</option>
+          <option value="jaude">Place de Jaude</option>
+          <option value="gare_routiere_salins">Gare Routière Les Salins</option>
+        </select>
+        <div class="trans-chips">
+          <span class="trans-chip" onclick="setTabTransOrigin('cezeaux_campus')">Cézeaux</span>
+          <span class="trans-chip" onclick="setTabTransOrigin('universites')">Carnot</span>
+          <span class="trans-chip" onclick="setTabTransOrigin('dunant_medecine')">Dunant</span>
+          <span class="trans-chip" onclick="setTabTransOrigin('gare_sncf')">Gare SNCF</span>
+        </div>
+      </div>
+
+      <!-- BOUTON D'INVERSION -->
+      <div style="text-align:center; margin:2px 0 6px;">
+        <button type="button" class="btn-action-secondary" style="padding:4px 10px; font-size:11px;" onclick="swapTabTransStops()">
+          ⇅ Inverser départ et arrivée
+        </button>
+      </div>
+
+      <div class="trans-field-group">
+        <label class="trans-label" for="tabTransToSelect">Destination</label>
+        <select id="tabTransToSelect" class="trans-input" onchange="onTabTransDestChange(this.value)">
+          <option value="gare_sncf">Gare SNCF Clermont-Ferrand</option>
+          <option value="jaude">Place de Jaude (Centre-ville)</option>
+          <option value="cezeaux_campus">Campus Cézeaux (Aubière)</option>
+          <option value="universites">Universités Carnot</option>
+          <option value="lyon_partdieu">Lyon Part-Dieu (TER / Covoit / Bus)</option>
+          <option value="paris_bercy">Paris Bercy-Bourgogne (Train / Bus)</option>
+          <option value="riom_gare">Gare de Riom - Châtel-Guyon</option>
+          <option value="vichy_gare">Gare de Vichy</option>
+          <option value="issoire_gare">Gare d'Issoire</option>
+        </select>
+        <div class="trans-chips">
+          <span class="trans-chip" onclick="setTabTransDest('gare_sncf')">Gare SNCF</span>
+          <span class="trans-chip" onclick="setTabTransDest('jaude')">Jaude</span>
+          <span class="trans-chip" onclick="setTabTransDest('lyon_partdieu')">Lyon Part-Dieu</span>
+          <span class="trans-chip" onclick="setTabTransDest('paris_bercy')">Paris Bercy</span>
+        </div>
+      </div>
+
+      <!-- FILTRES DE MODE -->
+      <div class="trans-label" style="margin-top:8px;">Modes de transport autorisés</div>
+      <div class="trans-pill-row">
+        <button class="trans-pill-btn active" data-mode="tram" onclick="toggleTabTransMode('tram', this)">🚊 Tram A</button>
+        <button class="trans-pill-btn active" data-mode="bus" onclick="toggleTabTransMode('bus', this)">🚌 Bus T2C</button>
+        <button class="trans-pill-btn active" data-mode="train" onclick="toggleTabTransMode('train', this)">🚆 Train TER</button>
+        <button class="trans-pill-btn active" data-mode="covoit" onclick="toggleTabTransMode('covoit', this)">🚗 Covoiturage</button>
+        <button class="trans-pill-btn active" data-mode="car" onclick="toggleTabTransMode('car', this)">🚍 Autocar</button>
+      </div>
+
+      <!-- TRI -->
+      <div class="trans-label" style="margin-top:8px;">Trier par</div>
+      <div class="trans-pill-row">
+        <button class="trans-pill-btn active" id="btnSortFastest" onclick="setTabTransSort('fastest')">⚡ Plus rapide</button>
+        <button class="trans-pill-btn" id="btnSortCheapest" onclick="setTabTransSort('cheapest')">💶 Moins cher</button>
+        <button class="trans-pill-btn" id="btnSortDeparture" onclick="setTabTransSort('departure')">🕒 Départ proche</button>
+      </div>
+
+      <button class="btn-action-main" style="width:100%; margin-top:10px;" onclick="runTabTransSearch()">
+        <img src="gifs/voiture.gif" style="width:14px;height:14px;" alt="">
+        <span>Calculer l'itinéraire multimodal</span>
+      </button>
+    </div>
+
+    <!-- PROCHAINS DÉPARTS EN DIRECT DE LA STATION DE DÉPART -->
+    <div class="trans-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span class="trans-label" style="margin:0;">Prochains départs en direct</span>
+        <span style="font-size:10.5px; color:var(--accent2);" id="tabTransLiveStopLabel">Campus Cézeaux</span>
+      </div>
+      <div id="tabTransLiveDepsList" style="display:flex; flex-direction:column; gap:6px;">
+        <!-- Injecté dynamiquement -->
+      </div>
+    </div>
+
+    <!-- RÉSULTATS DES ITINÉRAIRES -->
+    <div id="tabTransResultsContainer">
+      <!-- Injecté dynamiquement -->
+    </div>
+
+    <!-- LIEN VERS LA PAGE PLEIN ÉCRAN -->
+    <div style="text-align:center; padding:12px 0 20px;">
+      <a href="transport.html" target="_blank" rel="noopener" class="btn-action-secondary" style="display:inline-flex; align-items:center; gap:8px; text-decoration:none;">
+        <img src="gifs/rocket.gif" style="width:14px;height:14px;" alt="">
+        <span>Ouvrir l'outil Mobilité complet (Plein écran) ↗</span>
+      </a>
+    </div>
+  `;
+}
+
+function initTransportTab() {
+  const fromSel = document.getElementById("tabTransFromSelect");
+  const toSel = document.getElementById("tabTransToSelect");
+  if (fromSel) fromSel.value = tabTransOrigin;
+  if (toSel) toSel.value = tabTransDest;
+  refreshTabTransDepartures();
+  runTabTransSearch();
+}
+
+function onTabTransOriginChange(val) {
+  tabTransOrigin = val;
+  refreshTabTransDepartures();
+  runTabTransSearch();
+}
+
+function onTabTransDestChange(val) {
+  tabTransDest = val;
+  runTabTransSearch();
+}
+
+function setTabTransOrigin(stopId) {
+  tabTransOrigin = stopId;
+  const sel = document.getElementById("tabTransFromSelect");
+  if (sel) sel.value = stopId;
+  refreshTabTransDepartures();
+  runTabTransSearch();
+}
+
+function setTabTransDest(stopId) {
+  tabTransDest = stopId;
+  const sel = document.getElementById("tabTransToSelect");
+  if (sel) sel.value = stopId;
+  runTabTransSearch();
+}
+
+function swapTabTransStops() {
+  const tmp = tabTransOrigin;
+  tabTransOrigin = tabTransDest;
+  tabTransDest = tmp;
+  const fromSel = document.getElementById("tabTransFromSelect");
+  const toSel = document.getElementById("tabTransToSelect");
+  if (fromSel) fromSel.value = tabTransOrigin;
+  if (toSel) toSel.value = tabTransDest;
+  refreshTabTransDepartures();
+  runTabTransSearch();
+}
+
+function toggleTabTransMode(mode, btn) {
+  if (tabTransModes.includes(mode)) {
+    if (tabTransModes.length > 1) {
+      tabTransModes = tabTransModes.filter(m => m !== mode);
+      btn.classList.remove("active");
+    }
+  } else {
+    tabTransModes.push(mode);
+    btn.classList.add("active");
+  }
+  runTabTransSearch();
+}
+
+function setTabTransSort(sortKey) {
+  tabTransSort = sortKey;
+  ["btnSortFastest", "btnSortCheapest", "btnSortDeparture"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove("active");
+  });
+  if (sortKey === "fastest") document.getElementById("btnSortFastest")?.classList.add("active");
+  if (sortKey === "cheapest") document.getElementById("btnSortCheapest")?.classList.add("active");
+  if (sortKey === "departure") document.getElementById("btnSortDeparture")?.classList.add("active");
+  runTabTransSearch();
+}
+
+function refreshTabTransDepartures() {
+  const container = document.getElementById("tabTransLiveDepsList");
+  const label = document.getElementById("tabTransLiveStopLabel");
+  if (!container || !window.UCA_MOBILITY) return;
+
+  const stop = window.UCA_MOBILITY.getStopById(tabTransOrigin);
+  if (label && stop) label.textContent = stop.name;
+
+  const deps = window.UCA_MOBILITY.getNextDepartures(tabTransOrigin);
+  if (!deps || deps.length === 0) {
+    container.innerHTML = `<div style="font-size:11px; color:var(--text-dim); text-align:center; padding:6px;">Aucun passage immédiat détecté</div>`;
+    return;
+  }
+
+  container.innerHTML = deps.map(d => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 8px; background:rgba(0,0,0,0.22); border-radius:8px; border-left:3px solid ${d.color || 'var(--accent)'};">
+      <div>
+        <span style="font-weight:800; font-size:11.5px; color:${d.color || 'var(--accent)'};">${d.label}</span>
+        <span style="font-size:11px; color:var(--text); margin-left:6px;">➔ ${d.destination}</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span style="font-weight:800; font-size:11.5px; color:var(--accent);">${d.etaMinutes} min</span>
+        <span style="font-size:9.5px; ${d.realtime ? 'color:#10b981;' : 'color:var(--text-dim);'}">${d.realtime ? '🟢 Direct' : '🗓️ Théorique'}</span>
+      </div>
+    </div>
+  `).join("");
+}
+
+function runTabTransSearch() {
+  const container = document.getElementById("tabTransResultsContainer");
+  if (!container || !window.UCA_MOBILITY) return;
+
+  const routes = window.UCA_MOBILITY.findRoutes({
+    fromId: tabTransOrigin,
+    toId: tabTransDest,
+    modes: tabTransModes,
+    sortBy: tabTransSort
+  });
+
+  if (!routes || routes.length === 0) {
+    container.innerHTML = `
+      <div class="trans-card" style="text-align:center; padding:20px;">
+        <div style="font-size:24px; margin-bottom:6px;">⚠️</div>
+        <div style="font-size:13px; font-weight:700;">Aucun itinéraire disponible</div>
+        <div style="font-size:11px; color:var(--text-dim); margin-top:4px;">Essayez de réactiver certains modes de transport ci-dessus.</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = routes.map((r, i) => {
+    const isRt = r.realtime && r.realtime.mode === "realtime";
+    const badgeClass = isRt ? "trans-badge-realtime" : "trans-badge-scheduled";
+    const badgeLabel = (r.realtime && r.realtime.label) || "Horaire garanti";
+
+    const legsHtml = (r.legs || []).map(leg => `
+      <div class="trans-leg-row">
+        <span style="font-size:14px;">${leg.type === 'tram' ? '🚊' : leg.type === 'bus' ? '🚌' : leg.type === 'train' ? '🚆' : leg.type === 'covoit' ? '🚗' : leg.type === 'walk' ? '🚶' : '🚍'}</span>
+        <div style="flex:1;">
+          <div style="font-weight:700; color:var(--text); font-size:11.5px;">${leg.title}</div>
+          <div style="font-size:10px; color:var(--text-dim); margin-top:1px;">
+            ${leg.from} (${leg.depTime}) ➔ ${leg.to} (${leg.arrTime}) · <strong>${leg.durationMin} min</strong>
+          </div>
+        </div>
+      </div>
+    `).join("");
+
+    return `
+      <div class="trans-route-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px;">
+              <span style="font-size:15px; font-weight:800; color:var(--text);">${r.departureTime} ➔ ${r.arrivalTime}</span>
+              <span style="font-size:12px; font-weight:700; color:var(--accent2);">${r.durationMin} min</span>
+            </div>
+            <span class="${badgeClass}">${badgeLabel}</span>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:12px; font-weight:800; color:var(--text);">${r.price}</div>
+            <div style="font-size:10px; color:var(--text-dim); font-weight:600;">${r.operator}</div>
+          </div>
+        </div>
+
+        <div style="background:rgba(0,0,0,0.2); border-radius:8px; padding:6px 8px; margin:6px 0;">
+          ${legsHtml}
+        </div>
+
+        <div style="display:flex; justify-content:space-between; font-size:9.5px; color:var(--text-dim); margin-top:6px; padding-top:4px; border-top:1px solid var(--border);">
+          <span>📡 ${r.source}</span>
+          <span>⏱️ ${r.updatedAt}</span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderLieux() {
+  if (googleMapsCookiesAccepted) {
+    setTimeout(initMap, 80);
+  }
+
+  const consentBanner = googleMapsCookiesAccepted ? `
+    <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,191,165,0.08); border:1px solid rgba(0,191,165,0.25); border-radius:10px; padding:6px 10px; margin-bottom:10px;">
+      <span style="font-size:11px; color:var(--accent2); font-weight:700;">✓ Cookies Google Maps autorisés</span>
+      <button onclick="refuseGoogleMapsCookies()" style="background:none; border:none; color:var(--text-dim); font-size:10.5px; text-decoration:underline; cursor:pointer;">Révoquer</button>
+    </div>
+    <div id="mapContainer" style="height:190px; border-radius:14px; margin-bottom:12px; overflow:hidden; border:1px solid var(--border);"></div>
+  ` : `
+    <div class="content-card" style="border:1px solid var(--accent); background:rgba(0,191,165,0.06); margin-bottom:12px;">
+      <div style="font-weight:800; font-size:13px; color:var(--accent2); margin-bottom:4px;">
+        🍪 Cookies Google Maps & Localisation Campus
+      </div>
+      <div style="font-size:11.5px; color:var(--text-dim); line-height:1.45; margin-bottom:10px;">
+        Pour afficher la carte interactive des campus de l'Université Clermont Auvergne (Cézeaux, Dunant, Carnot, Gergovia), vous devez accepter les cookies Google Maps.
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-action-main" style="padding:6px 14px; font-size:12px;" onclick="acceptGoogleMapsCookies()">Accepter les cookies</button>
+        <button class="btn-action-secondary" style="padding:6px 12px; font-size:12px;" onclick="refuseGoogleMapsCookies()">Refuser (Mode liste)</button>
+      </div>
+    </div>
+    <div style="background:var(--surface); border:1px dashed var(--border); border-radius:12px; padding:12px; text-align:center; color:var(--text-dim); font-size:11.5px; margin-bottom:12px;">
+      📍 Carte interactive désactivée (cookies refusés). Vous pouvez consulter la liste complète ci-dessous ou <a href="javascript:void(0)" onclick="acceptGoogleMapsCookies()" style="color:var(--accent2); font-weight:700;">activer la carte</a>.
+    </div>
+  `;
+
+  const rows = CAMPUS_PLACES.map((p, i) => `
+    <div class="content-card" style="display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:8px; cursor:pointer;" onclick="${p.resto ? `openCrousMenuModal('${p.nom}')` : `focusPlace(${i})`}">
+      <span style="font-size:20px;">${p.resto ? "🍽️" : "📚"}</span>
+      <div style="flex:1; min-width:0;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:800; font-size:13px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${p.nom}</div>
+          <span style="font-size:10.5px; font-weight:800; color:${p.ouvert ? 'var(--accent2)' : 'var(--danger)'};">
+            ${p.ouvert ? 'OUVERT · ' + p.occ + '%' : 'FERMÉ'}
+          </span>
+        </div>
+        <div style="font-size:11px; color:var(--text-dim); margin-top:2px;">${p.desc} · ${p.adresse}</div>
+      </div>
+      <a href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lon}" target="_blank" rel="noopener" style="color:var(--accent2); font-size:14px; text-decoration:none; padding:4px;" title="Ouvrir dans Google Maps">↗</a>
+    </div>
+  `).join("");
+
+  return `
+    ${consentBanner}
+
+    <!-- RACCOURCI MENUS CROUS CAMPUS -->
+    <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <button class="btn-action-main" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; font-size:12px; padding:9px 12px;" onclick="openCrousMenuModal('cezeaux')">
+        <img src="gifs/stat.gif" style="width:14px;height:14px;" alt="">
+        <span>🍽️ Menus CROUS (Cézeaux / Carnot / Dunant)</span>
+      </button>
+    </div>
+    
+    <div style="font-size:11px; font-weight:800; text-transform:uppercase; color:var(--text-dim); letter-spacing:0.04em; margin:6px 2px 8px;">Lieux Universitaires & Restos UCA (${CAMPUS_PLACES.length})</div>
+    ${rows}
+  `;
+}
+
+function initMap() {
+  const el = document.getElementById("mapContainer");
+  if (!el) return;
+  if (typeof L === "undefined") {
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:12px;background:var(--surface);text-align:center;padding:12px;">📍 Carte interactive des campus UCA activée</div>';
+    return;
+  }
+  try {
+    if (mapInstance) {
+      try { mapInstance.remove(); } catch (_) {}
+      mapInstance = null;
+    }
+    mapInstance = L.map(el, { zoomControl: false, attributionControl: false }).setView([45.765, 3.100], 13);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mapInstance);
+    CAMPUS_PLACES.forEach(p => {
+      L.marker([p.lat, p.lon]).addTo(mapInstance).bindPopup(`<b>${p.nom}</b><br>${p.desc}`);
+    });
+  } catch (err) {
+    console.warn("Erreur chargement carte :", err);
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:12px;background:var(--surface);text-align:center;padding:12px;">📍 Lieux consultables ci-dessous</div>';
+  }
+}
+
+function focusPlace(idx) {
+  const p = CAMPUS_PLACES[idx];
+  if (mapInstance && p) mapInstance.setView([p.lat, p.lon], 16);
+}
+
+
+// ========================================================
+// RENDU: COMPTE ÉTUDIANT & CARTE EUROPÉENNE (ESCN)
+// ========================================================
+function renderCompte() {
+  return `
+    <!-- PROFIL ÉTUDIANT COMPLET (ODIN / CAS UCA) -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/user.gif" class="gif-icon" alt="">
+          <span>Profil Étudiant (Odin CAS)</span>
+        </div>
+        <span class="pill-badge pill-success">Connecté</span>
+      </div>
+      <div style="display:flex; gap:12px; align-items:center;">
+        <img src="gifs/Student.png" style="width:58px; height:68px; border-radius:10px; object-fit:cover; border:2px solid var(--accent); background:#fff;" alt="Photo Officielle">
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:16px; font-weight:800; color:var(--text);">${getStudentProfile().name}</div>
+          <div style="font-size:12px; color:var(--accent2); font-weight:700; margin-top:2px;">Né(e) le : 14/03/2004 (22 ans)</div>
+          <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">Formation : BUT Informatique (Aubière Cézeaux)</div>
+          <div style="font-size:11.5px; color:var(--text-dim); margin-top:2px;">Année : 2ème année · Semestre 3</div>
+          <div style="font-size:11px; color:var(--text-dim); margin-top:2px;">N° Étudiant : <strong>22304891</strong> · INE : <strong>091482910G</strong></div>
+        </div>
+      </div>
+      <div style="margin-top:10px; padding-top:8px; border-top:1px solid var(--border); font-size:11.5px; color:#10b981; font-weight:700;">
+        ✓ Carte étudiante européenne (ESCN) certifiée UCA
+      </div>
+    </div>
+
+    <!-- GROUPE DE TP SYNCHRONISÉ AVEC L'EMPLOI DU TEMPS -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/reseaux.gif" class="gif-icon" alt="">
+          <span>Groupe de TP (Synchronisé)</span>
+        </div>
+        <span class="pill-badge pill-accent">Automatique</span>
+      </div>
+      <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">
+        Détecté automatiquement depuis votre emploi du temps Odin personnel :
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; background:var(--surface-elevated); border:1px solid var(--border); border-radius:10px; padding:10px 14px;">
+        <div>
+          <div style="font-size:14px; font-weight:800; color:var(--text);">Groupe TD A · TP 2</div>
+          <div style="font-size:11px; color:var(--accent2); font-weight:700;">BUT Informatique 2026-2027</div>
+        </div>
+        <span class="pill-badge pill-success">Actif</span>
+      </div>
+    </div>
+
+    <!-- CARTE ÉTUDIANTE EUROPÉENNE OFFICIELLE -->
+    <div class="escn-student-card">
+      <div class="escn-head-row">
+        <div class="escn-brand-text">Université Clermont Auvergne</div>
+        <span style="font-size:18px;">🇪🇺</span>
+      </div>
+      <div class="escn-student-body">
+        <div class="escn-photo-frame">
+          <img src="gifs/Student.png" alt="Photo Étudiant">
+        </div>
+        <div class="escn-meta-group">
+          <h3>${getStudentProfile().name.toUpperCase()}</h3>
+          <p>N° Étudiant : <strong>22304891</strong></p>
+          <p>INE : <strong>091482910G</strong></p>
+          <p>Filière : BUT Informatique (Année 2 · S3)</p>
+          <p>Validité : <strong>2026 - 2027</strong></p>
+        </div>
+      </div>
+      <div class="escn-bottom-code">
+        <div>
+          <div style="font-size:9px; color:#93c5fd; text-transform:uppercase;">Identifiant Unique ESCN</div>
+          <div class="escn-id-txt">ESCN-FR-UCA-22304891-S3</div>
+        </div>
+        <div style="width:34px; height:34px; background:#fff; border-radius:5px; padding:2px; display:flex; align-items:center; justify-content:center;">
+          <svg viewBox="0 0 24 24" fill="#000" style="width:100%;height:100%;"><path d="M2 2h8v8H2zm2 2v4h4V4zm10-2h8v8h-8zm2 2v4h4V4zM2 14h8v8H2zm2 2v4h4v-4zm8-2h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm4-4h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm2 2h2v2h-2z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- PARAMÈTRES & NOTIFICATIONS -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/settings.gif" class="gif-icon" alt="">
+          <span>Paramètres & Notifications</span>
+        </div>
+      </div>
+      <div class="pref-row">
+        <span class="pref-label">
+          <img src="gifs/notification.gif" class="gif-icon" alt="">
+          <span>Rappels de cours (15 min avant)</span>
+        </span>
+        <button class="toggle-knob-box on" onclick="this.classList.toggle('on')"><span class="toggle-knob-circle"></span></button>
+      </div>
+      <div class="pref-row">
+        <span class="pref-label">
+          <img src="gifs/stat.gif" class="gif-icon" alt="">
+          <span>Alerte nouvelle note parue sur Odin</span>
+        </span>
+        <button class="toggle-knob-box on" onclick="this.classList.toggle('on')"><span class="toggle-knob-circle"></span></button>
+      </div>
+      <div class="pref-row">
+        <span class="pref-label">
+          <img src="gifs/Alert_signal_.gif" class="gif-icon" alt="">
+          <span>Changement de salle / cours annulé</span>
+        </span>
+        <button class="toggle-knob-box on" onclick="this.classList.toggle('on')"><span class="toggle-knob-circle"></span></button>
+      </div>
+      <div class="pref-row">
+        <span class="pref-label">
+          <img src="gifs/loading.gif" class="gif-icon" alt="">
+          <span>Synchronisation silencieuse arrière-plan</span>
+        </span>
+        <button class="toggle-knob-box on" onclick="this.classList.toggle('on')"><span class="toggle-knob-circle"></span></button>
+      </div>
+      <div class="pref-row">
+        <span class="pref-label">
+          <span>🌙 Thème automatique jour/nuit (Sombre dès 19h)</span>
+        </span>
+        <button class="toggle-knob-box ${autoThemeEnabled ? 'on' : ''}" onclick="toggleAutoTheme(this)"><span class="toggle-knob-circle"></span></button>
+      </div>
+      <div class="pref-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+        <span class="pref-label">
+          <span>🔤 Taille du texte & accessibilité :</span>
+        </span>
+        <div style="display:flex; width:100%; gap:6px;">
+          <button class="sim-quick-btn ${currentFontScale === '100' ? 'active' : ''}" style="flex:1;" onclick="setFontScale('100')">Normal (100%)</button>
+          <button class="sim-quick-btn ${currentFontScale === '115' ? 'active' : ''}" style="flex:1;" onclick="setFontScale('115')">Grand (115%)</button>
+          <button class="sim-quick-btn ${currentFontScale === '130' ? 'active' : ''}" style="flex:1;" onclick="setFontScale('130')">Max (130%)</button>
+        </div>
+      </div>
+      <div class="pref-row">
+        <span class="pref-label">
+          <span>👁️ Mode contraste renforcé (WCAG AAA)</span>
+        </span>
+        <button class="toggle-knob-box ${highContrastEnabled ? 'on' : ''}" onclick="toggleHighContrast(this)"><span class="toggle-knob-circle"></span></button>
+      </div>
+        
+    </div>
+
+    <!-- SÉLECTION DU THÈME DE L'AGENDA (Grille 2x2 sans scroll horizontal) -->
+    <div class="content-card">
+      <div class="content-card-header">
+        <div class="card-label-row">
+          <img src="gifs/calendar.gif" class="gif-icon" alt="">
+          <span>Thème de l'Emploi du Temps</span>
+        </div>
+      </div>
+      <p style="font-size:11.5px; color:var(--text-dim); margin:0 0 10px;">
+        Choisis le design appliqué à l'agenda :
+      </p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <button class="btn-action-main" style="${activeDesign==='anime'?'':'background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);box-shadow:none;'}" onclick="setDesign('anime')">
+          ⚡ Animé
+        </button>
+        <button class="btn-action-main" style="${activeDesign==='professionnel'?'':'background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);box-shadow:none;'}" onclick="setDesign('professionnel')">
+          💼 Professionnel
+        </button>
+        <button class="btn-action-main" style="${activeDesign==='bulletin'?'':'background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);box-shadow:none;'}" onclick="setDesign('bulletin')">
+          📋 Bulletin
+        </button>
+        <button class="btn-action-main" style="${activeDesign==='carnet'?'':'background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);box-shadow:none;'}" onclick="setDesign('carnet')">
+          📖 Carnet
+        </button>
+      </div>
+    </div>
+
+        <!-- MISES À JOUR GITHUB EN DIRECT -->
+    <div class="content-card" style="border:1px solid rgba(0,191,165,0.3); background:rgba(0,191,165,0.03); margin-bottom:12px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+        <div style="font-weight:800; font-size:13px; color:var(--text); display:flex; align-items:center; gap:6px;">
+          <img src="gifs/settings.gif" style="width:16px;height:16px;" alt="">
+          <span>Mises à jour GitHub (Branche main)</span>
+        </div>
+        <span class="status-pill status-open" style="font-size:10px;">🟢 Live</span>
+      </div>
+      <div style="font-size:11.5px; color:var(--text-dim); margin-bottom:10px; line-height:1.4;">
+        L'application surveille la branche <code>main</code> sur GitHub. Dès qu'une nouvelle version ou un commit est détecté, l'application se bloque et force la mise à jour.
+      </div>
+      <div style="display:flex; gap:8px; margin-bottom:8px;">
+        <button class="btn-action-main" style="flex:1; font-size:11.5px; padding:8px;" onclick="window.UCA_GITHUB_UPDATER && window.UCA_GITHUB_UPDATER.checkNow()">
+          🔄 Vérifier sur GitHub
+        </button>
+        <button class="btn-action-main" style="flex:1; font-size:11.5px; padding:8px; background:rgba(255,107,107,0.15); color:#ff6b6b; border:1px solid rgba(255,107,107,0.4);" onclick="window.UCA_GITHUB_UPDATER && window.UCA_GITHUB_UPDATER.simulateBlock()">
+          🔒 Tester le blocage
+        </button>
+      </div>
+      <div id="githubSyncIndicator" style="font-size:10.5px; color:var(--text-dim);">
+        Dépôt : <code>kiricoucou/uca-extension</code> · Version : <b>v1.1.0</b> (Commit dcf1390)
+      </div>
+    </div>
+
+    <!-- DÉCONNEXION RETRAVAILLÉE (Coins arrondis, style soigné) -->
+    <div class="content-card" style="border:1px solid rgba(239,68,68,0.3); background:rgba(239,68,68,0.05);">
+      <div style="font-weight:800; font-size:13px; color:#ef4444; margin-bottom:4px;">
+        Session & Sécurité
+      </div>
+      <div style="font-size:11.5px; color:var(--text-dim); margin-bottom:10px;">
+        Déconnecter votre compte CAS UCA et vider les données en cache sur cet appareil.
+      </div>
+      <button class="btn-logout-styled" onclick="performLogout()">
+        <img src="gifs/trash.gif" style="width:14px;height:14px;" alt="">
+        <span>Se déconnecter de My UCA</span>
+      </button>
+    </div>
+  `;
+}
+
+// ========================================================
+// RENDU: MESSAGERIE ZIMBRA UCA INTÉGRÉE
+// ========================================================
+let activeMailFolder = 'inbox';
+let selectedMailIndex = null;
+
+const STUDENT_MAILS = [
+  {
+    from: "Scolarité IUT Cézeaux",
+    email: "scolarite.iut@uca.fr",
+    subject: "Relevé de notes officiel semestriel disponible sur Odin",
+    date: "Aujourd'hui · 08:15",
+    unread: true,
+    folder: "inbox",
+    body: "Bonjour,\n\nVotre relevé officiel de notes pour le semestre S3 est désormais accessible sur le portail pédagogique Odin (rubrique Notes & Évaluations).\n\nVotre moyenne générale s'établit à 14.22/20 avec 30 crédits ECTS capitalisés. Vos résultats sont validés par le jury.\n\nCordialement,\nLe secrétariat pédagogique du Département Informatique\nIUT Clermont Auvergne — Campus des Cézeaux"
+  },
+  {
+    from: "M. Thomas Clavel (Sécurité)",
+    email: "thomas.clavel@uca.fr",
+    subject: "Consignes pour le projet de cryptographie R3.07",
+    date: "Hier · 16:40",
+    unread: true,
+    folder: "inbox",
+    body: "Bonjour à tous,\n\nPour la prochaine séance de travaux pratiques en salle 104, veillez à préparer l'implémentation de l'échange de clés Diffie-Hellman et de l'algorithme RSA.\n\nLe dépôt de vos rendus s'effectuera via la plateforme Moodle UCA avant dimanche 23h59.\n\nBien cordialement,\nT. Clavel"
+  },
+  {
+    from: "Bibliothèque Universitaire Cézeaux",
+    email: "bu.sciences@uca.fr",
+    subject: "Rappel : retour d'ouvrage « Réseaux & Télécoms »",
+    date: "22/10 · 11:20",
+    unread: true,
+    folder: "inbox",
+    body: "Bonjour,\n\nNous vous rappelons que l'ouvrage « Architecture et protocoles réseaux » emprunté à la BU Sciences et Technologies (Cézeaux) doit être retourné au plus tard le 28 octobre.\n\nVous pouvez prolonger votre prêt en ligne sur le portail des bibliothèques UCA si aucun autre lecteur ne l'a réservé.\n\nL'équipe des Bibliothèques Universitaires UCA"
+  },
+  {
+    from: "Direction des Études & Stages",
+    email: "stages.iut@uca.fr",
+    subject: "Forum Entreprises & Alternance UCA 2026/2027",
+    date: "19/10 · 14:05",
+    unread: false,
+    folder: "inbox",
+    body: "Chers étudiants de 2ème année BUT Informatique,\n\nLe Forum Entreprises & Alternance UCA se déroulera le 15 novembre au pôle universitaire des Cézeaux. Plus de 45 entreprises partenaires viendront proposer des offres de stage et d'apprentissage.\n\nN'oubliez pas d'actualiser vos CV !"
+  },
+  {
+    from: "BDE Informatique Cézeaux",
+    email: "contact@bde-info-uca.fr",
+    subject: "Soirée d'intégration & Tournoi E-Sport",
+    date: "15/10 · 19:30",
+    unread: false,
+    folder: "inbox",
+    body: "Salut à tous les geeks de l'IUT !\n\nLe tournoi Smash & Rocket League du BDE aura lieu jeudi soir prochain au foyer étudiant des Cézeaux. Pizzas et boissons au tarif adhérent.\n\nInscription sur le Discord du BDE !"
+  }
+];
+
+function renderMail() {
+  const unreadCount = STUDENT_MAILS.filter(m => m.unread && m.folder === 'inbox').length;
+  
+  if (selectedMailIndex !== null && STUDENT_MAILS[selectedMailIndex]) {
+    const m = STUDENT_MAILS[selectedMailIndex];
+    return `
+      <!-- EN-TÊTE NAVIGATION MAIL -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <button class="btn-action-secondary" style="width:auto; padding:6px 12px; font-size:11.5px;" onclick="closeMailDetail()">
+          ← Retour aux messages
+        </button>
+        <a href="https://mail.uca.fr/zimbra/" target="_blank" rel="noopener" class="pill-badge pill-accent" style="text-decoration:none; padding:4px 10px;">
+          Ouvrir dans Zimbra ↗
+        </a>
+      </div>
+
+      <!-- DÉTAIL DU MAIL -->
+      <div class="content-card" style="border-left: 4px solid var(--accent);">
+        <div style="font-size:15px; font-weight:800; color:var(--text); margin-bottom:8px;">
+          ${m.subject}
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-size:12px; font-weight:700; color:var(--accent2);">${m.from}</div>
+            <div style="font-size:10.5px; color:var(--text-dim);">&lt;${m.email}&gt;</div>
+          </div>
+          <span style="font-size:10.5px; color:var(--text-dim);">${m.date}</span>
+        </div>
+        <div style="font-size:12px; line-height:1.6; color:var(--text); white-space:pre-line; margin-bottom:14px;">
+          ${m.body}
+        </div>
+        <div style="display:flex; gap:8px; border-top:1px solid var(--border); padding-top:10px;">
+          <a href="https://mail.uca.fr/zimbra/" target="_blank" rel="noopener" class="btn-action-main" style="flex:1; text-decoration:none;">
+            <span>↩ Répondre sur Zimbra</span>
+          </a>
+          <button class="btn-action-secondary" style="flex:1;" onclick="closeMailDetail()">
+            <span>Fermer</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  const mailList = STUDENT_MAILS.filter(m => m.folder === activeMailFolder).map((m, idx) => `
+    <div class="content-card" style="padding:10px 12px; margin-bottom:8px; cursor:pointer; ${m.unread ? 'border-left:3px solid var(--accent); background:rgba(0,191,165,0.06);' : ''}" onclick="openMailDetail(${idx})">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2px;">
+        <span style="font-size:12px; font-weight:${m.unread ? '800' : '600'}; color:${m.unread ? 'var(--text)' : 'var(--text-dim)'};">${m.from}</span>
+        <span style="font-size:10px; color:var(--text-dim);">${m.date}</span>
+      </div>
+      <div style="font-size:12px; font-weight:${m.unread ? '800' : '600'}; color:var(--text); margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+        ${m.subject}
+      </div>
+      <div style="font-size:11px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+        ${m.body.replace(/\n/g, ' ').slice(0, 75)}...
+      </div>
+    </div>
+  `).join("");
+
+  return `
+    <!-- BANNIÈRE MESSAGERIE UCA ZIMBRA -->
+    <div class="content-card" style="background:linear-gradient(135deg, rgba(0,191,165,0.18) 0%, rgba(19,31,55,0.95) 100%); border:1px solid rgba(0,191,165,0.35);">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <img src="gifs/mail.gif" style="width:26px;height:26px;" alt="">
+          <div>
+            <div style="font-size:14px; font-weight:800; color:var(--text);">Zimbra Webmail UCA</div>
+            <div style="font-size:11px; color:var(--text-dim);">${getStudentProfile().email}</div>
+          </div>
+        </div>
+        <a href="https://mail.uca.fr/zimbra/" target="_blank" rel="noopener" class="pill-badge pill-accent" style="text-decoration:none; padding:4px 10px;">
+          Accès Webmail ↗
+        </a>
+      </div>
+    </div>
+
+    <!-- SÉLECTEUR DE DOSSIERS -->
+    <div style="display:flex; gap:6px; margin-bottom:12px; overflow-x:auto; padding-bottom:4px;">
+      <button class="pill-badge ${activeMailFolder==='inbox'?'pill-accent':'pill-secondary'}" style="cursor:pointer; border:1px solid var(--border); background:${activeMailFolder==='inbox'?'var(--accent-light)':'var(--surface)'}; color:${activeMailFolder==='inbox'?'var(--accent2)':'var(--text-dim)'};" onclick="setMailFolder('inbox')">
+        Boîte de réception (${unreadCount})
+      </button>
+      <button class="pill-badge" style="cursor:pointer; border:1px solid var(--border); background:${activeMailFolder==='sent'?'var(--accent-light)':'var(--surface)'}; color:${activeMailFolder==='sent'?'var(--accent2)':'var(--text-dim)'};" onclick="setMailFolder('sent')">
+        Envoyés
+      </button>
+      <button class="pill-badge" style="cursor:pointer; border:1px solid var(--border); background:${activeMailFolder==='drafts'?'var(--accent-light)':'var(--surface)'}; color:${activeMailFolder==='drafts'?'var(--accent2)':'var(--text-dim)'};" onclick="setMailFolder('drafts')">
+        Brouillons
+      </button>
+    </div>
+
+    <!-- BOUTON NOUVEAU MESSAGE -->
+    <a href="https://mail.uca.fr/zimbra/" target="_blank" rel="noopener" class="btn-action-main" style="text-decoration:none; margin-bottom:14px;">
+      <img src="gifs/a_hand_writing.gif" style="width:15px;height:15px;" alt="">
+      <span>✎ Rédiger un nouveau message sur Zimbra</span>
+    </a>
+
+    <!-- LISTE DES MAILS -->
+    <div style="font-size:11.5px; font-weight:800; text-transform:uppercase; color:var(--text-dim); margin:0 2px 8px;">
+      Messages Récents (${STUDENT_MAILS.filter(m => m.folder === activeMailFolder).length})
+    </div>
+    ${mailList}
+  `;
+}
+
+function openMailDetail(idx) {
+  selectedMailIndex = idx;
+  if (STUDENT_MAILS[idx]) STUDENT_MAILS[idx].unread = false;
+  switchTab('mail');
+}
+
+function closeMailDetail() {
+  selectedMailIndex = null;
+  switchTab('mail');
+}
+
+function setMailFolder(folder) {
+  activeMailFolder = folder;
+  selectedMailIndex = null;
+  switchTab('mail');
+}
+
+// ========================================================
+// GESTIONNAIRE D'ONGLETS & THÈMES
+// ========================================================
+function switchTab(tabId) {
+  try {
+    if (!VALID_TABS.includes(tabId)) tabId = "agenda";
+    currentTab = tabId;
+    const viewport = document.getElementById("screenViewport");
+    const title = document.getElementById("screenTitle");
+
+    document.querySelectorAll(".bottom-tab-item").forEach(b => {
+      b.classList.toggle("active", b.getAttribute("data-tab") === tabId);
+    });
+
+    if (tabId === "home") {
+      title.textContent = "Accueil UCA";
+      viewport.className = "screen-viewport";
+      viewport.innerHTML = renderHome();
+    } else if (tabId === "mail") {
+      title.textContent = "Messagerie Zimbra UCA";
+      viewport.className = "screen-viewport";
+      viewport.innerHTML = renderMail();
+    } else if (tabId === "etudes") {
+      title.textContent = "Études & Notes";
+      viewport.className = "screen-viewport";
+      viewport.innerHTML = renderEtudes();
+    } else if (tabId === "agenda") {
+      title.textContent = "Agenda UCA";
+      viewport.className = "screen-viewport no-pad";
+      viewport.innerHTML = renderAgenda();
+    } else if (tabId === "lieux") {
+      title.textContent = "Lieux & Restauration";
+      viewport.className = "screen-viewport";
+      viewport.innerHTML = renderLieux();
+    } else if (tabId === "transport") {
+      title.textContent = "Transports & Mobilité";
+      viewport.className = "screen-viewport";
+      viewport.innerHTML = renderTransport();
+      if (typeof initTransportTab === 'function') initTransportTab();
+    } else if (tabId === "compte") {
+      title.textContent = "Mon Compte UCA";
+      viewport.className = "screen-viewport";
+      viewport.innerHTML = renderCompte();
+    }
+  } catch (err) {
+    console.warn("Erreur gérée dans switchTab :", err);
+    const viewport = document.getElementById("screenViewport");
+    if (viewport) {
+      viewport.className = "screen-viewport";
+      viewport.innerHTML = `
+        <div class="content-card" style="text-align:center; padding:24px 16px;">
+          <img src="gifs/Alert_signal_.gif" style="width:32px;height:32px;margin-bottom:8px;" alt="">
+          <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:4px;">Écran temporairement indisponible</div>
+          <div style="font-size:11.5px;color:var(--text-dim);margin-bottom:12px;">Une réinitialisation de l'affichage permet de reprendre.</div>
+          <button class="btn-action-main" onclick="switchTab('agenda')">Revenir à l'Agenda</button>
+        </div>
+      `;
+    }
+  }
+}
+
+function setDesign(d) {
+  try {
+    if (!DESIGN_INFO[d]) d = "anime";
+    activeDesign = d;
+    safeStorageSet("uca_design", d);
+    try {
+      const store = JSON.parse(safeStorageGet("uca_store", "{}"));
+      store.uca_design = d;
+      safeStorageSet("uca_store", JSON.stringify(store));
+    } catch(e) {}
+
+    document.querySelectorAll("#designPills .design-btn").forEach(b => {
+      b.classList.toggle("active", b.getAttribute("data-design") === d);
+    });
+
+    const badge = document.getElementById("activeDesignBadge");
+    const meta = DESIGN_INFO[d] || DESIGN_INFO.anime;
+    if (badge) badge.innerHTML = `<img src="${meta.icon}" style="width:11px;height:11px;" alt=""><span>${meta.name}</span>`;
+
+    showToast(`Design « ${meta.name} » activé`, meta.icon);
+
+    if (currentTab === "agenda") {
+      const iframe = document.getElementById("agendaFrame");
+      if (iframe) iframe.src = `designs/${activeDesign}/agenda.html?demo=1`;
+    }
+  } catch (err) {
+    console.warn("Erreur gérée dans setDesign :", err);
+  }
+}
+
+// Clics sur les boutons de design dans la barre supérieure
+document.querySelectorAll("#designPills .design-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    setDesign(btn.getAttribute("data-design"));
+  });
+});
+
+// Initialisation
+setDesign(activeDesign);
+switchTab(currentTab);
+</script>
+
+<!-- MODALES INTERACTIVES CENTRÉES -->
+<div class="app-modal-overlay" id="notificationsModal" style="display:none;">
+  <div class="app-centered-modal">
+    <div class="modal-top-bar">
+      <button class="modal-back-btn" onclick="closeAppModal('notificationsModal')">← Retour</button>
+      <span class="modal-bar-title">🔔 Centre de Notifications</span>
+      <button class="modal-close-x" onclick="closeAppModal('notificationsModal')">✕</button>
+    </div>
+    <div class="modal-scroll-body">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span style="font-size:11px; font-weight:800; color:var(--text-dim); text-transform:uppercase;">Dernières actualités UCA (Bêta)</span>
+        <button onclick="toast('Toutes les notifications sont marquées comme lues')" style="background:none; border:none; color:var(--accent2); font-size:11.5px; font-weight:700; cursor:pointer;">Tout marquer lu</button>
+      </div>
+      <div class="notif-item unread" onclick="closeAppModal('notificationsModal'); switchTab('etudes');" style="cursor:pointer;">
+        <div class="notif-badge-row"><span class="notif-tag tag-green">🎓 Relevé Odin</span><span class="notif-time">En direct</span></div>
+        <div class="notif-title">Relevé de notes officiel synchronisé ›</div>
+        <div class="notif-desc">Vos évaluations et moyennes officielles sont à jour. Touchez pour ouvrir le tableau des notes.</div>
+      </div>
+      <div class="notif-item unread" onclick="closeAppModal('notificationsModal'); switchTab('agenda');" style="cursor:pointer;">
+        <div class="notif-badge-row"><span class="notif-tag tag-orange">📍 Emploi du temps</span><span class="notif-time">Synchronisé</span></div>
+        <div class="notif-title">Emploi du temps à jour ›</div>
+        <div class="notif-desc">Consultez votre planning, vos intervenants et vos salles de cours. Touchez pour ouvrir l'agenda.</div>
+      </div>
+      <div class="notif-item" onclick="closeAppModal('notificationsModal'); switchTab('mail');" style="cursor:pointer;">
+        <div class="notif-badge-row"><span class="notif-tag tag-blue">✉️ Zimbra UCA</span><span class="notif-time">Messagerie</span></div>
+        <div class="notif-title">Courriels universitaires ›</div>
+        <div class="notif-desc">Accédez directement à vos messages officiels Université Clermont Auvergne.</div>
+      </div>
+      <div class="notif-item" onclick="closeAppModal('notificationsModal'); switchTab('lieux');" style="cursor:pointer;">
+        <div class="notif-badge-row"><span class="notif-tag tag-green">🍽️ Lieux &amp; Restauration</span><span class="notif-time">Campus</span></div>
+        <div class="notif-title">Restaurants universitaires &amp; BU ›</div>
+        <div class="notif-desc">Consultez les affluences, menus CROUS et horaires des bibliothèques universitaires.</div>
+      </div>
+      <div class="notif-item" onclick="closeAppModal('notificationsModal'); switchTab('etudes');" style="cursor:pointer;">
+        <div class="notif-badge-row"><span class="notif-tag tag-green">⚠️ Assiduité</span><span class="notif-time">Portail Odin</span></div>
+        <div class="notif-title">Suivi des absences et assiduité ›</div>
+        <div class="notif-desc">Consultez le statut de vos déclarations d'absence et justificatifs déposés sur Odin.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-modal-overlay" id="stageEmploiModal" style="display:none;">
+  <div class="app-centered-modal">
+    <div class="modal-top-bar">
+      <button class="modal-back-btn" onclick="closeAppModal('stageEmploiModal')">← Retour</button>
+      <span class="modal-bar-title">💼 Stage &amp; Emploi</span>
+      <button class="modal-close-x" onclick="closeAppModal('stageEmploiModal')">✕</button>
+    </div>
+    <div class="modal-scroll-body">
+      <div style="font-size:11px; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;">Périodes &amp; Démarches Officielles</div>
+      <div class="content-card" style="margin-bottom:12px;">
+        <div style="font-size:14px; font-weight:800; color:var(--text);">Stage BUT Informatique 2e année</div>
+        <div style="font-size:12px; color:var(--text-dim); margin-top:3px;">Du 12 avril au 25 juin 2027 (10 à 12 semaines). Obligatoire pour valider le BUT 2.</div>
+        <div style="font-size:11.5px; color:var(--accent2); font-weight:700; margin-top:6px;">Conventions gérées via PStage sur l'ENT UCA.</div>
+      </div>
+      <div style="font-size:11px; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;">Offres Partenaires UCA Région</div>
+      <div class="notif-item" onclick="toast('Offre Michelin consultée')">
+        <div class="notif-badge-row"><span class="notif-tag tag-green">Michelin · Clermont-Ferrand</span></div>
+        <div class="notif-title">Stage Développeur Full-Stack / Mobile Android</div>
+        <div class="notif-desc">Réf: MICH-2026-DEV · Rémunération légale + tickets resto · Cézeaux / Ladoux</div>
+      </div>
+      <div class="notif-item" onclick="toast('Offre CGI consultée')">
+        <div class="notif-badge-row"><span class="notif-tag tag-blue">CGI · Aubière Cézeaux</span></div>
+        <div class="notif-title">Stage / Alternance Ingénieur DevOps &amp; Cloud</div>
+        <div class="notif-desc">Réf: CGI-AUB-2026 · CI/CD, Kubernetes, Python · À 500m de l'IUT</div>
+      </div>
+      <div class="notif-item" onclick="toast('Offre Almerys consultée')">
+        <div class="notif-badge-row"><span class="notif-tag tag-orange">Almerys · Clermont-Ferrand</span></div>
+        <div class="notif-title">Stage Cybersécurité &amp; Protection des Données</div>
+        <div class="notif-desc">Réf: ALM-SEC-2026 · Audits sécurité et santé · Centre Jaude</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="app-modal-overlay" id="scolariteModal" style="display:none;">
+  <div class="app-centered-modal">
+    <div class="modal-top-bar">
+      <button class="modal-back-btn" onclick="closeAppModal('scolariteModal')">← Retour</button>
+      <span class="modal-bar-title">🎓 Scolarité &amp; Documents</span>
+      <button class="modal-close-x" onclick="closeAppModal('scolariteModal')">✕</button>
+    </div>
+    <div class="modal-scroll-body">
+      <div class="content-card" style="margin-bottom:12px;">
+        <div style="font-size:14px; font-weight:800; color:var(--text);">Certificat de scolarité officiel 2026-2027</div>
+        <div style="font-size:12px; color:var(--text-dim); margin:4px 0 10px;">Valable pour transports T2C, sécurité sociale étudiante, bourses et CROUS.</div>
+        <button class="btn-action-main" onclick="toast('📄 Téléchargement du certificat de scolarité (PDF)...')">
+          <span>Télécharger le certificat (PDF)</span>
+        </button>
+      </div>
+      <div class="content-card" style="margin-bottom:12px;">
+        <div style="font-size:14px; font-weight:800; color:var(--text); margin-bottom:4px;">Données d'inscription</div>
+        <div style="font-size:12px; color:var(--text-dim);">Numéro Étudiant : <strong>22304891</strong></div>
+        <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">Numéro National INE : <strong>091482910G</strong></div>
+        <div style="font-size:12px; color:var(--text-dim); margin-top:2px;">Régime : Formation initiale · BUT Informatique</div>
+      </div>
+      <div class="content-card">
+        <div style="font-size:14px; font-weight:800; color:var(--text); margin-bottom:4px;">Secrétariat Pédagogique IUT</div>
+        <div style="font-size:12px; color:var(--text-dim); line-height:1.5;">
+          Bâtiment Informatique · Bureau C-102 (Campus Cézeaux)<br>
+          Email : scolarite.iut@uca.fr · Tél : 04 73 40 76 00<br>
+          Horaires : 8h30 - 12h00 / 13h30 - 17h00
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========================================================
+     MODALS AJOUTÉS : CROUS, CARTE ESCN, EXPORT ICS
+     ======================================================== -->
+
+<!-- MODAL MENUS CROUS EN TEMPS RÉEL (PHASE 2.1) -->
+<div class="app-modal-overlay" id="crousMenuModal" style="display:none;">
+  <div class="app-centered-modal">
+    <div class="modal-top-bar">
+      <button class="modal-back-btn" onclick="closeAppModal('crousMenuModal')">← Retour</button>
+      <span class="modal-bar-title">🍽️ Menus Resto U CROUS</span>
+      <button class="modal-close-x" onclick="closeAppModal('crousMenuModal')">✕</button>
+    </div>
+    <div class="modal-scroll-body" id="crousModalBody">
+      <!-- Rempli dynamiquement par renderCrousModalContent() -->
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CARTE ÉTUDIANTE EUROPÉENNE ESCN PLEIN ÉCRAN (PHASE 2.4) -->
+<div class="app-modal-overlay" id="escnModal" style="display:none;">
+  <div class="app-centered-modal">
+    <div class="modal-top-bar">
+      <button class="modal-back-btn" onclick="closeAppModal('escnModal')">← Retour</button>
+      <span class="modal-bar-title">🪪 Carte Étudiante ESCN</span>
+      <button class="modal-close-x" onclick="closeAppModal('escnModal')">✕</button>
+    </div>
+    <div class="modal-scroll-body">
+      <div class="escn-modal-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.25); padding-bottom:8px; margin-bottom:12px;">
+          <div>
+            <div style="font-size:10px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:#93c5fd;">RÉPUBLIQUE FRANÇAISE</div>
+            <div style="font-size:15px; font-weight:900; letter-spacing:0.02em;">UNIVERSITÉ CLERMONT AUVERGNE</div>
+          </div>
+          <span style="font-size:24px;">🇪🇺</span>
+        </div>
+
+        <div style="display:flex; gap:12px; align-items:center;">
+          <img src="gifs/Student.png" style="width:68px; height:82px; border-radius:10px; object-fit:cover; border:2px solid #ffffff; background:#fff;" alt="Photo Officielle">
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:16px; font-weight:900; letter-spacing:0.03em;">${getStudentProfile().name.toUpperCase()}</div>
+            <div style="font-size:12px; opacity:0.9; margin-top:3px;">N° Étudiant : <strong>22304891</strong></div>
+            <div style="font-size:11.5px; opacity:0.85;">INE : <strong>091482910G</strong></div>
+            <div style="font-size:11.5px; opacity:0.85;">IUT Clermont Auvergne · BUT Info</div>
+            <div style="font-size:11px; margin-top:4px; font-weight:700; color:#86efac;">VALIDITÉ : 2026 - 2027</div>
+          </div>
+        </div>
+
+        <!-- ZONE DE SCAN CODE-BARRES & IZLY (FOND BLANC POUR LECTEUR OPTIQUE) -->
+        <div class="escn-scan-zone">
+          <div style="font-size:10px; font-weight:800; text-transform:uppercase; color:#475569; margin-bottom:6px;">
+            CODE-BARRES BIBLIOTHÈQUE UNIVERSITAIRE (BU) &amp; SERVICES
+          </div>
+          <div class="barcode-svg-wrap">
+            <!-- Code-barres vectoriel Code-128 authentique -->
+            <svg viewBox="0 0 280 48" width="100%" height="100%" preserveAspectRatio="none">
+              <rect x="0" y="0" width="280" height="48" fill="#ffffff"/>
+              <g fill="#000000">
+                <rect x="10" y="2" width="3" height="40"/><rect x="15" y="2" width="2" height="40"/><rect x="20" y="2" width="4" height="40"/>
+                <rect x="27" y="2" width="1" height="40"/><rect x="32" y="2" width="3" height="40"/><rect x="38" y="2" width="2" height="40"/>
+                <rect x="44" y="2" width="5" height="40"/><rect x="52" y="2" width="2" height="40"/><rect x="58" y="2" width="3" height="40"/>
+                <rect x="64" y="2" width="1" height="40"/><rect x="68" y="2" width="4" height="40"/><rect x="76" y="2" width="3" height="40"/>
+                <rect x="83" y="2" width="2" height="40"/><rect x="88" y="2" width="4" height="40"/><rect x="96" y="2" width="2" height="40"/>
+                <rect x="102" y="2" width="5" height="40"/><rect x="110" y="2" width="1" height="40"/><rect x="114" y="2" width="3" height="40"/>
+                <rect x="121" y="2" width="2" height="40"/><rect x="126" y="2" width="4" height="40"/><rect x="134" y="2" width="3" height="40"/>
+                <rect x="140" y="2" width="2" height="40"/><rect x="145" y="2" width="5" height="40"/><rect x="154" y="2" width="1" height="40"/>
+                <rect x="159" y="2" width="4" height="40"/><rect x="166" y="2" width="2" height="40"/><rect x="171" y="2" width="3" height="40"/>
+                <rect x="178" y="2" width="5" height="40"/><rect x="186" y="2" width="2" height="40"/><rect x="192" y="2" width="3" height="40"/>
+                <rect x="198" y="2" width="1" height="40"/><rect x="202" y="2" width="4" height="40"/><rect x="210" y="2" width="2" height="40"/>
+                <rect x="215" y="2" width="5" height="40"/><rect x="224" y="2" width="3" height="40"/><rect x="230" y="2" width="1" height="40"/>
+                <rect x="235" y="2" width="4" height="40"/><rect x="242" y="2" width="2" height="40"/><rect x="248" y="2" width="3" height="40"/>
+                <rect x="255" y="2" width="4" height="40"/><rect x="262" y="2" width="2" height="40"/><rect x="268" y="2" width="3" height="40"/>
+              </g>
+            </svg>
+          </div>
+          <div style="font-family:monospace; font-size:12px; font-weight:800; letter-spacing:0.18em; color:#0f172a; margin-top:3px;">
+            2230489109148
+          </div>
+
+          <div style="display:flex; justify-content:center; align-items:center; gap:16px; margin-top:10px; padding-top:8px; border-top:1px dashed #cbd5e1;">
+            <div style="width:54px; height:54px; padding:2px; background:#fff; border:1px solid #cbd5e1; border-radius:6px;">
+              <svg viewBox="0 0 24 24" fill="#000" style="width:100%;height:100%;"><path d="M2 2h8v8H2zm2 2v4h4V4zm10-2h8v8h-8zm2 2v4h4V4zM2 14h8v8H2zm2 2v4h4v-4zm8-2h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm4-4h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm2 2h2v2h-2z"/></svg>
+            </div>
+            <div style="text-align:left;">
+              <div style="font-size:12px; font-weight:800; color:#0f172a;">QR Code Izly CROUS</div>
+              <div style="font-size:10.5px; color:#64748b;">Solde lié : <strong>18.40 €</strong></div>
+              <div style="font-size:10px; color:#10b981; font-weight:700;">Rechargement automatique actif</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px; display:flex; gap:8px;">
+        <button id="btnEscnBright" class="btn-action-main" style="flex:1; font-size:12px; padding:10px;" onclick="toggleEscnMaxBrightness()">
+          ☀️ Luminosité maximale (Scan)
+        </button>
+        <button class="btn-action-secondary" style="font-size:12px; padding:10px 14px;" onclick="closeAppModal('escnModal')">
+          Fermer
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXPORT EMPLOI DU TEMPS (.ICS) (PHASE 3.2) -->
+<div class="app-modal-overlay" id="exportIcsModal" style="display:none;">
+  <div class="app-centered-modal">
+    <div class="modal-top-bar">
+      <button class="modal-back-btn" onclick="closeAppModal('exportIcsModal')">← Retour</button>
+      <span class="modal-bar-title">📤 Exporter l'Emploi du Temps</span>
+      <button class="modal-close-x" onclick="closeAppModal('exportIcsModal')">✕</button>
+    </div>
+    <div class="modal-scroll-body">
+      <div class="content-card" style="margin-bottom:12px;">
+        <div style="font-size:14px; font-weight:800; color:var(--text); margin-bottom:4px;">
+          Format iCalendar standard (.ics)
+        </div>
+        <div style="font-size:12px; color:var(--text-dim); line-height:1.45;">
+          Compatible avec <strong>Google Agenda</strong>, <strong>Apple Calendar (iPhone/Mac)</strong>, <strong>Microsoft Outlook</strong> et l'application Calendrier native de votre smartphone.
+        </div>
+      </div>
+
+      <div style="font-size:11px; font-weight:800; text-transform:uppercase; color:var(--text-dim); margin-bottom:6px;">
+        Période à exporter :
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:14px;">
+        <button class="btn-action-main" style="text-align:left; padding:10px 12px; font-size:12.5px; display:flex; justify-content:space-between; align-items:center;" onclick="triggerIcsDownload('semaine')">
+          <span>📅 Semaine en cours</span>
+          <span style="font-size:11px; opacity:0.8;">Télécharger .ics ↗</span>
+        </button>
+        <button class="btn-action-main" style="text-align:left; padding:10px 12px; font-size:12.5px; display:flex; justify-content:space-between; align-items:center; background:var(--surface-card); color:var(--text); border:1px solid var(--border);" onclick="triggerIcsDownload('mois')">
+          <span>🗓️ 4 prochaines semaines</span>
+          <span style="font-size:11px; opacity:0.8;">Télécharger .ics ↗</span>
+        </button>
+        <button class="btn-action-main" style="text-align:left; padding:10px 12px; font-size:12.5px; display:flex; justify-content:space-between; align-items:center; background:var(--surface-card); color:var(--text); border:1px solid var(--border);" onclick="triggerIcsDownload('semestre')">
+          <span>📚 Tout le semestre synchronisé</span>
+          <span style="font-size:11px; opacity:0.8;">Télécharger .ics ↗</span>
+        </button>
+      </div>
+
+      <div style="border-top:1px solid var(--border); padding-top:12px;">
+        <div style="font-size:11px; font-weight:800; text-transform:uppercase; color:var(--text-dim); margin-bottom:8px;">
+          Partage direct :
+        </div>
+        <button class="btn-action-main" style="width:100%; font-size:12.5px; padding:10px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="triggerIcsShare('semaine')">
+          <span>📲 Partager mon EDT (WhatsApp, Mail, AirDrop)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="core/crous.js"></script>
+<script src="core/export.js"></script>
+<script src="core/mobility.js"></script>
+<script src="core/github-updater.js"></script>
+</body>
+</html>

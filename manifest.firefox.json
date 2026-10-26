@@ -1,9 +1,15 @@
 {
   "manifest_version": 3,
   "name": "Emploi du temps UCA (non officiel)",
-  "version": "1.44.0",
+  "version": "1.45.0",
   "description": "Emploi du temps, notes et absences de l'UCA (Odin) dans ton navigateur. Non officiel, aucune donnée envoyée à un tiers.",
-  "permissions": ["scripting", "storage", "cookies", "alarms", "notifications"],
+  "permissions": [
+    "scripting",
+    "storage",
+    "cookies",
+    "alarms",
+    "notifications"
+  ],
   "host_permissions": [
     "https://ent.uca.fr/*",
     "https://odin.iut.uca.fr/*",
@@ -17,13 +23,22 @@
     "128": "icons/icon128.png"
   },
   "background": {
-    "scripts": ["core/settings.js", "core/grades.js", "core/status.js", "background.js"]
+    "scripts": [
+      "core/settings.js",
+      "core/grades.js",
+      "core/status.js",
+      "background.js"
+    ]
   },
   "browser_specific_settings": {
     "gecko": {
       "id": "uca-connecteur@site-emploi-du-temps.local",
       "strict_min_version": "109.0",
-      "data_collection_permissions": { "required": ["none"] }
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
     }
   },
   "action": {
@@ -38,8 +53,15 @@
   },
   "content_scripts": [
     {
-      "matches": ["file:///*", "http://localhost/*", "http://127.0.0.1/*", "https://kiricoucou.github.io/uca-extension/*"],
-      "js": ["content-bridge.js"],
+      "matches": [
+        "file:///*",
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "https://kiricoucou.github.io/uca-extension/*"
+      ],
+      "js": [
+        "content-bridge.js"
+      ],
       "run_at": "document_idle"
     }
   ]

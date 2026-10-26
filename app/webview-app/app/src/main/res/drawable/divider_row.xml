@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Séparateur de ligne (LinearLayout divider="..." showDividers="middle") : remplace la
+     carte-par-ligne pour du contenu répétitif, plus proche d'une vraie app de liste. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <size android:height="1dp" />
+    <solid android:color="@color/border" />
+</shape>

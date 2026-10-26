@@ -225,31 +225,24 @@ function buildExportPanel(panel, opts) {
    Les pages réellement servies à la racine du dépôt (hors pages internes par design — aide.html
    et confidentialite.html existent aussi dans chaque designs/<id>/, ce ne sont pas celles-ci). */
 const SITE_ROOT = "https://kiricoucou.github.io/uca-extension/";
-const PUBLIC_PAGES = [
-  { label: "Accueil", hint: "Présentation et comparatif des quatre façons d'utiliser l'EDT", path: "index.html" },
-  { label: "Aide", hint: "Toutes les questions fréquentes, avec recherche", path: "aide.html" },
-  { label: "Installer l'app — lien court", hint: "Adresse courte à partager (redirige vers le guide)", path: "install.html" },
-  { label: "Installer l'app — guide détaillé", hint: "Étapes Android, iPhone et ordinateur", path: "app/install.html" },
-  { label: "Agenda en ligne", hint: "La même app, dans un simple onglet", path: "app/index.html" },
-  { label: "Importer mes données", hint: "Scanner un QR, coller un lien ou choisir un fichier", path: "app/import.html" },
-  { label: "Politique de confidentialité", hint: "Quelles données, où elles sont stockées, toutes les connexions réseau", path: "confidentialite.html" },
-  { label: "Page introuvable (404)", hint: "Pour vérifier qu'elle s'affiche bien", path: "404.html" },
+const REQUIRED_LINKS = [
+  { label: "📦 Installer l'extension", hint: "Installer l'extension pour Firefox et Chrome", url: "https://addons.mozilla.org/fr/firefox/addon/emploi-du-temps-uca/" },
+  { label: "🏠 Accueil", hint: "Page d'accueil de l'application My UCA", url: "index.html" },
+  { label: "❓ Aide", hint: "Guide d'aide et questions fréquentes", url: "aide.html" },
+  { label: "📱 Installer l'app", hint: "Application Android et Progressive Web App", url: "app/install.html" },
+  { label: "🔒 Politique de confidentialité", hint: "Protection des données et engagement respect de la vie privée", url: "confidentialite.html" }
 ];
 function buildLinksPanel(panel) {
   panel.innerHTML = "";
-  panel.appendChild(el("div", "fp-h", "Pages publiées sur GitHub Pages"));
-  PUBLIC_PAGES.forEach((p) => {
+  panel.appendChild(el("div", "fp-h", "Liens officiels & installation"));
+  REQUIRED_LINKS.forEach((p) => {
     const btn = el("button", "xp-phone", p.label); btn.type = "button"; btn.title = p.hint;
-    btn.addEventListener("click", () => window.open(SITE_ROOT + p.path, "_blank", "noopener"));
+    btn.addEventListener("click", () => {
+      if (p.url.startsWith("http")) window.open(p.url, "_blank", "noopener");
+      else location.href = chrome.runtime.getURL ? chrome.runtime.getURL(p.url) : p.url;
+    });
     panel.appendChild(btn);
   });
-  // App ouverte dans un navigateur (pas encore installée) : rappel du guide d'installation, à tout moment.
-  if (window.UCA_APP && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone === true)) {
-    const inst = el("button", "xp-phone", "Installer l'app sur l'écran d'accueil"); inst.type = "button"; inst.id = "installLink";
-    inst.title = "Guide d'installation (Android, iPhone)";
-    inst.addEventListener("click", () => { location.href = chrome.runtime.getURL("app/install.html?force=1"); });
-    panel.appendChild(inst);
-  }
 }
 
 

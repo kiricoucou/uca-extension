@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg">
+
+    <include layout="@layout/topbar" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
+                <TextView
+                    android:text="CENTRE DE NOTIFICATIONS"
+                    android:textColor="@color/text_dim"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:letterSpacing="0.04"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"/>
+                <TextView
+                    android:id="@+id/btnMarkAllRead"
+                    android:text="Tout marquer comme lu"
+                    android:textColor="@color/accent2"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <!-- État vide si aucune notification -->
+            <LinearLayout
+                android:id="@+id/notifEmptyState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:background="@drawable/bg_card"
+                android:padding="24dp"
+                android:visibility="gone">
+                <TextView
+                    android:text="🔔"
+                    android:textSize="32sp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:text="Aucune nouvelle notification"
+                    android:textColor="@color/text"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+                <TextView
+                    android:text="Connectez-vous et synchronisez votre compte pour recevoir vos alertes de notes, cours et changements en direct."
+                    android:textColor="@color/text_dim"
+                    android:textSize="12.5sp"
+                    android:gravity="center"
+                    android:layout_marginTop="4dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/notifContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:divider="@drawable/divider_row"
+                android:showDividers="middle"
+                android:background="@drawable/bg_card"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp">
+
+                <!-- Notif 1 : Notes (Cliquable -> Tableau des notes / Études) -->
+                <LinearLayout
+                    android:id="@+id/rowNotifNotes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingVertical="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:id="@+id/notifNotesTag"
+                            android:text="🎓 RELEVÉ ODIN · Synchronisé"
+                            android:textColor="@color/accent2"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"/>
+                        <TextView
+                            android:text="Voir le relevé ›"
+                            android:textColor="@color/accent2"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/notifNotesTitle"
+                        android:text="Relevé de notes officiel à jour"
+                        android:textColor="@color/text"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="4dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                    <TextView
+                        android:id="@+id/notifNotesDesc"
+                        android:text="Vos évaluations, moyennes par UE et coefficients sont synchronisés avec Odin. Touchez pour ouvrir le détail."
+                        android:textColor="@color/text_dim"
+                        android:textSize="12.5sp"
+                        android:layout_marginTop="3dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Notif 2 : Emploi du temps (Cliquable -> Agenda) -->
+                <LinearLayout
+                    android:id="@+id/rowNotifEdt"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingVertical="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:id="@+id/notifEdtTag"
+                            android:text="📍 EMPLOI DU TEMPS · En direct"
+                            android:textColor="#f59e0b"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"/>
+                        <TextView
+                            android:text="Voir l'agenda ›"
+                            android:textColor="#f59e0b"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/notifEdtTitle"
+                        android:text="Planning et cours de la semaine"
+                        android:textColor="@color/text"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="4dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                    <TextView
+                        android:id="@+id/notifEdtDesc"
+                        android:text="Consultez votre emploi du temps universitaire, vos salles de cours et vos intervenants. Touchez pour ouvrir."
+                        android:textColor="@color/text_dim"
+                        android:textSize="12.5sp"
+                        android:layout_marginTop="3dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Notif 3 : Absences (Cliquable -> Portail Odin Absences) -->
+                <LinearLayout
+                    android:id="@+id/rowNotifAbsences"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingVertical="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:text="⚠️ ASSIDUITÉ &amp; ABSENCES"
+                            android:textColor="@color/accent2"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"/>
+                        <TextView
+                            android:text="Détails absences ›"
+                            android:textColor="@color/accent2"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/notifAbsencesTitle"
+                        android:text="Synthèse des absences Odin"
+                        android:textColor="@color/text"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="4dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                    <TextView
+                        android:id="@+id/notifAbsencesDesc"
+                        android:text="Suivi des absences déclarées et justificatifs déposés sur le portail étudiant."
+                        android:textColor="@color/text_dim"
+                        android:textSize="12.5sp"
+                        android:layout_marginTop="3dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Notif 4 : Messagerie Zimbra (Cliquable -> Zimbra) -->
+                <LinearLayout
+                    android:id="@+id/rowNotifZimbra"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingVertical="12dp"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackground">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+                        <TextView
+                            android:text="✉️ MESSAGERIE UCA"
+                            android:textColor="#38bdf8"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"/>
+                        <TextView
+                            android:text="Ouvrir Zimbra ›"
+                            android:textColor="#38bdf8"
+                            android:textSize="11.5sp"
+                            android:textStyle="bold"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"/>
+                    </LinearLayout>
+                    <TextView
+                        android:text="Messagerie officielle Zimbra connectée"
+                        android:textColor="@color/text"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="4dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                    <TextView
+                        android:text="Accédez directement à vos courriels universitaires, avis de scolarité et correspondances d'enseignants."
+                        android:textColor="@color/text_dim"
+                        android:textSize="12.5sp"
+                        android:layout_marginTop="3dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Notif 3 : Mail Zimbra -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingVertical="12dp">
+                    <TextView
+                        android:text="✉️ ZIMBRA UCA · Aujourd'hui à 11:42"
+                        android:textColor="@color/text_dim"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                    <TextView
+                        android:text="Secrétariat BUT Informatique : Choix S4"
+                        android:textColor="@color/text"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="4dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                    <TextView
+                        android:text="Le formulaire de choix des parcours et options du Semestre 4 est ouvert sur l'ENT jusqu'au 15 novembre."
+                        android:textColor="@color/text_dim"
+                        android:textSize="12.5sp"
+                        android:layout_marginTop="3dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+                <!-- Notif 4 : Resto U -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingVertical="12dp">
+                    <TextView
+                        android:text="🍽️ CROUS CLERMONT · Aujourd'hui à 11:15"
+                        android:textColor="@color/text_dim"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                    <TextView
+                        android:text="Affluence modérée au Resto U Marie-Hélène Lafon"
+                        android:textColor="@color/text"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginTop="4dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                    <TextView
+                        android:text="Taux d'occupation actuel : 62%. Temps d'attente estimé à 8 minutes en caisse."
+                        android:textColor="@color/text_dim"
+                        android:textSize="12.5sp"
+                        android:layout_marginTop="3dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <g transform="rotate(-6 64 64)">
+    <rect x="18" y="12" width="92" height="106" rx="10" fill="#c9b68f"/>
+    <rect x="14" y="8" width="92" height="106" rx="10" fill="#fffaf0" stroke="#2d2a26" stroke-width="4"/>
+    <path d="M14 34h92M14 54h92M14 74h92M14 94h92" stroke="#2f4fa2" stroke-opacity=".25" stroke-width="3"/>
+    <path d="M36 8v106" stroke="#c0392b" stroke-width="4" stroke-opacity=".8"/>
+    <g fill="none" stroke="#2f4fa2" stroke-width="5" stroke-linecap="round">
+      <path d="M8 22c-6 0-6 10 0 10h12"/><path d="M8 46c-6 0-6 10 0 10h12"/><path d="M8 70c-6 0-6 10 0 10h12"/><path d="M8 94c-6 0-6 10 0 10h12"/>
+    </g>
+    <rect x="62" y="0" width="34" height="16" rx="2" fill="#ffe66d" opacity=".9" transform="rotate(8 79 8)"/>
+    <text x="76" y="80" text-anchor="middle" font-family="Caveat, cursive" font-weight="700" font-size="35" fill="#2f4fa2">UCA</text>
+  </g>
+</svg>

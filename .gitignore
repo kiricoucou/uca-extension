@@ -4,3 +4,10 @@ __pycache__/
 dist/
 tests/.axe/
 tests/.out/
+
+# Android build artifacts
+.gradle/
+build/
+**/build/
+*.log
+.idea/

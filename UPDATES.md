@@ -55,6 +55,11 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.45.1 — paquets des magasins allégés
+
+- Les paquets Firefox et Chrome n'embarquent plus l'APK, le bundle de mise à jour à chaud, la carte des campus ni les GIF de l'app (73 Mo → 2,5 Mo).
+- L'écran de mise à jour GitHub de l'app n'est plus chargé dans l'extension : il bloquait l'agenda et n'a pas sa place dans un paquet de magasin.
+
 ## 1.44.0 — Odin en maintenance
 
 Quand Odin affiche sa page « Site en maintenance. Les équipes sont mobilisées pour procéder aux opérations de mise à jour dans les meilleurs délais. Merci de ne pas ouvrir de ticket au support. » (souvent en http, sans HTTPS), l'extension le reconnaît comme une maintenance et non comme une panne ordinaire.

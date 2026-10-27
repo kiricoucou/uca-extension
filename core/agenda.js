@@ -1517,7 +1517,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 UCA_CORE.initUpdate();
-if (!window.UCA_GITHUB_UPDATER) {
+if (window.UCA_APP && !window.UCA_GITHUB_UPDATER) { /* app seulement : jamais dans l'extension (pas de code ni de mise à jour hors magasin) */
   const updScript = document.createElement("script");
   updScript.src = (window.UCA_APP && window.UCA_APP.root ? window.UCA_APP.root : "../../") + "core/github-updater.js";
   document.head.appendChild(updScript);

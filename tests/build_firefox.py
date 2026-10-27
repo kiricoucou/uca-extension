@@ -23,6 +23,10 @@ EXCLUDE_FILES = {"manifest.firefox.json", ".gitignore", ".nojekyll", "app.webman
 # Pages du site public, à la racine seulement (designs/<id>/aide.html reste dans le paquet).
 EXCLUDE_ROOT_FILES = {"index.html", "install.html", "aide.html", "404.html", "confidentialite.html", "site.css", "site-demo.js", "nouveautes.html", "sitemap.xml", "robots.txt", "transport.html"}
 EXCLUDE_SUFFIXES = {".pyc"}
+# Réservés à l'app téléphone (APK, mise à jour à chaud, carte) : jamais dans l'extension.
+EXCLUDE_ROOT_FILES |= {"EdtUca.apk", "core-bundle.zip", "phone-preview.html", "lieux-map.html", "version.json"}
+EXCLUDE_PATHS = {"core/github-updater.js", "core/crous.js", "core/mobility.js", "core/export.js"}
+EXCLUDE_DIR_PATHS = {"designs/gifs"}
 
 
 STORE_SITE = "https://kiricoucou.github.io/uca-extension/*"
@@ -52,6 +56,8 @@ def should_copy(path: Path) -> bool:
     if len(rel.parts) == 1 and rel.name in EXCLUDE_ROOT_FILES:
         return False
     if rel.suffix in EXCLUDE_SUFFIXES:
+        return False
+    if rel.as_posix() in EXCLUDE_PATHS or any(rel.as_posix().startswith(d + "/") for d in EXCLUDE_DIR_PATHS):
         return False
     return True
 

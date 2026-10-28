@@ -10,7 +10,15 @@
   const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/main/";
   const GITHUB_VERSION_URL = GITHUB_RAW_BASE + "version.json";
   const GITHUB_COMMITS_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/commits/main";
-  const LOCAL_CURRENT_VERSION = "1.1.0";
+  const BAKED_VERSION = "1.3.0"; // version embarquée dans ces fichiers (à aligner sur version.json à chaque publication)
+  const LS_APPLIED = "uca_updater_applied";   // dernière version appliquée (sinon la mise à jour se redemandait en boucle)
+  const LS_DISMISSED = "uca_updater_dismissed"; // dernière version repoussée avec « Plus tard »
+  function lsGet(k) { try { return localStorage.getItem(k) || ""; } catch (_) { return ""; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
+  const LOCAL_CURRENT_VERSION = (function () {
+    const a = lsGet(LS_APPLIED);
+    return a && compareSemver(a, BAKED_VERSION) > 0 ? a : BAKED_VERSION;
+  })();
   const LOCAL_CURRENT_COMMIT = "dcf1390";
 
   function compareSemver(a, b) {
@@ -242,13 +250,14 @@
             🔗 Voir le dépôt sur GitHub
           </a>
           <button id="btnBlockerBypassDev" class="btn-blocker-dev">
-            Ignorer temporairement (Mode Test Démo)
+            Plus tard
           </button>
         </div>
       </div>
     `;
 
     document.getElementById("btnBlockerApplyUpdate").addEventListener("click", async () => {
+      lsSet(LS_APPLIED, latestV);
       const btn = document.getElementById("btnBlockerApplyUpdate");
       btn.textContent = "Nettoyage du cache & Mise à jour...";
       btn.disabled = true;
@@ -267,6 +276,7 @@
     });
 
     document.getElementById("btnBlockerBypassDev").addEventListener("click", () => {
+      lsSet(LS_DISMISSED, latestV);
       overlay.remove();
     });
   }
@@ -281,7 +291,7 @@
       const remoteVer = remote.version || "";
       const isNewer = compareSemver(remoteVer, LOCAL_CURRENT_VERSION) > 0 || (remote.force_update && remoteVer !== LOCAL_CURRENT_VERSION);
 
-      if (isNewer) {
+      if (isNewer && lsGet(LS_DISMISSED) !== remoteVer) {
         showGithubUpdateBlocker({
           currentVersion: LOCAL_CURRENT_VERSION,
           latestVersion: remoteVer,

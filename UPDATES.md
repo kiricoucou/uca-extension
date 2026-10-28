@@ -55,6 +55,11 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.45.2 — écran de mise à jour de l'app qui ne se fermait pas
+
+- L'écran « Nouvelle version détectée » revenait en boucle sur le site et l'app : la version locale était figée à 1.1.0, donc « Mettre à jour » rechargeait sans rien changer. La version appliquée est maintenant mémorisée, et le bouton « Plus tard » (ex-« Mode Test Démo ») repousse l'écran jusqu'à la prochaine version.
+- Extension : l'écran n'y est plus chargé (corrigé en 1.45.1). Si tu le vois encore, recharge l'extension après un `git pull`.
+
 ## 1.45.1 — paquets des magasins allégés
 
 - Les paquets Firefox et Chrome n'embarquent plus l'APK, le bundle de mise à jour à chaud, la carte des campus ni les GIF de l'app (73 Mo → 2,5 Mo).

@@ -43,6 +43,9 @@
 <section class="news-item" id="v1-45-1"><h2>1.45.1 <small>paquets des magasins allégés</small></h2>
 <ul><li>Les paquets Firefox et Chrome n'embarquent plus l'APK, le bundle de mise à jour à chaud, la carte des campus ni les GIF de l'app (73 Mo → 2,5 Mo).</li><li>L'écran de mise à jour GitHub de l'app n'est plus chargé dans l'extension : il bloquait l'agenda et n'a pas sa place dans un paquet de magasin.</li></ul>
 </section>
+<section class="news-item" id="v1-45-2"><h2>1.45.2 <small>écran de mise à jour de l'app qui ne se fermait pas</small></h2>
+<ul><li>L'écran « Nouvelle version détectée » revenait en boucle sur le site et l'app : la version locale était figée à 1.1.0, donc « Mettre à jour » rechargeait sans rien changer. La version appliquée est maintenant mémorisée, et le bouton « Plus tard » (ex-« Mode Test Démo ») repousse l'écran jusqu'à la prochaine version.</li><li>Extension : l'écran n'y est plus chargé (corrigé en 1.45.1). Si tu le vois encore, recharge l'extension après un <code>git pull</code>.</li></ul>
+</section>
 <section class="news-item" id="v1-42-0"><h2>1.42.0 <small>app / PWA (lot 3)</small></h2>
 <p>Déjà en place (vérifié, non refait) : manifeste installable avec icônes maskable et raccourcis, service worker « réseau d'abord » avec repli sur le cache, guide d'installation Android / iPhone au premier lancement, import par lien, QR ou fichier.</p>
 <p>Ajouté :</p>

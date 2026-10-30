@@ -545,6 +545,9 @@ function buildMobileMenu() {
   if ($("exportPanel")) m.appendChild(menuButton("mi", "📤 Exporter (.ics)", () => openToolPanel("exportPanel", true)));
   m.appendChild(menuButton("mi", "⚙️ Paramètres", () => UCA_CORE.openSettings()));
   if (!window.UCA_APP) m.appendChild(menuButton("mi", "🚦 Statut des sites (Odin, CAS…)", () => UCA_CORE.openSettings("#statusSection")));
+  if (window.UCA_APP && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone === true)) {
+    m.appendChild(menuButton("mi", D.icon("phone") + "Installer l'app sur l'écran d'accueil", () => { location.href = chrome.runtime.getURL("app/install.html?force=1"); }));
+  }
   m.appendChild(menuButton("mi", "🎨 Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   m.appendChild(menuButton("mi msync primary", "🔄 Synchroniser Odin", triggerSync));
@@ -563,8 +566,12 @@ window.addEventListener("resize", () => { closeMobileMenu(); render(); });
 // coup, passage à la ligne) : la grille se recalcule pour que la journée tienne toujours.
 let lastMainHeight = 0;
 new ResizeObserver(() => {
-  const h = document.querySelector("main").clientHeight;
-  if (Math.abs(h - lastMainHeight) > 1) { lastMainHeight = h; render(); }
+  requestAnimationFrame(() => {
+    const mainEl = document.querySelector("main");
+    if (!mainEl) return;
+    const h = mainEl.clientHeight;
+    if (Math.abs(h - lastMainHeight) > 1) { lastMainHeight = h; render(); }
+  });
 }).observe(document.querySelector("main"));
 
 /* ============================= Session expirée ============================= */
@@ -648,9 +655,10 @@ async function updatePinnedNext() {
 }
 function loadFromStorage() {
   chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks"], (data) => {
-    // Si pas encore d'événements, on continue normalement sur l'agenda sans rediriger
-    if (window.UCA_APP && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) {
-      sessionStorage.setItem("uca_import_skip", "1");
+    // Hors Android natif (qui a sa propre synchro CAS en arrière-plan) : sans données, écran d'import.
+    if (window.UCA_APP && !window.AndroidUCA && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) {
+      location.href = chrome.runtime.getURL("app/import.html");
+      return;
     }
     settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, data.uca_settings);
     subjectColors = data.uca_subject_colors || {};
@@ -1517,11 +1525,6 @@ chrome.runtime.onMessage.addListener((msg) => {
 });
 
 UCA_CORE.initUpdate();
-if (!window.UCA_GITHUB_UPDATER) {
-  const updScript = document.createElement("script");
-  updScript.src = (window.UCA_APP && window.UCA_APP.root ? window.UCA_APP.root : "../../") + "core/github-updater.js";
-  document.head.appendChild(updScript);
-}
 /* Lecteurs d'écran : titre de page, zone de synchro repérée, bouton « Aujourd'hui » nommé même sans libellé visible. */
 (function () {
   if (!document.querySelector("h1")) {

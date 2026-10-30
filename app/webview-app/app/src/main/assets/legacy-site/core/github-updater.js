@@ -6,6 +6,12 @@
 (function() {
   "use strict";
 
+  if (window.AndroidUCA) {
+    // Dans l'app Android native, MainActivity.kt gère déjà la détection de mise à jour,
+    // l'écran bloquant natif et le téléchargement OTA. Aucun overlay DOM JS nécessaire.
+    return;
+  }
+
   const GITHUB_REPO = "kiricoucou/uca-extension";
   const GITHUB_RAW_BASE = "https://raw.githubusercontent.com/" + GITHUB_REPO + "/main/";
   const GITHUB_VERSION_URL = GITHUB_RAW_BASE + "version.json";
@@ -17,7 +23,7 @@
   function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
   const LOCAL_CURRENT_VERSION = (function () {
     const a = lsGet(LS_APPLIED);
-    return a && compareSemver(a, BAKED_VERSION) > 0 ? a : BAKED_VERSION;
+    return a && compareSemver(a, BAKED_VERSION) >= 0 ? a : BAKED_VERSION;
   })();
   const LOCAL_CURRENT_COMMIT = "dcf1390";
 
@@ -262,15 +268,22 @@
       btn.textContent = "Nettoyage du cache & Mise à jour...";
       btn.disabled = true;
       try {
+        try { localStorage.setItem("uca_updater_applied", latestV); } catch (_) {}
+        if (window.chrome && window.chrome.storage && window.chrome.storage.local) {
+          await window.chrome.storage.local.set({
+            uca_update_available: false,
+            uca_current_version: latestV,
+            uca_latest_version: latestV
+          });
+        }
         if ("caches" in window) {
           const keys = await caches.keys();
-          await Promise.all(keys.map(k => caches.delete(k)));
+          await Promise.all(keys.filter(k => k !== "uca-share").map(k => caches.delete(k)));
         }
         if (navigator.serviceWorker) {
           const regs = await navigator.serviceWorker.getRegistrations();
           await Promise.all(regs.map(r => r.unregister()));
         }
-        localStorage.removeItem("uca_update_available");
       } catch (_) {}
       window.location.reload(true);
     });
@@ -289,6 +302,10 @@
       if (!remote) return;
 
       const remoteVer = remote.version || "";
+      const appliedVer = lsGet(LS_APPLIED);
+      if (appliedVer && compareSemver(appliedVer, remoteVer) >= 0) {
+        return; // Version déjà appliquée
+      }
       const isNewer = compareSemver(remoteVer, LOCAL_CURRENT_VERSION) > 0 || (remote.force_update && remoteVer !== LOCAL_CURRENT_VERSION);
 
       if (isNewer && lsGet(LS_DISMISSED) !== remoteVer) {

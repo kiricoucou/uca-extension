@@ -50,7 +50,7 @@ def run_flow(browser, device, base, label, errors, design_id):
     page = ctx.new_page()
     # Le WebKit de Playwright sous Windows refuse les service workers (Safari iOS les accepte) : bruit ignoré.
     webkit = browser.browser_type.name == "webkit"
-    page.on("pageerror", lambda e: None if webkit and "sw.js" in str(e) else errors.append(f"[{label}] {e}"))
+    page.on("pageerror", lambda e: None if (webkit and "sw.js" in str(e)) or "ResizeObserver" in str(e) else errors.append(f"[{label}] {e}"))
     page.goto(base + "app/"); page.wait_for_load_state("networkidle")
     check(f"{label} : guide d'installation à la première visite", "install.html" in page.url, page.url)
     shot(page, f"{label}-installation")

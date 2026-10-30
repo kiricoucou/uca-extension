@@ -88,7 +88,15 @@ async function checkAppUpdate() {
     const cur = (await loadedManifest) || lat;
     const current = cur && cur.version, latest = lat && lat.version;
     if (!current || !latest) { await local.set({ uca_update_check_failed: "manifest.json invalide" }); return; }
-    await local.set({ uca_current_version: current, uca_latest_version: latest, uca_update_available: compareVersions(current, latest) < 0, uca_update_check_failed: null });
+    const applied = (function () { try { return localStorage.getItem("uca_updater_applied") || ""; } catch (_) { return ""; } })();
+    const isNewer = compareVersions(current, latest) < 0 && (!applied || compareVersions(applied, latest) < 0);
+    const effectiveCurrent = (applied && compareVersions(applied, current) > 0) ? applied : current;
+    await local.set({
+      uca_current_version: effectiveCurrent,
+      uca_latest_version: latest,
+      uca_update_available: isNewer,
+      uca_update_check_failed: null
+    });
   } catch (e) { await local.set({ uca_update_check_failed: String(e) }); }
 }
 // Nouvelle version détectée : il ne suffit PAS de recharger la page, le service worker sert le
@@ -100,6 +108,18 @@ async function checkAppUpdate() {
 // recharger : chaque fichier repart d'une vraie requête réseau.
 async function applyAppUpdate() {
   try {
+    const data = await local.get(["uca_latest_version"]);
+    const latest = data && data.uca_latest_version;
+    if (latest) {
+      try { localStorage.setItem("uca_updater_applied", latest); } catch (_) {}
+      await local.set({
+        uca_update_available: false,
+        uca_current_version: latest,
+        uca_latest_version: latest
+      });
+    } else {
+      await local.set({ uca_update_available: false });
+    }
     if ("caches" in window) {
       const keys = await caches.keys();
       await Promise.all(keys.filter((k) => k !== "uca-share").map((k) => caches.delete(k)));

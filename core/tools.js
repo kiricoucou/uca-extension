@@ -243,6 +243,13 @@ function buildLinksPanel(panel) {
     });
     panel.appendChild(btn);
   });
+  // App ouverte dans un navigateur (pas encore installée) : rappel du guide d'installation, à tout moment.
+  if (window.UCA_APP && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone === true)) {
+    const inst = el("button", "xp-phone", "Installer l'app sur l'écran d'accueil"); inst.type = "button"; inst.id = "installLink";
+    inst.title = "Guide d'installation (Android, iPhone)";
+    inst.addEventListener("click", () => { location.href = chrome.runtime.getURL("app/install.html?force=1"); });
+    panel.appendChild(inst);
+  }
 }
 
 

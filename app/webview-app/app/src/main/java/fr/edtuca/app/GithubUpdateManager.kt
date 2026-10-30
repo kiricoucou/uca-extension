@@ -87,6 +87,12 @@ object GithubUpdateManager {
         }
 
         val installedCommit = PrefsStore.installedCommit(appContext)
+        val installedBundleVer = PrefsStore.installedBundleVersion(appContext)
+        val effectiveVersionName = if (compareSemver(installedBundleVer, localVersionName) > 0) {
+            installedBundleVer
+        } else {
+            localVersionName
+        }
 
         executor.execute {
             var updateInfo: UpdateInfo? = null
@@ -109,7 +115,7 @@ object GithubUpdateManager {
                     val commitSha = json.optString("commit_sha", "main").take(7)
                     val branch = json.optString("branch", "main")
                     val publishedAt = json.optString("published_at", "25/10/2026")
-                    val forceUpdate = json.optBoolean("force_update", true)
+                    val forceUpdate = json.optBoolean("force_update", false)
                     val apkUrl = json.optString("apk_download_url", GITHUB_RAW_APK_URL)
                     val otaUrl = json.optString("ota_bundle_url", GITHUB_OTA_BUNDLE_URL)
                     val rawBase = json.optString("raw_base_url", GITHUB_RAW_BASE_URL)
@@ -127,19 +133,17 @@ object GithubUpdateManager {
 
                     // On a besoin de retélécharger l'APK uniquement si le code natif a changé
                     val isNativeApkRequired = minApkVersionCode > localVersionCode
-                    val isNewer = isNativeApkRequired ||
-                            remoteVersionCode > localVersionCode ||
-                            compareSemver(remoteVersion, localVersionName) > 0 ||
-                            (commitSha != installedCommit && commitSha.isNotBlank()) ||
-                            (forceUpdate && remoteVersion != localVersionName)
-
-                    val isOtaAvailable = isNewer && !isNativeApkRequired
+                    val isOtaNeeded = compareSemver(remoteVersion, effectiveVersionName) > 0 ||
+                            (commitSha.isNotBlank() && commitSha != installedCommit && !installedCommit.startsWith(commitSha)) ||
+                            (forceUpdate && remoteVersion != effectiveVersionName)
+                    val isNewer = isNativeApkRequired || isOtaNeeded
+                    val isOtaAvailable = isOtaNeeded && !isNativeApkRequired
 
                     updateInfo = UpdateInfo(
                         isUpdateAvailable = isNewer,
                         isNativeApkRequired = isNativeApkRequired,
                         isOtaUpdateAvailable = isOtaAvailable,
-                        currentVersion = localVersionName,
+                        currentVersion = effectiveVersionName,
                         latestVersion = remoteVersion,
                         currentVersionCode = localVersionCode,
                         latestVersionCode = remoteVersionCode,
@@ -152,7 +156,7 @@ object GithubUpdateManager {
                         rawBaseUrl = rawBase,
                         apkDownloadUrl = apkUrl,
                         githubRepoUrl = repoUrl,
-                        isMandatory = true
+                        isMandatory = isNativeApkRequired || forceUpdate
                     )
                 }
             } catch (_: Exception) {

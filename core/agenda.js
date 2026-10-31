@@ -116,7 +116,7 @@ function updateHeader() {
   let sub = $("weekSubLabel");
   if (!sub) {
     sub = document.createElement("div");
-    sub.id = "weekSubLabel";
+    sub.id = "weekSubLabel"; sub.setAttribute("role", "region"); sub.setAttribute("aria-label", "Période affichée");
     sub.className = "week-sub-label";
     const hdr = document.querySelector("header");
     if (hdr && hdr.nextSibling) hdr.parentNode.insertBefore(sub, hdr.nextSibling);

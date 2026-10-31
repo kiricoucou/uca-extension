@@ -55,6 +55,11 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.45.3 — design carnet rétabli
+
+- Le design carnet avait perdu ses post-it pastel (couleurs vives illisibles, texte pâle) : sa palette, ses réglages de grille et ses textes d'origine sont restaurés.
+- Accessibilité : le libellé de période de la vue semaine est maintenant repéré par les lecteurs d'écran.
+
 ## 1.45.2 — écran de mise à jour de l'app qui ne se fermait pas
 
 - L'écran « Nouvelle version détectée » revenait en boucle sur le site et l'app : la version locale était figée à 1.1.0, donc « Mettre à jour » rechargeait sans rien changer. La version appliquée est maintenant mémorisée, et le bouton « Plus tard » (ex-« Mode Test Démo ») repousse l'écran jusqu'à la prochaine version.

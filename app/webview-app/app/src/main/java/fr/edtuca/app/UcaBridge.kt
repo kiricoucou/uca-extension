@@ -10,12 +10,18 @@ import android.webkit.JavascriptInterface
 interface UcaSyncRequestListener {
     fun handleSyncRequest(mode: String)
     fun onEventsUpdated(json: String)
+    fun onDesignChanged(id: String)
 }
 
 class UcaBridge(private val host: Activity, private val listener: UcaSyncRequestListener) {
     @JavascriptInterface
     fun requestSync(mode: String) {
         host.runOnUiThread { listener.handleSyncRequest(mode) }
+    }
+
+    @JavascriptInterface
+    fun onDesignChanged(id: String) {
+        host.runOnUiThread { listener.onDesignChanged(id) }
     }
 
     @JavascriptInterface

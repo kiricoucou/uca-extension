@@ -106,7 +106,9 @@ object UcaSync {
         hidden.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String?) {
                 if (isHost(url, "ent.uca.fr")) {
-                    finish(null, true)
+                    // Page du CAS : « expirée » seulement si c'est bien le formulaire de connexion (champ mot de passe).
+                    // Une page intermédiaire ou un message du CAS n'est pas une session expirée.
+                    confirmLoginPage(view) { isLogin -> if (isLogin) finish(null, true) }
                     return
                 }
                 if (started) return
@@ -114,7 +116,18 @@ object UcaSync {
                 pollForSchedule(hidden, tries = 60, delayMs = 1000, onResult = finish)
             }
         }
+        // Les cookies de connexion sont ceux de la WebView de l'app (stockés par Android, jamais lus ni copiés ici).
+        handler.postDelayed({ finish(null, false) }, 70000)
         hidden.loadUrl(EDT_URL)
+    }
+
+    /** true si la page affichée est un formulaire de connexion (champ mot de passe), après quelques essais. */
+    private fun confirmLoginPage(view: WebView, attempts: Int = 4, onResult: (Boolean) -> Unit) {
+        view.evaluateJavascript("(function(){return !!document.querySelector('input[type=password]');})()") { r ->
+            if (r == "true") onResult(true)
+            else if (attempts <= 1) onResult(false)
+            else handler.postDelayed({ confirmLoginPage(view, attempts - 1, onResult) }, 1000)
+        }
     }
 
     /**
@@ -137,11 +150,11 @@ object UcaSync {
         }
         hidden.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String?) {
-                if (isHost(url, "ent.uca.fr")) finish(true)
-                else if (isHost(url, "odin.iut.uca.fr")) finish(false)
+                if (isHost(url, "odin.iut.uca.fr")) finish(false)
+                else if (isHost(url, "ent.uca.fr")) confirmLoginPage(view) { isLogin -> if (isLogin) finish(true) }
             }
         }
-        handler.postAtTime({ finish(null) }, hidden, android.os.SystemClock.uptimeMillis() + 20000)
+        handler.postAtTime({ finish(null) }, hidden, android.os.SystemClock.uptimeMillis() + 25000)
         hidden.loadUrl(CAS_URL)
     }
 

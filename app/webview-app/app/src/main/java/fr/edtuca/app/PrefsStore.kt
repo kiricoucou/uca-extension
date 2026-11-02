@@ -135,6 +135,17 @@ object PrefsStore {
         p.edit().putInt("profile_schema", 2).apply()
     }
 
+    val DESIGNS = listOf("anime" to "Animé (sombre turquoise)", "professionnel" to "Professionnel", "bulletin" to "Bulletin", "carnet" to "Carnet")
+
+    /** Design choisi (agenda de l'app), ou null s'il n'a jamais été choisi. */
+    fun design(context: Context): String? =
+        prefs(context).getString("design", null)?.takeIf { id -> DESIGNS.any { it.first == id } }
+
+    fun setDesign(context: Context, id: String) {
+        if (DESIGNS.none { it.first == id }) return
+        prefs(context).edit().putString("design", id).apply()
+    }
+
     fun clearStudentProfile(context: Context) {
         prefs(context).edit()
             .remove(KEY_STUDENT_NAME).remove(KEY_STUDENT_ID).remove(KEY_STUDENT_EMAIL)

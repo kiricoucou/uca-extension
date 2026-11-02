@@ -236,6 +236,7 @@ async function handle(msg) {
     const d = designs.find((x) => x.id === msg.id);
     if (!d) return { ok: false, error: "Design inconnu" };
     await local.set({ uca_design: d.id });
+    if (window.AndroidUCA && window.AndroidUCA.onDesignChanged) { try { window.AndroidUCA.onDesignChanged(d.id); } catch (_) {} }
     return { ok: true, folder: d.folder };
   }
   if (DEMO) {

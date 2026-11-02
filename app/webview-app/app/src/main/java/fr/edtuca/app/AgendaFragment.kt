@@ -104,6 +104,7 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
             override fun onPageFinished(view: WebView, url: String?) {
                 if (url != null && Uri.parse(url).host == ASSET_HOST) {
                     view.evaluateJavascript(bridgeScript, null)
+                    applyChosenDesign(view, url)
                 }
             }
         }
@@ -115,6 +116,17 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
         doResync(silent = true)
 
         return root
+    }
+
+    /** Si le design choisi dans les Préférences n'est pas celui affiché, on bascule l'agenda dessus (identifiant vérifié). */
+    private fun applyChosenDesign(view: WebView, url: String) {
+        val wanted = PrefsStore.design(requireContext()) ?: return
+        val shown = Regex("/designs/([a-z]+)/").find(url)?.groupValues?.get(1) ?: return
+        if (shown == wanted) return
+        view.evaluateJavascript(
+            "(function(){try{var s=JSON.parse(localStorage.getItem('uca_store')||'{}');s.uca_design='" + wanted + "';" +
+                "localStorage.setItem('uca_store',JSON.stringify(s));}catch(e){}" +
+                "location.replace('/assets/legacy-site/designs/" + wanted + "/agenda.html');})()", null)
     }
 
     /** Appelé depuis UcaBridge quand la page demande une synchro. */
@@ -193,6 +205,11 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
     private fun syncNotesQuietly() {
         val ctx = context ?: return
         syncAbsencesAndNotes(ctx)
+    }
+
+    /** La page vient de changer de design (menu « Changer de design ») : on s'en souvient pour toute l'app. */
+    override fun onDesignChanged(id: String) {
+        if (isAdded) PrefsStore.setDesign(requireContext(), id)
     }
 
     /** Appelé depuis UcaBridge (window.__ucaOnEvents côté JS) à chaque rendu du calendrier. */

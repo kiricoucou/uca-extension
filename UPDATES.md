@@ -55,6 +55,12 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.5 — app Android 1.4.5 : session CAS fiable, design dans les Préférences
+
+- **Session expirée à tort** : l'app te demandait de te reconnecter dès que tu la quittais, alors que la session CAS dure plusieurs jours. Elle ne déclare maintenant la session expirée que si Odin renvoie vraiment le formulaire de connexion (champ mot de passe), jamais pour une simple page intermédiaire ou un réseau lent ; en cas de doute, elle ne verrouille pas. La resynchro utilise les cookies de connexion de la WebView de l'app, que le système garde sur le disque (écriture forcée quand l'app passe en arrière-plan). L'app ne lit ni ne copie ces cookies.
+- **Design de l'application** : Préférences → « Design », appliqué à l'agenda et mémorisé, y compris quand tu le changes depuis le menu de l'agenda. Les autres écrans de l'app gardent leur thème sombre.
+- Cette version change le code natif : elle s'installe avec le nouvel APK (proposé par l'écran de mise à jour de l'app).
+
 ## 1.46.4 — glisser pour changer de période, un seul emoji (mise à jour automatique 1.4.4)
 
 - **Glisser le doigt** vers la gauche ou la droite change de période sur téléphone dans toutes les vues : jour, 3 jours, 5 jours, 6 jours, semaine et mois, dans les 4 designs. Un geste commencé dans une zone qui défile elle-même à l'horizontale n'est pas pris pour un changement.

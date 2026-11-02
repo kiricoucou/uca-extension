@@ -87,6 +87,23 @@ class PreferencesFragment : Fragment() {
         bindSwitch(root, R.id.switchBiblio, PrefsStore.notifBiblio(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_BIBLIO, v) }
         bindSwitch(root, R.id.switchResto, PrefsStore.notifResto(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_RESTO, v) }
 
+        // Design de l'application : choisi ici, appliqué à l'agenda et mémorisé.
+        val btnDesign = root.findViewById<android.widget.Button>(R.id.btnDesign)
+        fun designLabel() = PrefsStore.DESIGNS.firstOrNull { it.first == (PrefsStore.design(ctx) ?: "anime") }?.second ?: "Animé"
+        btnDesign?.text = "Design : " + designLabel()
+        btnDesign?.setOnClickListener {
+            val ids = PrefsStore.DESIGNS.map { it.first }
+            val current = ids.indexOf(PrefsStore.design(ctx) ?: "anime").coerceAtLeast(0)
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Design de l'application")
+                .setSingleChoiceItems(PrefsStore.DESIGNS.map { it.second }.toTypedArray(), current) { dialog, which ->
+                    PrefsStore.setDesign(ctx, ids[which])
+                    btnDesign.text = "Design : " + designLabel()
+                    dialog.dismiss()
+                    android.widget.Toast.makeText(ctx, "Design appliqué à l'agenda.", android.widget.Toast.LENGTH_SHORT).show()
+                }.setNegativeButton("Annuler", null).show()
+        }
+
         root.findViewById<View>(R.id.btnLogout).setOnClickListener {
             (requireActivity() as MainActivity).logout()
         }

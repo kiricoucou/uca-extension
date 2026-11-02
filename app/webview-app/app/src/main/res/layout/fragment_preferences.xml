@@ -106,6 +106,18 @@
                 android:orientation="vertical"
                 android:background="@drawable/bg_card"
                 android:padding="14dp">
+                <TextView android:text="DESIGN DE L'APPLICATION" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <Button
+                    android:id="@+id/btnDesign"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="14dp"
+                    android:text="Design"
+                    android:textColor="@color/on_accent"
+                    android:background="@drawable/bg_cta"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
                 <TextView android:text="MISES À JOUR GITHUB" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                 <TextView
                     android:text="Synchronisation automatique avec la branche main du dépôt officiel GitHub. Bloque l'application dès qu'une nouvelle version est détectée."

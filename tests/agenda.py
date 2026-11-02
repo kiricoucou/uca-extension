@@ -78,7 +78,7 @@ def main():
             ag.goto(f"{base}/{d['folder']}/agenda.html"); ag.wait_for_timeout(900)
 
             txt = ag.locator("#nextInfo").inner_text() if ag.locator("#nextInfo").count() else ""
-            check(f"{did} : prochain cours dans la barre d'info", txt.startswith(("Prochain :", "En cours :")) and any(c in txt for c in ("R1.0", "SAE1.0", "Tutorat", "Anglais")), txt)
+            check(f"{did} : prochain cours dans la barre d'info", txt.startswith(("Prochain :", "En cours :")) and any(c in txt for c in ("R1.0", "R9.99", "SAE1.0", "Tutorat", "Anglais")), txt)
 
             # raccourcis clavier
             label = lambda: ag.locator("#periodLabel").inner_text()

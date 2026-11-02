@@ -281,6 +281,8 @@ class MainActivity : AppCompatActivity() {
     private val PERIOD_MS = 15 * 60 * 1000L
 
     override fun onPause() {
+        // La session CAS (cookies de la WebView) doit survivre à la fermeture de l'app : on force l'écriture sur le disque.
+        android.webkit.CookieManager.getInstance().flush()
         periodicHandler.removeCallbacks(periodicCheck)
         super.onPause()
     }

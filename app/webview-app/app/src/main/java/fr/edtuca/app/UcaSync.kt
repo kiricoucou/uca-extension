@@ -147,30 +147,27 @@ object UcaSync {
 
     fun containsSchedule(text: String): Boolean = DATE_HEADER_RE.containsMatchIn(text)
 
+    /**
+     * Lit l'identité de la personne connectée dans une page Odin. Les pages d'emploi du temps, de notes et d'absences
+     * contiennent aussi les noms et adresses des ENSEIGNANTS : on ne retient donc qu'une salutation explicite
+     * (« Bonjour … », « Bienvenue … ») et une adresse d'étudiant (@etu.uca.fr). Jamais de nom deviné dans le texte,
+     * jamais d'adresse fabriquée à partir du nom : mieux vaut ne rien afficher qu'afficher le profil de quelqu'un d'autre.
+     */
     fun extractProfile(context: Context, text: String) {
         try {
-            val nameMatch = Regex("(?:Bonjour|Bienvenue|Étudiant|Etudiant|Utilisateur)\\s*[:,-]?\\s*([A-ZÀ-ÖØ-ß][a-zà-öø-ÿ\\-]+(?:\\s+[A-ZÀ-ÖØ-ß][a-zà-öø-ÿ\\-]+)+)", RegexOption.IGNORE_CASE).find(text)
-                ?: Regex("([A-ZÀ-ÖØ-ß]{2,}\\s+[A-ZÀ-ÖØ-ß][a-zà-öø-ÿ\\-]+)").find(text)
+            val nameMatch = Regex("(?:Bonjour|Bienvenue)\\s*[:,-]?\\s*([A-ZÀ-ÖØ-ß][A-Za-zà-öø-ÿ'\\-]+(?:[ \\t]+[A-ZÀ-ÖØ-ß][A-Za-zà-öø-ÿ'\\-]+){1,3})").find(text)
             val studentName = nameMatch?.groupValues?.get(1)?.trim()
 
-            val idMatch = Regex("(?:N°|Numéro|No)\\s*(?:étudiant|etudiant)?\\s*[:\\s]*(\\d{6,10})", RegexOption.IGNORE_CASE).find(text)
+            val idMatch = Regex("(?:N°|Numéro|No)\\s*(?:étudiant|etudiant)\\s*[:\\s]*(\\d{6,10})", RegexOption.IGNORE_CASE).find(text)
                 ?: Regex("INE\\s*[:\\s]*([0-9A-Z]{9,12})", RegexOption.IGNORE_CASE).find(text)
             val studentId = idMatch?.groupValues?.get(1)?.trim()
 
             val grpMatch = Regex("(?:Groupe|Gpe)\\s*[:\\s]*([A-Za-z0-9\\-_ ]{2,20})", RegexOption.IGNORE_CASE).find(text)
             val studentGroup = grpMatch?.groupValues?.get(1)?.trim()
 
-            val emailMatch = Regex("([a-zA-Z0-9._%+-]+@(?:etu\\.)?uca\\.fr)", RegexOption.IGNORE_CASE).find(text)
-            var studentEmail = emailMatch?.groupValues?.get(1)?.trim()
+            val studentEmail = Regex("([a-zA-Z0-9._%+-]+@etu\\.uca\\.fr)", RegexOption.IGNORE_CASE).find(text)?.groupValues?.get(1)?.trim()
 
-            if (studentEmail.isNullOrBlank() && !studentName.isNullOrBlank()) {
-                val parts = studentName.lowercase().split(Regex("\\s+"))
-                if (parts.size >= 2) {
-                    studentEmail = "${parts[0]}.${parts[1]}@etu.uca.fr"
-                }
-            }
-
-            if (!studentName.isNullOrBlank() || !studentId.isNullOrBlank() || !studentGroup.isNullOrBlank()) {
+            if (!studentName.isNullOrBlank() || !studentId.isNullOrBlank() || !studentGroup.isNullOrBlank() || !studentEmail.isNullOrBlank()) {
                 PrefsStore.setStudentProfile(
                     context = context,
                     name = studentName,

@@ -13,6 +13,44 @@ import androidx.fragment.app.Fragment
 /** Écran Mon compte : profil complet Odin, groupe de TP synchronisé, messagerie, préférences et déconnexion. */
 class CompteFragment : Fragment() {
 
+    private var photoView: ImageView? = null
+
+    private val pickPhoto = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        val ctx = requireContext().applicationContext
+        if (ProfilePhoto.save(ctx, uri)) showPhoto()
+        else android.widget.Toast.makeText(ctx, "Image illisible, choisis une autre photo.", android.widget.Toast.LENGTH_SHORT).show()
+    }
+
+    /** Affiche la photo choisie en rond, ou l'icône par défaut. */
+    private fun showPhoto() {
+        val iv = photoView ?: return
+        val bmp = ProfilePhoto.load(requireContext())
+        if (bmp != null) {
+            iv.setPadding(0, 0, 0, 0)
+            iv.setImageBitmap(bmp)
+            iv.outlineProvider = object : android.view.ViewOutlineProvider() {
+                override fun getOutline(v: View, o: android.graphics.Outline) { o.setOval(0, 0, v.width, v.height) }
+            }
+            iv.clipToOutline = true
+        } else {
+            val pad = (3 * resources.displayMetrics.density).toInt()
+            iv.setPadding(pad, pad, pad, pad)
+            iv.setImageResource(R.drawable.ic_person)
+            iv.clipToOutline = false
+        }
+    }
+
+    private fun onPhotoClick() {
+        if (!ProfilePhoto.exists(requireContext())) { pickPhoto.launch("image/*"); return }
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Photo de profil")
+            .setItems(arrayOf("Changer la photo", "Supprimer la photo")) { _, which ->
+                if (which == 0) pickPhoto.launch("image/*")
+                else { ProfilePhoto.delete(requireContext()); showPhoto() }
+            }.show()
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
@@ -24,6 +62,13 @@ class CompteFragment : Fragment() {
         root.findViewById<ImageView>(R.id.topbarBell)?.setOnClickListener {
             act.openSubScreen(NotificationsFragment())
         }
+
+        photoView = root.findViewById(R.id.imgStudentPhoto)
+        photoView?.apply {
+            contentDescription = "Photo de profil : touche pour la changer"
+            setOnClickListener { onPhotoClick() }
+        }
+        showPhoto()
 
         val sName = PrefsStore.studentName(requireContext())
         val sId = PrefsStore.studentId(requireContext())
@@ -71,5 +116,10 @@ class CompteFragment : Fragment() {
         }
 
         return root
+    }
+
+    override fun onDestroyView() {
+        photoView = null
+        super.onDestroyView()
     }
 }

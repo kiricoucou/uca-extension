@@ -55,6 +55,14 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.3 — app Android 1.4.3 : profil fiable, bonhomme cliquable, photo, contrôle des mises à jour
+
+- **Profil** : l'app affichait parfois le nom ou l'adresse d'un enseignant, lus dans l'emploi du temps. Elle ne retient plus que « Bonjour/Bienvenue + nom » et une adresse `@etu.uca.fr`, et ne fabrique plus d'adresse à partir du nom. Les profils déjà enregistrés sont effacés une fois, puis relus à la prochaine synchro.
+- **Petit bonhomme** en haut à droite : il ouvre Mon compte, depuis tous les écrans.
+- **Photo de profil** : dans Mon compte, touche la photo pour en choisir une dans ta galerie. Elle est réduite et gardée uniquement sur le téléphone, et effacée à la déconnexion.
+- **Contrôle régulier des mises à jour** : l'app interroge GitHub toutes les 15 minutes tant qu'elle est ouverte, et toutes les heures même fermée (réseau requis). Une mise à jour signée des pages s'installe seule ; un nouvel APK est proposé à l'ouverture.
+- Cette version change le code natif : elle s'installe avec le nouvel APK (les 1.4.2 continuent de fonctionner).
+
 ## 1.46.2 — app Android 1.4.2 : mise à jour automatique
 
 - **Mise à jour automatique** : au lancement de l'app (puis au plus toutes les 30 minutes), elle lit `version.json` sur GitHub et, si une nouvelle version de l'interface existe, la télécharge et l'installe seule, sans retélécharger l'APK. Un message l'annonce et l'agenda se recharge.

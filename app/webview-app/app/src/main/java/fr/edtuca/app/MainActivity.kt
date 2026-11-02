@@ -39,11 +39,19 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        PrefsStore.migrateProfileOnce(this)
 
         bottomNav = findViewById(R.id.bottomNav)
 
         // Initialisation de l'overlay bloquant
         initUpdateBlocker()
+
+        // Le petit bonhomme de la barre du haut mène à « Mon compte », sur tous les écrans qui l'affichent.
+        supportFragmentManager.registerFragmentLifecycleCallbacks(object : androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks() {
+            override fun onFragmentViewCreated(fm: androidx.fragment.app.FragmentManager, f: Fragment, v: View, savedInstanceState: Bundle?) {
+                v.findViewById<View>(R.id.topbarPerson)?.setOnClickListener { openAccount() }
+            }
+        }, false)
 
         supportFragmentManager.addOnBackStackChangedListener {
             if (!isAppBlockedForUpdate && PrefsStore.isLoggedIn(this)) {
@@ -86,6 +94,7 @@ class MainActivity : AppCompatActivity() {
         }
         checkSessionIfNeeded()
         checkLiveUpdate()
+        periodicHandler.postDelayed(periodicCheck, PERIOD_MS)
     }
 
     private fun initUpdateBlocker() {
@@ -251,6 +260,31 @@ class MainActivity : AppCompatActivity() {
             .commitAllowingStateLoss()
     }
 
+    /** Va à l'onglet Mon compte, quel que soit l'écran affiché. */
+    fun openAccount() {
+        if (isAppBlockedForUpdate || !PrefsStore.isLoggedIn(this)) return
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+            bottomNav.visibility = View.VISIBLE
+        }
+        if (bottomNav.selectedItemId != R.id.nav_compte) bottomNav.selectedItemId = R.id.nav_compte
+    }
+
+    // Contrôle régulier des mises à jour sur GitHub tant que l'app est ouverte (en plus du contrôle horaire en arrière-plan).
+    private val periodicHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val periodicCheck = object : Runnable {
+        override fun run() {
+            if (!isAppBlockedForUpdate) { checkGithubUpdate(); checkLiveUpdate() }
+            periodicHandler.postDelayed(this, PERIOD_MS)
+        }
+    }
+    private val PERIOD_MS = 15 * 60 * 1000L
+
+    override fun onPause() {
+        periodicHandler.removeCallbacks(periodicCheck)
+        super.onPause()
+    }
+
     private var lastSessionCheck = 0L
     private var lastLiveCheck = 0L
 
@@ -260,7 +294,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun checkLiveUpdate(manual: Boolean = false, onDone: ((String) -> Unit)? = null) {
         val now = System.currentTimeMillis()
-        if (!manual && now - lastLiveCheck < 30 * 60 * 1000) return
+        if (!manual && now - lastLiveCheck < 10 * 60 * 1000) return
         lastLiveCheck = now
         LiveUpdate.checkAndApply(this) { result ->
             if (isFinishing || isDestroyed) return@checkAndApply
@@ -309,6 +343,7 @@ class MainActivity : AppCompatActivity() {
     fun logout() {
         PrefsStore.setLoggedIn(this, false)
         PrefsStore.clearStudentProfile(this)
+        ProfilePhoto.delete(this)
         val cookies = android.webkit.CookieManager.getInstance()
         cookies.removeAllCookies { cookies.flush() }
         // Cours, notes, absences stockés en localStorage par la page + cache HTTP.

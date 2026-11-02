@@ -7,5 +7,6 @@ class EdtUcaApp : Application() {
     override fun onCreate() {
         super.onCreate()
         PrefsStore.applyThemeMode(PrefsStore.themeMode(this))
+        UpdateWorker.schedule(this)
     }
 }

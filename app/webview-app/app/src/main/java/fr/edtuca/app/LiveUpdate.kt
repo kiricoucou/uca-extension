@@ -176,6 +176,10 @@ object LiveUpdate {
         }
     }
 
+    /** Version sans callback pour le contrôle périodique en arrière-plan (WorkManager, thread déjà secondaire). */
+    fun checkAndApplyNow(context: Context): Result =
+        try { run(context.applicationContext) } catch (e: Exception) { Result.Failed(e.message ?: "erreur") }
+
     private fun run(ctx: Context): Result {
         val local = versionCode(ctx)
         val current = liveRoot(ctx)?.let { JSONObject(File(it, "ota.json").readText()).getString("bundle_version") }

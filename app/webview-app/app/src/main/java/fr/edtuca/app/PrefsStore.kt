@@ -127,6 +127,14 @@ object PrefsStore {
         editor.apply()
     }
 
+    /** Une seule fois : efface les profils enregistrés par d'anciennes versions (qui pouvaient contenir un enseignant). */
+    fun migrateProfileOnce(context: Context) {
+        val p = prefs(context)
+        if (p.getInt("profile_schema", 0) >= 2) return
+        clearStudentProfile(context)
+        p.edit().putInt("profile_schema", 2).apply()
+    }
+
     fun clearStudentProfile(context: Context) {
         prefs(context).edit()
             .remove(KEY_STUDENT_NAME).remove(KEY_STUDENT_ID).remove(KEY_STUDENT_EMAIL)

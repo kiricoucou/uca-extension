@@ -55,6 +55,20 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.2 — app Android 1.4.2 : mise à jour automatique
+
+- **Mise à jour automatique** : au lancement de l'app (puis au plus toutes les 30 minutes), elle lit `version.json` sur GitHub et, si une nouvelle version de l'interface existe, la télécharge et l'installe seule, sans retélécharger l'APK. Un message l'annonce et l'agenda se recharge.
+- **Sécurité** : le paquet `ota-bundle.zip` doit être signé (`ota-bundle.sig`) avec la clé de signature de l'APK, qui reste sur l'ordinateur. L'app vérifie la signature avec son propre certificat, refuse tout retour en arrière, tout fichier hors du dossier de l'app et tout type de fichier inattendu. Les adresses sont écrites en dur dans l'app. Un dépôt GitHub piraté ne peut donc pas faire exécuter du code.
+- Un changement du code natif (nouvel APK) reste proposé par l'écran d'installation.
+- Pour publier une mise à jour de l'interface : `python -I -X utf8 tests/build_ota.py`, puis commit et push. La première installation de la 1.4.2 se fait à la main ; les suivantes sont automatiques.
+
+## 1.46.1 — app Android : emploi du temps et session expirée
+
+- **Emploi du temps de l'app** : l'app Android envoyait le texte brut de la page Odin, mais personne ne le transformait en cours, donc l'agenda restait vide après la synchro. Il est maintenant lu (comme dans l'extension) dans les 4 designs.
+- **Session expirée** : l'app se verrouille entièrement (onglets et sous-écrans) et demande une nouvelle connexion CAS. Elle vérifie aussi la session en silence au retour dans l'app (au plus toutes les 5 minutes) ; si le réseau ne répond pas, elle ne bloque jamais.
+- Aucun identifiant ni cookie n'est lu ou conservé par l'app : la connexion se fait dans la page officielle.
+- Test : `tests/android_sync.py`.
+
 ## 1.46.0 — bugs graves, sécurité et ménage
 
 - **Plus de fausse synchro** : sans extension, le site envoie vers l'import au lieu d'annoncer un succès sans rien récupérer. Le bouton Importer est de retour.

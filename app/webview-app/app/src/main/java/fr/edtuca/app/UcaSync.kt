@@ -117,6 +117,34 @@ object UcaSync {
         hidden.loadUrl(EDT_URL)
     }
 
+    /**
+     * Vérifie en silence si la session CAS est encore valide : une session valide est redirigée tout de suite
+     * vers Odin ; sinon la page reste sur ent.uca.fr (formulaire de connexion). Ne lit ni ne stocke aucun cookie
+     * ni identifiant. onResult : true = expirée, false = valide, null = indéterminé (réseau coupé, lenteur) :
+     * dans ce cas on ne bloque jamais l'utilisateur.
+     */
+    fun checkSession(context: Context, onResult: (expired: Boolean?) -> Unit) {
+        val hidden = WebView(context)
+        setupHiddenWebView(hidden)
+        var done = false
+        val finish: (Boolean?) -> Unit = { expired ->
+            if (!done) {
+                done = true
+                handler.removeCallbacksAndMessages(hidden)
+                onResult(expired)
+                handler.post { hidden.destroy() }
+            }
+        }
+        hidden.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView, url: String?) {
+                if (isHost(url, "ent.uca.fr")) finish(true)
+                else if (isHost(url, "odin.iut.uca.fr")) finish(false)
+            }
+        }
+        handler.postAtTime({ finish(null) }, hidden, android.os.SystemClock.uptimeMillis() + 20000)
+        hidden.loadUrl(CAS_URL)
+    }
+
     fun containsSchedule(text: String): Boolean = DATE_HEADER_RE.containsMatchIn(text)
 
     fun extractProfile(context: Context, text: String) {

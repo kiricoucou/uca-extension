@@ -71,8 +71,8 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
 
         bridgeScript = requireContext().assets.open("android-bridge.js").bufferedReader().use { it.readText() }
 
-        // Anciennes mises à jour rapides non signées : on ne garde que le code de l'APK.
-        java.io.File(requireContext().filesDir, "live-site").deleteRecursively()
+        // Pages mises à jour depuis GitHub (LiveUpdate : paquet signé, vérifié) : prioritaires sur celles de l'APK.
+        val appCtx = requireContext().applicationContext
 
         val assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(requireContext()))
@@ -80,7 +80,15 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
-                return assetLoader.shouldInterceptRequest(request.url)
+                val url = request.url
+                val path = url.path ?: ""
+                if (request.method == "GET" && url.host == ASSET_HOST && path.startsWith(ASSET_PREFIX)) {
+                    val live = LiveUpdate.liveFile(appCtx, path.removePrefix(ASSET_PREFIX))
+                    if (live != null) {
+                        try { return WebResourceResponse(getMimeType(path), "UTF-8", live.inputStream()) } catch (_: Exception) {}
+                    }
+                }
+                return assetLoader.shouldInterceptRequest(url)
             }
 
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -129,11 +137,7 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
             when {
                 sessionExpired -> {
                     deliver(mapOf("type" to "UCA_SESSION_STATE", "expired" to true))
-                    if (silent) {
-                        deliver(mapOf("type" to "UCA_SYNC_RESULT", "ok" to false, "error" to "Session expirée"))
-                    } else {
-                        loginLauncher.launch(Intent(requireContext(), LoginActivity::class.java))
-                    }
+                    (requireActivity() as MainActivity).requireLogin()
                 }
                 text == "MAINTENANCE_ERROR" -> {
                     deliver(mapOf("type" to "UCA_SYNC_RESULT", "ok" to false, "error" to "Site Odin en maintenance. Réessayez plus tard."))

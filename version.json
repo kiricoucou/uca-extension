@@ -1,21 +1,21 @@
 {
   "app_name": "My UCA",
-  "version": "1.4.0",
-  "version_code": 4,
-  "bundle_version": "1.4.0",
+  "version": "1.4.2",
+  "version_code": 6,
+  "bundle_version": "1.4.2",
   "commit_sha": "main",
   "branch": "main",
-  "published_at": "2026-11-01T18:00:00Z",
-  "min_apk_version_code": 4,
-  "ota_enabled": false,
+  "published_at": "2026-11-02T14:00:00Z",
+  "min_apk_version_code": 6,
   "raw_base_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/",
   "apk_download_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/EdtUca.apk",
   "github_repo_url": "https://github.com/kiricoucou/uca-extension",
   "changelog": [
-    "Mises à jour rapides désactivées : seul l'APK signé peut changer l'application",
-    "Protection renforcée des pages de l'application",
-    "Carte des campus embarquée, consentement corrigé",
-    "Déconnexion : le profil étudiant est effacé",
-    "Application allégée : images inutiles retirées"
-  ]
+    "Mise à jour automatique : les nouvelles versions de l'interface s'installent seules depuis GitHub, sans retélécharger l'APK",
+    "Les mises à jour sont signées : un paquet non signé par toi est refusé",
+    "Emploi du temps de l'app : le texte d'Odin est maintenant lu et affiché",
+    "Session expirée : l'app se verrouille jusqu'à une nouvelle connexion"
+  ],
+  "ota_version": "1.4.2",
+  "ota_base_version_code": 6
 }

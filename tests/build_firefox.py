@@ -18,13 +18,13 @@ DIST = ROOT / "dist" / "firefox"
 
 # Fichiers/dossiers de dev jamais envoyés dans le paquet de l'extension (tests, app téléphone,
 # dépôt git, scratch...). Tout le reste de la racine est inclus.
-EXCLUDE_DIRS = {".git", ".github", ".claude", ".impeccable", "tests", "app", "dist", "store", "en", "__pycache__"}
+EXCLUDE_DIRS = {".git", ".github", ".claude", ".impeccable", "tests", "app", "dist", "store", "en", "tools", "__pycache__"}
 EXCLUDE_FILES = {"manifest.firefox.json", ".gitignore", ".nojekyll", "app.webmanifest", "sw.js"}
 # Pages du site public, à la racine seulement (designs/<id>/aide.html reste dans le paquet).
 EXCLUDE_ROOT_FILES = {"index.html", "install.html", "aide.html", "404.html", "confidentialite.html", "site.css", "site-demo.js", "nouveautes.html", "sitemap.xml", "robots.txt", "transport.html"}
 EXCLUDE_SUFFIXES = {".pyc"}
 # Réservés à l'app téléphone (APK, mise à jour à chaud, carte) : jamais dans l'extension.
-EXCLUDE_ROOT_FILES |= {"EdtUca.apk", "lieux-map.html", "version.json", "pages-files.txt"}
+EXCLUDE_ROOT_FILES |= {"EdtUca.apk", "lieux-map.html", "version.json", "pages-files.txt", "ota-bundle.zip", "ota-bundle.sig"}
 EXCLUDE_PATHS = {"core/mobility.js"}
 EXCLUDE_DIR_PATHS = {"vendor/leaflet"}
 

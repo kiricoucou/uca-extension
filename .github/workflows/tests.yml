@@ -46,6 +46,10 @@ jobs:
         run: python -I -X utf8 tests/security.py
       - name: Statut des sites
         run: python -I -X utf8 tests/status.py
+      - name: App Android (texte d'Odin -> cours)
+        run: python -I -X utf8 tests/android_sync.py
+      - name: Mise à jour automatique de l'app (paquet)
+        run: python -I -X utf8 tests/ota.py
       - name: Pont extension / app
         run: python -I -X utf8 tests/bridge.py
       - name: Site et app (PWA)

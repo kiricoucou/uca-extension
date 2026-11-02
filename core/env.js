@@ -140,6 +140,47 @@ document.addEventListener("visibilitychange", () => {
    de déclencher une vraie synchro Odin (au lieu du transfert manuel par lien/QR/fichier) quand
    l'extension est là ; sinon, seul le transfert par lien/QR/fichier reste possible (pas de CORS
    ni d'accès aux cookies d'un autre domaine depuis une simple page web, voir README). */
+
+/* ---------- Texte brut d'Odin (envoyé par l'app Android) -> cours ----------
+   Même lecture que parseScheduleText de background.js (l'extension) : le natif n'envoie que le texte de la page. */
+const MONTH_INDEX = { janvier: 0, "février": 1, fevrier: 1, mars: 2, avril: 3, mai: 4, juin: 5, juillet: 6, "août": 7, aout: 7, septembre: 8, octobre: 9, novembre: 10, "décembre": 11, decembre: 11 };
+const EVENT_PALETTE = ["#1967d2", "#0b8043", "#8e24aa", "#c5221f", "#b06000", "#3f51b5", "#00796b", "#ad1457", "#5f6368", "#795548"];
+function colorFor(str) { let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0; return EVENT_PALETTE[h % EVENT_PALETTE.length]; }
+function parseScheduleText(raw) {
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const text = String(raw).replace(/\?\?/g, "é").replace(/[ \t]+/g, " ").replace(/\u00a0/g, " ");
+  const monthsAlt = Object.keys(MONTH_INDEX).sort((a, b) => b.length - a.length).join("|");
+  const dateHeaderRe = new RegExp(`(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\\s+(\\d{1,2})\\s+(${monthsAlt})\\s+(\\d{4})`, "gi");
+  const headers = []; let m;
+  while ((m = dateHeaderRe.exec(text)) !== null) headers.push({ index: m.index, end: m.index + m[0].length, day: parseInt(m[2], 10), month: MONTH_INDEX[m[3].toLowerCase()], year: parseInt(m[4], 10) });
+  const events = [];
+  for (let hIdx = 0; hIdx < headers.length; hIdx++) {
+    const h = headers[hIdx];
+    const block = text.slice(h.end, hIdx + 1 < headers.length ? headers[hIdx + 1].index : text.length);
+    const timeSlotRe = /(\d{1,2})[:h](\d{2})\s*-\s*(\d{1,2})[:h](\d{2})/g;
+    const slots = []; let sm;
+    while ((sm = timeSlotRe.exec(block)) !== null) slots.push({ index: sm.index, end: sm.index + sm[0].length, sh: sm[1], sm_: sm[2], eh: sm[3], em: sm[4] });
+    for (let i = 0; i < slots.length; i++) {
+      const s = slots[i];
+      const content = block.slice(s.end, i + 1 < slots.length ? slots[i + 1].index : block.length);
+      const tm = content.match(/enseignants?\s*:\s*([\s\S]+?)(?=(salle\s*:)|$)/i);
+      const rm = content.match(/salle\s*:\s*([\s\S]+?)(?=(\d{1,2}[:h]\d{2}\s*-)|$)/i);
+      const teacher = tm ? tm[1].replace(/\s+/g, " ").trim() : "";
+      const room = rm ? rm[1].replace(/\s+/g, " ").trim() : "";
+      const enc = content.search(/enseignants?\s*:/i);
+      const title = (enc >= 0 ? content.slice(0, enc) : content).replace(/[\n\r]+/g, " ").replace(/\s+/g, " ").trim();
+      if (!title) continue;
+      events.push({
+        date: h.year + "-" + pad2(h.month + 1) + "-" + pad2(h.day), year: h.year, month: h.month, day: h.day,
+        startH: parseInt(s.sh, 10), startM: parseInt(s.sm_, 10), endH: parseInt(s.eh, 10), endM: parseInt(s.em, 10),
+        title, teacher, room, raw: content.replace(/\n{2,}/g, "\n").trim(),
+        color: colorFor(title.replace(/\b(CM|TD|TDA|TP|TPA)\b/gi, "").trim() || title)
+      });
+    }
+  }
+  return events;
+}
+
 const msgListeners = [];
 let hasExtensionBridge = false;
 // La démo et l'app Android se comportent comme l'app avec l'extension : bouton « Synchroniser ».
@@ -158,6 +199,13 @@ window.addEventListener("message", (ev) => {
   // Les résultats de synchro de l'extension vivent dans SON stockage (origine chrome-extension://…,
   // jamais accessible depuis une page web) : on les recopie ici pour que l'app reste utilisable
   // hors ligne et après un rechargement, exactement comme un transfert par lien le ferait.
+  // L'app Android envoie le texte brut de la page Odin : on le lit ici, comme le fait background.js.
+  if (msg.type === "UCA_SYNC_RESULT" && msg.ok && !Array.isArray(msg.events) && typeof msg.text === "string") {
+    const evs = parseScheduleText(msg.text);
+    delete msg.text;
+    if (evs.length) { msg.events = evs; msg.lastSync = new Date().toISOString(); }
+    else { msg.ok = false; msg.error = "Aucun cours reconnu dans la page d'Odin (emploi du temps vide ou page modifiée). Ton ancien emploi du temps est conservé."; }
+  }
   if (msg.type === "UCA_SYNC_RESULT" && msg.ok) {
     const out = { uca_events: msg.events, uca_last_sync: msg.lastSync, uca_session_expired: false };
     if (Array.isArray(msg.edtChanges)) out.uca_edt_changes = msg.edtChanges;

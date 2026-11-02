@@ -15,6 +15,11 @@ import androidx.fragment.app.Fragment
  */
 class GateFragment : Fragment() {
 
+    companion object {
+        const val ARG_EXPIRED = "expired"
+        fun expired() = GateFragment().apply { arguments = Bundle().apply { putBoolean(ARG_EXPIRED, true) } }
+    }
+
     private val loginLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -30,6 +35,10 @@ class GateFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
         val root = inflater.inflate(R.layout.fragment_gate, container, false)
+        if (arguments?.getBoolean(ARG_EXPIRED) == true) {
+            root.findViewById<android.widget.TextView>(R.id.gateIntro).text =
+                "Ta session UCA a expiré. L'application est verrouillée : reconnecte-toi pour retrouver ton agenda, tes notes et tes absences."
+        }
         root.findViewById<View>(R.id.btnLogin).setOnClickListener {
             root.findViewById<View>(R.id.gateError).visibility = View.GONE
             loginLauncher.launch(Intent(requireContext(), LoginActivity::class.java))

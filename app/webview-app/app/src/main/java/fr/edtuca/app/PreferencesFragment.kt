@@ -94,9 +94,10 @@ class PreferencesFragment : Fragment() {
         val txtGithubStatus = root.findViewById<TextView>(R.id.txtGithubUpdateStatus)
         root.findViewById<View>(R.id.btnCheckGithubUpdate)?.setOnClickListener {
             txtGithubStatus?.text = "Vérification en cours sur GitHub (branche main)..."
-            (requireActivity() as MainActivity).checkGithubUpdate { updateAvailable ->
+            val act = requireActivity() as MainActivity
+            act.checkGithubUpdate { updateAvailable ->
                 if (!updateAvailable) {
-                    txtGithubStatus?.text = "Application à jour avec la branche main !"
+                    act.checkLiveUpdate(manual = true) { message -> txtGithubStatus?.text = message }
                 }
             }
         }

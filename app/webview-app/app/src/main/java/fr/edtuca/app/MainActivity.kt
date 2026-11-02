@@ -84,6 +84,8 @@ class MainActivity : AppCompatActivity() {
         if (!isAppBlockedForUpdate) {
             checkGithubUpdate()
         }
+        checkSessionIfNeeded()
+        checkLiveUpdate()
     }
 
     private fun initUpdateBlocker() {
@@ -241,12 +243,61 @@ class MainActivity : AppCompatActivity() {
         triggerSimulatedOtaTest()
     }
 
-    private fun showGate() {
+    private fun showGate(expired: Boolean = false) {
         if (isAppBlockedForUpdate) return
         bottomNav.visibility = View.GONE
         supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, GateFragment())
-            .commit()
+            .replace(R.id.fragmentContainer, if (expired) GateFragment.expired() else GateFragment())
+            .commitAllowingStateLoss()
+    }
+
+    private var lastSessionCheck = 0L
+    private var lastLiveCheck = 0L
+
+    /**
+     * Mise à jour automatique des pages depuis GitHub (paquet signé, voir LiveUpdate), au plus toutes les 30 minutes
+     * sauf demande manuelle. Une version qui change le code natif passe par l'écran d'installation de l'APK.
+     */
+    fun checkLiveUpdate(manual: Boolean = false, onDone: ((String) -> Unit)? = null) {
+        val now = System.currentTimeMillis()
+        if (!manual && now - lastLiveCheck < 30 * 60 * 1000) return
+        lastLiveCheck = now
+        LiveUpdate.checkAndApply(this) { result ->
+            if (isFinishing || isDestroyed) return@checkAndApply
+            when (result) {
+                is LiveUpdate.Result.Applied -> {
+                    Toast.makeText(this, "Application mise à jour (${result.version})", Toast.LENGTH_LONG).show()
+                    (supportFragmentManager.findFragmentById(R.id.fragmentContainer) as? AgendaFragment)?.reloadWebView()
+                    onDone?.invoke("Mise à jour ${result.version} installée.")
+                }
+                is LiveUpdate.Result.UpToDate -> onDone?.invoke("Application à jour.")
+                is LiveUpdate.Result.NeedsApk -> onDone?.invoke("Une nouvelle version complète de l'application est disponible.")
+                is LiveUpdate.Result.Failed -> onDone?.invoke("Mise à jour impossible (${result.reason}). L'application continue de fonctionner.")
+            }
+        }
+    }
+
+    /**
+     * Session CAS expirée : tout est verrouillé (onglets, sous-écrans) jusqu'à une nouvelle connexion.
+     * Les données déjà synchronisées restent sur le téléphone, mais ne sont plus accessibles.
+     */
+    fun requireLogin() {
+        if (!PrefsStore.isLoggedIn(this)) return
+        PrefsStore.setLoggedIn(this, false)
+        supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+        showGate(expired = true)
+        Toast.makeText(this, "Session expirée : reconnecte-toi pour continuer.", Toast.LENGTH_LONG).show()
+    }
+
+    /** Vérifie la session au retour dans l'app (au plus toutes les 5 minutes). */
+    private fun checkSessionIfNeeded() {
+        if (isAppBlockedForUpdate || !PrefsStore.isLoggedIn(this)) return
+        val now = System.currentTimeMillis()
+        if (now - lastSessionCheck < 5 * 60 * 1000) return
+        lastSessionCheck = now
+        UcaSync.checkSession(applicationContext) { expired ->
+            if (expired == true && !isFinishing && !isDestroyed) requireLogin()
+        }
     }
 
     /** Appelé par GateFragment juste après un login CAS réussi. */

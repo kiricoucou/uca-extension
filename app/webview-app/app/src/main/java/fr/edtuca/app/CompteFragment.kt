@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.fragment.app.Fragment
@@ -70,33 +71,40 @@ class CompteFragment : Fragment() {
         }
         showPhoto()
 
-        val sName = PrefsStore.studentName(requireContext())
-        val sId = PrefsStore.studentId(requireContext())
-        val sEmail = PrefsStore.studentEmail(requireContext())
-        val sForm = PrefsStore.studentFormation(requireContext())
-        val sBirth = PrefsStore.studentBirth(requireContext())
-
-        if (sName.isNotBlank()) {
-            root.findViewById<TextView>(R.id.studentName)?.text = sName
-        } else {
-            root.findViewById<TextView>(R.id.studentName)?.text = "Étudiant UCA (Connecté)"
+        fun fill() {
+            val ctx = context ?: return
+            val sName = PrefsStore.studentName(ctx)
+            val sId = PrefsStore.studentId(ctx)
+            val sEmail = PrefsStore.studentEmail(ctx).takeIf { it.endsWith("@etu.uca.fr", true) } ?: ""
+            val sForm = PrefsStore.studentFormation(ctx)
+            val sBirth = PrefsStore.studentBirth(ctx)
+            val sGroup = PrefsStore.studentGroup(ctx)
+            root.findViewById<TextView>(R.id.studentName)?.text = if (sName.isNotBlank()) sName else "Profil non détecté"
+            root.findViewById<TextView>(R.id.studentId)?.text = "N° étudiant : " + sId.ifBlank { "non détecté" }
+            root.findViewById<TextView>(R.id.studentFormation)?.text = sForm.ifBlank { "Université Clermont Auvergne" }
+            root.findViewById<TextView>(R.id.studentBirthDate)?.text = if (sBirth.isNotBlank()) "Né(e) le $sBirth" else ""
+            root.findViewById<TextView>(R.id.zimbraEmail)?.text = sEmail.ifBlank { "Adresse non détectée (ouvre la messagerie une fois)" }
+            val details = root.findViewById<LinearLayout>(R.id.profileDetails)
+            details?.removeAllViews()
+            val parts = sName.split(" ").filter { it.isNotBlank() }
+            val nom = parts.firstOrNull { it == it.uppercase() && it.any { c -> c.isLetter() } } ?: ""
+            val prenom = parts.filter { it != nom }.joinToString(" ")
+            listOf("Nom" to nom, "Prénom" to prenom, "Date de naissance" to sBirth, "N° étudiant" to sId, "Formation" to sForm, "Groupe" to sGroup, "Email" to sEmail).forEach { (label, value) ->
+                val row = TextView(ctx).apply {
+                    text = "$label : " + value.ifBlank { "non détecté" }
+                    setTextColor(resources.getColor(if (value.isBlank()) R.color.text_dim else R.color.text, null)); textSize = 13f
+                    setPadding(0, 3, 0, 3)
+                }
+                details?.addView(row)
+            }
         }
-
-        if (sId.isNotBlank()) {
-            root.findViewById<TextView>(R.id.studentId)?.text = "N° Étudiant : $sId"
+        fill()
+        // Relit la fiche d'Odin avec la session de l'app (sans effet si la session a expiré).
+        ProfileSync.run(requireContext()) { fill() }
+        root.findViewById<View>(R.id.btnOdinProfile)?.setOnClickListener {
+            act.openSubScreen(WebPageFragment.of(ProfileSync.ODIN_HOME, "Mon profil étudiant"))
         }
-
-        if (sForm.isNotBlank()) {
-            root.findViewById<TextView>(R.id.studentFormation)?.text = sForm
-        }
-
-        if (sBirth.isNotBlank()) {
-            root.findViewById<TextView>(R.id.studentBirthDate)?.text = sBirth
-        }
-
-        if (sEmail.isNotBlank()) {
-            root.findViewById<TextView>(R.id.zimbraEmail)?.text = sEmail
-        }
+        // Le bouton « Accéder à ma messagerie » ouvre Zimbra avec la même session.
 
         val spinner = root.findViewById<Spinner>(R.id.ufrSpinner)
         val adapter = ArrayAdapter.createFromResource(
@@ -110,6 +118,10 @@ class CompteFragment : Fragment() {
         }
         root.findViewById<View>(R.id.btnMessagerie)?.setOnClickListener {
             act.openSubScreen(MailFragment())
+        }
+        root.findViewById<View>(R.id.btnLoginCompte)?.apply {
+            visibility = if (PrefsStore.sessionExpired(requireContext())) View.VISIBLE else View.GONE
+            setOnClickListener { act.startLogin() }
         }
         root.findViewById<View>(R.id.btnLogoutCompte)?.setOnClickListener {
             act.logout()

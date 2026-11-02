@@ -2,90 +2,99 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org; base-uri 'none'; form-action 'none'">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Carte des Campus UCA</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org; frame-src https://www.google.com https://maps.google.com; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Carte des campus UCA</title>
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body, #map { width: 100%; height: 100%; background: #121418; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-  .leaflet-tile { filter: brightness(0.78) invert(1) contrast(3) hue-rotate(200deg) saturate(0.35); }
+  html, body { width: 100%; height: 100%; background: #121418; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #f2f3f5; }
+  #bar { position: absolute; top: 0; left: 0; right: 0; height: 46px; display: flex; gap: 8px; align-items: center; padding: 0 10px; background: #1e2229; border-bottom: 1px solid #2d3340; z-index: 1000; }
+  #bar button { flex: 1; height: 32px; border-radius: 16px; border: 1px solid #2d3340; background: #121418; color: #cfd3da; font-weight: 700; font-size: 12.5px; }
+  #bar button.on { background: #00bfa5; color: #05211f; border-color: #00bfa5; }
+  #map, #google { position: absolute; top: 46px; left: 0; right: 0; bottom: 0; background: #121418; }
+  #google { display: none; flex-direction: column; }
+  #google iframe { flex: 1; width: 100%; border: 0; }
+  #chips { display: flex; gap: 6px; overflow-x: auto; padding: 8px 10px; background: #1e2229; border-bottom: 1px solid #2d3340; }
+  #chips button { flex: 0 0 auto; padding: 7px 12px; border-radius: 14px; border: 1px solid #2d3340; background: #121418; color: #f2f3f5; font-size: 13px; font-weight: 700; }
+  #chips button.on { background: #00bfa5; color: #05211f; border-color: #00bfa5; }
+  #note { font-size: 12px; color: #94a3b8; padding: 4px 10px 6px; background: #1e2229; }
   .leaflet-container { background: #121418 !important; }
-  .campus-popup .leaflet-popup-content-wrapper {
-    background: #1e2229;
-    color: #f2f3f5;
-    border: 1px solid #2d3340;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-  }
+  .campus-popup .leaflet-popup-content-wrapper { background: #1e2229; color: #f2f3f5; border: 1px solid #2d3340; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
   .campus-popup .leaflet-popup-tip { background: #1e2229; }
   .pop-title { font-size: 13.5px; font-weight: 800; color: #00bfa5; margin-bottom: 2px; }
-  .pop-sub { font-size: 11px; color: #94a3b8; margin-bottom: 6px; }
-  .pop-badge { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
-  .pop-badge.open { background: rgba(47,214,143,0.15); color: #2fd68f; border: 1px solid rgba(47,214,143,0.3); }
-  .pop-badge.closed { background: rgba(248,113,113,0.15); color: #f87171; border: 1px solid rgba(248,113,113,0.3); }
-  .pop-link { display: block; font-size: 11px; color: #38bdf8; text-decoration: none; font-weight: 700; margin-top: 6px; }
+  .pop-sub { font-size: 12px; color: #94a3b8; margin-bottom: 8px; }
+  .pop-links { display: flex; flex-direction: column; gap: 5px; }
+  .pop-links a { display: block; text-align: center; font-size: 13px; font-weight: 700; padding: 6px 8px; border-radius: 8px; text-decoration: none; background: #121418; border: 1px solid #2d3340; color: #38bdf8; }
 </style>
 </head>
 <body>
+<div id="bar" role="tablist" aria-label="Fond de carte">
+  <button id="tabOsm" class="on" role="tab" aria-selected="true">OpenStreetMap</button>
+  <button id="tabGoogle" role="tab" aria-selected="false">Google Maps</button>
+</div>
 <div id="map"></div>
+<div id="google">
+  <div id="chips" role="list"></div>
+  <div id="note">Google Maps s'affiche dans la page et peut déposer des cookies Google. Aucun compte ni clé n'est utilisé.</div>
+  <iframe id="gframe" title="Google Maps" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+</div>
 <script src="vendor/leaflet/leaflet.js"></script>
 <script>
+  // Positions relevées dans OpenStreetMap (recherche de chaque lieu par son nom).
   const CAMPUS_PLACES = [
-    { nom: "BU Cézeaux (Sciences & Tech)", lat: 45.7595, lon: 3.1118, type: "bu", ouvert: true, desc: "Campus des Cézeaux · 8h - 20h" },
-    { nom: "Resto U Marie-Hélène Lafon", lat: 45.7608, lon: 3.1132, type: "resto", ouvert: true, desc: "Cézeaux Aubière · 11h30 - 13h45 (62% occupé)" },
-    { nom: "IUT Aubière (Informatique)", lat: 45.7582, lon: 3.1124, type: "campus", ouvert: true, desc: "Campus Cézeaux · Département Info & Réseaux" },
-    { nom: "ISIMA (École d'Ingénieurs)", lat: 45.7610, lon: 3.1105, type: "campus", ouvert: true, desc: "Campus Cézeaux · Bât. Blaise Pascal" },
-    { nom: "SIGMA Clermont", lat: 45.7578, lon: 3.1145, type: "campus", ouvert: true, desc: "Campus Cézeaux · Pôle Chimie/Méca" },
-    { nom: "BU Lettres & SHS Gergovia", lat: 45.7702, lon: 3.0888, type: "bu", ouvert: true, desc: "Site Gergovia · 8h30 - 19h30" },
-    { nom: "Resto U Le Manège Carnot", lat: 45.7725, lon: 3.0902, type: "resto", ouvert: true, desc: "Centre-ville Carnot · 11h30 - 13h45 (85% occupé)" },
-    { nom: "Droit-Éco (Site Carnot)", lat: 45.7731, lon: 3.0895, type: "campus", ouvert: true, desc: "Bd Mitterrand · Site Carnot" },
-    { nom: "Santé & Pharmacie Dunant", lat: 45.7685, lon: 3.0945, type: "campus", ouvert: true, desc: "Campus Dunant · 8h - 19h" },
-    { nom: "Resto U Le Dunant", lat: 45.7680, lon: 3.0950, type: "resto", ouvert: true, desc: "Campus Dunant · Resto U Médecine" },
-    { nom: "Odontologie (Dentaire)", lat: 45.7820, lon: 3.1020, type: "campus", ouvert: false, desc: "Clermont-Ferrand · Réouverture 14h" },
-    { nom: "INSPÉ Chamalières", lat: 45.7780, lon: 3.0650, type: "campus", ouvert: false, desc: "Campus Chamalières" }
+    { nom: "BU Sciences des Cézeaux", lat: 45.7602, lon: 3.1140, type: "bu", desc: "Campus des Cézeaux · Aubière" },
+    { nom: "Restaurant universitaire des Cézeaux", lat: 45.7584, lon: 3.1138, type: "resto", desc: "Campus des Cézeaux · Aubière" },
+    { nom: "ISIMA", lat: 45.7592, lon: 3.1110, type: "campus", desc: "École d'ingénieurs · Campus des Cézeaux" },
+    { nom: "SIGMA Clermont", lat: 45.7578, lon: 3.1129, type: "campus", desc: "École d'ingénieurs · Campus des Cézeaux" },
+    { nom: "IUT Clermont Auvergne (Aubière)", lat: 45.7628, lon: 3.1081, type: "campus", desc: "Site de Rochefeuille · Aubière" },
+    { nom: "École de Droit", lat: 45.7706, lon: 3.0896, type: "campus", desc: "Cours Raymond Poincaré · Clermont-Ferrand" },
+    { nom: "BU Lafayette (Lettres & SHS)", lat: 45.7739, lon: 3.0880, type: "bu", desc: "Clermont-Ferrand" },
+    { nom: "Faculté de Médecine et de Pharmacie", lat: 45.7589, lon: 3.0893, type: "campus", desc: "Clermont-Ferrand" },
+    { nom: "Chirurgie dentaire (Odontologie)", lat: 45.7865, lon: 3.1120, type: "campus", desc: "Rue de Braga · Saint-Jacques" },
+    { nom: "INSPÉ Chamalières", lat: 45.7739, lon: 3.0725, type: "campus", desc: "Avenue Pasteur · Chamalières" }
   ];
+  const enc = encodeURIComponent;
+  // Liens sans clé d'API : Google Maps (itinéraire), Waze et OpenStreetMap s'ouvrent dans leur application.
+  const gmaps = (p) => `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lon}&destination_place_id=&travelmode=walking`;
+  const waze = (p) => `https://waze.com/ul?ll=${p.lat},${p.lon}&navigate=yes`;
+  const osm = (p) => `https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lon}#map=17/${p.lat}/${p.lon}`;
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  let map;
+  let map, current = 0;
   function init() {
-    map = L.map('map', {
-      zoomControl: true,
-      attributionControl: false
-    }).setView([45.765, 3.100], 13);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
-    }).addTo(map);
-
-    CAMPUS_PLACES.forEach(p => {
-      const badgeCls = p.ouvert ? "open" : "closed";
-      const badgeTxt = p.ouvert ? "OUVERT" : "FERMÉ";
-      const iconEmoji = p.type === "bu" ? "📚" : p.type === "resto" ? "🍽️" : "🎓";
-      const iconHtml = `<div style="background:#00bfa5;color:#121418;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 3px 10px rgba(0,0,0,0.5);border:2px solid #ffffff;">${iconEmoji}</div>`;
-      
-      const customIcon = L.divIcon({
-        html: iconHtml,
-        className: 'custom-pin',
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
-      });
-
-      const popupHtml = `
-        <div class="pop-title">${p.nom}</div>
-        <div class="pop-sub">${p.desc}</div>
-        <span class="pop-badge ${badgeCls}">${badgeTxt}</span>
-        <a class="pop-link" href="https://maps.google.com/?q=${p.lat},${p.lon}" target="_blank" rel="noopener noreferrer">Itinéraire Google Maps ↗</a>
-      `;
-
-      L.marker([p.lat, p.lon], { icon: customIcon })
-        .addTo(map)
-        .bindPopup(popupHtml, { className: 'campus-popup' });
+    map = L.map('map', { zoomControl: true, attributionControl: false }).setView([45.765, 3.100], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+    CAMPUS_PLACES.forEach((p) => {
+      const emoji = p.type === "bu" ? "📚" : p.type === "resto" ? "🍽️" : "🎓";
+      const icon = L.divIcon({ html: `<div style="background:#00bfa5;color:#121418;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 3px 10px rgba(0,0,0,.5);border:2px solid #fff;">${emoji}</div>`, className: 'custom-pin', iconSize: [30, 30], iconAnchor: [15, 15] });
+      const html = `<div class="pop-title">${esc(p.nom)}</div><div class="pop-sub">${esc(p.desc)}</div>
+        <div class="pop-links"><a href="${gmaps(p)}">Ouvrir avec Google Maps</a><a href="${waze(p)}">Ouvrir avec Waze</a><a href="${osm(p)}">Ouvrir avec OpenStreetMap</a></div>`;
+      L.marker([p.lat, p.lon], { icon }).addTo(map).bindPopup(html, { className: 'campus-popup' });
     });
+    setTimeout(() => map.invalidateSize(), 150);
 
-    // Invalider la taille après le premier rendu pour garantir la netteté immédiate
-    setTimeout(() => { map.invalidateSize(); }, 150);
+    const chips = document.getElementById('chips');
+    CAMPUS_PLACES.forEach((p, i) => {
+      const b = document.createElement('button'); b.textContent = p.nom; b.addEventListener('click', () => showGoogle(i)); chips.appendChild(b);
+    });
+    document.getElementById('tabOsm').addEventListener('click', () => setMode('osm'));
+    document.getElementById('tabGoogle').addEventListener('click', () => setMode('google'));
   }
-
+  function showGoogle(i) {
+    current = i;
+    const p = CAMPUS_PLACES[i];
+    document.getElementById('gframe').src = `https://www.google.com/maps?q=${p.lat},${p.lon}&z=16&hl=fr&output=embed`;
+    [...document.querySelectorAll('#chips button')].forEach((b, k) => b.classList.toggle('on', k === i));
+  }
+  function setMode(m) {
+    const g = m === 'google';
+    document.getElementById('map').style.display = g ? 'none' : 'block';
+    document.getElementById('google').style.display = g ? 'flex' : 'none';
+    document.getElementById('tabOsm').classList.toggle('on', !g); document.getElementById('tabOsm').setAttribute('aria-selected', String(!g));
+    document.getElementById('tabGoogle').classList.toggle('on', g); document.getElementById('tabGoogle').setAttribute('aria-selected', String(g));
+    if (g) showGoogle(current); else setTimeout(() => map.invalidateSize(), 100);
+  }
   window.addEventListener('load', init);
   window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
 </script>

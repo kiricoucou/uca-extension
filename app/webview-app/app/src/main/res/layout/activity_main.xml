@@ -27,6 +27,27 @@
             app:menu="@menu/bottom_nav_menu" />
     </LinearLayout>
 
+    <!-- Session expirée : l'app reste consultable, ce bandeau propose de se reconnecter -->
+    <TextView
+        android:id="@+id/sessionBanner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="12dp"
+        android:layout_marginBottom="76dp"
+        android:background="@drawable/bg_session_banner"
+        android:clickable="true"
+        android:focusable="true"
+        android:maxWidth="300dp"
+        android:paddingHorizontal="14dp"
+        android:paddingVertical="9dp"
+        android:text="Session expirée. Veuillez vous reconnecter."
+        android:textColor="#FFFFFF"
+        android:textSize="12.5sp"
+        android:textStyle="bold"
+        android:elevation="8dp"
+        android:visibility="gone" />
+
     <!-- Overlay bloquant de mise à jour GitHub (visible dès qu'une nouvelle version est pushée sur main) -->
     <include
         android:id="@+id/updateBlockerOverlay"

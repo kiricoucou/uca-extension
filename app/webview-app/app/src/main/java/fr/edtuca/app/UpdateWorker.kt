@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit
 class UpdateWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, params) {
     override fun doWork(): Result {
         LiveUpdate.checkAndApplyNow(applicationContext)
+        MailWatcher.checkBlocking(applicationContext)
         return Result.success()
     }
 

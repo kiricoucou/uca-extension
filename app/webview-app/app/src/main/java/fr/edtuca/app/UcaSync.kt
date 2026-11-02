@@ -155,7 +155,8 @@ object UcaSync {
             }
         }
         handler.postAtTime({ finish(null) }, hidden, android.os.SystemClock.uptimeMillis() + 25000)
-        hidden.loadUrl(CAS_URL)
+        // On charge la vraie page protégée : si Odin répond (session Odin ou CAS encore valide), la session est bonne.
+        hidden.loadUrl(EDT_URL)
     }
 
     fun containsSchedule(text: String): Boolean = DATE_HEADER_RE.containsMatchIn(text)

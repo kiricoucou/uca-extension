@@ -20,8 +20,8 @@ android {
         applicationId = "fr.edtuca.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 8
-        versionName = "1.4.5"
+        versionCode = 9
+        versionName = "1.4.6"
     }
 
     signingConfigs {
@@ -38,6 +38,16 @@ android {
     }
 
     buildTypes {
+        // Version de TEST (jamais publiée) : débogable, installée à côté de l'app réelle (fr.edtuca.app.qa), signée avec
+        // la clé de débogage. Permet de tester l'interface avec les données de démonstration, sans se connecter à Odin.
+        create("qa") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            isShrinkResources = false
+            isDebuggable = true
+            applicationIdSuffix = ".qa"
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

@@ -47,6 +47,10 @@
                 <TextView android:text="NOTIFICATIONS" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
 
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingVertical="8dp">
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Nouveau mail reçu" android:textColor="@color/text" android:textSize="13.5sp" />
+                    <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switchMail" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingVertical="8dp">
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Prochains cours" android:textColor="@color/text" android:textSize="13.5sp" />
                     <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switchCours" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 </LinearLayout>
@@ -110,7 +114,7 @@
                 <Button
                     android:id="@+id/btnDesign"
                     android:layout_width="match_parent"
-                    android:layout_height="40dp"
+                    android:layout_height="48dp"
                     android:layout_marginTop="8dp"
                     android:layout_marginBottom="14dp"
                     android:text="Design"
@@ -120,7 +124,7 @@
                     android:textStyle="bold" />
                 <TextView android:text="MISES À JOUR GITHUB" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                 <TextView
-                    android:text="Synchronisation automatique avec la branche main du dépôt officiel GitHub. Bloque l'application dès qu'une nouvelle version est détectée."
+                    android:text="Les nouvelles versions de l'interface s'installent seules depuis GitHub. Un nouvel APK complet est proposé à l'ouverture quand il y en a un."
                     android:textColor="@color/text"
                     android:textSize="12.5sp"
                     android:layout_marginTop="6dp"
@@ -138,7 +142,7 @@
                         android:layout_width="0dp"
                         android:layout_height="40dp"
                         android:layout_weight="1"
-                        android:text="Vérifier sur GitHub"
+                        android:text="Vérifier"
                         android:textColor="@color/on_accent"
                         android:background="@drawable/bg_cta"
                         android:textSize="12sp"
@@ -162,7 +166,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
-                    android:text="Statut : Branche main surveillée (v1.1.0)"
+                    android:text="Les mises à jour sont vérifiées sur GitHub toutes les 15 minutes."
                     android:textColor="@color/text_dim"
                     android:textSize="11.5sp" />
             </LinearLayout>

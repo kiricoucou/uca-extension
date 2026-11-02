@@ -71,7 +71,7 @@
 
                         <TextView
                             android:id="@+id/studentBirthDate"
-                            android:text="Compte universitaire certifié"
+                            android:text=""
                             android:textColor="@color/accent2"
                             android:textSize="12.5sp"
                             android:textStyle="bold"
@@ -90,7 +90,7 @@
 
                         <TextView
                             android:id="@+id/studentId"
-                            android:text="N° Étudiant : Connecté SSO"
+                            android:text="N° étudiant : non détecté"
                             android:textColor="@color/text_dim"
                             android:textSize="11.5sp"
                             android:layout_marginTop="2dp"
@@ -100,14 +100,24 @@
                     </LinearLayout>
                 </LinearLayout>
 
-                <TextView
-                    android:text="✓ Carte étudiante européenne (ESCN) certifiée UCA"
-                    android:textColor="#10b981"
-                    android:textSize="11.5sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="10dp"
+                <LinearLayout
+                    android:id="@+id/profileDetails"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginTop="12dp" />
+
+                <Button
+                    android:id="@+id/btnOdinProfile"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_cta"
+                    android:text="Voir mon profil étudiant"
+                    android:textAllCaps="false"
+                    android:textColor="@color/on_accent"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold" />
 
             </LinearLayout>
 
@@ -253,6 +263,18 @@
                     android:layout_marginTop="3dp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"/>
+                <Button
+                    android:id="@+id/btnLoginCompte"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/bg_cta"
+                    android:text="Se connecter pour tout resynchroniser"
+                    android:textAllCaps="false"
+                    android:textColor="@color/on_accent"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
                 <Button
                     android:id="@+id/btnLogoutCompte"
                     android:layout_width="wrap_content"

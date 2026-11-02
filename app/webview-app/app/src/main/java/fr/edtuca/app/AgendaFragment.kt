@@ -109,11 +109,12 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
             }
         }
 
-        webView.loadUrl("https://$ASSET_HOST/assets/legacy-site/index.html")
+        val demo = PrefsStore.qaDemo(requireContext())
+        webView.loadUrl("https://$ASSET_HOST/assets/legacy-site/index.html" + if (demo) "?demo=1" else "")
 
         // Au lancement de l'écran : resync silencieuse (comme trySilentResync
         // côté extension), sans ouvrir de fenêtre de connexion.
-        doResync(silent = true)
+        if (!demo) doResync(silent = true)
 
         return root
     }
@@ -126,7 +127,7 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
         view.evaluateJavascript(
             "(function(){try{var s=JSON.parse(localStorage.getItem('uca_store')||'{}');s.uca_design='" + wanted + "';" +
                 "localStorage.setItem('uca_store',JSON.stringify(s));}catch(e){}" +
-                "location.replace('/assets/legacy-site/designs/" + wanted + "/agenda.html');})()", null)
+                "location.replace('/assets/legacy-site/designs/" + wanted + "/agenda.html'+location.search+location.hash);})()", null)
     }
 
     /** Appelé depuis UcaBridge quand la page demande une synchro. */
@@ -161,6 +162,7 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
                 }
                 else -> {
                     PrefsStore.setLoggedIn(requireContext(), true)
+                    (requireActivity() as MainActivity).clearSessionExpired()
                     deliver(mapOf("type" to "UCA_SESSION_STATE", "expired" to false))
                     deliver(mapOf("type" to "UCA_SYNC_RESULT", "ok" to true, "text" to text, "silent" to silent))
                     // Synchro complète en une seule fois : Notes + Absences + Profil étudiant
@@ -182,6 +184,7 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
         UcaSync.scrapeNotes(ctx) { releve ->
             if (isAdded && releve != null) {
                 deliver(mapOf("type" to "UCA_NOTES_RESULT", "ok" to true, "releve" to releve))
+                notifyNewGrades(ctx, releve)
             }
         }
         // 3. Profil étudiant
@@ -205,6 +208,40 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
     private fun syncNotesQuietly() {
         val ctx = context ?: return
         syncAbsencesAndNotes(ctx)
+    }
+
+    /** Compare le nombre de notes avec le relevé précédent : une nouvelle note crée une notification. */
+    private fun notifyNewGrades(ctx: Context, releve: JSONObject) {
+        try {
+            val seen = HashSet<String>()
+            var count = 0
+            val ues = releve.optJSONArray("ue") ?: return
+            for (i in 0 until ues.length()) {
+                val mats = ues.getJSONObject(i).optJSONArray("matieres") ?: continue
+                for (j in 0 until mats.length()) {
+                    val m = mats.getJSONObject(j)
+                    val evals = m.optJSONArray("evals") ?: continue
+                    for (k in 0 until evals.length()) {
+                        val e = evals.getJSONObject(k)
+                        if (!e.isNull("note") && seen.add(m.optString("label") + "|" + e.optString("label"))) count++
+                    }
+                }
+            }
+            val last = PrefsStore.gradeCount(ctx)
+            if (last in 0 until count) {
+                val n = count - last
+                NotifStore.post(ctx, "note", if (n > 1) "$n nouvelles notes" else "Nouvelle note disponible", "Consulte ton relevé de notes")
+            }
+            PrefsStore.setGradeCount(ctx, count)
+        } catch (_: Exception) { }
+    }
+
+    /** Resynchronise tout de suite (après une reconnexion). */
+    fun resyncNow() { if (isAdded) doResync(silent = false) }
+
+    /** Prévient la page que la session est (ou n'est plus) expirée. */
+    fun notifySessionExpired(expired: Boolean) {
+        if (isAdded) deliver(mapOf("type" to "UCA_SESSION_STATE", "expired" to expired))
     }
 
     /** La page vient de changer de design (menu « Changer de design ») : on s'en souvient pour toute l'app. */

@@ -83,6 +83,7 @@ class PreferencesFragment : Fragment() {
             }
         }
 
+        bindSwitch(root, R.id.switchMail, PrefsStore.notifMail(ctx)) { v -> PrefsStore.setNotifMail(ctx, v) }
         bindSwitch(root, R.id.switchCoursLigne, PrefsStore.notifCoursLigne(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_COURS_LIGNE, v) }
         bindSwitch(root, R.id.switchBiblio, PrefsStore.notifBiblio(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_BIBLIO, v) }
         bindSwitch(root, R.id.switchResto, PrefsStore.notifResto(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_RESTO, v) }
@@ -119,6 +120,8 @@ class PreferencesFragment : Fragment() {
             }
         }
 
+        // Le test de l'écran de mise à jour bloquant n'existe que dans les versions de test (jamais publiées).
+        if ((ctx.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) root.findViewById<View>(R.id.btnTestBlockingUpdate)?.visibility = View.GONE
         root.findViewById<View>(R.id.btnTestBlockingUpdate)?.setOnClickListener {
             (requireActivity() as MainActivity).triggerSimulatedUpdateTest()
         }

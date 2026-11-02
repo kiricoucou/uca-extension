@@ -37,7 +37,7 @@
                     android:layout_height="wrap_content"/>
 
                 <TextView
-                    android:text="Pour afficher la carte interactive des campus de l'Université Clermont Auvergne (Cézeaux, Dunant, Carnot, Gergovia), votre téléphone doit télécharger les images de la carte depuis OpenStreetMap, qui voit alors votre adresse IP. Aucun cookie, aucune donnée de cours."
+                    android:text="Pour afficher la carte interactive des campus de l'Université Clermont Auvergne (Cézeaux, Dunant, Carnot, Gergovia), votre téléphone télécharge les images de la carte depuis OpenStreetMap, qui voit alors votre adresse IP. Le fond « Google Maps », si vous le choisissez, affiche Google Maps dans la page et peut déposer des cookies Google. Aucune donnée de cours ne part du téléphone."
                     android:textColor="@color/text"
                     android:textSize="12.5sp"
                     android:lineSpacingExtra="2dp"
@@ -90,7 +90,7 @@
             <FrameLayout
                 android:id="@+id/mapContainer"
                 android:layout_width="match_parent"
-                android:layout_height="250dp"
+                android:layout_height="440dp"
                 android:layout_margin="16dp"
                 android:visibility="gone">
 

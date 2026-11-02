@@ -146,6 +146,23 @@ object PrefsStore {
         prefs(context).edit().putString("design", id).apply()
     }
 
+    /** Test seulement (APK débogable) : agenda en mode démonstration, aucune connexion à Odin. Ignoré dans l'app publiée. */
+    fun qaDemo(context: Context): Boolean =
+        (context.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0 &&
+            prefs(context).getBoolean("qa_demo", false)
+
+    /** Session CAS expirée : l'app reste consultable (données déjà synchronisées), un bandeau propose de se reconnecter. */
+    fun sessionExpired(context: Context): Boolean = prefs(context).getBoolean("session_expired", false)
+    fun setSessionExpired(context: Context, value: Boolean) { prefs(context).edit().putBoolean("session_expired", value).apply() }
+
+    fun notifMail(context: Context): Boolean = prefs(context).getBoolean("notif_mail", true)
+    fun setNotifMail(context: Context, v: Boolean) { prefs(context).edit().putBoolean("notif_mail", v).apply() }
+    /** Dernier nombre de mails non lus vu (-1 = jamais relevé : la première fois on ne notifie pas). */
+    fun mailUnread(context: Context): Int = prefs(context).getInt("mail_unread", -1)
+    fun setMailUnread(context: Context, n: Int) { prefs(context).edit().putInt("mail_unread", n).apply() }
+    fun gradeCount(context: Context): Int = prefs(context).getInt("grade_count", -1)
+    fun setGradeCount(context: Context, n: Int) { prefs(context).edit().putInt("grade_count", n).apply() }
+
     fun clearStudentProfile(context: Context) {
         prefs(context).edit()
             .remove(KEY_STUDENT_NAME).remove(KEY_STUDENT_ID).remove(KEY_STUDENT_EMAIL)

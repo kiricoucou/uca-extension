@@ -100,7 +100,7 @@ def tool_checks(ag, did):
     for k in ("Accueil", "Aide", "Installer l'app", "Importer mes données", "confidentialité"):
         check(f"{did} : panneau Liens → « {k} »", any(k in t for t in labels), str(labels))
     shot(ag, f"{did}-liens")
-    items.first.click(); ag.wait_for_timeout(1200)
+    items.first.click(); ag.wait_for_timeout(2500)
     check(f"{did} : lien ouvert dans un nouvel onglet vers github.io", bool(opened) and opened[0].startswith("https://kiricoucou.github.io/uca-extension/"), str(opened))
     ag.mouse.click(700, 500); ag.wait_for_timeout(200)
 

@@ -150,6 +150,7 @@ def main():
             ag.locator("#simTarget").fill("12"); ag.wait_for_timeout(100)
             check(f"{did} : projection du semestre affichée", ag.locator(".np-proj-list li").count() == 7 and "partout" in ag.locator(".np-proj-list").inner_text())
             check(f"{did} : matières à prioriser classées", ag.locator(".np-prio-list li").count() >= 1 and ag.locator(".np-prio-list li").first.inner_text().startswith("R1.03"), ag.locator(".np-prio").inner_text() if ag.locator(".np-prio").count() else "absent")
+            ag.select_option("#chartScope", "general"); ag.wait_for_timeout(200)  # le graphique ouvert par défaut est la vue d'ensemble
             check(f"{did} : courbe de la moyenne dessinée", ag.locator(".np-chart svg polyline").count() == 1 and ag.locator(".np-chart svg circle").count() == 5)
             ag.select_option("#chartScope", "mat:R1.01 : Init dev"); ag.wait_for_timeout(200)
             check(f"{did} : barres par évaluation (note + classe)", ag.locator(".np-chart svg rect").count() == 4, str(ag.locator(".np-chart svg rect").count()))

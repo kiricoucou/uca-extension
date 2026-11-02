@@ -55,6 +55,16 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.6 — app Android 1.4.6 : consultation hors session, graphique des notes, carte, notifications
+
+- **Session expirée** : l'app reste entièrement consultable avec les données déjà synchronisées. Un bandeau rouge en bas à gauche dit « Session expirée. Veuillez vous reconnecter. » ; un bouton « Se connecter » est dans le menu de l'agenda et dans Compte. La messagerie, elle, redemande la connexion. La vérification de session teste la vraie page d'Odin et attend deux contrôles concordants avant d'afficher le bandeau.
+- **Notes** : un clic sur « Moyenne générale » ouvre le graphique de toutes les matières, avec le trait pointillé horizontal de la moyenne générale et, dessous, les notes de chaque matière (vert ≥ 14, jaune de 10 à 14, orange < 10). Le graphique d'une matière montre aussi le trait de la moyenne générale.
+- **Carte** : zoom et déplacement au doigt, fond OpenStreetMap ou Google Maps (sans clé d'API ; Google peut déposer des cookies), « Ouvrir avec Google Maps / Waze / OpenStreetMap » pour chaque lieu. Positions revérifiées dans OpenStreetMap (certaines étaient décalées de 200 m à 1 km) ; les horaires et taux d'affluence inventés sont supprimés.
+- **Notifications** : vraies notifications seulement (nouveau mail reçu, nouvelle note) ; réglage « Nouveau mail reçu » dans les Préférences ; les lignes écrites en dur sont retirées.
+- **Compte** : nom, prénom, date de naissance, numéro, formation, groupe et adresse @etu.uca.fr lus dans Odin avec la session de l'app (« non détecté » sinon), lien « Voir mon profil étudiant ». Photo de profil locale.
+- **Préférences** : textes périmés corrigés, bouton de test du blocage réservé aux versions de test.
+- Aucun cookie ni identifiant n'est lu ou copié par l'app : elle utilise la session de sa WebView.
+
 ## 1.46.5 — app Android 1.4.5 : session CAS fiable, design dans les Préférences
 
 - **Session expirée à tort** : l'app te demandait de te reconnecter dès que tu la quittais, alors que la session CAS dure plusieurs jours. Elle ne déclare maintenant la session expirée que si Odin renvoie vraiment le formulaire de connexion (champ mot de passe), jamais pour une simple page intermédiaire ou un réseau lent ; en cas de doute, elle ne verrouille pas. La resynchro utilise les cookies de connexion de la WebView de l'app, que le système garde sur le disque (écriture forcée quand l'app passe en arrière-plan). L'app ne lit ni ne copie ces cookies.

@@ -16,26 +16,41 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.webkit.WebViewAssetLoader
 
-private data class Lieu(val nom: String, val resto: Boolean, val ouvert: Boolean, val occ: Int, val info: String = "")
+private data class Lieu(val nom: String, val resto: Boolean, val lat: Double, val lon: Double, val info: String = "")
 
-/** Écran Lieux universitaires : gestion du consentement Google Maps et liste exhaustive des campus UCA. */
+/** Écran Lieux universitaires : carte (OpenStreetMap ou Google Maps) et liste des campus, avec ouverture dans Google Maps, Waze ou OpenStreetMap. */
 class LieuxFragment : Fragment() {
 
+    // Positions relevées dans OpenStreetMap. Aucun horaire ni taux d'affluence : on n'a pas de source fiable pour ça.
     private val lieux = listOf(
-        Lieu("Marie-Hélène Lafon", resto = true, ouvert = true, occ = 62, info = "Campus des Cézeaux · Aubière"),
-        Lieu("BU Cézeaux (Sciences & Tech)", resto = false, ouvert = true, occ = 48, info = "Bâtiment Sciences · 8h - 20h"),
-        Lieu("Droit-Éco (Bd Mitterrand)", resto = false, ouvert = true, occ = 41, info = "Site Carnot · 8h - 19h"),
-        Lieu("Odontologie (Dentaire)", resto = false, ouvert = false, occ = 0, info = "Clermont-Ferrand · Réouverture 14h"),
-        Lieu("Sciences & STAPS Cézeaux", resto = true, ouvert = true, occ = 78, info = "Cafétéria Cézeaux · Déjeuner rapide"),
-        Lieu("Santé & Pharmacie", resto = false, ouvert = true, occ = 23, info = "Campus Dunant · 8h - 19h"),
-        Lieu("Le Dunant", resto = true, ouvert = true, occ = 70, info = "Resto U Dunant · Médecine"),
-        Lieu("INSPÉ Chamalières", resto = true, ouvert = false, occ = 0, info = "Campus Chamalières"),
-        Lieu("Le Manège Carnot", resto = true, ouvert = true, occ = 85, info = "Resto U Centre-ville · Carnot"),
-        Lieu("BU Lettres & SHS Gergovia", resto = false, ouvert = true, occ = 52, info = "Bd Gergovia · 8h30 - 19h30"),
-        Lieu("IUT Aubière (Informatique)", resto = false, ouvert = true, occ = 35, info = "Campus Cézeaux · Salles TP"),
-        Lieu("ISIMA (École d'Ingénieurs)", resto = false, ouvert = true, occ = 29, info = "Campus Cézeaux · Bât. ISIMA"),
-        Lieu("SIGMA Clermont", resto = false, ouvert = true, occ = 44, info = "Campus Cézeaux · Pôle Chimie/Méc")
+        Lieu("BU Sciences des Cézeaux", false, 45.7602, 3.1140, "Campus des Cézeaux · Aubière"),
+        Lieu("Restaurant universitaire des Cézeaux", true, 45.7584, 3.1138, "Campus des Cézeaux · Aubière"),
+        Lieu("ISIMA", false, 45.7592, 3.1110, "École d'ingénieurs · Cézeaux"),
+        Lieu("SIGMA Clermont", false, 45.7578, 3.1129, "École d'ingénieurs · Cézeaux"),
+        Lieu("IUT Clermont Auvergne (Aubière)", false, 45.7628, 3.1081, "Site de Rochefeuille · Aubière"),
+        Lieu("École de Droit", false, 45.7706, 3.0896, "Cours Raymond Poincaré · Clermont-Ferrand"),
+        Lieu("BU Lafayette (Lettres & SHS)", false, 45.7739, 3.0880, "Clermont-Ferrand"),
+        Lieu("Faculté de Médecine et de Pharmacie", false, 45.7589, 3.0893, "Clermont-Ferrand"),
+        Lieu("Chirurgie dentaire (Odontologie)", false, 45.7865, 3.1120, "Rue de Braga · Saint-Jacques"),
+        Lieu("INSPÉ Chamalières", false, 45.7739, 3.0725, "Avenue Pasteur · Chamalières")
     )
+
+    /** Propose Google Maps, Waze ou OpenStreetMap : chaque lien s'ouvre dans l'application correspondante (aucune clé d'API). */
+    private fun openPlace(l: Lieu) {
+        val ctx = requireContext()
+        val options = arrayOf("Google Maps", "Waze", "OpenStreetMap")
+        androidx.appcompat.app.AlertDialog.Builder(ctx)
+            .setTitle(l.nom)
+            .setItems(options) { _, which ->
+                val url = when (which) {
+                    0 -> "https://www.google.com/maps/dir/?api=1&destination=${l.lat},${l.lon}&travelmode=walking"
+                    1 -> "https://waze.com/ul?ll=${l.lat},${l.lon}&navigate=yes"
+                    else -> "https://www.openstreetmap.org/?mlat=${l.lat}&mlon=${l.lon}#map=17/${l.lat}/${l.lon}"
+                }
+                try { startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) }
+                catch (_: Exception) { android.widget.Toast.makeText(ctx, "Aucune application pour ouvrir ce lien.", android.widget.Toast.LENGTH_SHORT).show() }
+            }.setNegativeButton("Annuler", null).show()
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -68,9 +83,23 @@ class LieuxFragment : Fragment() {
         mapWebView?.settings?.domStorageEnabled = true
         mapWebView?.settings?.loadWithOverviewMode = true
         mapWebView?.settings?.useWideViewPort = true
+        mapWebView?.let { android.webkit.CookieManager.getInstance().setAcceptThirdPartyCookies(it, true) }
+        // Un doigt posé sur la carte la déplace (et deux doigts zooment) au lieu de faire défiler la page.
+        mapWebView?.setOnTouchListener { v, ev ->
+            if (ev.action == android.view.MotionEvent.ACTION_DOWN || ev.pointerCount > 1) v.parent?.requestDisallowInterceptTouchEvent(true)
+            else if (ev.action == android.view.MotionEvent.ACTION_UP || ev.action == android.view.MotionEvent.ACTION_CANCEL) v.parent?.requestDisallowInterceptTouchEvent(false)
+            false
+        }
         mapWebView?.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                 return assetLoader.shouldInterceptRequest(request.url)
+            }
+
+            // Un lien cliqué dans la carte (Google Maps, Waze, OpenStreetMap) s'ouvre dans l'application du téléphone.
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                if (!request.isForMainFrame || request.url.host == "appassets.androidplatform.net") return false
+                try { startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, request.url)) } catch (_: Exception) { }
+                return true
             }
         }
 
@@ -106,19 +135,14 @@ class LieuxFragment : Fragment() {
             val row = inflater.inflate(R.layout.item_lieu, container2, false)
             val icon = row.findViewById<ImageView>(R.id.lieuIcon)
             icon.setImageResource(if (l.resto) R.drawable.ic_restaurant else R.drawable.ic_library)
-            icon.setBackgroundResource(if (l.ouvert) R.drawable.bg_pin else R.drawable.bg_pin_closed)
+            icon.setBackgroundResource(R.drawable.bg_pin)
             row.findViewById<TextView>(R.id.lieuNom).text = l.nom
             val statutView = row.findViewById<TextView>(R.id.lieuStatut)
             val occView = row.findViewById<TextView>(R.id.lieuOcc)
-            if (l.ouvert) {
-                statutView.text = "OUVERT"
-                statutView.setTextColor(resources.getColor(R.color.accent2, null))
-                occView.text = "${l.occ}% occupé"
-            } else {
-                statutView.text = "FERMÉ"
-                statutView.setTextColor(0xFFC0392B.toInt())
-                occView.text = ""
-            }
+            statutView.text = l.info
+            statutView.setTextColor(resources.getColor(R.color.text_dim, null))
+            occView.text = "Itinéraire ›"
+            row.setOnClickListener { openPlace(l) }
             container2.addView(row)
         }
 

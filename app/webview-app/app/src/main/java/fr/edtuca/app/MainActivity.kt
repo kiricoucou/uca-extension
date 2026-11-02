@@ -46,6 +46,9 @@ class MainActivity : AppCompatActivity() {
         // Initialisation de l'overlay bloquant
         initUpdateBlocker()
 
+        findViewById<View>(R.id.sessionBanner)?.setOnClickListener { startLogin() }
+        showSessionBanner(PrefsStore.isLoggedIn(this) && PrefsStore.sessionExpired(this))
+
         // Le petit bonhomme de la barre du haut mène à « Mon compte », sur tous les écrans qui l'affichent.
         supportFragmentManager.registerFragmentLifecycleCallbacks(object : androidx.fragment.app.FragmentManager.FragmentLifecycleCallbacks() {
             override fun onFragmentViewCreated(fm: androidx.fragment.app.FragmentManager, f: Fragment, v: View, savedInstanceState: Bundle?) {
@@ -94,6 +97,7 @@ class MainActivity : AppCompatActivity() {
         }
         checkSessionIfNeeded()
         checkLiveUpdate()
+        MailWatcher.check(this)
         periodicHandler.postDelayed(periodicCheck, PERIOD_MS)
     }
 
@@ -274,7 +278,7 @@ class MainActivity : AppCompatActivity() {
     private val periodicHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private val periodicCheck = object : Runnable {
         override fun run() {
-            if (!isAppBlockedForUpdate) { checkGithubUpdate(); checkLiveUpdate() }
+            if (!isAppBlockedForUpdate) { checkGithubUpdate(); checkLiveUpdate(); MailWatcher.check(this@MainActivity) }
             periodicHandler.postDelayed(this, PERIOD_MS)
         }
     }
@@ -313,26 +317,56 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val loginLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == RESULT_OK) {
+            PrefsStore.setLoggedIn(this, true)
+            clearSessionExpired()
+            (supportFragmentManager.findFragmentById(R.id.fragmentContainer) as? AgendaFragment)?.resyncNow()
+        }
+    }
+
+    /** Ouvre la page de connexion officielle du CAS (l'utilisateur tape lui-même ses codes). */
+    fun startLogin() {
+        loginLauncher.launch(android.content.Intent(this, LoginActivity::class.java))
+    }
+
+    private fun showSessionBanner(show: Boolean) {
+        findViewById<View>(R.id.sessionBanner)?.visibility = if (show) View.VISIBLE else View.GONE
+    }
+
     /**
-     * Session CAS expirée : tout est verrouillé (onglets, sous-écrans) jusqu'à une nouvelle connexion.
-     * Les données déjà synchronisées restent sur le téléphone, mais ne sont plus accessibles.
+     * Session CAS expirée : l'app reste consultable (emploi du temps, notes, absences déjà synchronisés).
+     * Un bandeau rouge propose de se reconnecter ; le menu de l'agenda et l'écran Compte ont aussi un bouton « Se connecter ».
      */
     fun requireLogin() {
         if (!PrefsStore.isLoggedIn(this)) return
-        PrefsStore.setLoggedIn(this, false)
-        supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
-        showGate(expired = true)
-        Toast.makeText(this, "Session expirée : reconnecte-toi pour continuer.", Toast.LENGTH_LONG).show()
+        PrefsStore.setSessionExpired(this, true)
+        showSessionBanner(true)
+        (supportFragmentManager.findFragmentById(R.id.fragmentContainer) as? AgendaFragment)?.notifySessionExpired(true)
+    }
+
+    fun clearSessionExpired() {
+        if (!PrefsStore.sessionExpired(this)) return
+        PrefsStore.setSessionExpired(this, false)
+        showSessionBanner(false)
+        (supportFragmentManager.findFragmentById(R.id.fragmentContainer) as? AgendaFragment)?.notifySessionExpired(false)
     }
 
     /** Vérifie la session au retour dans l'app (au plus toutes les 5 minutes). */
     private fun checkSessionIfNeeded() {
-        if (isAppBlockedForUpdate || !PrefsStore.isLoggedIn(this)) return
+        if (isAppBlockedForUpdate || !PrefsStore.isLoggedIn(this) || PrefsStore.qaDemo(this)) return
         val now = System.currentTimeMillis()
         if (now - lastSessionCheck < 5 * 60 * 1000) return
         lastSessionCheck = now
         UcaSync.checkSession(applicationContext) { expired ->
-            if (expired == true && !isFinishing && !isDestroyed) requireLogin()
+            if (expired == false && !isFinishing && !isDestroyed) clearSessionExpired()
+            if (expired != true || isFinishing || isDestroyed) return@checkSession
+            // Un seul contrôle négatif ne suffit pas : on revérifie avant de verrouiller l'app.
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                UcaSync.checkSession(applicationContext) { again ->
+                    if (again == true && !isFinishing && !isDestroyed) requireLogin()
+                }
+            }, 3000)
         }
     }
 
@@ -344,6 +378,8 @@ class MainActivity : AppCompatActivity() {
     /** Appelé depuis PreferencesFragment : efface la session, revient à l'écran de connexion unique. */
     fun logout() {
         PrefsStore.setLoggedIn(this, false)
+        PrefsStore.setSessionExpired(this, false)
+        showSessionBanner(false)
         PrefsStore.clearStudentProfile(this)
         ProfilePhoto.delete(this)
         val cookies = android.webkit.CookieManager.getInstance()

@@ -15,7 +15,8 @@ let releveNotes = null;
 let notesHistory = [];
 let subjectColors = {};
 let tasks = [];
-let simScope = "", simTarget = 10, chartScope = "general";
+let sessionIsExpired = false;
+let simScope = "", simTarget = 10, chartScope = "overview";
 let notesSeen = {};
 let edtChanges = new Map(); // eventKey -> changement (ajouté / déplacé / salle) ; annulés : fantômes
 let cancelledGhosts = [];
@@ -569,6 +570,7 @@ function buildMobileMenu() {
   m.appendChild(menuButton("mi", "🎨 Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   if (window.UCA_APP && window.UCA_APP.extensionReady && !window.UCA_APP.demo && !window.AndroidUCA) m.appendChild(menuButton("mi", "📥 Importer mes données", () => { location.href = chrome.runtime.getURL("app/import.html"); }));
+  if (window.AndroidUCA && sessionIsExpired) m.appendChild(menuButton("mi", "🔑 Se connecter (session expirée)", () => window.AndroidUCA.requestSync("login")));
   m.appendChild(menuButton("mi msync primary", window.UCA_APP && !window.UCA_APP.extensionReady ? "📥 Importer mes données" : "🔄 Synchroniser Odin", triggerSync));
   const r = $("menuBtn").getBoundingClientRect();
   m.style.top = (r.bottom + 6) + "px"; m.style.left = r.left + "px";
@@ -595,8 +597,10 @@ new ResizeObserver(() => {
 
 /* ============================= Session expirée ============================= */
 function renderSessionState(expired) {
+  sessionIsExpired = !!expired;
   $("sessionWarn").classList.toggle("hidden", !expired);
-  $("sessionBubble").classList.toggle("show", !!expired && isMobileUI());
+  // Dans l'app Android, le bandeau rouge natif (en bas à gauche) remplace la bulle de la page.
+  $("sessionBubble").classList.toggle("show", !!expired && isMobileUI() && !window.AndroidUCA);
 }
 
 /* ============================= Sync & chargement ============================= */
@@ -606,17 +610,18 @@ const STALE_HOURS = 24;
    App : lien direct vers l'import (elle ne se synchronise pas seule). Extension : bouton « Resynchroniser »
    (même chemin que le bouton Synchroniser). Recalculé toutes les 10 min. */
 function renderStaleReminder(iso, importedAt) {
+  const appImport = window.UCA_APP && !window.AndroidUCA; // l'app Android se synchronise seule, comme l'extension
   const info = $("syncInfo"), old = info.querySelector("#staleInfo"); if (old) old.remove();
-  const t = new Date(window.UCA_APP ? (iso || importedAt) : iso).getTime();
-  if ((window.UCA_APP && !importedAt) || Number.isNaN(t)) return;
+  const t = new Date(appImport ? (iso || importedAt) : iso).getTime();
+  if ((appImport && !importedAt) || Number.isNaN(t)) return;
   const hours = (Date.now() - t) / 3600000;
   if (hours < STALE_HOURS) return;
   const span = document.createElement("span"); span.id = "staleInfo"; span.setAttribute("role", "status");
   span.style.cssText = "margin-left:12px;font-weight:600;color:var(--danger, #b3261e);";
   const days = Math.floor(hours / 24);
-  span.append(document.createTextNode(days >= 2 ? `Données vieilles de ${days} jours. ` : window.UCA_APP ? "Données de plus de 24 h. " : `Données vieilles de ${Math.floor(hours)} h. `));
+  span.append(document.createTextNode(days >= 2 ? `Données vieilles de ${days} jours. ` : appImport ? "Données de plus de 24 h. " : `Données vieilles de ${Math.floor(hours)} h. `));
   let a;
-  if (window.UCA_APP) { a = document.createElement("a"); a.href = chrome.runtime.getURL("app/import.html"); a.textContent = "Refaire un transfert"; }
+  if (appImport) { a = document.createElement("a"); a.href = chrome.runtime.getURL("app/import.html"); a.textContent = "Refaire un transfert"; }
   else {
     a = document.createElement("button"); a.type = "button"; a.id = "staleSyncBtn"; a.textContent = "Resynchroniser";
     a.addEventListener("click", () => { if (!syncBtn.disabled) triggerSync(); });
@@ -629,7 +634,7 @@ setInterval(() => { renderSyncInfo(...syncInfoArgs); renderNextInfo(); }, 10 * 6
 function renderSyncInfo(iso, importedAt) {
   syncInfoArgs = [iso, importedAt];
   const fmt = (d) => new Date(d).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-  if (window.UCA_APP && !window.UCA_APP.demo) {
+  if (window.UCA_APP && !window.UCA_APP.demo && !window.AndroidUCA) {
     $("syncInfo").textContent = importedAt ? `Données de l'ordinateur du ${fmt(iso || importedAt)} — refais un transfert après une synchro` : "Aucune donnée : importe-les depuis l'extension";
     renderStaleReminder(iso, importedAt);
     return;
@@ -1086,6 +1091,8 @@ function prioritiesBlock(getTarget) {
   return { node, update };
 }
 
+/* Couleur d'une note sur 20 : vert ≥ 14, jaune de 10 à 14, orange sous 10. */
+function gradeColor(v) { return v >= 14 ? "#2fd68f" : v >= 10 ? "#ffd23f" : "#ff8c1a"; }
 const SVG_NS = "http://www.w3.org/2000/svg";
 function svgEl(tag, attrs) { const e = document.createElementNS(SVG_NS, tag); Object.keys(attrs || {}).forEach((k) => e.setAttribute(k, attrs[k])); return e; }
 function chartSvg(w, h) {
@@ -1131,9 +1138,14 @@ function matiereChart(label) {
     svg.appendChild(svgEl("line", { x1: L, x2: W - 8, y1: y(v), y2: y(v), stroke: "currentColor", "stroke-opacity": v === 10 ? ".4" : ".15", "stroke-dasharray": v === 10 ? "3 3" : "" }));
     svg.appendChild(svgText(L - 4, y(v) + 3, v, "end"));
   });
+  const gAvg = generalAverage();
+  if (gAvg != null) {
+    svg.appendChild(svgEl("line", { x1: L, x2: W - 8, y1: y(gAvg), y2: y(gAvg), stroke: "var(--accent)", "stroke-width": 1.4, "stroke-dasharray": "5 4" }));
+    svg.appendChild(svgText(W - 8, 8, `- - moy. générale ${fmtNote(gAvg)}`, "end"));
+  }
   series.forEach((e, i) => {
     const cx = L + gw * (i + .5);
-    const bars = [[cx - bw - 1, e.note, "var(--accent)", 1, "Ta note"], [cx + 1, e.moy, "currentColor", .35, "Moyenne de la classe"]];
+    const bars = [[cx - bw - 1, e.note, gradeColor(e.note), 1, "Ta note"], [cx + 1, e.moy, "currentColor", .35, "Moyenne de la classe"]];
     bars.forEach(([bx, v, fill, op, what]) => {
       if (v == null) return;
       const r = svgEl("rect", { x: bx, y: y(v), width: bw, height: Math.max(1, y(0) - y(v)), fill, "fill-opacity": op, rx: 2 });
@@ -1144,20 +1156,75 @@ function matiereChart(label) {
     svg.appendChild(svgText(cx, H - 5, fmtNote(e.note)));
   });
   wrap.appendChild(svg);
-  const legend = npEl("div", "fp-empty", "Barre pleine : ta note · barre claire : moyenne de la classe");
+  const legend = npEl("div", "fp-empty", "Barre pleine : ta note · barre claire : moyenne de la classe · trait pointillé : moyenne générale");
   wrap.appendChild(legend);
+  return wrap;
+}
+/* Moyenne générale : une barre par matière, le trait pointillé horizontal à la moyenne générale. */
+function overviewChart() {
+  const wrap = npEl("div", "np-chart-body"), seen = new Set(), mats = [];
+  ((releveNotes && releveNotes.ue) || []).forEach((ue) => (ue.matieres || []).forEach((m) => {
+    if (seen.has(m.label)) return; seen.add(m.label);
+    const note = UCA_GRADES.matiereNote(m);
+    if (note != null) mats.push({ label: m.label, note, moy: m.moy, evals: (m.evals || []).filter((e) => e.note != null) });
+  }));
+  if (!mats.length) { wrap.appendChild(npEl("div", "fp-empty", "Aucune note pour l'instant.")); return wrap; }
+  const gAvg = generalAverage();
+  const W = 360, H = 190, L = 24, T = 12, B = 58, gw = (W - L - 8) / mats.length, bw = Math.min(26, gw * .7);
+  const y = (v) => T + (H - T - B) * (1 - v / 20);
+  const svg = chartSvg(W, H);
+  svg.setAttribute("aria-label", `Moyenne générale ${gAvg != null ? fmtNote(gAvg) : ""} sur 20 et moyenne de chaque matière`);
+  [0, 5, 10, 15, 20].forEach((v) => {
+    svg.appendChild(svgEl("line", { x1: L, x2: W - 8, y1: y(v), y2: y(v), stroke: "currentColor", "stroke-opacity": ".15" }));
+    svg.appendChild(svgText(L - 4, y(v) + 3, v, "end"));
+  });
+  mats.forEach((m, i) => {
+    const cx = L + gw * (i + .5);
+    const r = svgEl("rect", { x: cx - bw / 2, y: y(m.note), width: bw, height: Math.max(1, y(0) - y(m.note)), fill: gradeColor(m.note), rx: 3 });
+    const tt = svgEl("title"); tt.textContent = `${m.label} : ${fmtNote(m.note)} / 20`; r.appendChild(tt); svg.appendChild(r);
+    svg.appendChild(svgText(cx, y(m.note) - 3, fmtNote(m.note)));
+    const code = (m.label.match(/^(R|SAE)\d+(\.\d+)*/i) || [m.label.slice(0, 8)])[0];
+    const lab = svgText(cx, H - 22, code); lab.setAttribute("transform", `rotate(-40 ${cx} ${H - 22})`); lab.setAttribute("text-anchor", "end"); svg.appendChild(lab);
+  });
+  if (gAvg != null) {
+    svg.appendChild(svgEl("line", { x1: L, x2: W - 8, y1: y(gAvg), y2: y(gAvg), stroke: "var(--accent)", "stroke-width": 1.6, "stroke-dasharray": "5 4" }));
+    svg.appendChild(svgText(W - 8, 8, `- - moyenne générale ${fmtNote(gAvg)}`, "end"));
+  }
+  wrap.appendChild(svg);
+  wrap.appendChild(npEl("div", "fp-empty", "Trait pointillé : moyenne générale · vert ≥ 14 · jaune 10 à 14 · orange < 10"));
+  // Les notes de chaque matière, sous le graphique, chacune avec le repère de la moyenne générale.
+  mats.forEach((m) => {
+    const box = npEl("div", "np-mat"); box.style.cssText = "margin-top:12px;";
+    const head = npEl("div", "", ""); head.style.cssText = "display:flex;justify-content:space-between;font-weight:700;font-size:13px;gap:8px;";
+    head.append(npEl("span", "", m.label), npEl("span", "", `${fmtNote(m.note)} / 20`));
+    head.lastChild.style.color = gradeColor(m.note);
+    box.appendChild(head);
+    m.evals.forEach((e) => {
+      const row = npEl("div", ""); row.style.cssText = "display:grid;grid-template-columns:1fr 42px;gap:8px;align-items:center;font-size:12px;margin-top:5px;";
+      const left = npEl("div", ""); left.append(npEl("div", "", `${e.label.replace(/\s*\(sur [\d.,]+\)/i, "")}${e.coeff != null ? ` · coeff ${fmtNote(e.coeff)}` : ""}`));
+      const track = npEl("div", ""); track.style.cssText = "position:relative;height:8px;border-radius:4px;background:rgba(127,127,127,.18);margin-top:3px;";
+      const fill = npEl("div", ""); fill.style.cssText = `height:100%;width:${Math.max(2, Math.min(100, e.note / 20 * 100))}%;border-radius:4px;background:${gradeColor(e.note)};`;
+      track.appendChild(fill);
+      if (gAvg != null) { const mark = npEl("div", ""); mark.style.cssText = `position:absolute;top:-3px;bottom:-3px;left:${gAvg / 20 * 100}%;border-left:2px dotted var(--accent);`; mark.title = `Moyenne générale ${fmtNote(gAvg)}`; track.appendChild(mark); }
+      left.appendChild(track);
+      const val = npEl("div", "", fmtNote(e.note)); val.style.cssText = `text-align:right;font-weight:700;color:${gradeColor(e.note)};`;
+      row.append(left, val); box.appendChild(row);
+    });
+    wrap.appendChild(box);
+  });
   return wrap;
 }
 function chartBlock() {
   const box = npEl("div", "np-chart");
   box.appendChild(npEl("div", "fp-h", "Évolution des notes"));
   const sel = npEl("select", "fp-search"); sel.id = "chartScope"; sel.setAttribute("aria-label", "Graphique à afficher");
+  const ov = npEl("option", "", "Moyenne générale — toutes les matières"); ov.value = "overview"; sel.appendChild(ov);
   const g = npEl("option", "", "Moyenne générale (historique)"); g.value = "general"; sel.appendChild(g);
   UCA_GRADES.gradedMatieres(releveNotes).forEach((m) => { const o = npEl("option", "", m); o.value = "mat:" + m; sel.appendChild(o); });
-  if (![...sel.options].some((o) => o.value === chartScope)) chartScope = "general";
+  if (![...sel.options].some((o) => o.value === chartScope)) chartScope = "overview";
   sel.value = chartScope;
   const body = npEl("div"); body.style.cssText = "padding:4px 16px 0;";
-  const draw = () => { chartScope = sel.value; body.innerHTML = ""; body.appendChild(chartScope === "general" ? historyChart() : matiereChart(chartScope.slice(4))); inkify(body); };
+  const draw = () => { chartScope = sel.value; body.innerHTML = ""; body.appendChild(chartScope === "overview" ? overviewChart() : chartScope === "general" ? historyChart() : matiereChart(chartScope.slice(4))); inkify(body); };
   sel.addEventListener("change", draw);
   box.append(sel, body); draw();
   return box;
@@ -1176,7 +1243,12 @@ function renderNotesPanel() {
   } else {
     if (avg != null) {
       const avgBar = document.createElement("div"); avgBar.className = "notes-avg";
-      avgBar.innerHTML = `<span class="na-lbl">Moyenne générale</span><span class="na-val">${fmtNote(avg)} / 20</span>`;
+      avgBar.innerHTML = `<span class="na-lbl">Moyenne générale ›</span><span class="na-val">${fmtNote(avg)} / 20</span>`;
+      avgBar.setAttribute("role", "button"); avgBar.tabIndex = 0; avgBar.style.cursor = "pointer";
+      avgBar.setAttribute("aria-label", `Moyenne générale ${fmtNote(avg)} sur 20 : afficher le graphique de toutes les matières`);
+      const openChart = () => { chartScope = "overview"; renderNotesPanel(); const c = $("npContent").querySelector(".np-chart"); if (c) c.scrollIntoView({ block: "start", behavior: "smooth" }); };
+      avgBar.addEventListener("click", openChart);
+      avgBar.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openChart(); } });
       content.appendChild(avgBar);
     }
     [examsBlock(), simulatorBlock(), chartBlock(), npEl("div", "fp-h", "Détail des notes")].forEach((b) => { if (b) content.appendChild(inkify(b)); });

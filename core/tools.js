@@ -226,10 +226,10 @@ function buildExportPanel(panel, opts) {
    et confidentialite.html existent aussi dans chaque designs/<id>/, ce ne sont pas celles-ci). */
 const SITE_ROOT = "https://kiricoucou.github.io/uca-extension/";
 const REQUIRED_LINKS = [
-  { label: "📦 Installer l'extension", hint: "Installer l'extension pour Firefox et Chrome", url: "https://addons.mozilla.org/fr/firefox/addon/emploi-du-temps-uca/" },
   { label: "🏠 Accueil", hint: "Page d'accueil de l'application My UCA", url: "index.html" },
   { label: "❓ Aide", hint: "Guide d'aide et questions fréquentes", url: "aide.html" },
   { label: "📱 Installer l'app", hint: "Application Android et Progressive Web App", url: "app/install.html" },
+  { label: "📥 Importer mes données", hint: "Scanner un QR, coller un lien ou choisir un fichier", url: "app/import.html" },
   { label: "🔒 Politique de confidentialité", hint: "Protection des données et engagement respect de la vie privée", url: "confidentialite.html" }
 ];
 function buildLinksPanel(panel) {
@@ -238,8 +238,9 @@ function buildLinksPanel(panel) {
   REQUIRED_LINKS.forEach((p) => {
     const btn = el("button", "xp-phone", p.label); btn.type = "button"; btn.title = p.hint;
     btn.addEventListener("click", () => {
-      if (p.url.startsWith("http")) window.open(p.url, "_blank", "noopener");
-      else location.href = chrome.runtime.getURL ? chrome.runtime.getURL(p.url) : p.url;
+      // Ces pages ne sont pas dans le paquet de l'extension : elle ouvre le site publié.
+      if (window.UCA_APP) location.href = chrome.runtime.getURL(p.url);
+      else window.open(SITE_ROOT + p.url, "_blank", "noopener");
     });
     panel.appendChild(btn);
   });

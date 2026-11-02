@@ -55,6 +55,17 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.0 — bugs graves, sécurité et ménage
+
+- **Plus de fausse synchro** : sans extension, le site envoie vers l'import au lieu d'annoncer un succès sans rien récupérer. Le bouton Importer est de retour.
+- **Liens utiles** : ils ouvrent le site publié depuis l'extension (ils menaient à une erreur dans le paquet magasin) ; le lien vers une page Mozilla inexistante est retiré.
+- **Blocs de cours** : plus aucun texte coupé dans les 4 designs ; vue Jour en grille pour bulletin et professionnel.
+- **Page transports** : elle ne tourne plus en boucle.
+- **Sécurité** : pages protégées par une politique de contenu, fichiers importés vérifiés, fichier reçu importé seulement après confirmation.
+- **App Android 1.4.0** : mises à jour à chaud non signées retirées, carte embarquée, profil effacé à la déconnexion.
+- **Ménage** : images inutilisées et de droits douteux, doublons et aperçu de démo retirés. Politique de confidentialité mise à jour.
+- Tests : plus aucun contact avec les vrais serveurs de l'UCA.
+
 ## 1.45.3 — design carnet rétabli
 
 - Le design carnet avait perdu ses post-it pastel (couleurs vives illisibles, texte pâle) : sa palette, ses réglages de grille et ses textes d'origine sont restaurés.

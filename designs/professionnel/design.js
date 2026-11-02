@@ -22,8 +22,8 @@ UCA_defineDesign({
   emptyHtml(kind) {
     return kind === "notes" ? "" : "💼";
   },
-  grid: { overlap: "side", fontScale: false, metaMerged: false },
-  dayView: "list",
+  grid: { overlap: "cascade", fontScale: false, metaMerged: true },
+  dayView: "grid",
   text: {
     view_day: "Planning Quotidien",
     view_3day: "3 Jours",

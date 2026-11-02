@@ -116,7 +116,7 @@ function updateHeader() {
   let sub = $("weekSubLabel");
   if (!sub) {
     sub = document.createElement("div");
-    sub.id = "weekSubLabel";
+    sub.id = "weekSubLabel"; sub.setAttribute("role", "region"); sub.setAttribute("aria-label", "Période affichée");
     sub.className = "week-sub-label";
     const hdr = document.querySelector("header");
     if (hdr && hdr.nextSibling) hdr.parentNode.insertBefore(sub, hdr.nextSibling);
@@ -276,7 +276,7 @@ function fitCard(card) {
   const time = card.querySelector(".ev-time"), title = card.querySelector(".ev-title");
   if (time && title) { title.insertBefore(document.createTextNode(time.textContent + " · "), title.firstChild); time.remove(); }
   let s = parseFloat(card.style.getPropertyValue("--s")) || 1;
-  while (overflows() && s > 0.66) { s = Math.round((s - 0.04) * 100) / 100; card.style.setProperty("--s", s); }
+  while (overflows() && s > 0.6) { s = Math.round((s - 0.04) * 100) / 100; card.style.setProperty("--s", s); }
 }
 
 /* Hauteur de référence pour l'échelle de police (designs avec grid.fontScale). */
@@ -550,7 +550,8 @@ function buildMobileMenu() {
   }
   m.appendChild(menuButton("mi", "🎨 Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
-  m.appendChild(menuButton("mi msync primary", "🔄 Synchroniser Odin", triggerSync));
+  if (window.UCA_APP && window.UCA_APP.extensionReady && !window.UCA_APP.demo && !window.AndroidUCA) m.appendChild(menuButton("mi", "📥 Importer mes données", () => { location.href = chrome.runtime.getURL("app/import.html"); }));
+  m.appendChild(menuButton("mi msync primary", window.UCA_APP && !window.UCA_APP.extensionReady ? "📥 Importer mes données" : "🔄 Synchroniser Odin", triggerSync));
   const r = $("menuBtn").getBoundingClientRect();
   m.style.top = (r.bottom + 6) + "px"; m.style.left = r.left + "px";
 }
@@ -1455,24 +1456,24 @@ if (window.UCA_APP) {
   // (pas d'accès à Odin depuis une page web) -> "Importer" (transfert par lien/QR/fichier).
   // Si l'extension répond (core/env.js, pont avec content-bridge.js), le bouton redevient une
   // vraie synchro Odin, exactement comme dans l'extension.
-  const setSyncLabel = () => {
-    syncBtn.innerHTML = D.icon("sync") + "Synchroniser";
-    syncBtn.title = "Synchroniser avec le portail Odin UCA";
+  const setSyncLabel = (importer) => {
+    const walker = document.createTreeWalker(syncBtn, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      if (importer && /Synchroniser/.test(n.textContent)) n.textContent = n.textContent.replace("Synchroniser", "Importer");
+      else if (!importer && /Importer/.test(n.textContent)) n.textContent = n.textContent.replace("Importer", "Synchroniser");
+    }
+    syncBtn.title = importer ? "Importer les données depuis l'extension de l'ordinateur" : "Synchroniser avec Odin";
   };
-  setSyncLabel();
+  setSyncLabel(!window.UCA_APP.extensionReady);
   window.addEventListener("uca-extension-ready", () => {
     setSyncLabel(false);
     // "Synchroniser" passe par l'extension : on garde quand même un bouton Importer (lien/QR/fichier).
-    if (!$("appImportBtn") && !isMobileUI() && !window.UCA_APP) {
+    if (!$("appImportBtn") && !isMobileUI()) {
       const imp = document.createElement("button");
       imp.id = "appImportBtn"; imp.type = "button"; imp.className = syncBtn.className.replace("primary", "").trim() + " mobile-hide-zoom";
       imp.innerHTML = D.icon("export") + "Importer";
       imp.title = "Importer un lien, un QR ou un fichier .ucasync";
-      imp.addEventListener("click", () => {
-        if (chrome && chrome.runtime && chrome.runtime.getURL) {
-          location.href = chrome.runtime.getURL("app/import.html");
-        }
-      });
+      imp.addEventListener("click", () => { location.href = chrome.runtime.getURL("app/import.html"); });
       syncBtn.before(imp);
     }
     // Synchro automatique si la dernière date de plus que le réglage "synchro auto" (0 = jamais).

@@ -24,7 +24,7 @@ def versions():
         m = re.match(r"(\d+\.\d+\.\d+)\s*[—-]\s*(.+)", head.strip())
         if m:
             out.append({"version": m.group(1), "title": m.group(2).strip(), "body": rest.strip()})
-    return out[::-1]  # la plus récente d'abord
+    return sorted(out, key=lambda v: [int(n) for n in v["version"].split(".")], reverse=True)  # la plus récente d'abord
 
 
 def inline(s):

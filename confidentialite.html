@@ -78,7 +78,11 @@
     <li><strong>Mises à jour</strong> (paquet de développement seulement) : lecture du fichier public
       <code>manifest.json</code> sur <code>raw.githubusercontent.com</code> pour connaître la dernière version.
       Les paquets des magasins (addons.mozilla.org, Chrome Web Store) ne le font pas : le magasin met à jour tout seul.</li>
-    <li>Aucune autre requête. Aucun service d'analyse, aucune police ou bibliothèque chargée depuis Internet.</li>
+    <li><strong>Application Android :</strong> à son ouverture, elle lit le fichier public <code>version.json</code>
+      sur <code>raw.githubusercontent.com</code> pour savoir si un nouvel APK existe. L'écran Mail ouvre
+      <code>mail.uca.fr</code>. La carte des campus, seulement si tu l'acceptes, télécharge ses images depuis
+      <code>tile.openstreetmap.org</code>, qui voit alors ton adresse IP.</li>
+    <li>Aucune autre requête. Aucun service d'analyse. Polices et bibliothèques sont embarquées, aucune n'est chargée depuis Internet.</li>
   </ul>
 </div>
 

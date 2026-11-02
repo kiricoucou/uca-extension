@@ -15,7 +15,7 @@ from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fixtures import seed  # noqa: E402
-from harness import ROOT, designs, launch  # noqa: E402
+from harness import NO_REAL_SERVERS, ROOT, designs, launch  # noqa: E402
 
 AXE_DIR = ROOT / "tests" / ".axe"
 AXE = AXE_DIR / "node_modules" / "axe-core" / "axe.min.js"
@@ -57,7 +57,7 @@ def site_audit(p):
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     try:
         time.sleep(1)
-        browser = p.chromium.launch()
+        browser = p.chromium.launch(args=[NO_REAL_SERVERS])
         for path in ("", "en/", "nouveautes.html", "aide.html"):
             for label, size in (("ordinateur", {"width": 1280, "height": 900}), ("téléphone", {"width": 390, "height": 844})):
                 ctx = browser.new_context(viewport=size)

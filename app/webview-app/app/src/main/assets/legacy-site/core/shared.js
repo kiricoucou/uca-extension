@@ -43,7 +43,7 @@ const DEFAULTS = {
   // Indicateur "note personnelle" sur un cours. context : "grid" | "day".
   noteBadge: (context) => `<span class="note-badge" title="Note personnelle" style="font-size:${context === 'day' ? '14px' : '11px'};margin-left:4px;vertical-align:middle;">📝</span>`,
   // Badge d'un cours modifié depuis la dernière synchro. type : clé de CHANGE_LABELS.
-  changeBadge: (type) => `<span class="chg-badge chg-${type}">${CHANGE_LABELS[type] || ""}</span>`,
+  changeBadge: (type) => `<span class="chg-badge chg-${String(type).replace(/[^a-z-]/g, "")}">${CHANGE_LABELS[type] || ""}</span>`,
   // Illustration des états vides. kind : "day" | "notes" | "popup".
   emptyHtml: () => "",
   // overlap : "side" (cours simultanés côte à côte) | "cascade" (décalés en escalier).

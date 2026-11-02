@@ -38,11 +38,14 @@
       ton appareil. Rien ne quitte ton navigateur.</li>
     <li><strong>Extension de navigateur :</strong> les mêmes données sont stockées dans
       <code>chrome.storage.local</code> (ou l'équivalent Firefox), propre à ton profil
-      navigateur. Aucune télémétrie, aucun tracker, aucune requête vers un domaine qui ne soit
-      pas <code>ent.uca.fr</code> ou <code>odin.iut.uca.fr</code>.</li>
+      navigateur. Aucune télémétrie, aucun tracker.</li>
     <li><strong>Application Android :</strong> les données sont stockées localement sur ton
       téléphone (préférences de l'application, et si tu l'actives, un calendrier local
-      "Emploi du temps UCA" créé sur ton téléphone). Rien n'est envoyé à un serveur distant.</li>
+      "Emploi du temps UCA" créé sur ton téléphone). Tes cours, notes et absences ne sont envoyés
+      à aucun serveur. L'application contacte <code>ent.uca.fr</code> et <code>odin.iut.uca.fr</code> pour la
+      synchro, <code>mail.uca.fr</code> pour l'écran Mail, <code>raw.githubusercontent.com</code> pour vérifier
+      s'il existe un nouvel APK et, seulement si tu l'acceptes, <code>tile.openstreetmap.org</code> pour les images
+      de la carte (ce service voit alors ton adresse IP).</li>
   </ul>
 </div>
 

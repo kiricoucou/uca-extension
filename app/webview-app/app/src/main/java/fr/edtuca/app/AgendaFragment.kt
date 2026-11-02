@@ -65,14 +65,14 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
         CookieManager.getInstance().setAcceptCookie(true)
         // addJavascriptInterface s'injecte dans toutes les frames et origines.
         // shouldOverrideUrlLoading empêche la page principale de quitter les assets ;
-        // il ne couvre PAS les iframes : c'est la CSP de index.html (default-src 'self')
+        // il ne couvre PAS les iframes : c'est la CSP de chaque page (default-src 'self', frame-src 'self')
         // qui empêche un iframe tiers d'être chargé. Ne pas affaiblir cette CSP.
         webView.addJavascriptInterface(UcaBridge(requireActivity(), this), "AndroidUCA")
 
         bridgeScript = requireContext().assets.open("android-bridge.js").bufferedReader().use { it.readText() }
 
-        val liveSiteDir = java.io.File(requireContext().filesDir, "live-site")
-        if (!liveSiteDir.exists()) liveSiteDir.mkdirs()
+        // Anciennes mises à jour rapides non signées : on ne garde que le code de l'APK.
+        java.io.File(requireContext().filesDir, "live-site").deleteRecursively()
 
         val assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(requireContext()))
@@ -80,17 +80,6 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
-                val path = request.url.path ?: ""
-                if (path.startsWith(ASSET_PREFIX)) {
-                    val relativePath = path.removePrefix(ASSET_PREFIX)
-                    val liveFile = java.io.File(liveSiteDir, relativePath)
-                    if (liveFile.exists() && liveFile.isFile && liveFile.length() > 0) {
-                        val mime = getMimeType(relativePath)
-                        try {
-                            return WebResourceResponse(mime, "UTF-8", liveFile.inputStream())
-                        } catch (_: Exception) {}
-                    }
-                }
                 return assetLoader.shouldInterceptRequest(request.url)
             }
 

@@ -16,7 +16,7 @@ from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fixtures import seed  # noqa: E402
-from harness import ROOT, designs  # noqa: E402
+from harness import NO_REAL_SERVERS, ROOT, designs  # noqa: E402
 
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else None
 results = []
@@ -412,7 +412,7 @@ def pinned_next(pw, base, errors):
     """Notification « prochain cours » épinglée dans l'app (réglage pinNext) : créée, retirée.
     Chromium « new headless » : le mode headless classique refuse d'accorder la permission des notifications."""
     import datetime
-    browser = pw.chromium.launch(headless=False, args=["--headless=new"])
+    browser = pw.chromium.launch(headless=False, args=["--headless=new", NO_REAL_SERVERS])
     ctx = browser.new_context(viewport={"width": 412, "height": 900})
     ctx.grant_permissions(["notifications"], origin=base.rstrip("/"))
     page = ctx.new_page()
@@ -626,7 +626,7 @@ def main():
     try:
         time.sleep(1)
         with sync_playwright() as p:
-            chromium = p.chromium.launch()
+            chromium = p.chromium.launch(args=[NO_REAL_SERVERS])
             weekday_clock(chromium)
             man = json.loads(Path(ROOT / "app.webmanifest").read_text(encoding="utf-8"))
             icons_ok = all((ROOT / i["src"]).exists() for i in man["icons"]) and any(i.get("purpose") == "maskable" for i in man["icons"])

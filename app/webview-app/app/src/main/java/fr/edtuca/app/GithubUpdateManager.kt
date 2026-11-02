@@ -16,7 +16,6 @@ import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.Executors
-import java.util.zip.ZipInputStream
 
 /**
  * Gestionnaire autonome de mise à jour via GitHub.
@@ -116,7 +115,7 @@ object GithubUpdateManager {
                     val branch = json.optString("branch", "main")
                     val publishedAt = json.optString("published_at", "25/10/2026")
                     val forceUpdate = json.optBoolean("force_update", false)
-                    val apkUrl = json.optString("apk_download_url", GITHUB_RAW_APK_URL)
+                    val apkUrl = GITHUB_RAW_APK_URL // en dur : jamais d'adresse venue de version.json
                     val otaUrl = json.optString("ota_bundle_url", GITHUB_OTA_BUNDLE_URL)
                     val rawBase = json.optString("raw_base_url", GITHUB_RAW_BASE_URL)
                     val repoUrl = json.optString("github_repo_url", GITHUB_REPO_URL)
@@ -133,9 +132,7 @@ object GithubUpdateManager {
 
                     // On a besoin de retélécharger l'APK uniquement si le code natif a changé
                     val isNativeApkRequired = minApkVersionCode > localVersionCode
-                    val isOtaNeeded = compareSemver(remoteVersion, effectiveVersionName) > 0 ||
-                            (commitSha.isNotBlank() && commitSha != installedCommit && !installedCommit.startsWith(commitSha)) ||
-                            (forceUpdate && remoteVersion != effectiveVersionName)
+                    val isOtaNeeded = false // voir downloadAndApplyOtaUpdate
                     val isNewer = isNativeApkRequired || isOtaNeeded
                     val isOtaAvailable = isOtaNeeded && !isNativeApkRequired
 
@@ -181,113 +178,9 @@ object GithubUpdateManager {
         onComplete: () -> Unit,
         onError: (String) -> Unit
     ) {
-        executor.execute {
-            try {
-                val liveSiteDir = File(activity.filesDir, "live-site")
-                if (!liveSiteDir.exists()) liveSiteDir.mkdirs()
-
-                var success = false
-
-                // 1. Essai de téléchargement du bundle zip
-                try {
-                    val url = URL("${updateInfo.otaBundleUrl}?t=${System.currentTimeMillis()}")
-                    val conn = (url.openConnection() as HttpURLConnection).apply {
-                        connectTimeout = 8000
-                        readTimeout = 15000
-                        setRequestProperty("User-Agent", "MyUCA-OTA")
-                    }
-
-                    if (conn.responseCode in 200..299) {
-                        val totalLen = conn.contentLength
-                        var downloaded = 0L
-
-                        conn.inputStream.use { rawIn ->
-                            val zipIn = ZipInputStream(rawIn)
-                            var entry = zipIn.nextEntry
-                            while (entry != null) {
-                                val targetFile = File(liveSiteDir, entry.name)
-                                if (entry.isDirectory) {
-                                    targetFile.mkdirs()
-                                } else {
-                                    targetFile.parentFile?.mkdirs()
-                                    FileOutputStream(targetFile).use { out ->
-                                        val buf = ByteArray(4096)
-                                        var len: Int
-                                        while (zipIn.read(buf).also { len = it } != -1) {
-                                            out.write(buf, 0, len)
-                                            downloaded += len
-                                            if (totalLen > 0) {
-                                                val pct = ((downloaded * 100) / totalLen).toInt().coerceIn(0, 95)
-                                                mainHandler.post { onProgress(pct) }
-                                            }
-                                        }
-                                    }
-                                }
-                                zipIn.closeEntry()
-                                entry = zipIn.nextEntry
-                            }
-                        }
-                        success = true
-                    }
-                } catch (_: Exception) {
-                    success = false
-                }
-
-                // 2. Si le zip est absent ou a échoué, repli sur le téléchargement direct des fichiers clés
-                if (!success) {
-                    val filesToDownload = listOf(
-                        "core/agenda.js",
-                        "core/shared.js",
-                        "core/env.js",
-                        "core/github-updater.js",
-                        "choose.html",
-                        "choose.js",
-                        "site/app.html",
-                        "version.json",
-                        "manifest.json"
-                    )
-
-                    var count = 0
-                    for (relPath in filesToDownload) {
-                        try {
-                            val fUrl = URL("${updateInfo.rawBaseUrl}$relPath?t=${System.currentTimeMillis()}")
-                            val conn = (fUrl.openConnection() as HttpURLConnection).apply {
-                                connectTimeout = 5000
-                                readTimeout = 8000
-                            }
-                            if (conn.responseCode in 200..299) {
-                                val dest = File(liveSiteDir, relPath)
-                                dest.parentFile?.mkdirs()
-                                dest.outputStream().use { out ->
-                                    conn.inputStream.copyTo(out)
-                                }
-                            }
-                        } catch (_: Exception) {}
-                        count++
-                        val pct = ((count * 100) / filesToDownload.size).coerceIn(0, 95)
-                        mainHandler.post { onProgress(pct) }
-                    }
-                    success = true
-                }
-
-                if (success) {
-                    PrefsStore.setInstalledCommit(activity, updateInfo.commitSha)
-                    PrefsStore.setInstalledBundleVersion(activity, updateInfo.latestVersion)
-
-                    mainHandler.post {
-                        onProgress(100)
-                        onComplete()
-                    }
-                } else {
-                    mainHandler.post { onError("Impossible de récupérer les fichiers de mise à jour.") }
-                }
-
-            } catch (e: Exception) {
-                mainHandler.post {
-                    onError("Échec OTA : ${e.localizedMessage ?: "erreur réseau"}")
-                }
-            }
-        }
+        // Désactivé : le bundle n'était pas signé, donc un push sur le dépôt aurait suffi pour exécuter
+        // du code dans l'app. Les mises à jour passent par l'APK, protégé par sa signature Android.
+        mainHandler.post { onError("Les mises à jour rapides sont désactivées : installe le nouvel APK.") }
     }
 
     /**

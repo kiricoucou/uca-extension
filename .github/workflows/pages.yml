@@ -1,0 +1,27 @@
+name: Publier le site
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Garder seulement les fichiers du site
+        run: |
+          mkdir _site
+          while read -r f; do [ -e "$f" ] && cp -r --parents "$f" _site/; done < pages-files.txt
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+          include-hidden-files: true
+      - id: deploy
+        uses: actions/deploy-pages@v4

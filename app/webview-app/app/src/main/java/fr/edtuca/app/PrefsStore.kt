@@ -126,4 +126,11 @@ object PrefsStore {
         group?.let { editor.putString(KEY_STUDENT_GROUP, it) }
         editor.apply()
     }
+
+    fun clearStudentProfile(context: Context) {
+        prefs(context).edit()
+            .remove(KEY_STUDENT_NAME).remove(KEY_STUDENT_ID).remove(KEY_STUDENT_EMAIL)
+            .remove(KEY_STUDENT_FORMATION).remove(KEY_STUDENT_BIRTH).remove(KEY_STUDENT_GROUP)
+            .apply()
+    }
 }

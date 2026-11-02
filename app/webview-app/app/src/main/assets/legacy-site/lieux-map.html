@@ -2,9 +2,10 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.tile.openstreetmap.org; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Carte des Campus UCA</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body, #map { width: 100%; height: 100%; background: #121418; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -28,7 +29,7 @@
 </head>
 <body>
 <div id="map"></div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
 <script>
   const CAMPUS_PLACES = [
     { nom: "BU Cézeaux (Sciences & Tech)", lat: 45.7595, lon: 3.1118, type: "bu", ouvert: true, desc: "Campus des Cézeaux · 8h - 20h" },
@@ -73,7 +74,7 @@
         <div class="pop-title">${p.nom}</div>
         <div class="pop-sub">${p.desc}</div>
         <span class="pop-badge ${badgeCls}">${badgeTxt}</span>
-        <a class="pop-link" href="https://maps.google.com/?q=${p.lat},${p.lon}" target="_blank">Itinéraire Google Maps ↗</a>
+        <a class="pop-link" href="https://maps.google.com/?q=${p.lat},${p.lon}" target="_blank" rel="noopener noreferrer">Itinéraire Google Maps ↗</a>
       `;
 
       L.marker([p.lat, p.lon], { icon: customIcon })

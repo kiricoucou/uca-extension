@@ -217,7 +217,8 @@ class MainActivity : AppCompatActivity() {
             GithubUpdateManager.openGithubDownload(this, updateInfo.githubRepoUrl)
         }
 
-        btnDevBypassTest.visibility = View.VISIBLE
+        val debuggable = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        btnDevBypassTest.visibility = if (debuggable) View.VISIBLE else View.GONE
     }
 
     /**
@@ -256,6 +257,7 @@ class MainActivity : AppCompatActivity() {
     /** Appelé depuis PreferencesFragment : efface la session, revient à l'écran de connexion unique. */
     fun logout() {
         PrefsStore.setLoggedIn(this, false)
+        PrefsStore.clearStudentProfile(this)
         val cookies = android.webkit.CookieManager.getInstance()
         cookies.removeAllCookies { cookies.flush() }
         // Cours, notes, absences stockés en localStorage par la page + cache HTTP.

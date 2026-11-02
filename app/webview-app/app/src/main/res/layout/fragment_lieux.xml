@@ -28,7 +28,7 @@
                 android:layout_marginTop="12dp">
 
                 <TextView
-                    android:text="🍪 COOKIES GOOGLE MAPS &amp; GÉOLOCALISATION"
+                    android:text="🗺️ CARTE OPENSTREETMAP"
                     android:textColor="@color/accent2"
                     android:textSize="11.5sp"
                     android:textStyle="bold"
@@ -37,7 +37,7 @@
                     android:layout_height="wrap_content"/>
 
                 <TextView
-                    android:text="Pour afficher la carte interactive des campus de l'Université Clermont Auvergne (Cézeaux, Dunant, Carnot, Gergovia), vous devez accepter les cookies Google Maps."
+                    android:text="Pour afficher la carte interactive des campus de l'Université Clermont Auvergne (Cézeaux, Dunant, Carnot, Gergovia), votre téléphone doit télécharger les images de la carte depuis OpenStreetMap, qui voit alors votre adresse IP. Aucun cookie, aucune donnée de cours."
                     android:textColor="@color/text"
                     android:textSize="12.5sp"
                     android:lineSpacingExtra="2dp"
@@ -57,7 +57,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_cta"
-                        android:text="Accepter les cookies"
+                        android:text="Afficher la carte"
                         android:textAllCaps="false"
                         android:textColor="@color/on_accent"
                         android:textSize="12sp"
@@ -86,7 +86,7 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- ÉCRAN CARTE INTERACTIVE (Affiché une fois les cookies acceptés) -->
+            <!-- ÉCRAN CARTE INTERACTIVE (Affiché une fois la carte acceptée) -->
             <FrameLayout
                 android:id="@+id/mapContainer"
                 android:layout_width="match_parent"

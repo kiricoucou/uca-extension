@@ -24,9 +24,9 @@ EXCLUDE_FILES = {"manifest.firefox.json", ".gitignore", ".nojekyll", "app.webman
 EXCLUDE_ROOT_FILES = {"index.html", "install.html", "aide.html", "404.html", "confidentialite.html", "site.css", "site-demo.js", "nouveautes.html", "sitemap.xml", "robots.txt", "transport.html"}
 EXCLUDE_SUFFIXES = {".pyc"}
 # Réservés à l'app téléphone (APK, mise à jour à chaud, carte) : jamais dans l'extension.
-EXCLUDE_ROOT_FILES |= {"EdtUca.apk", "core-bundle.zip", "phone-preview.html", "lieux-map.html", "version.json"}
-EXCLUDE_PATHS = {"core/github-updater.js", "core/crous.js", "core/mobility.js", "core/export.js"}
-EXCLUDE_DIR_PATHS = {"designs/gifs"}
+EXCLUDE_ROOT_FILES |= {"EdtUca.apk", "lieux-map.html", "version.json", "pages-files.txt"}
+EXCLUDE_PATHS = {"core/mobility.js"}
+EXCLUDE_DIR_PATHS = {"vendor/leaflet"}
 
 
 STORE_SITE = "https://kiricoucou.github.io/uca-extension/*"

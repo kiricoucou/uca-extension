@@ -150,8 +150,15 @@ function collector() {
   };
 }
 
+const EVENT_INTS = ["year", "month", "day", "startH", "startM", "endH", "endM"];
 function validate(snap) {
-  if (!snap || snap.format !== "uca-sync" || !snap.data || !Array.isArray(snap.data.uca_events)) throw new Error("Ce n'est pas un fichier de synchro de l'emploi du temps UCA.");
+  const bad = () => new Error("Ce n'est pas un fichier de synchro de l'emploi du temps UCA.");
+  if (!snap || snap.format !== "uca-sync" || !snap.data || !Array.isArray(snap.data.uca_events)) throw bad();
+  // Un fichier ou un lien vient de l'extérieur : ces champs sont repris tels quels dans le HTML de l'agenda.
+  for (const ev of snap.data.uca_events) {
+    if (!ev || !EVENT_INTS.every((k) => Number.isInteger(ev[k]))) throw bad();
+    if (ev.date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(ev.date)) throw bad();
+  }
   return snap;
 }
 

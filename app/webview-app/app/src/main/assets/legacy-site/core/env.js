@@ -142,7 +142,8 @@ document.addEventListener("visibilitychange", () => {
    ni d'accès aux cookies d'un autre domaine depuis une simple page web, voir README). */
 const msgListeners = [];
 let hasExtensionBridge = false;
-window.UCA_APP.extensionReady = true; // Permet d'afficher « Synchroniser » directement
+// La démo et l'app Android se comportent comme l'app avec l'extension : bouton « Synchroniser ».
+window.UCA_APP.extensionReady = DEMO || !!window.AndroidUCA;
 if (window.AndroidUCA) {
   hasExtensionBridge = true;
 }
@@ -210,38 +211,8 @@ async function handle(msg) {
       window.postMessage({ source: "uca-site", type: "UCA_SYNC_REQUEST", mode: msg.mode || "resync" }, "*");
       return undefined;
     }
-    // 3. Mode Web / PWA autonome : flux d'authentification CAS Odin identique
-    msgListeners.forEach((fn) => fn({ type: "UCA_SYNC_PROGRESS", stage: "login-opening" }));
-    const casUrl = "https://ent.uca.fr/cas/login?service=" + encodeURIComponent("https://odin.iut.uca.fr/portail/");
-    try {
-      window.open(casUrl, "ucaLogin", "width=520,height=700,left=200,top=100");
-    } catch (_) {}
-    setTimeout(() => {
-      msgListeners.forEach((fn) => fn({ type: "UCA_SYNC_PROGRESS", stage: "login-waiting" }));
-    }, 1200);
-    setTimeout(async () => {
-      msgListeners.forEach((fn) => fn({ type: "UCA_SYNC_PROGRESS", stage: "scraping" }));
-      const all = readAll();
-      const lastSync = new Date().toISOString();
-      await local.set({ uca_last_sync: lastSync, uca_session_expired: false });
-      msgListeners.forEach((fn) => fn({
-        type: "UCA_SYNC_RESULT",
-        ok: true,
-        silent: false,
-        events: all.uca_events || [],
-        lastSync
-      }));
-      if (all.uca_releve_notes) {
-        msgListeners.forEach((fn) => fn({ type: "UCA_NOTES_RESULT", ok: true, releve: all.uca_releve_notes }));
-      }
-      if (all.uca_absences) {
-        msgListeners.forEach((fn) => fn({ type: "UCA_ABSENCES_RESULT", ok: true, absences: all.uca_absences }));
-      }
-      if (window.AndroidUCA && window.AndroidUCA.onEventsUpdated && all.uca_events) {
-        try { window.AndroidUCA.onEventsUpdated(JSON.stringify(all.uca_events)); } catch (_) {}
-      }
-    }, 2800);
-    return undefined;
+    // 3. Sans extension, une page web n'a aucun accès à Odin : seul le transfert (lien/QR/fichier) reste possible.
+    location.href = ROOT + "app/import.html"; return undefined;
   }
   if (msg.type === "UCA_FORCE_UPDATE_CHECK") { checkAppUpdate(); return undefined; }
   if (msg.type === "UCA_APPLY_UPDATE") { applyAppUpdate(); return undefined; }

@@ -85,7 +85,12 @@ $("fileInput").addEventListener("change", async () => {
 /* Fichier partagé vers l'app (Android, « Partager » → EDT UCA) : déposé par sw.js. */
 if (new URLSearchParams(location.search).has("shared") && "caches" in window) {
   caches.open("uca-share").then((c) => c.match("shared-file")).then((r) => r && r.text()).then((t) => {
-    if (t) { importText(t); caches.open("uca-share").then((c) => c.delete("shared-file")); }
+    if (!t) return;
+    caches.open("uca-share").then((c) => c.delete("shared-file"));
+    // N'importe quel site peut envoyer un fichier ici : c'est l'utilisateur qui décide de l'importer.
+    const go = document.createElement("button"); go.type = "button"; go.id = "sharedImportBtn"; go.textContent = "Importer le fichier reçu";
+    go.addEventListener("click", () => { go.remove(); importText(t); });
+    $("chooseCard").prepend(go);
   });
 }
 

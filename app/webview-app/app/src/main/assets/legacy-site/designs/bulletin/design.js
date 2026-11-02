@@ -23,7 +23,7 @@ UCA_defineDesign({
     return kind === "notes" ? "" : "📜";
   },
   grid: { overlap: "cascade", fontScale: false, metaMerged: true },
-  dayView: "list",
+  dayView: "grid",
   text: {
     view_day: "Jour (Relevé)",
     view_3day: "3 Jours",

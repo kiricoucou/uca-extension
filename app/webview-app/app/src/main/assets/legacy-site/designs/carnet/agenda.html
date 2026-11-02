@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-src 'self'; object-src 'none'; base-uri 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mon carnet — Emploi du temps UCA</title>
 <link rel="icon" type="image/png" href="icons/icon32.png">
@@ -833,9 +834,6 @@ button.primary:hover{background:#26418a;box-shadow:2px 2px 0 var(--highlight);}
 #prevBtn {
   margin-right: 2px !important;
 }
-#appImportBtn {
-  display: none !important;
-}
 .absences-panel.as-sheet,
 .notes-panel.as-sheet,
 .tool-panel.as-sheet {
@@ -907,16 +905,6 @@ button.primary:hover{background:#26418a;box-shadow:2px 2px 0 var(--highlight);}
   z-index: 200 !important;
   border: 1px solid var(--border) !important;
   box-shadow: 0 20px 60px rgba(0,0,0,0.7) !important;
-}
-.event-card .ev-title {
-  white-space: normal !important;
-  line-height: 1.25 !important;
-  font-weight: 700 !important;
-}
-.event-card .ev-sub {
-  white-space: normal !important;
-  font-size: 11px !important;
-  opacity: 0.9 !important;
 }
 .m-card .m-title {
   white-space: normal !important;

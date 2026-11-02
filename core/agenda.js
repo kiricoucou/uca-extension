@@ -443,14 +443,30 @@ function renderMobileDay() {
   el.appendChild(view);
   const sel = strip.querySelector(".selected"); if (sel) sel.scrollIntoView({ inline: "center", block: "nearest" });
 }
+/* Glisser le doigt vers la gauche / la droite change de période (téléphone) : jour, 3 jours, 5 jours, 6 jours, semaine, mois.
+   Un geste commencé dans une zone qui défile elle-même à l'horizontale n'est pas pris pour un changement de période. */
 let touchStart = null;
-$("dayView").addEventListener("touchstart", (e) => { touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY }; }, { passive: true });
-$("dayView").addEventListener("touchend", (e) => {
-  if (!touchStart || currentView !== "day" || !isMobileUI()) return;
-  const dx = e.changedTouches[0].clientX - touchStart.x, dy = e.changedTouches[0].clientY - touchStart.y;
-  touchStart = null;
-  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) navigate(dx < 0 ? 1 : -1);
-}, { passive: true });
+function scrollsHorizontally(node, stop) {
+  for (let n = node; n && n !== stop && n.nodeType === 1; n = n.parentElement) {
+    if (n.scrollWidth > n.clientWidth + 2 && /(auto|scroll)/.test(getComputedStyle(n).overflowX)) return true;
+  }
+  return false;
+}
+["dayView", "threeDayView", "fiveDayView", "sixDayView", "weekView", "monthView"].forEach((id) => {
+  const view = $(id);
+  if (!view) return;
+  view.addEventListener("touchstart", (e) => {
+    touchStart = e.touches.length === 1 && !scrollsHorizontally(e.target, view)
+      ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null;
+  }, { passive: true });
+  view.addEventListener("touchend", (e) => {
+    if (!touchStart || !isMobileUI()) return;
+    const dx = e.changedTouches[0].clientX - touchStart.x, dy = e.changedTouches[0].clientY - touchStart.y;
+    touchStart = null;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) navigate(dx < 0 ? 1 : -1);
+  }, { passive: true });
+  view.addEventListener("touchcancel", () => { touchStart = null; }, { passive: true });
+});
 
 function renderDayList() {
   const el = $("dayView"); el.innerHTML = "";
@@ -525,11 +541,13 @@ function buildMobileMenu() {
     month: "🗓️"
   };
 
+  // Certains designs mettent déjà un emoji dans le libellé : on n'en ajoute un que s'il n'y en a pas (jamais deux).
+  const withIcon = (icon, label) => (/^\p{Extended_Pictographic}/u.test(label) ? label : `${icon} ${label}`);
   availableViews().forEach(v => {
     const icon = viewIcons[v] || "📅";
-    m.appendChild(menuButton("mi" + (v === currentView ? " active" : ""), `${icon} ${escapeHtml(T("view_" + v))}`, () => switchView(v)));
+    m.appendChild(menuButton("mi" + (v === currentView ? " active" : ""), escapeHtml(withIcon(icon, T("view_" + v))), () => switchView(v)));
   });
-  m.appendChild(menuButton("mi", "📍 " + escapeHtml(T("today")), () => { refDate = new Date(); refDate.setHours(0, 0, 0, 0); render(); }));
+  m.appendChild(menuButton("mi", escapeHtml(withIcon("📍", T("today"))), () => { refDate = new Date(); refDate.setHours(0, 0, 0, 0); render(); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   const avg = generalAverage();
   m.appendChild(menuButton("mi", "🎓 Notes & Moyennes" + (avg != null ? ` — moyenne ${fmtNote(avg)}` : ""), () => openToolPanel("notesPanel", true)));

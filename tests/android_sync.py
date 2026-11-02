@@ -6,6 +6,7 @@ Simule le pont natif (window.AndroidUCA) dans Chromium, sert le dépôt en local
 Usage : python -I -X utf8 tests/android_sync.py
 """
 import json
+import re
 import socket
 import subprocess
 import sys
@@ -77,6 +78,42 @@ def main():
                 deliver(page, {"type": "UCA_SESSION_STATE", "expired": True})
                 check(f"{design} : session expirée enregistrée", stored(page).get("uca_session_expired") is True)
                 check(f"{design} : aucune erreur JavaScript", not errors, "; ".join(errors)[:200])
+
+                # Menu téléphone : un seul emoji devant chaque entrée (le design et le menu ne doivent pas en ajouter chacun un).
+                page.set_viewport_size({"width": 390, "height": 800}); page.wait_for_timeout(500)
+                page.locator("#menuBtn").click(); page.wait_for_timeout(400)
+                labels = page.locator("#mobileMenu .mi").all_inner_texts()
+                doubled = [t.strip()[:30] for t in labels if re.match(r"^\s*(?:\W{1,3}\s+){2}", t) and re.match(r"^\s*[^\w\s]", t)]
+                check(f"{design} : menu téléphone sans double emoji", bool(labels) and not doubled, str(doubled))
+
+                # Glisser le doigt change de période dans toutes les vues (jour, 3/5/6 jours, semaine, mois).
+                SWIPE = """(dx) => { const v = document.querySelector('.view.active'); const r = v.getBoundingClientRect();
+                  const x0 = r.left + r.width / 2, y0 = r.top + Math.min(200, r.height / 2);
+                  const t = (x) => new Touch({ identifier: 1, target: v, clientX: x, clientY: y0 });
+                  v.dispatchEvent(new TouchEvent('touchstart', { bubbles: true, touches: [t(x0)], changedTouches: [t(x0)] }));
+                  v.dispatchEvent(new TouchEvent('touchend', { bubbles: true, touches: [], changedTouches: [t(x0 + dx)] })); }"""
+                SIG = lambda: page.evaluate("() => document.querySelector('#periodLabel').innerText + '|' + document.querySelector('.view.active').innerText.slice(0, 400)")
+                items = page.locator("#mobileMenu .mi")
+                n_views = 0
+                for i in range(6):
+                    item = items.nth(i)
+                    if not item.is_visible():
+                        continue
+                    name = item.inner_text().strip()
+                    low = name.lower()
+                    if any(w in low for w in ("aujourd", "notes", "absences", "devoirs", "liens")):
+                        continue
+                    month = any(w in low for w in ("mois", "calendrier"))
+                    item.click(); page.wait_for_timeout(400)
+                    before = SIG()
+                    page.evaluate(SWIPE, -120); page.wait_for_timeout(400)
+                    after = SIG()
+                    page.evaluate(SWIPE, 120); page.wait_for_timeout(400)
+                    back = SIG()
+                    check(f"{design} : glisser change de période ({name[-12:]})", before != after and back == before, f"{before} / {after} / {back}")
+                    n_views += 1
+                    page.locator("#menuBtn").click(); page.wait_for_timeout(300)
+                check(f"{design} : au moins 4 vues glissables testées", n_views >= 4, str(n_views))
                 ctx.close()
             browser.close()
     finally:

@@ -55,6 +55,13 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.4 — glisser pour changer de période, un seul emoji (mise à jour automatique 1.4.4)
+
+- **Glisser le doigt** vers la gauche ou la droite change de période sur téléphone dans toutes les vues : jour, 3 jours, 5 jours, 6 jours, semaine et mois, dans les 4 designs. Un geste commencé dans une zone qui défile elle-même à l'horizontale n'est pas pris pour un changement.
+- **Un seul emoji** devant les entrées du menu (le design en mettait un, le menu en ajoutait un deuxième).
+- Pour l'app Android, c'est une mise à jour des pages (paquet signé 1.4.4) : elle s'installe seule, sans nouvel APK.
+- Tests : glissement dans les 6 vues des 4 designs et absence de double emoji (`tests/android_sync.py`).
+
 ## 1.46.3 — app Android 1.4.3 : profil fiable, bonhomme cliquable, photo, contrôle des mises à jour
 
 - **Profil** : l'app affichait parfois le nom ou l'adresse d'un enseignant, lus dans l'emploi du temps. Elle ne retient plus que « Bonjour/Bienvenue + nom » et une adresse `@etu.uca.fr`, et ne fabrique plus d'adresse à partir du nom. Les profils déjà enregistrés sont effacés une fois, puis relus à la prochaine synchro.

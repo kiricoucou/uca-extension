@@ -1,38 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/bg">
-
+<!-- Contenu vérifiable uniquement : aucune donnée inventée (mêmes textes que app/shell.js de l'app web). -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="@color/bg">
     <include layout="@layout/topbar" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card"
-            android:padding="14dp"
-            android:layout_marginBottom="12dp">
-            <TextView android:text="EMPRUNTS EN COURS" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView android:text="Aucun ouvrage en cours d'emprunt" android:textColor="@color/text" android:textSize="15sp" android:textStyle="bold" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+    <ScrollView android:layout_width="match_parent" android:layout_height="match_parent">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="16dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_card" android:padding="14dp" android:layout_marginBottom="12dp">
+            <TextView android:text="EMPRUNTS" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <TextView android:text="Ton compte lecteur" android:textColor="@color/text" android:textSize="15sp" android:textStyle="bold" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <TextView android:text="Tes emprunts et prolongations sont dans ton compte lecteur, sur le site des bibliothèques (connexion UCA)." android:textColor="@color/text_dim" android:textSize="13sp" android:layout_marginTop="4dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnBuSite" android:text="Ouvrir le site des BU" android:layout_marginTop="10dp" android:background="@drawable/bg_cta" android:textColor="@color/on_accent" android:textAllCaps="false" android:textStyle="bold" android:minHeight="48dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:background="@drawable/bg_card"
-            android:padding="14dp">
-            <TextView android:text="HISTORIQUE" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
-            <TextView android:text="Dernier retour : « Algorithmique avancée » — 03/10" android:textColor="@color/text" android:textSize="15sp" android:textStyle="bold" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:background="@drawable/bg_card" android:padding="14dp" android:layout_marginBottom="12dp">
+            <TextView android:text="BIBLIOTHÈQUES PROCHES" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <TextView android:text="BU Sciences des Cézeaux · BU Lafayette" android:textColor="@color/text" android:textSize="15sp" android:textStyle="bold" android:layout_marginTop="4dp" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+            <TextView android:text="Itinéraires dans l'onglet Lieux." android:textColor="@color/text_dim" android:textSize="13sp" android:layout_marginTop="4dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <Button android:id="@+id/btnBuLieux" android:text="Voir sur la carte" android:layout_marginTop="10dp" android:background="@drawable/bg_cta" android:textColor="@color/on_accent" android:textAllCaps="false" android:textStyle="bold" android:minHeight="48dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
         </LinearLayout>
-
     </LinearLayout>
+    </ScrollView>
 </LinearLayout>

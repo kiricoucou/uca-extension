@@ -15,7 +15,7 @@
 <script src="../core/env.js"></script>
 <script>
 /* Aiguillage : guide d'installation (première visite dans le navigateur), choix du design,
-   puis agenda du design choisi (les paramètres de raccourci sont transmis). */
+   puis la coque de l'app (onglets comme l'app Android ; les paramètres de raccourci sont transmis à l'agenda). */
 (async function () {
   const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
   const [{ uca_design }, designs] = await Promise.all([chrome.storage.local.get("uca_design"), fetch(chrome.runtime.getURL("designs/designs.json")).then((r) => r.json())]);
@@ -25,7 +25,10 @@
   if (!standalone && !uca_design && !localStorage.getItem("uca_install_seen")) { location.replace("install.html"); return; }
   const design = designs.find((d) => d.id === uca_design);
   if (!design) { location.replace(chrome.runtime.getURL("choose.html?tab=1")); return; }
-  location.replace(chrome.runtime.getURL(`${design.folder}/agenda.html`) + location.search.replace(/[?&]source=pwa/, "").replace(/^&/, "?"));
+  // Même app que l'APK Android : barre du bas Accueil / Études / Agenda / Lieux / Compte (app/shell.html).
+  // Déjà dans l'onglet Agenda de la coque (cadre) : agenda directement, jamais une coque dans la coque.
+  if (window.top !== window) { location.replace(chrome.runtime.getURL(`${design.folder}/agenda.html`) + location.search.replace(/[?&]source=pwa/, "").replace(/^&/, "?")); return; }
+  location.replace("shell.html" + location.search);
 })();
 </script>
 </body>

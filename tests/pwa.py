@@ -61,26 +61,32 @@ def run_flow(browser, device, base, label, errors, design_id):
     check(f"{label} : sans données → écran d'import", True)
     shot(page, f"{label}-import")
     page.set_input_files("#fileInput", str(sync_file()))
-    page.wait_for_url(f"**/designs/{design_id}/agenda.html*", timeout=10000); page.wait_for_timeout(900)
-    cards = page.locator(".m-card, .view.active .event-card").count()
+    page.wait_for_url("**/app/shell.html*", timeout=10000); page.wait_for_timeout(1500)
+    check(f"{label} : coque de l'app (barre Accueil / Études / Agenda / Lieux / Compte)", page.locator("#bottomNav button").count() == 5)
+    A = lambda: page.query_selector("#agendaFrame").content_frame()   # l'agenda vit dans l'onglet Agenda de la coque
+    cards = A().locator(".m-card, .view.active .event-card").count()
     check(f"{label} : import du fichier → cours affichés", cards > 0, str(cards))
-    check(f"{label} : design de l'appareil conservé", f"/designs/{design_id}/" in page.url, page.url)
-    check(f"{label} : info « données de l'ordinateur »", "Données de l'ordinateur" in page.locator("#syncInfo").inner_text())
-    check(f"{label} : bouton Importer au lieu de Synchroniser", "Importer" in page.locator("#syncBtn").inner_text() or not page.locator("#syncBtn").is_visible())
+    check(f"{label} : design de l'appareil conservé", f"/designs/{design_id}/" in A().url, A().url)
+    check(f"{label} : info « données de l'ordinateur »", "Données de l'ordinateur" in A().locator("#syncInfo").inner_text())
+    check(f"{label} : bouton Importer au lieu de Synchroniser", "Importer" in A().locator("#syncBtn").inner_text() or not A().locator("#syncBtn").is_visible())
     shot(page, f"{label}-agenda")
-    page.locator("#menuBtn").click(); page.wait_for_timeout(300)
-    page.locator("#mobileMenu .mi", has_text="Notes").click(); page.wait_for_timeout(400)
-    check(f"{label} : notes ouvertes en feuille depuis le menu", page.locator("#notesPanel.as-sheet.open").is_visible())
+    A().locator("#menuBtn").click(); page.wait_for_timeout(300)
+    A().locator("#mobileMenu .mi", has_text="Notes").click(); page.wait_for_timeout(400)
+    check(f"{label} : notes ouvertes en feuille depuis le menu", A().locator("#notesPanel.as-sheet.open").is_visible())
     shot(page, f"{label}-notes")
-    page.goto(base + "app/index.html?open=absences"); page.wait_for_timeout(1500)
-    check(f"{label} : raccourci « Mes absences »", page.locator("#absencesPanel.open").count() == 1)
+    page.goto(base + "app/index.html?open=absences"); page.wait_for_timeout(2500)
+    check(f"{label} : raccourci « Mes absences »", A().locator("#absencesPanel.open").count() == 1)
+    for t in ("home", "etudes", "lieux", "compte"):
+        page.click(f'#bottomNav button[data-tab="{t}"]'); page.wait_for_timeout(400)
+        check(f"{label} : onglet {t} affiché", page.locator("#screen").inner_text().strip() != "")
+    page.click('#bottomNav button[data-tab="agenda"]'); page.wait_for_timeout(400)
     if browser.browser_type.name == "chromium":
         ready = page.evaluate("() => navigator.serviceWorker.ready.then(r => !!r.active)")
         check(f"{label} : service worker actif", ready)
         page.goto(base + "app/index.html"); page.wait_for_timeout(1500)
         ctx.set_offline(True)
-        page.reload(); page.wait_for_timeout(1500)
-        check(f"{label} : fonctionne hors ligne", page.locator(".m-card, .view.active .event-card").count() > 0)
+        page.reload(); page.wait_for_timeout(2500)
+        check(f"{label} : fonctionne hors ligne", A().locator(".m-card, .view.active .event-card").count() > 0)
         ctx.set_offline(False)
     page.goto(base + "settings.html"); page.wait_for_timeout(600)
     check(f"{label} : réglages propres à l'extension masqués", page.locator("#f-autoSyncHours").count() == 0 and page.locator("#f-startView").count() == 1)
@@ -237,7 +243,7 @@ def no_install_loop_once_configured(browser, base, errors):
     # index.html renvoyait quand même vers install.html.
     page.goto(base + "app/index.html"); page.wait_for_timeout(1200)
     check("design déjà choisi : jamais renvoyé vers le guide d'installation", "install.html" not in page.url, page.url)
-    check("design déjà choisi : agenda ouvert directement", "agenda.html" in page.url, page.url)
+    check("design déjà choisi : app ouverte directement (coque + agenda)", "shell.html" in page.url and "agenda.html" in (page.query_selector("#agendaFrame").get_attribute("src") or ""), page.url)
     ctx.close()
 
 
@@ -372,7 +378,7 @@ def paste_clipboard(browser, base, errors):
       await chrome.storage.local.set({ uca_share_code_saved: code });
     }""", [data, code])
     page.click("#pasteLinkBtn")
-    page.wait_for_url("**/designs/carnet/agenda.html*", timeout=10000); page.wait_for_timeout(500)
+    page.wait_for_url("**/app/shell.html*", timeout=10000); page.wait_for_timeout(500)
     stored = page.evaluate("() => JSON.parse(localStorage.getItem('uca_store') || '{}')")
     check("coller : lien du presse-papiers importé d'un seul geste", len(stored.get("uca_events") or []) > 0, str(list(stored)[:5]))
     page.goto(base + "app/import.html"); page.wait_for_timeout(300)
@@ -419,6 +425,8 @@ def pinned_next(pw, base, errors):
     page.on("pageerror", lambda e: errors.append(f"[pinNext] {e}"))
     data = seed(); data["uca_design"] = "carnet"
     soon = datetime.datetime.now() + datetime.timedelta(minutes=90)
+    if soon.date() != datetime.datetime.now().date() or soon.hour >= 23:   # le soir : un cours qui finirait après minuit n'est pas valable
+        soon = (datetime.datetime.now() + datetime.timedelta(days=1)).replace(hour=9, minute=0, second=0, microsecond=0)
     end = soon + datetime.timedelta(minutes=60)
     data["uca_events"] = [{"date": soon.date().isoformat(), "year": soon.year, "month": soon.month - 1, "day": soon.day, "startH": soon.hour,
         "startM": soon.minute, "endH": end.hour, "endM": end.minute, "title": "R9.99 Prochain TD", "teacher": "M. Test", "room": "Salle X", "raw": "x", "color": "#888"}]

@@ -25,10 +25,14 @@ class ScolariteFragment : Fragment() {
             parentFragmentManager.popBackStack()
         }
 
-        root.findViewById<Button>(R.id.btnDownloadCertificat)?.setOnClickListener {
-            Toast.makeText(requireContext(), "Certificat de scolarité téléchargé (PDF)", Toast.LENGTH_SHORT).show()
-        }
 
+        root.findViewById<View>(R.id.btnDownloadCertificat)?.setOnClickListener { openUrl("https://ent.uca.fr/") }
+        root.findViewById<View>(R.id.btnOdinNotes)?.setOnClickListener { openUrl("https://odin.iut.uca.fr/etudiants/?p=notes") }
         return root
+    }
+
+    private fun openUrl(url: String) {
+        try { startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) }
+        catch (_: Exception) { Toast.makeText(requireContext(), "Aucune application pour ouvrir ce lien.", Toast.LENGTH_SHORT).show() }
     }
 }

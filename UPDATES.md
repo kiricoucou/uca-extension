@@ -55,6 +55,12 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.10 — app Android 1.4.9 : app web identique à l'app Android, plus aucune donnée inventée
+
+- **App web installable (Android et iPhone)** : même structure que l'app Android, barre du bas Accueil / Études / Agenda / Lieux / Compte, sous-écrans Notifications, Préférences, Scolarité, Stage et emploi, Bibliothèques, Transports, mêmes couleurs (`app/shell.html`). Accueil : statut réel des services et raccourcis ; Études : prochains cours ; Lieux : carte (avec accord) et itinéraires Google Maps / Waze / OpenStreetMap (et Plans sur iPhone) ; Compte : photo de profil gardée sur l'appareil, groupes, préférences, effacement des données ; Notifications : changements d'emploi du temps et nouvelles notes.
+- Limites d'un navigateur (pas de contournement possible) : pas de connexion directe au CAS ni à Odin (les données arrivent par « Importer mes données »), pas de synchro ni de notification quand l'app est fermée, pas de widget ni de calendrier du téléphone.
+- **App Android, données inventées retirées** : l'Accueil affichait « ● Ouvert » écrit en dur, « 3 mails non lus », des horaires de BU et un taux d'affluence ; la Scolarité un faux numéro étudiant et un faux INE, un bouton « certificat téléchargé » qui ne téléchargeait rien ; Stage et emploi de fausses offres ; Livres un faux historique. Remplacés par le statut réel des services (vérifié à l'ouverture), le vrai nombre de notifications et des liens vers les sites officiels (ENT, Odin, BU, offres de l'université, 1jeune1solution).
+
 ## 1.46.9 — app Android 1.4.8 : vue Liste, vue Jour en blocs, emploi du temps de la classe fiable
 
 - **Nouvelle vue « Liste »** (bouton 📋 Liste, les 4 designs) : un jour sous forme de liste ; sur téléphone, glisser à gauche ou à droite change de jour. Raccourci clavier `L`.

@@ -20,6 +20,8 @@ function showError(msg) {
 }
 
 function targetPage(folder) {
+  // App web (PWA) : retour dans la coque à onglets, comme l'app Android (l'APK a sa propre barre native : window.AndroidUCA).
+  if (tabMode && window.UCA_APP && !window.AndroidUCA) return chrome.runtime.getURL("app/index.html");
   return chrome.runtime.getURL(`${folder}/${tabMode ? "agenda.html" : "popup.html"}`);
 }
 

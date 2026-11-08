@@ -34,7 +34,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Aucun cours en ligne à venir cette semaine"
+                    android:text="Tes prochains cours sont dans l'onglet Agenda"
                     android:textColor="@color/text_dim"
                     android:textSize="13sp" />
             </LinearLayout>

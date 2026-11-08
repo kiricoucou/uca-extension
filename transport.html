@@ -391,7 +391,8 @@
         <div class="brand-sub">Clermont-Ferrand &amp; Région Auvergne-Rhône-Alpes</div>
       </div>
     </div>
-    <a href="app/index.html" class="back-link">← Retour Agenda</a>
+    <a href="app/index.html" class="back-link" id="backLink">← Retour Agenda</a>
+    <script>if (window.top !== window) document.getElementById("backLink").hidden = true; /* dans l'app : la barre de l'app a déjà son bouton retour */</script>
   </header>
 
   <!-- FORMULAIRE DE RECHERCHE D'ITINÉRAIRE -->

@@ -7,7 +7,7 @@
 "use strict";
 
 const DEFAULT_TEXT = {
-  view_day: "Jour", view_3day: "3 jours", view_5day: "5 jours", view_6day: "6 jours", view_week: "Semaine", view_month: "Mois",
+  view_list: "Liste", view_day: "Jour", view_3day: "3 jours", view_5day: "5 jours", view_6day: "6 jours", view_week: "Semaine", view_month: "Mois",
   today: "Aujourd'hui",
   rawData: "Toutes les données (brut) :",
   noCourse: "Aucun cours ce jour-là",

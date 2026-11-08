@@ -87,6 +87,11 @@ class PreferencesFragment : Fragment() {
         bindSwitch(root, R.id.switchCoursLigne, PrefsStore.notifCoursLigne(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_COURS_LIGNE, v) }
         bindSwitch(root, R.id.switchBiblio, PrefsStore.notifBiblio(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_BIBLIO, v) }
         bindSwitch(root, R.id.switchResto, PrefsStore.notifResto(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_RESTO, v) }
+        // Aucune source fiable pour ces trois alertes (cours en ligne, bibliothèques, restaurants) : interrupteurs masqués plutôt qu'inopérants.
+        listOf(R.id.switchCoursLigne, R.id.switchBiblio, R.id.switchResto).forEach { id ->
+            val sw = root.findViewById<View>(id) ?: return@forEach
+            ((sw.parent as? View)?.takeIf { it.id != R.id.fragmentContainer } ?: sw).visibility = View.GONE
+        }
 
         root.findViewById<View>(R.id.btnDiag)?.setOnClickListener {
             val report = SessionDiag.report(ctx)

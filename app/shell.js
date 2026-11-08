@@ -98,41 +98,46 @@ const SCREENS = {
     const unread = notifications().filter((n) => !n.read).length;
     return `
       <button class="banner" type="button" data-go="notifications">${ICON.bell}<span><b>Notifications UCA</b>${unread ? `${unread} nouvelle${unread > 1 ? "s" : ""} notification${unread > 1 ? "s" : ""}` : "Aucune nouvelle notification"}</span></button>
+      <div class="grid2"><div>
       <div class="section-title">Statut des services UCA</div>
       <div class="card" id="statusCard">${UCA_STATUS.SITES.filter((s) => ["odin", "cas", "moodle", "mail", "site"].includes(s.id)).map((s) =>
         `<div class="status" data-site="${s.id}"><span>${esc(s.label)}</span><span class="st wait">● Vérification…</span></div>`).join("")}
         <p class="small muted" style="margin:8px 0 0">Vert = répond · Orange = lent · Rouge = injoignable. Vérifié depuis ton appareil, à l'instant.</p></div>
+      </div><div>
       <div class="section-title">Raccourcis</div>
       <div class="rows">
         ${row("mail", "Messagerie Zimbra UCA", "Ouvre ta boîte de réception", { href: MAIL })}
         ${row("book", "Bibliothèques universitaires", "Compte lecteur, catalogue, horaires", { go: "livres" })}
         ${row("food", "Restaurants U et lieux", "Carte des campus et itinéraires", { go: "tab:lieux" })}
         ${row("bus", "Transports & mobilité", "T2C tram et bus, TER, covoiturage", { go: "transport" })}
-      </div>`;
+      </div></div></div>`;
   }, after() { checkStatus(); } },
 
   etudes: { title: "Études", render() {
     const next = upcoming(3);
     return `
+      <div class="grid2"><div>
       <div class="section-title">Prochains cours</div>
       ${next.length ? next.map((e) => `<div class="card next-card"><b>${esc(e.title)}</b><div class="small muted">${esc(whenLabel(e))}${e.room ? " · salle " + esc(e.room) : ""}${e.teacher ? " · " + esc(e.teacher) : ""}</div></div>`).join("")
         : `<div class="card muted">Aucun cours à venir. ${data.uca_events ? "" : 'Importe tes données pour voir ton emploi du temps.'}</div>`}
+      </div><div>
       <div class="section-title">Raccourcis</div>
       <div class="rows">
         ${row("work", "Stage et emploi", "Offres de stage, alternance, premier emploi", { go: "stage" })}
         ${row("school", "Scolarité", "Certificat, relevés, inscriptions, contacts", { go: "scolarite" })}
         ${row("bell", "Notifications", "Changements d'emploi du temps, nouvelles notes", { go: "notifications" })}
-      </div>`;
+      </div></div></div>`;
   } },
 
   lieux: { title: "Lieux universitaires", render() {
     const ok = localStorage.getItem("uca_maps_consent") === "1";
-    return `
+    return `<div class="grid2"><div>
       ${ok ? `<iframe class="lieu-map" src="../lieux-map.html" title="Carte des campus" loading="lazy"></iframe>`
         : `<div class="card"><b>🗺️ Carte OpenStreetMap</b><p class="small muted">Pour afficher la carte des campus (Cézeaux, Dunant, Carnot, Gergovia), ton appareil télécharge les images de la carte depuis OpenStreetMap, qui voit alors ton adresse IP. Le fond « Google Maps », si tu le choisis, peut déposer des cookies Google. Aucune donnée de cours ne quitte l'appareil.</p>
           <button class="btn" type="button" data-act="mapsOk">Afficher la carte</button><button class="btn secondary" type="button" data-act="mapsNo">Refuser (mode liste)</button></div>`}
+      </div><div>
       <div class="section-title">Lieux universitaires UCA & restos CROUS</div>
-      <div class="rows">${LIEUX.map((l, i) => `<button class="row" type="button" data-lieu="${i}"><span class="ic">${l[1] ? ICON.food : ICON.pin}</span><span class="tx"><b>${esc(l[0])}</b><span>${esc(l[4])}</span></span><span class="chev">${ICON.chev}</span></button>`).join("")}</div>`;
+      <div class="rows">${LIEUX.map((l, i) => `<button class="row" type="button" data-lieu="${i}"><span class="ic">${l[1] ? ICON.food : ICON.pin}</span><span class="tx"><b>${esc(l[0])}</b><span>${esc(l[4])}</span></span><span class="chev">${ICON.chev}</span></button>`).join("")}</div></div></div>`;
   } },
 
   compte: { title: "Mon compte", render() {
@@ -141,7 +146,7 @@ const SCREENS = {
     const photo = localStorage.getItem("uca_profile_photo");
     const palette = ["#2FD6CD", "#A78BFA", "#FF7EB6", "#FFB454", "#60A5FA", "#6EE7A0", "#FFD84D"];
     const details = [["Nom", p.lastName], ["Prénom", p.firstName], ["N° étudiant", p.id], ["Formation", p.formation], ["Groupe", groups.join(" · ")], ["Email", p.email]];
-    return `
+    return `<div class="grid2"><div>
       <div class="profile-head">
         <button class="avatar" type="button" data-act="photo" aria-label="Photo de profil : touche pour la changer">${photo ? `<img src="${esc(photo)}" alt="">` : ICON.person}</button>
         <div><div class="kicker">PROFIL ÉTUDIANT</div><div class="name">${esc(p.name || "Profil non détecté")}</div><div class="small">${esc(p.formation || "Université Clermont Auvergne")}</div></div>
@@ -149,6 +154,7 @@ const SCREENS = {
       <input type="file" id="photoInput" accept="image/*" hidden>
       <div class="card" style="margin-top:10px">${details.map(([l, v], i) => `<div class="detail"><i style="background:${palette[i % palette.length]}"></i><div><small style="color:${palette[i % palette.length]}">${esc(l)}</small>${v ? `<b>${esc(v)}</b>` : '<span class="muted">non détecté</span>'}</div></div>`).join("")}</div>
       <a class="btn secondary" style="margin-top:10px" href="${ODIN}" target="_blank" rel="noopener">Voir mon profil étudiant (Odin)</a>
+      </div><div>
       <div class="section-title">Mes groupes (repérés dans ton emploi du temps)</div>
       <div class="pills">${groups.map((g, i) => `<span class="pill" style="color:${palette[(i * 2 + 1) % 7]};background:${palette[(i * 2 + 1) % 7]}33">${esc(g)}</span>`).join("")}</div>
       <p class="small muted">${groups.length ? "Repérés d'après les intitulés de tes cours sur Odin." : "Aucun groupe repéré : importe ton emploi du temps, ils apparaissent d'après les intitulés (TD, TP)."}</p>
@@ -160,7 +166,7 @@ const SCREENS = {
       <a class="btn" href="import.html">Importer / resynchroniser mes données</a>
       <button class="btn danger" type="button" data-act="logout">Effacer mes données de cet appareil</button>
       <div class="section-title">Aide & conditions</div>
-      <p class="small muted"><a href="../aide.html">Centre d'aide</a> · <a href="../confidentialite.html">Confidentialité</a> · <a href="../nouveautes.html">Nouveautés</a> · Version <span id="ver">—</span></p>`;
+      <p class="small muted"><a href="../aide.html">Centre d'aide</a> · <a href="../confidentialite.html">Confidentialité</a> · <a href="../nouveautes.html">Nouveautés</a> · Version <span id="ver">—</span></p></div></div>`;
   }, after() { fetch("../version.json", { cache: "no-store" }).then((r) => r.json()).then((v) => { const e = $("ver"); if (e) e.textContent = v.version; }).catch(() => {}); } },
 
   notifications: { title: "Notifications", sub: true, render() {
@@ -235,7 +241,7 @@ function show() {
   const id = current();
   const app = $("app");
   document.querySelectorAll("#bottomNav button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
-  $("bottomNav").hidden = stack.length > 0;
+  $("bottomNav").hidden = stack.length > 0 && !matchMedia("(min-width: 900px)").matches;   // ordinateur : barre latérale toujours là
   if (id === "agenda") {
     app.classList.add("agenda");
     const f = $("agendaFrame"); f.hidden = false;
@@ -246,7 +252,7 @@ function show() {
   const s = SCREENS[id];
   $("topbarTitle").textContent = s.title;
   $("backBtn").hidden = !stack.length;
-  $("screen").innerHTML = s.render();
+  $("screen").innerHTML = `<div class="wrap">${s.render()}</div>`;
   $("screen").scrollTop = 0;
   if (s.after) s.after();
   refreshBell();

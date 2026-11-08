@@ -25,6 +25,7 @@ UCA_defineDesign({
   grid: { overlap: "cascade", fontScale: false, metaMerged: true },
   dayView: "grid",
   text: {
+    view_list: "Liste (Relevé)",
     view_day: "Jour (Relevé)",
     view_3day: "3 Jours",
     view_5day: "5 Jours",

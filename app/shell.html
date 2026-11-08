@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://odin.iut.uca.fr https://ent.uca.fr https://moodle.uca.fr https://mail.uca.fr https://kiricoucou.github.io https://raw.githubusercontent.com; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#121418">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -24,6 +25,7 @@
   <main id="screen" tabindex="-1"></main>
   <iframe id="agendaFrame" title="Agenda" hidden></iframe>
   <nav class="bottom-nav" id="bottomNav" aria-label="Navigation principale">
+    <div class="side-brand"><img src="icons/icon-192.png" alt="">My UCA</div>
     <button data-tab="home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></svg><span>Accueil</span></button>
     <button data-tab="etudes"><svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5zM6 11v5c3 3 9 3 12 0v-5"/></svg><span>Études</span></button>
     <button data-tab="agenda"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span>Agenda</span></button>

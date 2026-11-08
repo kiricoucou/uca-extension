@@ -25,6 +25,7 @@ class GateFragment : Fragment() {
     ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
             PrefsStore.setLoggedIn(requireContext(), true)
+            SessionDiag.log(requireContext(), "connexion réussie (écran de démarrage)")
             (requireActivity() as MainActivity).onLoggedIn()
         } else {
             view?.findViewById<View>(R.id.gateError)?.visibility = View.VISIBLE

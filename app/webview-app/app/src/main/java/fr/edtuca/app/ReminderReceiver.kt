@@ -21,6 +21,11 @@ class ReminderReceiver : BroadcastReceiver() {
         val startH = intent.getIntExtra("startH", 0)
         val startM = intent.getIntExtra("startM", 0)
 
+        // Le rappel ne vaut que juste avant le cours : si l'alarme arrive très en retard (ou l'heure a changé), on se tait.
+        val startAt = intent.getLongExtra("startAt", 0L)
+        val minutes = if (startAt > 0) ((startAt - System.currentTimeMillis() + 30_000L) / 60_000L).toInt() else CourseReminderScheduler.LEAD_TIME_MINUTES
+        if (startAt > 0 && (minutes < 0 || minutes > CourseReminderScheduler.LEAD_TIME_MINUTES + 5)) return
+
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
@@ -34,7 +39,8 @@ class ReminderReceiver : BroadcastReceiver() {
         val contentPendingIntent = PendingIntent.getActivity(context, 0, openAppIntent, contentFlags)
 
         val startLabel = "%02d:%02d".format(startH, startM)
-        val text = if (room.isNotBlank()) "$startLabel · $room" else startLabel
+        val dans = if (minutes <= 0) "maintenant" else "dans $minutes min"
+        val text = if (room.isNotBlank()) "$dans · $startLabel · $room" else "$dans · $startLabel"
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)

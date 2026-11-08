@@ -16,6 +16,15 @@ let notesHistory = [];
 let subjectColors = {};
 let tasks = [];
 let sessionIsExpired = false;
+/* Emploi du temps personnel (Odin) et emploi du temps de la classe (ADE) : `events` désigne celui qui est affiché. */
+let personalEvents = [], classEvents = [], classGroups = [], classBusy = false, classError = "";
+function applyScope() { events = UCA_TOOLS.isClassMode() && classEvents.length ? classEvents : personalEvents; }
+function connectClass() {
+  classBusy = true; classError = "";
+  if (window.AndroidUCA && window.AndroidUCA.requestClass) window.AndroidUCA.requestClass();
+  else chrome.runtime.sendMessage({ type: "UCA_CLASS_CONNECT" }, () => void chrome.runtime.lastError);
+  if ($("filterPanel") && $("filterPanel").classList.contains("open")) TOOL_PANELS.filterPanel.build($("filterPanel"));
+}
 let simScope = "", simTarget = 10, chartScope = "overview";
 let notesSeen = {};
 let edtChanges = new Map(); // eventKey -> changement (ajouté / déplacé / salle) ; annulés : fantômes
@@ -29,8 +38,8 @@ let zoomLevel = Math.max(0.6, Math.min(1.8, parseFloat(localStorage.getItem("uca
 
 const DAY_NAMES_SHORT = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 const DAY_NAMES_FULL = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
-const VIEWS = ["day", "3day", "5day", "6day", "week", "month"];
-const VIEW_CONTAINERS = { day: "dayView", "3day": "threeDayView", "5day": "fiveDayView", "6day": "sixDayView", week: "weekView", month: "monthView" };
+const VIEWS = ["list", "day", "3day", "5day", "6day", "week", "month"];
+const VIEW_CONTAINERS = { list: "dayView", day: "dayView", "3day": "threeDayView", "5day": "fiveDayView", "6day": "sixDayView", week: "weekView", month: "monthView" };
 const MOODLE_URL = "https://moodle.uca.fr/";
 const MAIL_URL = "https://mail.uca.fr/zimbra/";
 
@@ -100,7 +109,7 @@ function getSixDayDays() {
 function rangeLabel(days) { const s = days[0], e = days[days.length - 1]; return `${s.getDate()} ${monthShort(s)} – ${e.getDate()} ${monthShort(e)} ${e.getFullYear()}`; }
 function fmtPeriodLabel() {
   if (currentView === "month") return capitalize(refDate.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }));
-  if (currentView === "day") return capitalize(refDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
+  if (currentView === "day" || currentView === "list") return capitalize(refDate.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }));
   if (currentView === "3day") return rangeLabel([refDate, addDays(refDate, 2)]);
   if (currentView === "5day") return rangeLabel(getFiveDayDays());
   if (currentView === "6day") return rangeLabel(getSixDayDays());
@@ -132,11 +141,54 @@ function updateHeader() {
 function navigate(dir) {
   if (currentView === "month") refDate = new Date(refDate.getFullYear(), refDate.getMonth() + dir, 1);
   else if (currentView === "3day") refDate = addDays(refDate, 3 * dir);
-  else if (currentView === "day") refDate = addDays(refDate, dir);
+  else if (currentView === "day" || currentView === "list") refDate = addDays(refDate, dir);
   else refDate = addDays(refDate, 7 * dir);
   render();
 }
 function switchView(v) { if (availableViews().includes(v)) currentView = v; render(); }
+
+/* ============================= Aller à un cours ============================= */
+function closeAllSheets() {
+  Object.keys(TOOL_PANELS).forEach((o) => { if ($(o)) $(o).classList.remove("open"); });
+  const bd = $("ucaSheetBackdrop"); if (bd) bd.hidden = true;
+}
+let calArrow = null, calArrowTimer = 0, calArrowFollow = 0;
+function clearCalArrow() {
+  clearTimeout(calArrowTimer); clearInterval(calArrowFollow);
+  if (calArrow) { calArrow.remove(); calArrow = null; }
+  document.querySelectorAll(".cal-target").forEach((n) => n.classList.remove("cal-target"));
+}
+function goToDate(d) {
+  closeAllSheets(); clearCalArrow();
+  refDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (currentView === "month") switchView(isMobileUI() ? "list" : "week"); else render();
+}
+/* Ouvre l'agenda sur le jour du cours et le désigne par une flèche animée. */
+function goToEvent(ev) {
+  goToDate(new Date(ev.year, ev.month, ev.day));
+  const key = eventKey(ev);
+  setTimeout(() => {
+    const card = [...document.querySelectorAll(".view.active [data-key]")].find((n) => n.dataset.key === key);
+    if (!card) return;
+    card.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+    card.classList.add("cal-target");
+    const arrow = document.createElement("div"); arrow.className = "cal-arrow"; arrow.textContent = "⬇"; arrow.setAttribute("aria-hidden", "true");
+    document.body.appendChild(arrow); calArrow = arrow;
+    const place = () => { const r = card.getBoundingClientRect(); arrow.style.left = Math.max(4, Math.min(window.innerWidth - 32, r.left + r.width / 2 - 13)) + "px"; arrow.style.top = Math.max(4, r.top - 34) + "px"; };
+    place();
+    calArrowFollow = setInterval(place, 80);
+    calArrowTimer = setTimeout(clearCalArrow, 6000);
+  }, 150);
+}
+/* Un devoir mène au cours de sa matière le jour du rendu (ou au premier cours de la matière après), sinon au jour du rendu. */
+function goToTask(t) {
+  const due = UCA_TASKS.parseDue(t.due);
+  if (due === null) return;
+  const d = new Date(due), key = dateKey(d.getFullYear(), d.getMonth(), d.getDate());
+  const same = t.subject ? events.filter((e) => !e.cancelled && UCA_TOOLS.subjectOf(e.title) === t.subject).sort((a, b) => (a.date + pad(a.startH)).localeCompare(b.date + pad(b.startH))) : [];
+  const ev = same.find((e) => e.date === key) || same.find((e) => e.date >= key);
+  if (ev) goToEvent(ev); else goToDate(d);
+}
 
 /* ============================= Notes personnelles ============================= */
 function saveNotes() { chrome.storage.local.set({ uca_notes: notes }); }
@@ -242,9 +294,50 @@ function renderMonth() {
 function layoutOverlaps(evs) {
   const sorted = [...evs].sort((a, b) => (a.startH * 60 + a.startM) - (b.startH * 60 + b.startM));
   const result = []; let cluster = []; let clusterEnd = -1;
-  function flush() { if (cluster.length === 0) return; const cols = cluster.length; cluster.forEach((ev, i) => result.push({ ev, col: i, cols })); cluster = []; }
+  // Un groupe de cours qui se chevauchent en chaîne : chaque cours prend la première colonne libre à son début
+  // (au lieu d'une colonne chacun), donc le nombre de colonnes = le plus grand nombre de cours en même temps.
+  function flush() {
+    if (cluster.length === 0) return;
+    const laneEnd = []; const placed = [];
+    cluster.forEach(ev => {
+      const start = ev.startH * 60 + ev.startM, end = ev.endH * 60 + ev.endM;
+      let lane = laneEnd.findIndex(e => e <= start); if (lane < 0) { lane = laneEnd.length; laneEnd.push(0); }
+      laneEnd[lane] = end > start ? end : start + 30; placed.push({ ev, col: lane });
+    });
+    const cols = laneEnd.length; placed.forEach(x => result.push({ ev: x.ev, col: x.col, cols })); cluster = [];
+  }
   sorted.forEach(ev => { const start = ev.startH * 60 + ev.startM, end = ev.endH * 60 + ev.endM; if (cluster.length === 0 || start < clusterEnd) { cluster.push(ev); clusterEnd = Math.max(clusterEnd, end); } else { flush(); cluster.push(ev); clusterEnd = end; } });
   flush(); return result;
+}
+
+/* Emploi du temps de la classe : un même cours donné en même temps à plusieurs groupes (même titre, même horaire) devient une seule carte,
+   avec les profs et salles réunis, au lieu d'une colonne par groupe. */
+function mergeSimultaneous(evs) {
+  const byKey = new Map(); const out = [];
+  evs.forEach(ev => {
+    const k = [ev.title, ev.startH, ev.startM, ev.endH, ev.endM, ev.cancelled ? 1 : 0].join("|");
+    const prev = byKey.get(k);
+    if (!prev) { const copy = { ...ev, _n: 1 }; byKey.set(k, copy); out.push(copy); return; }
+    prev._n++;
+    const join = (a, b) => { const l = new Set([...(a ? String(a).split(/\s*,\s*/) : []), ...(b ? String(b).split(/\s*,\s*/) : [])].filter(Boolean)); return [...l].join(", "); };
+    prev.teacher = join(prev.teacher, ev.teacher); prev.room = join(prev.room, ev.room);
+  });
+  return out;
+}
+
+/* Colonnes étroites (beaucoup de groupes en parallèle) : texte plus petit, mots coupés proprement, prof masqué si la place manque. */
+function ensureClassGridStyle() {
+  if (document.getElementById("classGridStyle")) return;
+  const st = document.createElement("style"); st.id = "classGridStyle";
+  st.textContent = ".event-card.cv{padding:3px 4px !important;overflow:hidden;overflow-wrap:anywhere;hyphens:auto;line-height:1.15}"
+    + ".event-card.cv .ev-time{font-size:9.5px !important;white-space:normal}"
+    + ".event-card.cv .ev-title{font-size:11px !important;white-space:normal;-webkit-line-clamp:4;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden}"
+    + ".event-card.cv .ev-sub{font-size:9.5px !important;white-space:normal;overflow:hidden;text-overflow:ellipsis}"
+    + ".event-card.cv.narrow .ev-prof{display:none}"
+    + ".grid-scroll.cv-scroll{overflow-x:auto}"
+    + ".grid-scroll.cv-scroll .grid-headrow,.grid-scroll.cv-scroll .grid-body{width:max-content;min-width:100%}"
+    + ".grid-scroll.cv-scroll .grid-timegutter,.grid-scroll.cv-scroll .grid-timegutter-head{position:sticky;left:0;z-index:30;background:var(--cv-bg,#111)}";
+  document.head.appendChild(st);
 }
 
 function metaHtml(ev, tag) {
@@ -287,10 +380,18 @@ function renderTimeGrid(containerId, days) {
   const el = $(containerId); el.innerHTML = "";
   const wrap = document.createElement("div"); wrap.className = "grid-view";
   const today = new Date(); today.setHours(0, 0, 0, 0);
+  const classView = UCA_TOOLS.isClassMode() && classEvents.length > 0 && days.length > 1;
+  const dayEvs = days.map(d => classView ? mergeSimultaneous(eventsOnDate(d)) : eventsOnDate(d));
+  const dayLay = dayEvs.map(list => layoutOverlaps(list));
+  const dayLanes = dayLay.map(l => Math.max(1, ...l.map(x => x.cols)));
+  const LANE_MIN = isMobileUI() ? 66 : 96;
+  const dayFlex = (i) => classView ? `flex:${dayLanes[i]} 0 ${dayLanes[i] * LANE_MIN}px;min-width:${dayLanes[i] * LANE_MIN}px;` : "";
+  if (classView) ensureClassGridStyle();
   const headRow = document.createElement("div"); headRow.className = "grid-headrow";
   const gutterHead = document.createElement("div"); gutterHead.className = "grid-timegutter-head"; headRow.appendChild(gutterHead);
-  days.forEach(d => { const dh = document.createElement("div"); dh.className = "grid-daycol-head" + (sameDay(d, today) ? " today" : ""); dh.innerHTML = `<div class="dname">${DAY_NAMES_SHORT[d.getDay()]}</div><div class="dnum">${d.getDate()}</div>`; markHoliday(dh, d, ".dnum"); headRow.appendChild(dh); });
+  days.forEach((d, di) => { const dh = document.createElement("div"); dh.className = "grid-daycol-head" + (sameDay(d, today) ? " today" : ""); if (classView) dh.style.cssText = dayFlex(di); dh.innerHTML = `<div class="dname">${DAY_NAMES_SHORT[d.getDay()]}</div><div class="dnum">${d.getDate()}</div>`; markHoliday(dh, d, ".dnum"); headRow.appendChild(dh); });
   const scroll = document.createElement("div"); scroll.className = "grid-scroll";
+  if (classView) { scroll.classList.add("cv-scroll"); let bgEl = el, bg = ""; while (bgEl && (!bg || bg === "transparent" || /rgba\(0, 0, 0, 0\)/.test(bg))) { bg = getComputedStyle(bgEl).backgroundColor; bgEl = bgEl.parentElement; } scroll.style.setProperty("--cv-bg", bg && !/rgba\(0, 0, 0, 0\)/.test(bg) ? bg : "#111"); }
   scroll.tabIndex = 0; scroll.setAttribute("role", "region"); scroll.setAttribute("aria-label", "Grille horaire des cours (" + days.length + (days.length > 1 ? " jours)" : " jour)"));
   scroll.appendChild(headRow);
   const body = document.createElement("div"); body.className = "grid-body";
@@ -306,7 +407,7 @@ function renderTimeGrid(containerId, days) {
   const edge = Math.max(parseFloat(getComputedStyle(body).marginTop) || 0, labelHalf);
   body.style.marginTop = edge + "px"; body.style.marginBottom = edge + "px";
   const containerH = Math.max((scroll.clientHeight - headH - 2 * edge) || 0, 200);
-  const allEvs = [].concat(...days.map(d => eventsOnDate(d)));
+  const allEvs = [].concat(...dayEvs);
   let rangeStart = 8, rangeEnd = 18;
   if (allEvs.length) {
     let minS = 24, maxE = 0;
@@ -324,16 +425,16 @@ function renderTimeGrid(containerId, days) {
   const gutter = document.createElement("div"); gutter.className = "grid-timegutter"; gutter.style.height = bodyHeight + "px";
   for (let h = Math.ceil(rangeStart); h <= Math.floor(rangeEnd) && h < 24; h++) { const lbl = document.createElement("div"); lbl.className = "hour-label"; lbl.style.top = topFor(h, 0) + "px"; lbl.textContent = pad(h) + ":00"; gutter.appendChild(lbl); }
   body.appendChild(gutter);
-  days.forEach(d => {
-    const col = document.createElement("div"); col.className = "grid-daycol"; col.style.height = bodyHeight + "px";
+  days.forEach((d, di) => {
+    const col = document.createElement("div"); col.className = "grid-daycol"; col.style.height = bodyHeight + "px"; if (classView) col.style.cssText += dayFlex(di);
     for (let h = Math.ceil(rangeStart); h <= Math.floor(rangeEnd); h++) { const line = document.createElement("div"); line.className = "hour-line"; line.style.top = topFor(h, 0) + "px"; col.appendChild(line); }
-    layoutOverlaps(eventsOnDate(d)).forEach(({ ev, col: colIdx, cols }) => {
+    dayLay[di].forEach(({ ev, col: colIdx, cols }) => {
       const top = topFor(ev.startH, ev.startM);
       let durMin = (ev.endH * 60 + ev.endM) - (ev.startH * 60 + ev.startM); if (durMin <= 0) durMin = 30;
       const height = (durMin / 60) * pxPerHour;
       const mobile = isMobileUI();
       const scale = D.grid.fontScale && !mobile ? Math.max(0.9, Math.min(1.8, height / MIN_CARD_HEIGHT)) : 1;
-      const card = document.createElement("div"); card.className = "event-card" + (height < 26 ? " tiny" : "") + (ev.cancelled ? " ev-cancelled" : changeOf(ev) ? " ev-changed" : "");
+      const card = document.createElement("div"); card.dataset.key = eventKey(ev); card.className = "event-card" + (classView ? " cv" + (dayLanes[di] > 1 && cols > 1 && LANE_MIN <= 70 ? " narrow" : "") : "") + (height < 26 ? " tiny" : "") + (ev.cancelled ? " ev-cancelled" : changeOf(ev) ? " ev-changed" : "");
       if (sameDay(d, today)) { const nm = new Date().getHours() * 60 + new Date().getMinutes(), sm = ev.startH * 60 + ev.startM, em = ev.endH * 60 + ev.endM; if (nm >= em) card.classList.add("past"); else if (nm >= sm) card.classList.add("current"); } else if (d < today) card.classList.add("past");
       card.style.top = top + "px"; card.style.height = height + "px"; card.style.setProperty("--s", scale);
       if (cols > 1 && D.grid.overlap === "cascade") { const step = Math.min(28, 60 / cols); card.classList.add("cascade"); card.style.left = `calc(${colIdx * step}% + 2px)`; card.style.width = `calc(${100 - colIdx * step}% - 4px)`; card.style.zIndex = String(2 + colIdx); }
@@ -426,7 +527,7 @@ function renderMobileDay() {
       if (sm - prevEnd >= 30) { const gap = document.createElement("div"); gap.className = "m-gap"; gap.textContent = "Pause · " + fmtGap(sm - prevEnd); list.appendChild(gap); }
     }
     const state = (isToday && nowMin >= em) || refDate < today ? "past" : (isToday && nowMin >= sm ? "current" : "");
-    const card = document.createElement("div"); card.className = "m-card" + (state ? " " + state : "") + (ev.cancelled ? " ev-cancelled" : changeOf(ev) ? " ev-changed" : "");
+    const card = document.createElement("div"); card.dataset.key = eventKey(ev); card.className = "m-card" + (state ? " " + state : "") + (ev.cancelled ? " ev-cancelled" : changeOf(ev) ? " ev-changed" : "");
     card.style.setProperty("--evc", ev.color);
     card.style.flexShrink = "0";
     card.style.minHeight = "fit-content";
@@ -497,13 +598,45 @@ function render() {
   else if (currentView === "3day") renderTimeGrid("threeDayView", Array.from({ length: 3 }, (_, i) => addDays(refDate, i)));
   else if (currentView === "5day") renderTimeGrid("fiveDayView", getFiveDayDays());
   else if (currentView === "6day") renderTimeGrid("sixDayView", getSixDayDays());
-  else if (currentView === "day") { if (isMobileUI()) renderMobileDay(); else if (D.dayView === "list") renderDayList(); else renderTimeGrid("dayView", [new Date(refDate)]); }
+  else if (currentView === "list") { if (isMobileUI()) renderMobileDay(); else renderDayList(); }
+  else if (currentView === "day") renderTimeGrid("dayView", [new Date(refDate)]);
   const target = VIEW_CONTAINERS[currentView];
   document.querySelectorAll(".view").forEach(v => v.classList.toggle("active", v.id === target));
 }
 
 /* ============================= Menu mobile (hamburger) ============================= */
 function closeMobileMenu() { $("mobileMenu").classList.remove("open"); }
+/* Importer le lien de partage d'un ami (ou le sien) : emploi du temps passé et à venir, notes, notes personnelles. */
+function openImportLinkModal() {
+  let ov = document.getElementById("importLinkOverlay");
+  if (ov) ov.remove();
+  ov = document.createElement("div"); ov.id = "importLinkOverlay"; ov.className = "modal-overlay open";
+  ov.innerHTML = `<div class="modal grade-modal-box" role="dialog" aria-modal="true" aria-labelledby="ilTitle">
+    <div class="modal-head"><h3 id="ilTitle">Importer un lien de partage</h3><button class="close-x" id="ilClose" aria-label="Fermer">✕</button></div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+      <label>Lien reçu<input id="ilLink" type="text" inputmode="url" autocomplete="off" placeholder="https://kiricoucou.github.io/uca-extension/#e=…" style="width:100%;box-sizing:border-box;padding:8px;margin-top:3px;font:inherit;"></label>
+      <label>Code de partage<input id="ilCode" type="text" autocomplete="off" autocapitalize="characters" maxlength="12" placeholder="ABC123" style="width:100%;box-sizing:border-box;padding:8px;margin-top:3px;font:inherit;letter-spacing:.12em;text-transform:uppercase;"></label>
+      <div style="opacity:.8;font-size:12px;">Remplace les données de cet appareil (emploi du temps passé et à venir, notes, notes personnelles) par celles du lien.</div>
+      <div id="ilMsg" role="status" style="min-height:1.3em;font-weight:700;"></div>
+      <button id="ilGo" type="button" style="font:inherit;font-weight:800;padding:10px;border-radius:10px;cursor:pointer;">Importer</button>
+    </div></div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove(), msg = (t, bad) => { const m = ov.querySelector("#ilMsg"); m.textContent = t; m.style.color = bad ? "var(--danger,#d93025)" : ""; };
+  ov.querySelector("#ilClose").onclick = close;
+  ov.addEventListener("click", (e) => { if (e.target === ov) close(); });
+  ov.querySelector("#ilGo").onclick = async () => {
+    const raw = ov.querySelector("#ilLink").value.trim(), code = ov.querySelector("#ilCode").value;
+    const i = raw.indexOf("#"); if (i < 0) { msg("Colle le lien complet (il contient « #e= »).", true); return; }
+    try {
+      msg("Déchiffrement…");
+      const snap = await UCA_TRANSFER.fromLinkHash(raw.slice(i), code);
+      const res = await UCA_TRANSFER.applyImport(snap);
+      msg(`Importé : ${res.events} cours. Rechargement…`);
+      setTimeout(() => location.reload(), 700);
+    } catch (e) { msg(e && e.message ? e.message : "Import impossible.", true); }
+  };
+  ov.querySelector("#ilLink").focus();
+}
 function menuButton(cls, html, onClick) {
   const b = document.createElement("button"); b.className = cls; b.innerHTML = html;
   b.onclick = () => { closeMobileMenu(); onClick(); };
@@ -534,6 +667,7 @@ function buildMobileMenu() {
   m.appendChild(head);
 
   const viewIcons = {
+    list: "📋",
     day: "☀️",
     "3day": "📆",
     "5day": "🗓️",
@@ -562,9 +696,10 @@ function buildMobileMenu() {
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   if ($("filterPanel")) m.appendChild(menuButton("mi", "🔍 Filtres" + (UCA_TOOLS.activeCount() ? ` (${UCA_TOOLS.activeCount()})` : ""), () => openToolPanel("filterPanel", true)));
   if ($("exportPanel")) m.appendChild(menuButton("mi", "📤 Exporter (.ics)", () => openToolPanel("exportPanel", true)));
-  m.appendChild(menuButton("mi", "⚙️ Paramètres", () => UCA_CORE.openSettings()));
+  if (!window.UCA_APP || window.AndroidUCA) m.appendChild(menuButton("mi", "📥 Importer un lien de partage", () => openImportLinkModal()));
+  if (!window.AndroidUCA) m.appendChild(menuButton("mi", "⚙️ Paramètres", () => UCA_CORE.openSettings()));
   if (!window.UCA_APP) m.appendChild(menuButton("mi", "🚦 Statut des sites (Odin, CAS…)", () => UCA_CORE.openSettings("#statusSection")));
-  if (window.UCA_APP && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone === true)) {
+  if (window.UCA_APP && !window.AndroidUCA && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone === true)) {
     m.appendChild(menuButton("mi", D.icon("phone") + "Installer l'app sur l'écran d'accueil", () => { location.href = chrome.runtime.getURL("app/install.html?force=1"); }));
   }
   m.appendChild(menuButton("mi", "🎨 Changer de design", () => { location.href = chrome.runtime.getURL("choose.html?change=1&tab=1"); }));
@@ -599,8 +734,34 @@ new ResizeObserver(() => {
 function renderSessionState(expired) {
   sessionIsExpired = !!expired;
   $("sessionWarn").classList.toggle("hidden", !expired);
-  // Dans l'app Android, le bandeau rouge natif (en bas à gauche) remplace la bulle de la page.
-  $("sessionBubble").classList.toggle("show", !!expired && isMobileUI() && !window.AndroidUCA);
+  // Dans l'app Android, le bandeau rouge natif (en bas à gauche) joue le même rôle que ce bouton.
+  $("sessionBubble").classList.remove("show");
+  renderSessionFab(!!expired && !window.AndroidUCA && !window.UCA_APP);
+}
+/* Bouton fixe, en bas à gauche, rouge et clignotant : un clic ouvre la connexion officielle (CAS). */
+function renderSessionFab(show) {
+  let b = document.getElementById("ucaSessionFab");
+  if (!show) { if (b) b.remove(); return; }
+  if (b) return;
+  if (!document.getElementById("ucaSessionFabCss")) {
+    const st = document.createElement("style"); st.id = "ucaSessionFabCss";
+    st.textContent = `#ucaSessionFab{position:fixed;left:14px;bottom:16px;z-index:2147483000;display:flex;align-items:center;gap:9px;max-width:calc(100vw - 28px);padding:10px 16px 10px 12px;border:2px solid #fff;border-radius:999px;background:#d93025;color:#fff;font:700 13.5px/1.25 system-ui,sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(217,48,37,.55);animation:ucaFabBlink 1.2s ease-in-out infinite;}
+#ucaSessionFab:hover{background:#b3261e}#ucaSessionFab:focus-visible{outline:3px solid #ffd23f;outline-offset:2px}#ucaSessionFab[disabled]{animation:none;opacity:.8;cursor:wait}
+#ucaSessionFab svg{flex:0 0 auto;width:26px;height:26px;transform-origin:50% 20%;animation:ucaFabKey 1.2s ease-in-out infinite}
+@keyframes ucaFabBlink{0%,100%{opacity:1;box-shadow:0 6px 20px rgba(217,48,37,.55),0 0 0 0 rgba(217,48,37,.7)}50%{opacity:.72;box-shadow:0 6px 20px rgba(217,48,37,.55),0 0 0 10px rgba(217,48,37,0)}}
+@keyframes ucaFabKey{0%,100%{transform:rotate(0)}25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
+@media (prefers-reduced-motion:reduce){#ucaSessionFab,#ucaSessionFab svg{animation:none}}`;
+    document.head.appendChild(st);
+  }
+  b = document.createElement("button"); b.type = "button"; b.id = "ucaSessionFab";
+  b.setAttribute("aria-label", "Session expirée. Veuillez vous reconnecter.");
+  b.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="6" y="14" width="20" height="14" rx="3" fill="#fff"/><path d="M10 14v-4a6 6 0 0 1 12 0v4" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="20" r="2.4" fill="#d93025"/><rect x="15" y="21" width="2" height="4" rx="1" fill="#d93025"/></svg><span>Session expirée.<br>Veuillez vous reconnecter</span>';
+  b.addEventListener("click", () => {
+    b.disabled = true; b.querySelector("span").textContent = "Ouverture de la connexion…";
+    chrome.runtime.sendMessage({ type: "UCA_SYNC_REQUEST", mode: "login" });
+    setTimeout(() => { b.disabled = false; b.querySelector("span").innerHTML = "Session expirée.<br>Veuillez vous reconnecter"; }, 15000);
+  });
+  document.body.appendChild(b);
 }
 
 /* ============================= Sync & chargement ============================= */
@@ -678,7 +839,7 @@ async function updatePinnedNext() {
   } catch (e) { /* notification indisponible : sans conséquence */ }
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_class_events", "uca_my_groups", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks"], (data) => {
     // Hors Android natif (qui a sa propre synchro CAS en arrière-plan) : sans données, écran d'import.
     if (window.UCA_APP && !window.AndroidUCA && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) {
       location.href = chrome.runtime.getURL("app/import.html");
@@ -687,7 +848,10 @@ function loadFromStorage() {
     settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, data.uca_settings);
     subjectColors = data.uca_subject_colors || {};
     tasks = UCA_TASKS.sanitize(data.uca_tasks);
-    events = (data.uca_events || []).map(ev => ({ ...ev, color: colorOf(ev.title) }));
+    personalEvents = (data.uca_events || []).map(ev => ({ ...ev, color: colorOf(ev.title) }));
+    classEvents = (data.uca_class_events || []).map(ev => ({ ...ev, color: colorOf(ev.title) }));
+    classGroups = data.uca_my_groups || [];
+    applyScope();
     notes = data.uca_notes || {};
     absences = data.uca_absences || null;
     scrapeIssues = data.uca_scrape_issues || {};
@@ -703,7 +867,7 @@ function loadFromStorage() {
       if (params.get("open")) setTimeout(() => openToolPanel(params.get("open") + "Panel", isMobileUI()), 300);
       if (location.hash === "#phone" && !window.UCA_APP) setTimeout(openPhoneModal, 300);
       if (settings.startView !== "auto" && availableViews().includes(settings.startView)) currentView = settings.startView;
-      else if (isMobileUI()) currentView = "day";
+      else if (isMobileUI()) currentView = "list";
       else if (eventsOnDate(refDate).length === 0 && availableViews().includes("5day")) currentView = "5day";
     }
     renderSyncInfo(data.uca_last_sync, data.uca_app_imported_at);
@@ -863,11 +1027,24 @@ function ntCell(text, cls) {
 // Note apparue (ou modifiée) depuis moins de N jours (Paramètres, 2 par défaut) : orange ;
 // moins de 2N jours : jaune ; ensuite normale. Comparaison numérique : 12 et 12.0 sont la même note.
 function noteDays() { return Math.max(1, Number(settings.noteNewDays) || 2); }
+// Échelle : nouvelle (< N j, orange), récente (< 2N j, jaune), cette semaine (< 7 j, bleu), il y a quinze jours (< 15 j, violet),
+// plus ancienne (rouge). Une note sans date connue (relevé d'avant le suivi) compte comme ancienne.
 function noteAgeClass(seenKey, note) {
+  if (note == null) return "";
   const seen = seenKey && notesSeen[seenKey];
-  if (note == null || !seen || !seen.at || Number(seen.note) !== Number(note)) return "";
-  const age = Date.now() - seen.at, day = 86400000;
-  return age < noteDays() * day ? " note-new" : age < 2 * noteDays() * day ? " note-recent" : "";
+  if (!seen || !seen.at || Number(seen.note) !== Number(note)) return " note-old";
+  const day = 86400000, n = noteDays(), days = (Date.now() - seen.at) / day;
+  return days < n ? " note-new" : days < 2 * n ? " note-recent" : days < 7 ? " note-week" : days < 15 ? " note-fortnight" : " note-old";
+}
+(function injectNoteScale() {
+  const st = document.createElement("style");
+  st.textContent = ".notes-table td.note.note-week{color:#4d9fff!important;font-weight:800}.notes-table td.note.note-fortnight{color:#a78bfa!important;font-weight:800}.notes-table td.note.note-old{color:#ef6b6b!important}.event-card .ev-note{bottom:7px!important;right:8px!important;line-height:1.15!important;font-size:calc(15px * var(--s,1))!important;overflow:visible!important;z-index:2}.event-card:has(.ev-note){padding-bottom:max(var(--pb,0px),4px)}.day-note{line-height:1.2;padding:2px 3px;overflow:visible}";
+  document.head.appendChild(st);
+})();
+function noteAgeTitle(cls) {
+  const n = noteDays();
+  return { " note-new": `Nouvelle note (moins de ${n} jour${n > 1 ? "s" : ""})`, " note-recent": `Note récente (moins de ${2 * n} jours)`, " note-week": "Note de cette semaine (moins de 7 jours)",
+    " note-fortnight": "Note d'il y a une à deux semaines (moins de 15 jours)", " note-old": "Note ancienne (plus de 15 jours)" }[cls] || "";
 }
 function openGradeDetailModal(label, row) {
   let overlay = $("gradeDetailOverlay");
@@ -939,10 +1116,7 @@ function ntRow(cls, label, row, seenKey) {
   tr.appendChild(ntCell(fmtNote(row.coeff), "num"));
   const ageCls = noteAgeClass(seenKey, row.note);
   const noteTd = ntCell(fmtNote(row.note), "num note note-val" + ageCls);
-  if (ageCls) {
-    const n = noteDays();
-    noteTd.title = ageCls === " note-new" ? `Nouvelle note (moins de ${n} jour${n > 1 ? "s" : ""})` : `Note récente (moins de ${2 * n} jours)`;
-  }
+  if (ageCls) noteTd.title = noteAgeTitle(ageCls);
   tr.appendChild(noteTd);
   tr.appendChild(ntCell(fmtNote(row.moy), "num"));
   tr.appendChild(ntCell(fmtNote(row.maxi), "num"));
@@ -1009,7 +1183,7 @@ function examsBlock() {
     row.append(left, right); box.appendChild(row);
     // Un clic ouvre le jour de l'examen dans l'agenda.
     row.tabIndex = 0; row.setAttribute("role", "button"); row.style.cursor = "pointer"; row.title = "Voir ce jour dans l'agenda";
-    const go = () => { refDate = new Date(ev.year, ev.month, ev.day); $("notesPanel").classList.remove("open"); if (currentView === "month") switchView("day"); else render(); };
+    const go = () => goToEvent(ev);
     row.addEventListener("click", go); row.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
   });
   return box;
@@ -1095,10 +1269,56 @@ function prioritiesBlock(getTarget) {
 function gradeColor(v) { return v >= 14 ? "#2fd68f" : v >= 10 ? "#ffd23f" : "#ff8c1a"; }
 const SVG_NS = "http://www.w3.org/2000/svg";
 function svgEl(tag, attrs) { const e = document.createElementNS(SVG_NS, tag); Object.keys(attrs || {}).forEach((k) => e.setAttribute(k, attrs[k])); return e; }
+/* Largeur en pixels (pas 100 %) : plus il y a de matières, plus le graphique est large et défile à l'horizontale
+   dans son cadre, au lieu d'écraser les barres. min-width:100% l'étire quand le cadre est plus large. */
+(function injectNotesStyles() {
+  if (document.getElementById("ucaNotesExtra")) return;
+  const st = document.createElement("style"); st.id = "ucaNotesExtra";
+  st.textContent = `
+.np-chart-scroll{overflow-x:auto;overscroll-behavior-x:contain;padding-bottom:4px;scrollbar-width:thin;}
+.np-chart-scroll svg text.np-lab{cursor:pointer;text-decoration:underline dotted;}
+.np-chart-scroll svg text.np-lab:hover,.np-chart-scroll svg text.np-lab:focus{fill:var(--accent);outline:none;}
+.np-chart-scroll svg rect.np-bar{cursor:pointer;}
+.np-mat-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-weight:700;font-size:13px;}
+.np-mat-head .np-mat-name{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;}
+.np-mat-head .np-mat-val{flex:0 0 auto;white-space:nowrap;}
+.np-arrow{display:inline-block;color:var(--accent);font-weight:900;margin-right:6px;animation:np-point .6s ease-in-out infinite;}
+@keyframes np-point{0%,100%{transform:translateX(0)}50%{transform:translateX(7px)}}
+.np-mat{scroll-margin-top:72px;}
+.np-mat.np-flash{border-radius:8px;animation:np-flash 1.2s ease-out 2;}
+@keyframes np-flash{0%{background:rgba(127,127,127,.3)}100%{background:transparent}}
+.cal-arrow{position:fixed;z-index:400;pointer-events:none;font-size:26px;line-height:1;font-weight:900;color:var(--accent,#00bfa5);text-shadow:0 1px 3px rgba(0,0,0,.5);animation:cal-bounce .6s ease-in-out infinite;}
+@keyframes cal-bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+.cal-target{animation:cal-pulse 1.1s ease-in-out 5;}
+@keyframes cal-pulse{0%,100%{box-shadow:0 0 0 0 var(--accent,#00bfa5)}50%{box-shadow:0 0 0 5px var(--accent,#00bfa5)}}
+@media (max-width:700px){
+  .notes-panel.as-sheet{position:fixed!important;left:20px!important;right:20px!important;top:calc(env(safe-area-inset-top,0px) + 56px)!important;bottom:auto!important;transform:none!important;width:calc(100vw - 40px)!important;max-width:none!important;
+    height:calc(100vh - 120px)!important;max-height:calc(100vh - 120px)!important;height:calc(100dvh - 120px)!important;max-height:calc(100dvh - 120px)!important;
+    overflow-y:auto!important;overflow-x:hidden!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin;border-radius:18px!important;}
+  .notes-panel.as-sheet::-webkit-scrollbar{width:6px}
+  .notes-panel.as-sheet::-webkit-scrollbar-thumb{background:rgba(127,127,127,.6);border-radius:3px}
+  .notes-panel.as-sheet .panel-modal-topbar{position:sticky;top:0;z-index:5;background:var(--surface,#1e2229);}
+  .notes-panel.as-sheet .panel-close-x{width:44px;height:44px;min-width:44px;font-size:24px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}
+}`;
+  document.head.appendChild(st);
+})();
+let npNeed = 0;
+/* La fenêtre des notes s'élargit à la largeur du graphique (dans la limite de l'écran) : le défilement horizontal
+   n'apparaît que si l'écran lui-même est trop étroit. */
+function fitNotesPanel() {
+  const p = $("notesPanel"); if (!p) return;
+  if (window.innerWidth <= 700 || npNeed <= 440) { p.style.removeProperty("max-width"); p.style.removeProperty("width"); return; }
+  const w = Math.round(Math.min(npNeed + 84, window.innerWidth * 0.96));
+  p.style.setProperty("max-width", w + "px", "important"); p.style.setProperty("width", w + "px", "important");
+}
 function chartSvg(w, h) {
-  const svg = svgEl("svg", { viewBox: `0 0 ${w} ${h}`, role: "img", width: "100%" });
-  svg.style.cssText = "display:block;margin:4px 0 0;max-width:100%;";
+  npNeed = Math.max(npNeed, w);
+  const svg = svgEl("svg", { viewBox: `0 0 ${w} ${h}`, role: "group", width: String(w) });
+  svg.style.cssText = `display:block;margin:4px 0 0;min-width:100%;max-width:none;width:${w}px;`;
   return svg;
+}
+function chartScroll(svg) {
+  const sc = npEl("div", "np-chart-scroll"); sc.appendChild(svg); return sc;
 }
 function svgText(x, y, text, anchor) { const t = svgEl("text", { x, y, "font-size": 10, "text-anchor": anchor || "middle", fill: "currentColor", opacity: ".75" }); t.textContent = text; return t; }
 function historyChart() {
@@ -1131,7 +1351,7 @@ function historyChart() {
 function matiereChart(label) {
   const series = UCA_GRADES.matiereSeries(releveNotes, label), wrap = npEl("div", "np-chart-body");
   if (!series.length) { wrap.appendChild(npEl("div", "fp-empty", "Aucune note dans cette matière pour l'instant.")); return wrap; }
-  const W = 360, H = 150, L = 24, T = 10, B = 30, gw = (W - L - 8) / series.length, bw = Math.min(22, gw / 2.6);
+  const W = Math.max(360, 40 + series.length * 70), H = 150, L = 24, T = 10, B = 30, gw = (W - L - 8) / series.length, bw = Math.min(22, gw / 2.6);
   const y = (v) => T + (H - T - B) * (1 - v / 20);
   const svg = chartSvg(W, H); svg.setAttribute("aria-label", `Notes de ${label}, comparées à la moyenne de la classe`);
   [0, 10, 20].forEach((v) => {
@@ -1155,12 +1375,36 @@ function matiereChart(label) {
     svg.appendChild(svgText(cx, H - 16, e.label.length > 12 ? e.label.slice(0, 11) + "…" : e.label));
     svg.appendChild(svgText(cx, H - 5, fmtNote(e.note)));
   });
-  wrap.appendChild(svg);
+  wrap.appendChild(chartScroll(svg));
   const legend = npEl("div", "fp-empty", "Barre pleine : ta note · barre claire : moyenne de la classe · trait pointillé : moyenne générale");
   wrap.appendChild(legend);
   return wrap;
 }
-/* Moyenne générale : une barre par matière, le trait pointillé horizontal à la moyenne générale. */
+/* Moyenne de la classe sur toutes les matières : moyenne pondérée (coefficients du relevé) des moyennes de classe. */
+function classGeneralAvg() {
+  const seen = new Set(), items = [];
+  ((releveNotes && releveNotes.ue) || []).forEach((ue) => (ue.matieres || []).forEach((m) => {
+    if (seen.has(m.label)) return; seen.add(m.label);
+    if (m.moy != null) items.push({ note: m.moy, coeff: m.coeff });
+  }));
+  return UCA_GRADES.weightedAvg(items);
+}
+const NBSP = "\u00a0";
+/* Va à la matière cliquée sous le graphique : défilement doux, flèche animée devant son titre, léger clignotement. */
+function goToMatiere(i) {
+  const box = document.getElementById("np-mat-" + i);
+  if (!box) return;
+  document.querySelectorAll("#npContent .np-arrow").forEach((a) => a.remove());
+  document.querySelectorAll("#npContent .np-flash").forEach((a) => a.classList.remove("np-flash"));
+  box.scrollIntoView({ behavior: "smooth", block: "start" });
+  const arrow = npEl("span", "np-arrow", "➜"); arrow.setAttribute("aria-hidden", "true");
+  const head = box.querySelector(".np-mat-head");
+  if (head) head.insertBefore(arrow, head.firstChild);
+  box.classList.add("np-flash");
+  setTimeout(() => { arrow.remove(); box.classList.remove("np-flash"); }, 6000);
+}
+/* Moyenne générale : une barre par matière (ta note + moyenne de la classe en plus clair), le trait pointillé horizontal
+   de ta moyenne générale, un trait transparent pour celle de la classe ; les matières du bas sont cliquables. */
 function overviewChart() {
   const wrap = npEl("div", "np-chart-body"), seen = new Set(), mats = [];
   ((releveNotes && releveNotes.ue) || []).forEach((ue) => (ue.matieres || []).forEach((m) => {
@@ -1169,44 +1413,58 @@ function overviewChart() {
     if (note != null) mats.push({ label: m.label, note, moy: m.moy, evals: (m.evals || []).filter((e) => e.note != null) });
   }));
   if (!mats.length) { wrap.appendChild(npEl("div", "fp-empty", "Aucune note pour l'instant.")); return wrap; }
-  const gAvg = generalAverage();
-  const W = 360, H = 190, L = 24, T = 12, B = 58, gw = (W - L - 8) / mats.length, bw = Math.min(26, gw * .7);
+  const gAvg = generalAverage(), cAvg = classGeneralAvg();
+  const W = Math.max(360, 40 + mats.length * 64), H = 200, L = 24, T = 30, B = 58, gw = (W - L - 8) / mats.length, bw = Math.min(20, gw * .38);
   const y = (v) => T + (H - T - B) * (1 - v / 20);
   const svg = chartSvg(W, H);
-  svg.setAttribute("aria-label", `Moyenne générale ${gAvg != null ? fmtNote(gAvg) : ""} sur 20 et moyenne de chaque matière`);
+  svg.setAttribute("aria-label", `Moyenne générale ${gAvg != null ? fmtNote(gAvg) : ""} sur 20, moyenne de la classe et moyenne de chaque matière`);
   [0, 5, 10, 15, 20].forEach((v) => {
     svg.appendChild(svgEl("line", { x1: L, x2: W - 8, y1: y(v), y2: y(v), stroke: "currentColor", "stroke-opacity": ".15" }));
     svg.appendChild(svgText(L - 4, y(v) + 3, v, "end"));
   });
   mats.forEach((m, i) => {
     const cx = L + gw * (i + .5);
-    const r = svgEl("rect", { x: cx - bw / 2, y: y(m.note), width: bw, height: Math.max(1, y(0) - y(m.note)), fill: gradeColor(m.note), rx: 3 });
-    const tt = svgEl("title"); tt.textContent = `${m.label} : ${fmtNote(m.note)} / 20`; r.appendChild(tt); svg.appendChild(r);
-    svg.appendChild(svgText(cx, y(m.note) - 3, fmtNote(m.note)));
+    const go = () => goToMatiere(i);
+    [[cx - bw - 1, m.note, gradeColor(m.note), 1, "Ta note"], [cx + 1, m.moy, "currentColor", .3, "Moyenne de la classe"]].forEach(([bx, v, fill, op, what]) => {
+      if (v == null) return;
+      const r = svgEl("rect", { x: bx, y: y(v), width: bw, height: Math.max(1, y(0) - y(v)), fill, "fill-opacity": op, rx: 3, class: "np-bar" });
+      const tt = svgEl("title"); tt.textContent = `${m.label} — ${what} : ${fmtNote(v)} / 20`; r.appendChild(tt);
+      r.addEventListener("click", go); svg.appendChild(r);
+    });
+    svg.appendChild(svgText(cx - bw / 2, y(m.note) - 3, fmtNote(m.note)));
     const code = (m.label.match(/^(R|SAE)\d+(\.\d+)*/i) || [m.label.slice(0, 8)])[0];
-    const lab = svgText(cx, H - 22, code); lab.setAttribute("transform", `rotate(-40 ${cx} ${H - 22})`); lab.setAttribute("text-anchor", "end"); svg.appendChild(lab);
+    const lab = svgText(cx, H - 22, code); lab.setAttribute("transform", `rotate(-40 ${cx} ${H - 22})`); lab.setAttribute("text-anchor", "end");
+    lab.setAttribute("class", "np-lab"); lab.setAttribute("role", "button"); lab.setAttribute("tabindex", "0"); lab.setAttribute("aria-label", `Aller à ${m.label}`);
+    lab.setAttribute("opacity", "1");
+    lab.addEventListener("click", go); lab.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+    svg.appendChild(lab);
   });
+  if (cAvg != null) {
+    svg.appendChild(svgEl("line", { x1: L, x2: W - 8, y1: y(cAvg), y2: y(cAvg), stroke: "currentColor", "stroke-opacity": ".4", "stroke-width": 2, "stroke-dasharray": "2 4" }));
+    svg.appendChild(svgText(W - 8, 20, `··· moyenne de la classe ${fmtNote(cAvg)}`, "end"));
+  }
   if (gAvg != null) {
     svg.appendChild(svgEl("line", { x1: L, x2: W - 8, y1: y(gAvg), y2: y(gAvg), stroke: "var(--accent)", "stroke-width": 1.6, "stroke-dasharray": "5 4" }));
-    svg.appendChild(svgText(W - 8, 8, `- - moyenne générale ${fmtNote(gAvg)}`, "end"));
+    svg.appendChild(svgText(W - 8, 8, `- - ta moyenne générale ${fmtNote(gAvg)}`, "end"));
   }
-  wrap.appendChild(svg);
-  wrap.appendChild(npEl("div", "fp-empty", "Trait pointillé : moyenne générale · vert ≥ 14 · jaune 10 à 14 · orange < 10"));
-  // Les notes de chaque matière, sous le graphique, chacune avec le repère de la moyenne générale.
-  mats.forEach((m) => {
-    const box = npEl("div", "np-mat"); box.style.cssText = "margin-top:12px;";
-    const head = npEl("div", "", ""); head.style.cssText = "display:flex;justify-content:space-between;font-weight:700;font-size:13px;gap:8px;";
-    head.append(npEl("span", "", m.label), npEl("span", "", `${fmtNote(m.note)} / 20`));
+  wrap.appendChild(chartScroll(svg));
+  wrap.appendChild(npEl("div", "fp-empty", "Barre pleine : ta note · barre claire : moyenne de la classe · trait pointillé : ta moyenne générale · trait transparent : moyenne générale de la classe. Touche une matière sous le graphique pour y aller."));
+  // Les notes de chaque matière, sous le graphique, chacune avec le repère de ta moyenne générale.
+  mats.forEach((m, i) => {
+    const box = npEl("div", "np-mat"); box.id = "np-mat-" + i; box.style.cssText = "margin-top:12px;";
+    const head = npEl("div", "np-mat-head");
+    head.append(npEl("span", "np-mat-name", m.label), npEl("span", "np-mat-val", `${fmtNote(m.note)}${NBSP}/${NBSP}20`));
     head.lastChild.style.color = gradeColor(m.note);
     box.appendChild(head);
     m.evals.forEach((e) => {
       const row = npEl("div", ""); row.style.cssText = "display:grid;grid-template-columns:1fr 42px;gap:8px;align-items:center;font-size:12px;margin-top:5px;";
-      const left = npEl("div", ""); left.append(npEl("div", "", `${e.label.replace(/\s*\(sur [\d.,]+\)/i, "")}${e.coeff != null ? ` · coeff ${fmtNote(e.coeff)}` : ""}`));
+      const left = npEl("div", ""); left.append(npEl("div", "", `${e.label.replace(/\s*\(sur [\d.,]+\)/i, "")}${e.coeff != null ? ` · coeff ${fmtNote(e.coeff)}` : ""}${e.moy != null ? ` · classe ${fmtNote(e.moy)}` : ""}`));
       const track = npEl("div", ""); track.style.cssText = "position:relative;height:8px;border-radius:4px;background:rgba(127,127,127,.18);margin-top:3px;";
       const fill = npEl("div", ""); fill.style.cssText = `height:100%;width:${Math.max(2, Math.min(100, e.note / 20 * 100))}%;border-radius:4px;background:${gradeColor(e.note)};`;
       track.appendChild(fill);
-      if (gAvg != null) { const mark = npEl("div", ""); mark.style.cssText = `position:absolute;top:-3px;bottom:-3px;left:${gAvg / 20 * 100}%;border-left:2px dotted var(--accent);`; mark.title = `Moyenne générale ${fmtNote(gAvg)}`; track.appendChild(mark); }
+      if (gAvg != null) { const mark = npEl("div", ""); mark.style.cssText = `position:absolute;top:-3px;bottom:-3px;left:${gAvg / 20 * 100}%;border-left:2px dotted var(--accent);`; mark.title = `Ta moyenne générale ${fmtNote(gAvg)}`; track.appendChild(mark); }
       left.appendChild(track);
+      if (e.moy != null) { const ct = npEl("div", ""); ct.style.cssText = `height:5px;border-radius:3px;margin-top:3px;width:${Math.max(2, Math.min(100, e.moy / 20 * 100))}%;background:currentColor;opacity:.3;`; ct.title = `Moyenne de la classe : ${fmtNote(e.moy)}`; left.appendChild(ct); }
       const val = npEl("div", "", fmtNote(e.note)); val.style.cssText = `text-align:right;font-weight:700;color:${gradeColor(e.note)};`;
       row.append(left, val); box.appendChild(row);
     });
@@ -1232,6 +1490,7 @@ function chartBlock() {
 function renderNotesPanel() {
   const content = $("npContent");
   content.innerHTML = "";
+  npNeed = 0;
   const issueNode = scrapeIssueNode("notes"); if (issueNode) content.appendChild(issueNode);
   const avg = generalAverage();
   if (!releveNotes || !releveNotes.ue || !releveNotes.ue.length) {
@@ -1240,6 +1499,7 @@ function renderNotesPanel() {
     empty.innerHTML = D.emptyHtml("notes") + escapeHtml("Aucun relevé — synchronise pour voir tes notes");
     content.appendChild(empty);
     const exams = examsBlock(); if (exams) content.appendChild(inkify(exams));
+    fitNotesPanel();
   } else {
     if (avg != null) {
       const avgBar = document.createElement("div"); avgBar.className = "notes-avg";
@@ -1252,6 +1512,7 @@ function renderNotesPanel() {
       content.appendChild(avgBar);
     }
     [examsBlock(), simulatorBlock(), chartBlock(), npEl("div", "fp-h", "Détail des notes")].forEach((b) => { if (b) content.appendChild(inkify(b)); });
+    fitNotesPanel();
     const hintPill = document.createElement("div");
     hintPill.className = "notes-hint-pill";
     hintPill.textContent = "💡 Touche une ligne du tableau pour afficher le détail officiel (coeff, promo, min/max)";
@@ -1284,7 +1545,9 @@ function renderNotesPanel() {
       });
     });
     table.appendChild(tbody);
-    content.appendChild(table);
+    const tableWrap = document.createElement("div"); tableWrap.className = "notes-table-wrap"; tableWrap.style.cssText = "overflow-x:auto;";
+    tableWrap.appendChild(table);
+    content.appendChild(tableWrap);
   }
   const badge = $("notesAvg");
   if (badge) {
@@ -1316,7 +1579,7 @@ function displayedDays() {
   if (currentView === "5day") return getFiveDayDays();
   if (currentView === "6day") return getSixDayDays();
   if (currentView === "3day") return [0, 1, 2].map(i => addDays(refDate, i));
-  if (currentView === "day") return [new Date(refDate)];
+  if (currentView === "day" || currentView === "list") return [new Date(refDate)];
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 /* Devoirs : bouton et panneau ajoutés ici (même place et même ordre dans les 4 designs), juste après Notes. */
@@ -1349,10 +1612,11 @@ function saveTasks(list) {
   chrome.storage.local.set({ uca_tasks: list }, () => { if ($("tasksPanel") && $("tasksPanel").classList.contains("open")) TOOL_PANELS.tasksPanel.build($("tasksPanel")); });
 }
 const TOOL_PANELS = {
-  tasksPanel: { wrap: "tasksWrap", build: (p) => UCA_TASKS.buildPanel(p, { events, tasks, save: saveTasks }) },
+  tasksPanel: { wrap: "tasksWrap", build: (p) => UCA_TASKS.buildPanel(p, { events, tasks, save: saveTasks, openEvent: goToEvent, openTask: goToTask,
+    noteItems: events.filter((ev) => notes[eventKey(ev)]).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 40).map((ev) => ({ ev, text: String(notes[eventKey(ev)]) })) }) },
   notesPanel: { wrap: "notesWrap", build: () => {} },
   absencesPanel: { wrap: "absencesWrap", build: () => {} },
-  filterPanel: { wrap: "filterWrap", build: (p) => UCA_TOOLS.buildFilterPanel(p, events) },
+  filterPanel: { wrap: "filterWrap", build: (p) => UCA_TOOLS.buildFilterPanel(p, personalEvents, { classCount: classEvents.length, classGroups, classBusy, classError, onConnect: connectClass }) },
   exportPanel: { wrap: "exportWrap", build: (p) => UCA_TOOLS.buildExportPanel(p, { tasks, shareImage: { day: () => ({ date: new Date(refDate), events: events.filter(UCA_TOOLS.passes) }), week: () => ({ days: Array.from({ length: 7 }, (_, i) => addDays(startOfWeek(refDate), i)), events: events.filter(UCA_TOOLS.passes) }) }, allEvents: events, weekDays: displayedDays, eventKey, reminderMinutes: settings.reminderMinutes, onPhone: window.UCA_APP ? null : openPhoneModal, shareLink: window.UCA_APP ? null : () => UCA_TRANSFER.makeShareLink(), canShare: window.UCA_APP ? null : UCA_TRANSFER.canShare, sendLink: UCA_TRANSFER.shareLink }) },
   linksPanel: { wrap: "linksWrap", build: (p) => UCA_TOOLS.buildLinksPanel(p) },
 };
@@ -1411,7 +1675,7 @@ function renderFilterButton() {
   btn.addEventListener("click", (e) => { e.stopPropagation(); openToolPanel(id, false); });
   closeOnOutsideClick(id, TOOL_PANELS[id].wrap);
 });
-UCA_TOOLS.onChange(() => { renderFilterButton(); render(); });
+UCA_TOOLS.onChange(() => { applyScope(); renderFilterButton(); render(); });
 
 /* Menu "plus" optionnel (#moreBtn / #morePanel) fourni par certains designs. */
 if ($("moreBtn")) {
@@ -1509,6 +1773,7 @@ document.addEventListener("keydown", (e) => {
   else if (k === "m" && availableViews().includes("month")) switchView("month");
   else if (k === "s" && availableViews().includes("week")) switchView("week");
   else if (k === "j" && availableViews().includes("day")) switchView("day");
+  else if (k === "l" && availableViews().includes("list")) switchView("list");
   else return;
   e.preventDefault();
 });
@@ -1587,6 +1852,11 @@ chrome.runtime.onMessage.addListener((msg) => {
     const label = T("stage_" + msg.stage);
     if (label) toast(label);
     UCA_CORE.loginHelp(msg.stage === "login-waiting");
+  } else if (msg.type === "UCA_CLASS_RESULT") {
+    classBusy = false;
+    if (msg.ok) { classError = ""; toast("Emploi du temps de la classe récupéré (" + msg.count + " cours).", "ok"); }
+    else { classError = msg.cancelled ? "Connexion annulée." : (msg.error || "Échec"); toast("Emploi du temps de la classe : " + classError, "warn"); }
+    if ($("filterPanel") && $("filterPanel").classList.contains("open")) TOOL_PANELS.filterPanel.build($("filterPanel"));
   } else if (msg.type === "UCA_SYNC_RESULT") {
     UCA_CORE.loginHelp(false);
     if (!msg.ok) {
@@ -1641,10 +1911,12 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
   if (changes.uca_notes_history) { notesHistory = changes.uca_notes_history.newValue || []; renderNotesPanel(); }
   if (changes.uca_scrape_issues) { scrapeIssues = changes.uca_scrape_issues.newValue || {}; renderAbsencesPanel(); renderNotesPanel(); if (syncInfoArgs[0] || syncInfoArgs[1]) { renderSyncInfo(...syncInfoArgs); renderNextInfo(); } }
-  if (changes.uca_subject_colors) { subjectColors = changes.uca_subject_colors.newValue || {}; events.forEach((e) => { e.color = colorOf(e.title); }); render(); }
+  if (changes.uca_subject_colors) { subjectColors = changes.uca_subject_colors.newValue || {}; [personalEvents, classEvents].forEach((l) => l.forEach((e) => { e.color = colorOf(e.title); })); render(); }
   if (changes.uca_edt_changes) { setEdtChanges(changes.uca_edt_changes.newValue); render(); }
   // Réinitialisation (ou son annulation) depuis Paramètres, dans un autre onglet : reflète tout de suite.
-  if (changes.uca_events) { events = (changes.uca_events.newValue || []).map(ev => ({ ...ev, color: colorOf(ev.title) })); render(); renderNextInfo(); }
+  if (changes.uca_events) { personalEvents = (changes.uca_events.newValue || []).map(ev => ({ ...ev, color: colorOf(ev.title) })); applyScope(); render(); renderNextInfo(); }
+  if (changes.uca_class_events) { classEvents = (changes.uca_class_events.newValue || []).map(ev => ({ ...ev, color: colorOf(ev.title) })); classBusy = false; applyScope(); render(); }
+  if (changes.uca_my_groups) { classGroups = changes.uca_my_groups.newValue || []; }
   if (changes.uca_notes) { notes = changes.uca_notes.newValue || {}; render(); }
   if (changes.uca_tasks) { tasks = UCA_TASKS.sanitize(changes.uca_tasks.newValue); renderTasksButton(); }
   if (changes.uca_absences) { absences = changes.uca_absences.newValue || null; renderAbsencesPanel(); }

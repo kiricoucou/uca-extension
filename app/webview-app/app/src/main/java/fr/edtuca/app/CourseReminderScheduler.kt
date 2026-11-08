@@ -41,11 +41,15 @@ object CourseReminderScheduler {
                 putExtra("room", ev.room ?: "")
                 putExtra("startH", ev.startH)
                 putExtra("startM", ev.startM)
+                putExtra("startAt", ev.startMillis())
             }
             val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             val pendingIntent = PendingIntent.getBroadcast(context, requestCode, intent, flags)
             try {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
+                // set() non précis : Android 12 le décale jusqu'à 1 h. Précis si permis, sinon fenêtre de 2 min.
+                val exact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+                if (exact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pendingIntent)
+                else alarmManager.setWindow(AlarmManager.RTC_WAKEUP, triggerAt, 2 * 60_000L, pendingIntent)
                 scheduled.add(requestCode.toString())
             } catch (e: Exception) {
                 // Permission notifications/alarme refusée entre-temps : on abandonne silencieusement.

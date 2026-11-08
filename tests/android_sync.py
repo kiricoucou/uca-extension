@@ -15,6 +15,7 @@ from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from harness import NO_REAL_SERVERS, ROOT  # noqa: E402
+from ade import CLASS_ICS, ODIN_EVENTS  # noqa: E402
 
 results = []
 
@@ -43,12 +44,28 @@ def stored(page):
     return page.evaluate("() => JSON.parse(localStorage.getItem('uca_store') || '{}')")
 
 
+JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+
+
+def edt_text(rows):
+    """Texte d'une page d'emploi du temps Odin : rows = [(décalage en jours, '08:00 - 10:00', titre, enseignant, salle)]."""
+    import datetime
+    out, last = ["Emploi du temps"], None
+    for off, slot, title, teacher, room in rows:
+        d = datetime.date.today() + datetime.timedelta(days=off)
+        if d != last:
+            out.append(f"{JOURS[d.weekday()]} {d.day} {MOIS[d.month - 1]} {d.year}"); last = d
+        out += [slot, title, f"Enseignants : {teacher}", f"Salle : {room}"]
+    return chr(10).join(out)
+
+
 def main():
     port = free_port()
     server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(ROOT)],
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     base = f"http://127.0.0.1:{port}/"
-    text = (ROOT / "tests" / "pages" / "odin_edt.txt").read_text(encoding="utf-8")
+    text = edt_text([(1, "08:00 - 10:00", "R1.01 TD Initiation", "Martin Alice", "B1-12"), (1, "10:15 - 12:15", "R1.02 CM Systèmes", "Durand Paul", "Amphi A"), (2, "14:00 - 16:00", "SAE1.01 TP Projet", "Martin Alice", "B2-03")])
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(args=[NO_REAL_SERVERS])
@@ -63,18 +80,33 @@ def main():
                 page.goto(base + f"designs/{design}/agenda.html"); page.wait_for_timeout(1200)
                 check(f"{design} : l'app est bien en mode natif (pas de redirection vers l'import)", f"designs/{design}/agenda.html" in page.url, page.url)
 
+                # Un cours d'hier (anciennes synchros) doit rester consultable après la synchro.
+                page.evaluate("""() => { const s = JSON.parse(localStorage.getItem('uca_store')); const d = new Date(); d.setDate(d.getDate() - 1); const p = (x) => String(x).padStart(2, '0');
+                  s.uca_events.push({ date: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()), year: d.getFullYear(), month: d.getMonth(), day: d.getDate(), startH: 9, startM: 0, endH: 11, endM: 0, title: 'COURS-DHIER', teacher: '', room: '' });
+                  localStorage.setItem('uca_store', JSON.stringify(s)); }""")
                 deliver(page, {"type": "UCA_SYNC_RESULT", "ok": True, "text": text, "silent": True})
                 data = stored(page)
+                check(f"{design} : le jour passé reste consultable après la synchro", any(e.get("title") == "COURS-DHIER" for e in data.get("uca_events") or []), str([e.get("title") for e in data.get("uca_events") or []]))
                 evs = data.get("uca_events") or []
-                check(f"{design} : le texte d'Odin devient des cours enregistrés", len(evs) == 3, str(len(evs)))
+                check(f"{design} : le texte d'Odin devient des cours enregistrés", len([e for e in evs if e.get("title") != "COURS-DHIER"]) == 3, str(len(evs)))
                 check(f"{design} : cours lu avec salle et enseignant", any(e.get("room") == "B1-12" and e.get("teacher") == "Martin Alice" and e.get("startH") == 8 for e in evs), json.dumps(evs[:1], ensure_ascii=False)[:200])
                 check(f"{design} : date de synchro mise à jour", (data.get("uca_last_sync") or "") > "2026", str(data.get("uca_last_sync")))
                 check(f"{design} : session marquée valide", data.get("uca_session_expired") is False, str(data.get("uca_session_expired")))
-                check(f"{design} : calendrier du téléphone prévenu", page.evaluate("() => window.__native.events") == 3, str(page.evaluate("() => window.__native.events")))
+                check(f"{design} : calendrier du téléphone prévenu", page.evaluate("() => window.__native.events") == 4, str(page.evaluate("() => window.__native.events")))
 
                 deliver(page, {"type": "UCA_SYNC_RESULT", "ok": True, "text": "Emploi du temps\nrien ici", "silent": True})
                 data = stored(page)
-                check(f"{design} : page sans cours → ancien emploi du temps conservé", len(data.get("uca_events") or []) == 3, str(len(data.get("uca_events") or [])))
+                check(f"{design} : page sans cours → ancien emploi du temps conservé", len(data.get("uca_events") or []) == 4, str(len(data.get("uca_events") or [])))
+                # Emploi du temps de la classe (ADE) : le natif envoie le texte iCalendar, la page le lit et l'enregistre à part.
+                page.evaluate("(e) => { const s = JSON.parse(localStorage.getItem('uca_store')); s.uca_events = e; localStorage.setItem('uca_store', JSON.stringify(s)); }", ODIN_EVENTS)
+                page.evaluate("() => { window.__got = []; window.addEventListener('message', (e) => { if (e.data && e.data.type === 'UCA_CLASS_RESULT') window.__got.push(e.data); }); }")
+                deliver(page, {"type": "UCA_CLASS_ICS", "ok": True, "text": CLASS_ICS})
+                data = stored(page)
+                check(f"{design} : emploi du temps de la classe enregistré (8 cours, à part)", len(data.get("uca_class_events") or []) == 8, str(len(data.get("uca_class_events") or [])))
+                check(f"{design} : groupes de l'utilisateur retrouvés", data.get("uca_my_groups") == ["1ATDA", "1ATP2"], str(data.get("uca_my_groups")))
+                check(f"{design} : jours passés reconstitués depuis la classe", len([e for e in data.get("uca_events") or [] if e["date"] < __import__("datetime").date.today().isoformat()]) == 3)
+                deliver(page, {"type": "UCA_CLASS_ICS", "ok": False, "error": "ADE injoignable"})
+                check(f"{design} : erreur de la classe : données conservées", len(stored(page).get("uca_class_events") or []) == 8)
                 deliver(page, {"type": "UCA_SESSION_STATE", "expired": True})
                 check(f"{design} : session expirée enregistrée", stored(page).get("uca_session_expired") is True)
                 check(f"{design} : aucune erreur JavaScript", not errors, "; ".join(errors)[:200])

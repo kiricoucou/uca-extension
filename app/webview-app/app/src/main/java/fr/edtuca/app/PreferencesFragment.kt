@@ -88,6 +88,18 @@ class PreferencesFragment : Fragment() {
         bindSwitch(root, R.id.switchBiblio, PrefsStore.notifBiblio(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_BIBLIO, v) }
         bindSwitch(root, R.id.switchResto, PrefsStore.notifResto(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_RESTO, v) }
 
+        root.findViewById<View>(R.id.btnDiag)?.setOnClickListener {
+            val report = SessionDiag.report(ctx)
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Diagnostic de connexion")
+                .setMessage(report)
+                .setPositiveButton("Copier") { _, _ ->
+                    val cm = ctx.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    cm.setPrimaryClip(android.content.ClipData.newPlainText("Diagnostic My UCA", report))
+                    android.widget.Toast.makeText(ctx, "Diagnostic copié.", android.widget.Toast.LENGTH_SHORT).show()
+                }.setNegativeButton("Fermer", null).show()
+        }
+
         // Design de l'application : choisi ici, appliqué à l'agenda et mémorisé.
         val btnDesign = root.findViewById<android.widget.Button>(R.id.btnDesign)
         fun designLabel() = PrefsStore.DESIGNS.firstOrNull { it.first == (PrefsStore.design(ctx) ?: "anime") }?.second ?: "Animé"

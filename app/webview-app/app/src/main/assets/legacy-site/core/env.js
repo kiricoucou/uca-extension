@@ -201,10 +201,25 @@ window.addEventListener("message", (ev) => {
   // hors ligne et après un rechargement, exactement comme un transfert par lien le ferait.
   // L'app Android envoie le texte brut de la page Odin : on le lit ici, comme le fait background.js.
   if (msg.type === "UCA_SYNC_RESULT" && msg.ok && !Array.isArray(msg.events) && typeof msg.text === "string") {
-    const evs = parseScheduleText(msg.text);
+    const parsed = parseScheduleText(msg.text);
     delete msg.text;
+    // Les jours passés restent ceux des anciennes synchros ; seuls aujourd'hui et le futur sont remplacés.
+    const evs = parsed.length ? UCA_mergeSchedule(readAll().uca_events, parsed) : parsed;
     if (evs.length) { msg.events = evs; msg.lastSync = new Date().toISOString(); }
     else { msg.ok = false; msg.error = "Aucun cours reconnu dans la page d'Odin (emploi du temps vide ou page modifiée). Ton ancien emploi du temps est conservé."; }
+  }
+  // L'app Android envoie le texte iCalendar d'ADE (toute la classe) : lu ici comme le fait background.js.
+  if (msg.type === "UCA_CLASS_ICS") {
+    msg.type = "UCA_CLASS_RESULT";
+    const text = msg.text; delete msg.text;
+    const cls = msg.ok && typeof text === "string" && window.UCA_ADE ? UCA_ADE.parseAdeIcs(text) : [];
+    if (cls.length) {
+      const all = readAll(), mine = all.uca_events || [];
+      const groups = UCA_ADE.deriveMyGroups(mine, cls);
+      local.set({ uca_class_events: cls, uca_my_groups: groups, uca_class_sync: new Date().toISOString(),
+        uca_events: groups.length ? UCA_ADE.fillPast(mine, UCA_ADE.personalFromClass(cls, groups)) : mine });
+      msg.ok = true; msg.count = cls.length; msg.groups = groups;
+    } else if (msg.ok) { msg.ok = false; msg.error = "Aucun cours dans l'export ADE"; }
   }
   if (msg.type === "UCA_SYNC_RESULT" && msg.ok) {
     const out = { uca_events: msg.events, uca_last_sync: msg.lastSync, uca_session_expired: false };

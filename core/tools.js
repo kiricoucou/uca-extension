@@ -4,7 +4,7 @@
 "use strict";
 
 const TYPES = ["CM", "TD", "TP", "Examen", "Autre"];
-let filters = { q: "", types: [], hidden: [] };
+let filters = { q: "", types: [], hidden: [], classe: false };   // classe : vue « toute la classe » (filtre personnel décoché)
 let onChange = () => {};
 
 function pad(n) { return String(n).padStart(2, "0"); }
@@ -21,10 +21,11 @@ function subjectOf(title) {
   if (code) return code[0].replace(/\s/g, "").toUpperCase();
   return title.replace(/\b(CM|TDA?|TPA?|Examen)\b/gi, "").replace(/[:\-–]\s*$/, "").replace(/\s+/g, " ").trim() || title;
 }
-function activeCount() { return (filters.q ? 1 : 0) + (filters.types.length ? 1 : 0) + (filters.hidden.length ? 1 : 0); }
+function activeCount() { return (filters.classe ? 1 : 0) + (filters.q ? 1 : 0) + (filters.types.length ? 1 : 0) + (filters.hidden.length ? 1 : 0); }
 function passes(ev) {
-  if (filters.types.length && !filters.types.includes(typeOf(ev.title))) return false;
-  if (filters.hidden.includes(subjectOf(ev.title))) return false;
+  // Vue classe : comme si tout était coché (tous les types, toutes les matières) ; seule la recherche reste active.
+  if (!filters.classe && filters.types.length && !filters.types.includes(typeOf(ev.title))) return false;
+  if (!filters.classe && filters.hidden.includes(subjectOf(ev.title))) return false;
   if (filters.q) {
     const hay = `${ev.title} ${ev.teacher || ""} ${ev.room || ""}`.toLowerCase();
     if (!filters.q.toLowerCase().split(/\s+/).every((w) => hay.includes(w))) return false;
@@ -33,9 +34,53 @@ function passes(ev) {
 }
 function save() { chrome.storage.local.set({ uca_filters: filters }); onChange(); }
 
+
+function injectFilterStyle() {
+  if (document.getElementById("ucaFilterStyle")) return;
+  const st = document.createElement("style"); st.id = "ucaFilterStyle";
+  st.textContent = `.fp-item{min-height:46px;display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:10px;cursor:pointer}
+.fp-item input[type=checkbox]{width:24px;height:24px;flex:0 0 24px;margin:0;accent-color:var(--accent,#00bfa5)}
+.fp-scope{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.fp-scope-row{border:1.5px solid var(--border,rgba(128,128,128,.35))}
+.fp-scope-row.on{border-color:var(--accent,#00bfa5);background:var(--accent-tint,rgba(0,191,165,.12))}
+.fp-scope-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.fp-scope-txt small{opacity:.75;font-size:12px;line-height:1.25}
+.fp-chip{min-height:40px;padding:0 16px}`;
+  document.head.appendChild(st);
+}
+
 /* ============================= Panneau Filtres ============================= */
-function buildFilterPanel(panel, allEvents) {
+function buildFilterPanel(panel, allEvents, opts) {
+  opts = opts || {};
   panel.innerHTML = "";
+  // Emploi du temps personnel (Odin, avec ton groupe) ou de toute la classe (ADE, tous les groupes).
+  injectFilterStyle();
+  const scope = el("div", "fp-scope");
+  const choice = (id, checked, title, sub, setClasse) => {
+    const row = el("label", "fp-item fp-scope-row" + (checked ? " on" : ""));
+    const cb = el("input"); cb.type = "checkbox"; cb.id = id; cb.checked = checked;
+    cb.addEventListener("change", () => { filters.classe = setClasse ? cb.checked : !cb.checked; save(); buildFilterPanel(panel, allEvents, opts); });
+    const txt = el("span", "fp-scope-txt"); txt.append(el("b", "", title), el("small", "", sub));
+    row.append(cb, txt);
+    return row;
+  };
+  scope.appendChild(choice("scopePersonal", !filters.classe, "Emploi du temps personnel", "Le tien, d'Odin, avec les filtres de ton groupe (par défaut).", false));
+  scope.appendChild(choice("scopeClass", !!filters.classe, "Emploi du temps de la classe", "Tous les groupes, via le lien ADE (connexion nécessaire).", true));
+  if (filters.classe && !opts.classCount) {
+    const hint = el("div", "fp-empty", opts.classBusy ? "Connexion à l'emploi du temps de la classe…" : (opts.classError || "L'emploi du temps de la classe n'est pas encore récupéré."));
+    const go = el("button", "fp-reset", "Récupérer l'emploi du temps de la classe"); go.type = "button"; go.id = "classConnect"; go.disabled = !!opts.classBusy;
+    go.addEventListener("click", () => opts.onConnect && opts.onConnect());
+    scope.append(hint, go);
+  } else if (filters.classe && opts.classGroups && opts.classGroups.length) {
+    scope.appendChild(el("div", "fp-empty", "Tes groupes (trouvés via Odin) : " + opts.classGroups.join(", ")));
+  }
+  panel.appendChild(scope);
+  if (filters.classe) {                 // en vue classe, les filtres de type et de matière n'ont pas lieu d'être
+    const search0 = el("input", "fp-search"); search0.type = "search"; search0.placeholder = "Rechercher une matière, un prof, une salle…"; search0.value = filters.q;
+    search0.addEventListener("input", () => { filters.q = search0.value.trim(); save(); });
+    panel.appendChild(search0);
+    return;
+  }
   const search = el("input", "fp-search"); search.type = "search"; search.placeholder = "Rechercher une matière, un prof, une salle…";
   search.value = filters.q;
   search.addEventListener("input", () => { filters.q = search.value.trim(); save(); });
@@ -68,7 +113,7 @@ function buildFilterPanel(panel, allEvents) {
   panel.appendChild(list);
   const foot = el("div", "fp-foot");
   const reset = el("button", "fp-reset", "Tout afficher"); reset.type = "button";
-  reset.addEventListener("click", () => { filters = { q: "", types: [], hidden: [] }; save(); buildFilterPanel(panel, allEvents); });
+  reset.addEventListener("click", () => { filters = { q: "", types: [], hidden: [], classe: false }; save(); buildFilterPanel(panel, allEvents, opts); });
   foot.appendChild(reset);
   panel.appendChild(foot);
 }
@@ -245,7 +290,7 @@ function buildLinksPanel(panel) {
     panel.appendChild(btn);
   });
   // App ouverte dans un navigateur (pas encore installée) : rappel du guide d'installation, à tout moment.
-  if (window.UCA_APP && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone === true)) {
+  if (window.UCA_APP && !window.AndroidUCA && !(matchMedia("(display-mode: standalone)").matches || navigator.standalone === true)) {
     const inst = el("button", "xp-phone", "Installer l'app sur l'écran d'accueil"); inst.type = "button"; inst.id = "installLink";
     inst.title = "Guide d'installation (Android, iPhone)";
     inst.addEventListener("click", () => { location.href = chrome.runtime.getURL("app/install.html?force=1"); });
@@ -323,8 +368,9 @@ window.UCA_TOOLS = {
   nextCourse, nextCourseText, holidayName,
   TYPES, typeOf, subjectOf, passes, activeCount, buildFilterPanel, buildExportPanel, buildIcs, buildLinksPanel,
   load(cb) {
-    chrome.storage.local.get("uca_filters", (d) => { filters = Object.assign({ q: "", types: [], hidden: [] }, d.uca_filters); cb(); });
+    chrome.storage.local.get("uca_filters", (d) => { filters = Object.assign({ q: "", types: [], hidden: [], classe: false }, d.uca_filters); cb(); });
   },
   onChange(fn) { onChange = fn; },
+  isClassMode() { return !!filters.classe; },
 };
 })();

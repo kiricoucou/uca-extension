@@ -55,6 +55,32 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.9 — app Android 1.4.8 : vue Liste, vue Jour en blocs, emploi du temps de la classe fiable
+
+- **Nouvelle vue « Liste »** (bouton 📋 Liste, les 4 designs) : un jour sous forme de liste ; sur téléphone, glisser à gauche ou à droite change de jour. Raccourci clavier `L`.
+- **Vue « Jour » en blocs** : même rendu que la vue 3 jours (blocs sur la grille horaire) mais un seul jour sur toute la largeur, glisser pour changer de jour. Le réglage « Vue à l'ouverture » propose « Liste (jour) » et « Jour (blocs) » ; sur téléphone la vue automatique reste la liste.
+- **Emploi du temps de la classe (app)** : si aucune classe n'est sélectionnée dans ADE, l'app le dit (« Choisis ta classe dans ADE ») et lit le lien d'export toute seule dès qu'elle est choisie ; la progression bleue « EN DIRECT » ne reste jamais bloquée (fermeture garantie en cas d'échec ou de retour).
+- **Vues 3 et 5 jours de la classe** : un même cours donné à plusieurs groupes en même temps devient une seule carte (profs et salles réunis) ; les cours simultanés partagent les colonnes au plus juste ; colonnes à largeur minimale avec défilement horizontal et heures fixes à gauche.
+
+## 1.46.8 — notifications sans cours passés, jours passés conservés, note du carnet
+
+- **Rappels de cours** : après plusieurs heures ou jours sans ouvrir le navigateur, Chrome et Firefox déclenchent d'un coup toutes les alarmes manquées au démarrage ; l'extension affichait alors « Dans 1 min : … » pour des cours passés. Un rappel n'est maintenant affiché que si le cours n'a pas commencé et si l'alarme n'a pas plus de 5 minutes de retard.
+- **Changements d'emploi du temps** : seuls les cours à venir sont notifiés. Rappels de la veille (devoirs et examens) : ignorés s'ils arrivent avec plus de 6 h de retard.
+- **Emploi du temps de toute la classe (ADE, edt.uca.fr)** : le filtre « Emploi du temps personnel » (Filtres) est coché par défaut (ton emploi du temps d'Odin). Décoché, l'agenda montre toute la classe, tous les groupes, comme si tout était coché. L'adresse de l'export iCalendar d'ADE se découvre une fois, dans une petite fenêtre de connexion CAS comme pour Odin (ADE ouvre « Exporter » puis « Générer URL » tout seul, rien à retaper si tu viens de te connecter) ; elle ne contient aucun jeton et l'export se relit ensuite sans cookie, à chaque synchro. Ton groupe est retrouvé grâce aux intitulés d'Odin (même jour, mêmes heures, même nom), et les jours passés qu'Odin n'a jamais renvoyés sont reconstitués à partir de la classe. Nouvelle permission : `https://edt.uca.fr/*`. Extension et app Android (la découverte de l'adresse dans l'app n'a pas été essayée avec une vraie session).
+- **Les jours passés restent consultables** : une synchro ne remplace plus que les cours d'aujourd'hui et à venir ; les jours passés gardent ce que les synchros précédentes ont enregistré (400 jours d'historique au plus), dans l'extension et dans l'app Android. Un jour passé qu'Odin renvoie encore mais qu'on n'avait jamais vu est ajouté.
+- **Graphique des notes** : la moyenne de chaque matière tient sur une seule ligne ; le graphique s'élargit avec le nombre de matières (défilement dans son cadre) ; la moyenne de la classe apparaît en barres claires dans chaque matière, avec un trait transparent pour la moyenne générale de la classe ; les matières sous le graphique sont cliquables : le panneau descend jusqu'à la matière, une flèche animée la désigne.
+- **Panneau Notes sur téléphone** : largeur de l'écran moins 40 px, hauteur de l'écran moins 120 px, grande croix de fermeture, défilement dans le panneau, tableau qui défile dans son cadre.
+- **Devoirs, examens, notes de cours** : un clic ouvre l'agenda sur le cours concerné, désigné par une flèche animée (examens du panneau Notes aussi). Les notes écrites sur les cours sont listées dans « Devoirs et examens ».
+- **Design carnet** : la note personnelle s'écrit maintenant sur les lignes du papier (même hauteur de ligne pour le texte et les lignes, le papier défile avec le texte).
+- **Nouvelle note** : la notification après synchro existait déjà (réglage « Nouvelle note », activé par défaut) ; elle est vérifiée par les tests.
+
+## 1.46.7 — app Android 1.4.7 : l'APK de mise à jour est supprimé après l'installation
+
+- Quand tu télécharges l'APK complet depuis l'écran de mise à jour et que tu l'installes, l'app supprime ensuite le fichier téléchargé au premier démarrage de la nouvelle version : il ne reste plus 5 Mo inutiles sur le téléphone.
+- Les cookies de connexion de l'app sont aussi écrits sur le disque quand l'app s'arrête.
+- **Diagnostic de connexion** (Préférences) : montre l'état de la session, les noms des cookies présents pour les sites de l'UCA (jamais leurs valeurs) et le journal des derniers contrôles, avec un bouton Copier pour un signalement.
+- Ce correctif ne force pas la mise à jour : les 1.4.6 continuent de fonctionner, l'APK est proposé quand tu veux.
+
 ## 1.46.6 — app Android 1.4.6 : consultation hors session, graphique des notes, carte, notifications
 
 - **Session expirée** : l'app reste entièrement consultable avec les données déjà synchronisées. Un bandeau rouge en bas à gauche dit « Session expirée. Veuillez vous reconnecter. » ; un bouton « Se connecter » est dans le menu de l'agenda et dans Compte. La messagerie, elle, redemande la connexion. La vérification de session teste la vraie page d'Odin et attend deux contrôles concordants avant d'afficher le bandeau.

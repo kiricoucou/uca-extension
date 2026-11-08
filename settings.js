@@ -5,8 +5,8 @@
    ou "switch". Ajouter un réglage = ajouter une ligne ici + sa valeur par défaut. */
 const SECTIONS = [
   { title: "Affichage", fields: [
-    { key: "startView", type: "select", label: "Vue à l'ouverture", hint: "« Automatique » : Semaine sur ordinateur (5 jours si rien aujourd'hui), Jour sur téléphone.",
-      options: [["auto", "Automatique"], ["day", "Jour"], ["3day", "3 jours"], ["5day", "5 jours"], ["6day", "6 jours"], ["week", "Semaine"], ["month", "Mois"]] },
+    { key: "startView", type: "select", label: "Vue à l'ouverture", hint: "« Automatique » : Semaine sur ordinateur (5 jours si rien aujourd'hui), Liste sur téléphone.",
+      options: [["auto", "Automatique"], ["list", "Liste (jour)"], ["day", "Jour (blocs)"], ["3day", "3 jours"], ["5day", "5 jours"], ["6day", "6 jours"], ["week", "Semaine"], ["month", "Mois"]] },
     { key: "hideWeekend", type: "switch", label: "Masquer le week-end", hint: "Vue Semaine : samedi et dimanche n'apparaissent que s'il y a cours." },
     { key: "compactCards", type: "switch", label: "Blocs de cours compacts", hint: "Masque le nom de l'enseignant dans les blocs de l'agenda (il reste dans le détail du cours)." },
     { key: "noteNewDays", type: "select", label: "Nouvelles notes en orange", hint: "Une note nouvelle (ou modifiée) reste orange pendant ce délai, puis jaune pendant le même délai.",

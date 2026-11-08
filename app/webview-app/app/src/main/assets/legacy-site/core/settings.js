@@ -4,7 +4,7 @@
 "use strict";
 
 const DEFAULTS = {
-  startView: "auto",   // auto | day | 3day | 5day | 6day | week | month
+  startView: "auto",   // auto | list | day | 3day | 5day | 6day | week | month
   hideWeekend: false,  // vue Semaine : samedi/dimanche masqués s'il n'y a pas cours
   remindersEnabled: true,
   reminderMinutes: 15, // notification N minutes avant chaque cours
@@ -31,6 +31,23 @@ function saveSettings(patch) {
   return getSettings().then((s) => chrome.storage.local.set({ uca_settings: Object.assign(s, patch) }));
 }
 
+/* Fusionne un emploi du temps tout juste synchronisé avec celui déjà enregistré : la synchro ne remplace que les cours
+   d'aujourd'hui et à venir ; les jours passés sont déjà connus (anciennes synchros) et restent consultables. Un jour passé
+   qu'Odin renvoie encore, mais qu'on n'avait jamais vu, est ajouté. On garde 400 jours d'historique au plus. */
+const HISTORY_DAYS = 400;
+function mergeSchedule(old, fresh, now) {
+  const t = now ? new Date(now) : new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  const today = t.getFullYear() + "-" + p(t.getMonth() + 1) + "-" + p(t.getDate());
+  const limit = new Date(t.getTime() - HISTORY_DAYS * 86400000);
+  const oldest = limit.getFullYear() + "-" + p(limit.getMonth() + 1) + "-" + p(limit.getDate());
+  const oldPast = (Array.isArray(old) ? old : []).filter((e) => e && e.date && e.date < today && e.date >= oldest);
+  const knownDays = new Set(oldPast.map((e) => e.date));
+  const out = oldPast.concat((fresh || []).filter((e) => e.date < today ? (e.date >= oldest && !knownDays.has(e.date)) : true));
+  return out.sort((a, b) => (a.date + p(a.startH) + p(a.startM)).localeCompare(b.date + p(b.startH) + p(b.startM)));
+}
+
+root.UCA_mergeSchedule = mergeSchedule;
 root.UCA_SETTINGS_DEFAULTS = DEFAULTS;
 root.UCA_getSettings = getSettings;
 root.UCA_saveSettings = saveSettings;

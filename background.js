@@ -2,6 +2,7 @@
 if (typeof UCA_getSettings === "undefined" && typeof importScripts === "function") importScripts("core/settings.js");
 if (typeof UCA_GRADES === "undefined" && typeof importScripts === "function") importScripts("core/grades.js");
 if (typeof UCA_STATUS === "undefined" && typeof importScripts === "function") importScripts("core/status.js");
+if (typeof UCA_ADE === "undefined" && typeof importScripts === "function") importScripts("core/ade.js");
 
 const EDT_URL = "https://odin.iut.uca.fr/etudiants/?p=edt";
 const ABSENCES_URL = "https://odin.iut.uca.fr/etudiants/?p=absences";
@@ -336,6 +337,106 @@ async function fullLogin() {
   }
 }
 
+/* ============ Emploi du temps de la classe (ADE, edt.uca.fr) ============
+   L'export iCalendar d'ADE donne tous les cours de la classe, sans cookie ; seule l'adresse (numéros de ressources de la classe)
+   se découvre une fois, après connexion : une mini fenêtre CAS comme pour Odin ouvre ADE, clique « Exporter » puis
+   « Générer URL » et lit l'adresse. Elle est gardée (uca_ade_url) ; ensuite chaque synchro relit l'export sans se reconnecter. */
+const ADE_CAS_URL = "https://ent.uca.fr/cas/login?service=" + encodeURIComponent("http://edt.uca.fr/direct/myplanning.jsp");
+
+/* Exécutée DANS la page ADE (injectée par executeScript, donc autonome) : trouve le bouton d'export, génère l'adresse et la renvoie. */
+async function adePageDiscover() {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const until = async (fn, ms) => { const end = Date.now() + ms; while (Date.now() < end) { const v = fn(); if (v) return v; await sleep(250); } return null; };
+  const visible = (e) => !!e && !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
+  const byText = (re) => [...document.querySelectorAll("button")].find((b) => re.test(b.textContent || "") && visible(b));
+  const close = async () => { const b = byText(/^(Fermer|Annuler)$/i); if (b) { b.click(); await sleep(300); } };
+  const bar = await until(() => {
+    const l = [...document.querySelectorAll("table.x-btn.x-btn-icon")].filter((t) => { const r = t.getBoundingClientRect(); return visible(t) && r.top < 60 && r.left > innerWidth * 0.6; })
+      .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+    return l.length >= 2 ? l : null;
+  }, 25000);
+  if (!bar) return { error: "barre d'outils introuvable" };
+  for (const t of bar.slice(1)) {          // le premier bouton est « Imprimer » : jamais cliqué
+    const btn = t.querySelector("button"); if (!btn) continue;
+    btn.click();
+    const gen = await until(() => byText(/Générer URL/i), 2500);
+    if (!gen) { await close(); continue; }
+    gen.click();
+    const a = await until(() => [...document.querySelectorAll("#logdetail a")].find((x) => /anonymous_cal/.test(x.href)), 8000);
+    const href = a ? a.href : null;
+    await close();
+    if (href) return { href };
+  }
+  return { error: "export iCalendar introuvable" };
+}
+
+async function adeDiscover() {
+  broadcast({ type: "UCA_CLASS_PROGRESS", stage: "login-opening" });
+  const useWindow = typeof chrome.windows !== "undefined" && !!chrome.windows.create && !!chrome.windows.onRemoved;
+  let surface, tab;
+  if (useWindow) { surface = await chrome.windows.create({ url: ADE_CAS_URL, type: "popup", width: 480, height: 700 }); tab = surface.tabs[0]; }
+  else { tab = await chrome.tabs.create({ url: ADE_CAS_URL, active: true }); surface = { id: tab.id }; }
+  const removed = useWindow ? chrome.windows.onRemoved : chrome.tabs.onRemoved;
+  let closedByUser = false;
+  const onClosed = (id) => { if (id === surface.id) closedByUser = true; };
+  removed.addListener(onClosed);
+  try {
+    broadcast({ type: "UCA_CLASS_PROGRESS", stage: "login-waiting" });
+    await waitForUrlContains(tab.id, "edt.uca.fr", LOGIN_WAIT_MS);
+    await waitForComplete(tab.id, 30000);
+    broadcast({ type: "UCA_CLASS_PROGRESS", stage: "scraping" });
+    const [res] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: adePageDiscover });
+    const found = res && res.result;
+    const url = found && found.href ? UCA_ADE.normalizeAdeUrl(found.href) : null;
+    if (!url) throw new Error((found && found.error) || "Adresse de l'emploi du temps de la classe introuvable");
+    await chrome.storage.local.set({ uca_ade_url: url });
+    return url;
+  } catch (e) {
+    if (closedByUser) { const err = new Error("Fenêtre de connexion fermée."); err.cancelled = true; throw err; }
+    throw e;
+  } finally {
+    removed.removeListener(onClosed);
+    try { await chrome.tabs.remove(tab.id); } catch (_) {}
+  }
+}
+
+/* Relit l'export de la classe (année universitaire entière + 150 jours à venir) ; retient les groupes de l'utilisateur
+   (cours d'Odin retrouvés dans la classe) et reconstitue les jours passés qu'Odin n'a jamais renvoyés. */
+async function syncClassSchedule(opts) {
+  let { uca_ade_url } = await chrome.storage.local.get("uca_ade_url");
+  uca_ade_url = uca_ade_url && UCA_ADE.normalizeAdeUrl(uca_ade_url);
+  if (!uca_ade_url) {
+    if (!(opts && opts.discover)) return null;
+    uca_ade_url = await adeDiscover();
+  }
+  const last = new Date(Date.now() + 150 * 86400000);
+  const lastDate = last.getFullYear() + "-" + pad(last.getMonth() + 1) + "-" + pad(last.getDate());
+  const res = await fetch(UCA_ADE.adeRangeUrl(uca_ade_url, UCA_ADE.academicYearStart(), lastDate), { credentials: "omit", cache: "no-store" });
+  if (!res.ok) throw new Error("ADE a répondu " + res.status);
+  const text = await res.text();
+  if (!/BEGIN:VCALENDAR/.test(text)) throw new Error("Réponse ADE inattendue");
+  const classEvents = UCA_ADE.parseAdeIcs(text);
+  if (!classEvents.length) throw new Error("Aucun cours dans l'export ADE");
+  const { uca_events } = await chrome.storage.local.get("uca_events");
+  const groups = UCA_ADE.deriveMyGroups(uca_events || [], classEvents);
+  const personal = groups.length ? UCA_ADE.fillPast(uca_events || [], UCA_ADE.personalFromClass(classEvents, groups)) : (uca_events || []);
+  await chrome.storage.local.set({ uca_class_events: classEvents, uca_my_groups: groups, uca_class_sync: new Date().toISOString(), uca_events: personal });
+  await diag("ade-ok", `${classEvents.length} cours · ${groups.length} groupe(s)`);
+  broadcast({ type: "UCA_CLASS_RESULT", ok: true, count: classEvents.length, groups });
+  return { count: classEvents.length, groups };
+}
+
+let classSyncInProgress = false;
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  if (!msg || msg.type !== "UCA_CLASS_CONNECT") return false;
+  if (classSyncInProgress) return false;
+  classSyncInProgress = true;
+  syncClassSchedule({ discover: true })
+    .catch((err) => broadcast({ type: "UCA_CLASS_RESULT", ok: false, error: String((err && err.message) || err), cancelled: !!(err && err.cancelled) }))
+    .finally(() => { classSyncInProgress = false; });
+  return false;
+});
+
 /* ============ Absences ============ */
 const ABSENCE_LINE_RE = /Nombre d['’]absences?\s*([a-zàéèâî]+(?:\s[a-zàéèâî]+)*)\s*:\s*([\d]+)/gi;
 function parseAbsencesText(text) {
@@ -561,8 +662,9 @@ function parseScheduleText(raw) {
 }
 
 async function storeResult(text) {
-  const events = parseScheduleText(text);
   const { uca_events } = await chrome.storage.local.get("uca_events");
+  // Les jours passés restent ceux des anciennes synchros ; seuls aujourd'hui et le futur sont remplacés.
+  const events = UCA_mergeSchedule(uca_events, parseScheduleText(text));
   const lastSync = new Date().toISOString();
   await chrome.storage.local.set({ uca_events: events, uca_last_sync: lastSync });
   await applyEdtChanges(uca_events || [], events);
@@ -693,6 +795,7 @@ async function syncSucceeded(text, silent) {
   broadcast({ type: "UCA_SYNC_RESULT", ok: true, text, events, lastSync, silent, edtChanges: uca_edt_changes || [] });
   await syncAbsencesQuietly();
   await syncNotesQuietly();
+  await syncClassSchedule().catch((e) => diag("ade-echec", String((e && e.message) || e).slice(0, 120)));
 }
 
 /* mode "background" (synchro automatique) : uniquement la reconnexion silencieuse,
@@ -725,6 +828,7 @@ async function handleSync(mode) {
     return;
   }
   await syncSucceeded(text, false);
+  // La classe (ADE) n'est récupérée que sur demande (Filtres → emploi du temps de la classe) ; ensuite seul le rafraîchissement silencieux la tient à jour.
 }
 
 /* ============ Session cookie (durée restante / déconnexion) ============ */
@@ -828,11 +932,20 @@ async function scheduleReminders() {
   });
 }
 
-async function onReminderAlarm(name) {
+/* Un rappel ne sert que s'il annonce un cours À VENIR. Navigateur fermé pendant des heures ou des jours, Chrome et
+   Firefox déclenchent d'un coup, au démarrage, toutes les alarmes manquées : sans ce garde-fou, on recevait « Dans 1 min »
+   pour des cours déjà passés. scheduledTime = l'heure prévue de l'alarme (absent quand on l'appelle à la main). */
+const REMINDER_MAX_LATE_MS = 5 * 60000;
+function reminderStillUseful(ev, scheduledTime, now) {
+  if (eventStart(ev) <= now) return false;                                   // le cours a déjà commencé ou est passé
+  if (scheduledTime && now - scheduledTime > REMINDER_MAX_LATE_MS) return false; // alarme manquée, déclenchée en retard
+  return true;
+}
+async function onReminderAlarm(name, scheduledTime) {
   const key = name.slice(REMINDER_PREFIX.length);
   const [{ uca_events }, design] = await Promise.all([chrome.storage.local.get("uca_events"), currentDesign()]);
   const ev = (uca_events || []).find((e) => eventKey(e) === key);
-  if (!ev) return;
+  if (!ev || ev.cancelled || !reminderStillUseful(ev, scheduledTime, Date.now())) return;
   const minutes = Math.max(1, Math.round((eventStart(ev) - Date.now()) / 60000));
   notify(name, {
     type: "basic",
@@ -868,12 +981,14 @@ async function scheduleTaskReminders() {
   if (!settings.taskReminders) return;
   taskReminderPlan(data.uca_tasks, data.uca_events, Date.now()).forEach((r) => chrome.alarms.create(r.name, { when: r.when }));
 }
-async function onTaskAlarm(name) {
+async function onTaskAlarm(name, scheduledTime) {
   const [settings, data, design] = await Promise.all([UCA_getSettings(), chrome.storage.local.get(["uca_tasks", "uca_events"]), currentDesign()]);
   if (!settings.taskReminders) return;
   // Le plan est recalculé juste avant l'heure : un devoir terminé ou supprimé entre-temps ne notifie plus.
   const r = taskReminderPlan(data.uca_tasks, data.uca_events, Date.now() - 6 * 3600000).find((x) => x.name === name);
   if (!r) return;
+  // Alarme manquée (navigateur fermé) : au-delà de 6 h de retard, le « demain » n'a plus de sens.
+  if (scheduledTime && Date.now() - scheduledTime > 6 * 3600000) return;
   notify(name, { type: "basic", iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`), title: r.title, message: r.message, priority: 1 });
 }
 
@@ -926,11 +1041,11 @@ async function updateBadge() {
 }
 
 chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name.startsWith(REMINDER_PREFIX)) onReminderAlarm(alarm.name);
+  if (alarm.name.startsWith(REMINDER_PREFIX)) onReminderAlarm(alarm.name, alarm.scheduledTime);
   else if (alarm.name === AUTO_SYNC_ALARM) runBackgroundSync();
   else if (alarm.name === BADGE_ALARM) updateBadge();
   else if (alarm.name === STATUS_ALARM) runStatusWatch();
-  else if (TASK_ALARM_PREFIXES.some((p) => alarm.name.startsWith(p))) onTaskAlarm(alarm.name);
+  else if (TASK_ALARM_PREFIXES.some((p) => alarm.name.startsWith(p))) onTaskAlarm(alarm.name, alarm.scheduledTime);
 });
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local") return;
@@ -1069,9 +1184,12 @@ function fmtEvShort(ev) {
   return `${d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })} ${pad(ev.startH)}:${pad(ev.startM)}`;
 }
 
-async function notifyEdtChanges(list) {
+async function notifyEdtChanges(all) {
   const settings = await UCA_getSettings();
   if (!settings.notifyEdtChanges) return;
+  // Seuls les cours à venir comptent : après 48 h sans synchro, on ne notifie pas ce qui est déjà passé.
+  const list = all.filter((c) => c.ev && eventEnd(c.ev) > Date.now());
+  if (!list.length) return;
   const design = await currentDesign();
   const lines = list.slice(0, 4).map((c) => `${CHANGE_LABELS_BG[c.type]} : ${c.ev.title} (${fmtEvShort(c.ev)})${c.details && c.details.length && c.type !== "added" && c.type !== "cancelled" ? " — " + c.details.join(" ; ") : ""}`);
   if (list.length > 4) lines.push(`… et ${list.length - 4} autre(s)`);

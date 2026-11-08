@@ -100,7 +100,10 @@ def tool_checks(ag, did):
     for k in ("Accueil", "Aide", "Installer l'app", "Importer mes données", "confidentialité"):
         check(f"{did} : panneau Liens → « {k} »", any(k in t for t in labels), str(labels))
     shot(ag, f"{did}-liens")
-    items.first.click(); ag.wait_for_timeout(2500)
+    items.first.click()
+    for _ in range(40):  # le nouvel onglet peut tarder quand la machine est chargée
+        if opened: break
+        ag.wait_for_timeout(200)
     check(f"{did} : lien ouvert dans un nouvel onglet vers github.io", bool(opened) and opened[0].startswith("https://kiricoucou.github.io/uca-extension/"), str(opened))
     ag.mouse.click(700, 500); ag.wait_for_timeout(200)
 
@@ -131,6 +134,18 @@ def background_checks(ctx, sw, data):
     sw.evaluate("(n) => onReminderAlarm(n)", name); page.wait_for_timeout(500)
     notifs = sw.evaluate("chrome.notifications.getAll()")
     check("notification de rappel affichée", any(k.startswith("uca_rem|") for k in notifs), str(notifs))
+    # Alarme manquée (navigateur fermé 48 h) : ni cours passé, ni rappel déclenché en retard ne doivent notifier.
+    sw.evaluate("chrome.notifications.getAll().then((n) => Promise.all(Object.keys(n).map((k) => chrome.notifications.clear(k))))"); page.wait_for_timeout(300)
+    past = sw.evaluate(js_event, -180)
+    sw.evaluate("(p) => chrome.storage.local.set({uca_events: [p]})", past); page.wait_for_timeout(300)
+    past_name = sw.evaluate("(p) => REMINDER_PREFIX + eventKey(p)", past)
+    sw.evaluate("(n) => onReminderAlarm(n)", past_name); page.wait_for_timeout(400)
+    check("aucun rappel pour un cours déjà passé", not any(k.startswith("uca_rem|") for k in sw.evaluate("chrome.notifications.getAll()")))
+    sw.evaluate("(evs) => chrome.storage.local.set({uca_events: evs})", [soon, later]); page.wait_for_timeout(300)
+    late_ok = sw.evaluate("([n, t]) => onReminderAlarm(n, t)", [name, sw.evaluate("Date.now() - 2 * 3600000")]); page.wait_for_timeout(400)
+    check("aucun rappel d'une alarme manquée (déclenchée 2 h en retard)", not any(k.startswith("uca_rem|") for k in sw.evaluate("chrome.notifications.getAll()")))
+    sw.evaluate("([n, t]) => onReminderAlarm(n, t)", [name, sw.evaluate("Date.now() - 20000")]); page.wait_for_timeout(400)
+    check("rappel à l'heure (quelques secondes de retard) toujours affiché", any(k.startswith("uca_rem|") for k in sw.evaluate("chrome.notifications.getAll()")))
     sw.evaluate("chrome.storage.local.set({uca_settings: {remindersEnabled: false, badgeMode: 'off', autoSyncHours: 0}})"); page.wait_for_timeout(600)
     alarms = sw.evaluate("chrome.alarms.getAll().then(a => a.map(x => x.name))")
     check("réglages : rappels et synchro auto désactivables", not any(a.startswith("uca_rem|") for a in alarms) and "uca_auto_sync" not in alarms, str(alarms))

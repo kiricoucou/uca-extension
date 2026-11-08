@@ -110,6 +110,9 @@
                 android:orientation="vertical"
                 android:background="@drawable/bg_card"
                 android:padding="14dp">
+                <TextView android:text="DIAGNOSTIC DE CONNEXION" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                <TextView android:text="En cas de reconnexion demandée à tort : affiche l'état de ta session (noms des cookies seulement, jamais leurs valeurs) et copie-le." android:textColor="@color/text" android:textSize="12.5sp" android:layout_marginTop="4dp" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+                <Button android:id="@+id/btnDiag" android:layout_width="match_parent" android:layout_height="48dp" android:layout_marginTop="8dp" android:layout_marginBottom="16dp" android:text="Diagnostic de connexion" android:textColor="@color/on_accent" android:background="@drawable/bg_cta" android:textSize="12sp" android:textStyle="bold" />
                 <TextView android:text="DESIGN DE L'APPLICATION" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                 <Button
                     android:id="@+id/btnDesign"

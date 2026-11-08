@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        ClassSync.progressListener = { pct, msg -> showClassProgress(pct, msg) }
         PrefsStore.migrateProfileOnce(this)
 
         bottomNav = findViewById(R.id.bottomNav)
@@ -284,6 +285,12 @@ class MainActivity : AppCompatActivity() {
     }
     private val PERIOD_MS = 15 * 60 * 1000L
 
+    override fun onStop() {
+        // La session (cookies de la WebView) doit survivre à la fermeture de l'app : écriture sur le disque aussi à l'arrêt.
+        android.webkit.CookieManager.getInstance().flush()
+        super.onStop()
+    }
+
     override fun onPause() {
         // La session CAS (cookies de la WebView) doit survivre à la fermeture de l'app : on force l'écriture sur le disque.
         android.webkit.CookieManager.getInstance().flush()
@@ -320,6 +327,7 @@ class MainActivity : AppCompatActivity() {
     private val loginLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             PrefsStore.setLoggedIn(this, true)
+            SessionDiag.log(this, "connexion réussie")
             clearSessionExpired()
             (supportFragmentManager.findFragmentById(R.id.fragmentContainer) as? AgendaFragment)?.resyncNow()
         }
@@ -330,8 +338,62 @@ class MainActivity : AppCompatActivity() {
         loginLauncher.launch(android.content.Intent(this, LoginActivity::class.java))
     }
 
+
+    private var syncPulse: android.animation.Animator? = null
+    private val syncHide = Runnable { showClassProgress(-1, null) }
+
+    /**
+     * Récupération de l'emploi du temps de la classe : halo bleu dégradé qui pulse sur les bords de l'écran et carte « en direct »
+     * en bas avec une barre 0-100 %. [pct] < 0 masque tout ; 100 affiche « terminé » puis masque après un court instant.
+     */
+    fun showClassProgress(pct: Int, msg: String?) {
+        val overlay = findViewById<View>(R.id.classSyncOverlay) ?: return
+        overlay.removeCallbacks(syncHide)
+        if (pct in 0..99) overlay.postDelayed(syncHide, 90_000)   // garde-fou : jamais d'overlay bloqué si une étape n'annonce rien
+        if (pct < 0) {
+            ClassSync.userRequested = false
+            syncPulse?.cancel(); syncPulse = null
+            overlay.visibility = View.GONE
+            return
+        }
+        if (overlay.visibility != View.VISIBLE) {
+            overlay.visibility = View.VISIBLE
+            val glow = listOf(R.id.syncGlowTop, R.id.syncGlowBottom, R.id.syncBorder).mapNotNull { findViewById<View>(it) }
+            val live = findViewById<View>(R.id.syncLive)
+            syncPulse?.cancel()
+            val anims = glow.map { v ->
+                android.animation.ObjectAnimator.ofFloat(v, View.ALPHA, 0.45f, 1f).apply { duration = 1100; repeatCount = android.animation.ValueAnimator.INFINITE; repeatMode = android.animation.ValueAnimator.REVERSE }
+            } + listOfNotNull(live?.let { v ->
+                android.animation.ObjectAnimator.ofFloat(v, View.ALPHA, 1f, 0.45f).apply { duration = 650; repeatCount = android.animation.ValueAnimator.INFINITE; repeatMode = android.animation.ValueAnimator.REVERSE }
+            })
+            syncPulse = android.animation.AnimatorSet().apply { playTogether(anims); start() }
+        }
+        val p = pct.coerceIn(0, 100)
+        findViewById<android.widget.ProgressBar>(R.id.syncBar)?.let { bar -> android.animation.ObjectAnimator.ofInt(bar, "progress", bar.progress, p).setDuration(350).start() }
+        findViewById<android.widget.TextView>(R.id.syncPct)?.text = "$p %"
+        if (msg != null) findViewById<android.widget.TextView>(R.id.syncMsg)?.text = msg
+        if (p >= 100) overlay.postDelayed(syncHide, 1100)
+    }
+
+    private var sessionPulse: android.animation.ObjectAnimator? = null
+
+    /** Rouge, fixe en bas à gauche, il clignote doucement (cadenas animé) pour attirer l'attention. */
     private fun showSessionBanner(show: Boolean) {
-        findViewById<View>(R.id.sessionBanner)?.visibility = if (show) View.VISIBLE else View.GONE
+        val banner = findViewById<View>(R.id.sessionBanner) ?: return
+        banner.visibility = if (show) View.VISIBLE else View.GONE
+        sessionPulse?.cancel(); sessionPulse = null
+        banner.alpha = 1f; banner.scaleX = 1f; banner.scaleY = 1f
+        if (show) {
+            sessionPulse = android.animation.ObjectAnimator.ofPropertyValuesHolder(
+                banner,
+                android.animation.PropertyValuesHolder.ofFloat(View.ALPHA, 1f, 0.6f),
+                android.animation.PropertyValuesHolder.ofFloat(View.SCALE_X, 1f, 1.05f),
+                android.animation.PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f, 1.05f)
+            ).apply {
+                duration = 700; repeatCount = android.animation.ValueAnimator.INFINITE; repeatMode = android.animation.ValueAnimator.REVERSE
+                start()
+            }
+        }
     }
 
     /**
@@ -340,6 +402,7 @@ class MainActivity : AppCompatActivity() {
      */
     fun requireLogin() {
         if (!PrefsStore.isLoggedIn(this)) return
+        SessionDiag.log(this, "session déclarée expirée (bandeau affiché)")
         PrefsStore.setSessionExpired(this, true)
         showSessionBanner(true)
         (supportFragmentManager.findFragmentById(R.id.fragmentContainer) as? AgendaFragment)?.notifySessionExpired(true)
@@ -359,11 +422,13 @@ class MainActivity : AppCompatActivity() {
         if (now - lastSessionCheck < 5 * 60 * 1000) return
         lastSessionCheck = now
         UcaSync.checkSession(applicationContext) { expired ->
+            SessionDiag.log(applicationContext, "contrôle de session à la reprise : " + when (expired) { true -> "formulaire de connexion affiché"; false -> "session valable"; null -> "indéterminé (réseau lent ou coupé)" })
             if (expired == false && !isFinishing && !isDestroyed) clearSessionExpired()
             if (expired != true || isFinishing || isDestroyed) return@checkSession
             // Un seul contrôle négatif ne suffit pas : on revérifie avant de verrouiller l'app.
             android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
                 UcaSync.checkSession(applicationContext) { again ->
+                    SessionDiag.log(applicationContext, "second contrôle : " + when (again) { true -> "formulaire de connexion affiché"; false -> "session valable"; null -> "indéterminé" })
                     if (again == true && !isFinishing && !isDestroyed) requireLogin()
                 }
             }, 3000)

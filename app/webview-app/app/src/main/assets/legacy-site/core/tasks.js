@@ -47,7 +47,7 @@ function examsFrom(events, now) {
   return (events || []).filter((e) => !e.cancelled && root.UCA_TOOLS.typeOf(e.title) === "Examen"
     && new Date(e.year, e.month, e.day, e.endH, e.endM).getTime() > t)
     .map((e) => ({ kind: "exam", title: e.title, subject: root.UCA_TOOLS.subjectOf(e.title), dueMs: new Date(e.year, e.month, e.day).getTime(),
-      time: `${pad(e.startH)}h${pad(e.startM)}`, room: e.room || "" }))
+      time: `${pad(e.startH)}h${pad(e.startM)}`, room: e.room || "", ev: e }))
     .sort((a, b) => a.dueMs - b.dueMs || a.time.localeCompare(b.time));
 }
 
@@ -84,6 +84,9 @@ const STYLE = `
 .uca-tasks li input[type=checkbox]{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:var(--accent);}
 .uca-tasks .tk-del{flex:none;width:32px;height:32px;border:none;background:none;color:var(--text-dim);font-size:18px;cursor:pointer;border-radius:8px;}
 .uca-tasks .tk-del:hover{color:var(--danger,#b3261e);}
+.uca-tasks li.tk-click{cursor:pointer;}
+.uca-tasks .tk-go:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px;}
+.uca-tasks .tk-go{flex:none;align-self:center;color:var(--accent);font-size:18px;font-weight:700;}
 .uca-tasks .tk-empty{font-size:13px;color:var(--text-dim);padding:6px 16px 10px;}
 .uca-tasks .tk-foot{display:flex;justify-content:flex-end;padding:4px 16px 0;}
 .uca-tasks .tk-clear{border:none;background:none;color:var(--accent);font:inherit;font-size:13px;font-weight:600;cursor:pointer;height:32px;}
@@ -91,6 +94,16 @@ const STYLE = `
 function ensureStyle() {
   if (document.getElementById("ucaTasksStyle")) return;
   const s = document.createElement("style"); s.id = "ucaTasksStyle"; s.textContent = STYLE; document.head.appendChild(s);
+}
+
+/* Toute la ligne est cliquable à la souris ou au doigt ; au clavier et pour les lecteurs d'écran, c'est le vrai bouton « › » de la ligne
+   (la ligne reste un simple élément de liste). */
+function makeClickable(li, fn, label) {
+  li.classList.add("tk-click"); li.title = label;
+  const go = el("button", "tk-go", "›"); go.type = "button"; go.setAttribute("aria-label", label + " : " + ((li.querySelector(".tk-name") || {}).textContent || ""));
+  go.style.cssText = "border:none;background:none;cursor:pointer;padding:0 4px;";
+  li.appendChild(go);
+  li.addEventListener("click", fn);
 }
 
 /* Construit le panneau. ctx : { events, tasks, save(list) } ; save() enregistre et déclenche le rendu. */
@@ -137,6 +150,7 @@ function buildPanel(panel, ctx) {
       meta.append(el("span", "tk-due " + info.level, info.text), document.createTextNode(` · ${it.x.time}${it.x.room ? " · " + it.x.room : ""}`));
       main.appendChild(meta);
       li.appendChild(main);
+      makeClickable(li, () => ctx.openEvent && ctx.openEvent(it.x.ev), "Voir ce cours dans l'agenda");
     } else {
       const cb = el("input"); cb.type = "checkbox"; cb.setAttribute("aria-label", "Terminé : " + it.t.title);
       cb.addEventListener("change", () => ctx.save(tasks.map((x) => (x.id === it.t.id ? Object.assign({}, x, { done: true }) : x))));
@@ -147,6 +161,7 @@ function buildPanel(panel, ctx) {
       meta.appendChild(el("span", "tk-due " + info.level, info.text));
       main.appendChild(meta);
       li.appendChild(main);
+      if (it.dueMs !== null) makeClickable(li, (e) => { if (!e.target.closest("input,button")) ctx.openTask && ctx.openTask(it.t); }, "Voir ce jour dans l'agenda");
       const del = el("button", "tk-del", "×"); del.type = "button"; del.setAttribute("aria-label", "Supprimer : " + it.t.title); del.title = "Supprimer";
       del.addEventListener("click", () => ctx.save(tasks.filter((x) => x.id !== it.t.id)));
       li.appendChild(del);
@@ -155,6 +170,23 @@ function buildPanel(panel, ctx) {
   });
   if (items.length) panel.appendChild(ul);
   else panel.appendChild(el("div", "tk-empty", "Rien à faire pour le moment. Ajoute un devoir ci-dessus ; les examens de ton emploi du temps apparaissent ici tout seuls."));
+
+  // Les notes écrites sur les cours : un clic ouvre le cours dans l'agenda.
+  const noteItems = Array.isArray(ctx.noteItems) ? ctx.noteItems : [];
+  if (noteItems.length) {
+    panel.appendChild(el("div", "tk-h", "Mes notes de cours"));
+    const nl = el("ul"); nl.setAttribute("aria-label", "Notes écrites sur des cours");
+    noteItems.forEach(({ ev, text }) => {
+      const li = el("li"); li.appendChild(el("span", "tk-tag", "Note"));
+      const main = el("div", "tk-main"); main.appendChild(el("div", "tk-name", ev.title));
+      const d = new Date(ev.year, ev.month, ev.day).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+      main.appendChild(el("div", "tk-meta", `${d} ${pad(ev.startH)}h${pad(ev.startM)} · ${text.length > 70 ? text.slice(0, 69) + "…" : text}`));
+      li.appendChild(main);
+      makeClickable(li, () => ctx.openEvent && ctx.openEvent(ev), "Voir ce cours dans l'agenda");
+      nl.appendChild(li);
+    });
+    panel.appendChild(nl);
+  }
 
   if (done.length) {
     panel.appendChild(el("div", "tk-h", `Terminés (${done.length})`));

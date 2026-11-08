@@ -163,7 +163,12 @@ object PrefsStore {
     fun gradeCount(context: Context): Int = prefs(context).getInt("grade_count", -1)
     fun setGradeCount(context: Context, n: Int) { prefs(context).edit().putInt("grade_count", n).apply() }
 
+    /** Adresse de l'export iCalendar d'ADE (classe entière) : seulement des numéros de ressources, aucun jeton. */
+    fun adeUrl(context: Context): String? = prefs(context).getString("ade_url", null)
+    fun setAdeUrl(context: Context, url: String?) { prefs(context).edit().apply { if (url == null) remove("ade_url") else putString("ade_url", url) }.apply() }
+
     fun clearStudentProfile(context: Context) {
+        setAdeUrl(context, null)
         prefs(context).edit()
             .remove(KEY_STUDENT_NAME).remove(KEY_STUDENT_ID).remove(KEY_STUDENT_EMAIL)
             .remove(KEY_STUDENT_FORMATION).remove(KEY_STUDENT_BIRTH).remove(KEY_STUDENT_GROUP)

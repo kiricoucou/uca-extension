@@ -201,20 +201,46 @@ UCA_CORE.initDesignSwitch(false);
 UCA_CORE.initSettings();
 UCA_CORE.initAutoDesign();
 if ($("phoneBtn")) $("phoneBtn").addEventListener("click", () => chrome.tabs.create({ url: new URL("agenda.html#phone", location.href).href }));
-// Génère le lien de partage (même que Exporter → Copier un lien) et le copie, en un seul clic.
+// Génère le lien de partage (même que Exporter → Copier un lien), le copie, puis affiche le code avec son propre bouton « Copier ».
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch (_) {
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (_) {} ta.remove(); return ok;
+  }
+}
+function showShareResult(share, linkCopied) {
+  let box = document.getElementById("shareResult");
+  if (!box) {
+    box = document.createElement("div"); box.id = "shareResult"; box.setAttribute("role", "status");
+    box.style.cssText = "margin:6px 0;padding:8px 10px;border:1px solid currentColor;border-radius:10px;font-size:12px;line-height:1.5;display:flex;flex-direction:column;gap:6px;";
+    const row = $("linkBtn").parentElement; row.parentElement.insertBefore(box, row.nextSibling);
+  }
+  box.textContent = "";
+  const mk = (tag, text, css) => { const e = document.createElement(tag); e.textContent = text; if (css) e.style.cssText = css; return e; };
+  const line1 = mk("div", linkCopied ? "✓ Lien copié dans le presse-papiers." : "Copie du lien impossible : utilise le bouton ci-dessous.", "font-weight:700;");
+  const line2 = document.createElement("div"); line2.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;";
+  const code = mk("code", share.code, "font-size:16px;font-weight:800;letter-spacing:.12em;padding:2px 8px;border-radius:6px;background:rgba(127,127,127,.18);user-select:all;");
+  const bCode = mk("button", "Copier le code"), bLink = mk("button", "Copier le lien");
+  [bCode, bLink].forEach((b) => { b.type = "button"; b.style.cssText = "font:inherit;font-weight:700;padding:3px 9px;border-radius:7px;cursor:pointer;"; });
+  const flash = (b, label) => { const t = b.textContent; b.textContent = label; setTimeout(() => { b.textContent = t; }, 1600); };
+  bCode.addEventListener("click", async () => flash(bCode, (await copyText(share.code)) ? "Code copié ✓" : "Copie impossible"));
+  bLink.addEventListener("click", async () => flash(bLink, (await copyText(share.link)) ? "Lien copié ✓" : "Copie impossible"));
+  const note = mk("div", "Donne le lien puis le code (deux messages séparés).", "opacity:.75;font-size:11px;");
+  line2.append(mk("span", "Code :"), code, bCode, bLink);
+  box.append(line1, line2, note);
+  clearTimeout(showShareResult.t); showShareResult.t = setTimeout(() => box.remove(), 90000);
+}
 $("linkBtn").addEventListener("click", async () => {
   const btn = $("linkBtn"), original = btn.textContent;
-  let delay = 2500;
   try {
     const share = await UCA_TRANSFER.makeShareLink();
-    await navigator.clipboard.writeText(share.link);
-    btn.textContent = `Lien copié · code ${share.code}`;
-    btn.title = share.message;
-    delay = 8000; // le temps de noter le code
+    const ok = await copyText(share.link);
+    btn.textContent = ok ? "Lien copié ✓" : "Copie impossible";
+    showShareResult(share, ok);
   } catch (e) {
-    btn.textContent = "Copie impossible";
+    btn.textContent = "Génération impossible";
   }
-  setTimeout(() => { btn.textContent = original; }, delay);
+  setTimeout(() => { btn.textContent = original; }, 3000);
 });
 UCA_TOOLS.load(loadFromStorage);
 })();

@@ -8,5 +8,6 @@ class EdtUcaApp : Application() {
         super.onCreate()
         PrefsStore.applyThemeMode(PrefsStore.themeMode(this))
         UpdateWorker.schedule(this)
+        GithubUpdateManager.cleanupDownloadedApks(this)
     }
 }

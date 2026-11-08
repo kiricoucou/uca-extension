@@ -38,8 +38,12 @@
         android:background="@drawable/bg_session_banner"
         android:clickable="true"
         android:focusable="true"
+        android:drawableStart="@drawable/ic_session_lock"
+        android:drawablePadding="9dp"
+        android:gravity="center_vertical"
         android:maxWidth="300dp"
-        android:paddingHorizontal="14dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="16dp"
         android:paddingVertical="9dp"
         android:text="Session expirée. Veuillez vous reconnecter."
         android:textColor="#FFFFFF"
@@ -47,6 +51,64 @@
         android:textStyle="bold"
         android:elevation="8dp"
         android:visibility="gone" />
+
+    <!-- Récupération de l'emploi du temps de la classe : halo bleu dégradé + carte « en direct » avec progression 0-100 % -->
+    <FrameLayout
+        android:id="@+id/classSyncOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:elevation="12dp"
+        android:visibility="gone">
+
+        <View android:id="@+id/syncGlowTop" android:layout_width="match_parent" android:layout_height="220dp" android:layout_gravity="top" android:background="@drawable/bg_sync_glow_top" />
+        <View android:id="@+id/syncGlowBottom" android:layout_width="match_parent" android:layout_height="260dp" android:layout_gravity="bottom" android:background="@drawable/bg_sync_glow_bottom" />
+        <View android:id="@+id/syncBorder" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/bg_sync_border" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="14dp"
+            android:layout_marginBottom="22dp"
+            android:background="@drawable/bg_sync_card"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+                <TextView
+                    android:id="@+id/syncLive"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:background="@drawable/bg_sync_live"
+                    android:paddingStart="9dp" android:paddingEnd="9dp" android:paddingTop="3dp" android:paddingBottom="3dp"
+                    android:text="● EN DIRECT" android:textColor="#FFFFFF" android:textSize="11sp" android:textStyle="bold" />
+                <TextView
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_marginStart="10dp"
+                    android:text="Le code récupère votre emploi du temps"
+                    android:textColor="#6EA8FF" android:textSize="14sp" android:textStyle="bold" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/syncMsg"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Connexion à ADE…" android:textColor="#D6DCE5" android:textSize="12.5sp" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="10dp" android:gravity="center_vertical" android:orientation="horizontal">
+                <ProgressBar
+                    android:id="@+id/syncBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="0dp" android:layout_height="10dp" android:layout_weight="1"
+                    android:max="100" android:progress="0"
+                    android:progressDrawable="@drawable/sync_progress" />
+                <TextView
+                    android:id="@+id/syncPct"
+                    android:layout_width="46dp" android:layout_height="wrap_content"
+                    android:gravity="end" android:text="0 %" android:textColor="#6EA8FF" android:textSize="13sp" android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
 
     <!-- Overlay bloquant de mise à jour GitHub (visible dès qu'une nouvelle version est pushée sur main) -->
     <include

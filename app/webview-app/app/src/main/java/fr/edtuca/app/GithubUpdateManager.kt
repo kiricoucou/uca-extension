@@ -187,6 +187,20 @@ object GithubUpdateManager {
      * Télécharge le fichier APK directement depuis GitHub avec suivi de progression,
      * puis déclenche l'installation Android standard (uniquement si le code natif change).
      */
+    /**
+     * Supprime l'APK téléchargé pour la mise à jour (il n'a plus d'utilité une fois installé et prend de la place).
+     * Appelé au démarrage de l'app : après l'installation, c'est la nouvelle version qui se lance et fait le ménage.
+     */
+    fun cleanupDownloadedApks(context: Context) {
+        executor.execute {
+            try {
+                listOfNotNull(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), context.cacheDir).forEach { dir ->
+                    dir.listFiles { f -> f.isFile && f.name.endsWith(".apk", ignoreCase = true) }?.forEach { it.delete() }
+                }
+            } catch (_: Exception) { }
+        }
+    }
+
     fun downloadAndInstallApk(
         activity: Activity,
         apkUrl: String,

@@ -167,6 +167,7 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
                     deliver(mapOf("type" to "UCA_SYNC_RESULT", "ok" to true, "text" to text, "silent" to silent))
                     // Synchro complète en une seule fois : Notes + Absences + Profil étudiant
                     syncAbsencesAndNotes(ctx)
+                    if (PrefsStore.adeUrl(ctx) != null) syncClass(discover = false)
                 }
             }
         }
@@ -236,6 +237,36 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
         } catch (_: Exception) { }
     }
 
+    /** Récupère l'emploi du temps de la classe (ADE) et le livre à la page, qui le lit et l'enregistre. */
+    private fun syncClass(discover: Boolean) {
+        val ctx = context?.applicationContext ?: return
+        ClassSync.run(ctx, discover) { text, error ->
+            if (!isAdded) return@run
+            when {
+                text != null -> deliver(mapOf("type" to "UCA_CLASS_ICS", "ok" to true, "text" to text))
+                error == ClassSync.NEED_LOGIN -> {
+                    // Session CAS perdue : fenêtre de connexion officielle visible, l'utilisateur tape ses codes lui-même.
+                    deliver(mapOf("type" to "UCA_CLASS_ICS", "ok" to false, "error" to "Connecte-toi à ADE dans la fenêtre qui s'ouvre."))
+                    (requireActivity() as MainActivity).openSubScreen(AdeConnectFragment())
+                }
+                error == ClassSync.NEED_PICK -> {
+                    // ADE n'a aucune classe sélectionnée : fenêtre ADE visible où l'utilisateur choisit sa classe une fois.
+                    deliver(mapOf("type" to "UCA_CLASS_ICS", "ok" to false, "error" to "Choisis ta classe dans la fenêtre ADE qui s'ouvre."))
+                    (requireActivity() as MainActivity).openSubScreen(AdeConnectFragment())
+                }
+                error != null -> deliver(mapOf("type" to "UCA_CLASS_ICS", "ok" to false, "error" to error))
+                else -> deliver(mapOf("type" to "UCA_CLASS_ICS", "ok" to false, "error" to "Rien à récupérer pour l'instant : synchronise d'abord ton emploi du temps."))
+            }
+        }
+    }
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        parentFragmentManager.setFragmentResultListener(AdeConnectFragment.RESULT, this) { _, b -> if (b.getBoolean("ok")) syncClass(discover = false) }
+    }
+
+    override fun handleClassRequest() { if (isAdded) { ClassSync.userRequested = true; syncClass(discover = true) } }
+
     /** Resynchronise tout de suite (après une reconnexion). */
     fun resyncNow() { if (isAdded) doResync(silent = false) }
 
@@ -250,6 +281,23 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
     }
 
     /** Appelé depuis UcaBridge (window.__ucaOnEvents côté JS) à chaque rendu du calendrier. */
+    /** Groupes de TD / TP repérés dans les intitulés d'Odin (« Math1 : TDA », « Anglais1 : TP2 ») : les plus fréquents. */
+    private fun detectGroups(ctx: android.content.Context, json: String) {
+        try {
+            val arr = org.json.JSONArray(json)
+            val re = Regex("\\b(TD|TP)\\s?([A-Z0-9]{1,2})\\b")
+            val count = HashMap<String, Int>()
+            for (i in 0 until arr.length()) {
+                val title = arr.optJSONObject(i)?.optString("title").orEmpty()
+                for (m in re.findAll(title)) { val k = m.groupValues[1] + m.groupValues[2]; count[k] = (count[k] ?: 0) + 1 }
+            }
+            val td = count.filterKeys { it.startsWith("TD") }.maxByOrNull { it.value }?.key
+            val tp = count.filterKeys { it.startsWith("TP") }.maxByOrNull { it.value }?.key
+            val groups = listOfNotNull(td, tp)
+            if (groups.isNotEmpty()) PrefsStore.setStudentProfile(ctx, group = groups.joinToString(" · "))
+        } catch (_: Exception) { }
+    }
+
     override fun onEventsUpdated(json: String) {
         if (!isAdded) return
         val ctx = requireContext().applicationContext
@@ -261,6 +309,7 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
             // Liste vide = page pas encore chargée / pas de consentement : ne jamais
             // vider le calendrier du téléphone pour ça.
             if (events.isEmpty()) return@execute
+            detectGroups(ctx, json)
             val hash = events.hashCode()
             if (hash == lastSyncedHash) return@execute
             lastSyncedHash = hash

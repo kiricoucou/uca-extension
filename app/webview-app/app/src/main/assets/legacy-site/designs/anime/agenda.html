@@ -34,6 +34,7 @@ button.primary{background:linear-gradient(90deg,var(--accent),var(--accent2));co
 button:disabled{opacity:.6;cursor:default;}
 .view-tabs{display:flex;gap:2px;background:var(--bg);padding:3px;border-radius:var(--radius-sm);border:1px solid var(--border);}
 .view-tabs button{border:none;background:transparent;padding:7px 11px;}
+@media (max-width:1250px){.view-tabs button{padding:7px 7px;}}
 .view-tabs button.active{background:var(--surface);box-shadow:var(--shadow);font-weight:700;color:var(--accent);}
 .period-label{font-weight:700;font-size:15px;min-width:170px;text-align:center;}
 .spacer{flex:1;}
@@ -156,7 +157,7 @@ main{flex:1;position:relative;overflow:hidden;}
 .mobile-only{display:none;}
 .mobile-menu{position:fixed;display:none;flex-direction:column;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:0 24px 70px rgba(0,0,0,.3);padding:6px;z-index:130;min-width:220px;max-height:80vh;overflow-y:auto;}
 .mobile-menu.open{display:flex;}
-.mobile-menu .mi{border:none;background:transparent;text-align:left;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;}
+.mobile-menu .mi{flex:0 0 auto;min-height:46px;display:flex;align-items:center;justify-content:flex-start;gap:8px;border:none;background:transparent;text-align:left;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600;}
 .mobile-menu .mi:hover{background:var(--accent-light);}
 .mobile-menu .mi.active{background:var(--accent-light);color:var(--accent);font-weight:800;}
 .mobile-menu .msep{height:1px;background:var(--border);margin:6px 2px;}
@@ -523,6 +524,7 @@ html.uca-app .footer-link{display:none;}
   <div class="mobile-menu" id="mobileMenu"></div>
   <div class="brand"><img class="gi brand-gi" src="svg/calendar.svg" alt=""><span class="brand-name">Emploi du temps UCA</span></div>
   <div class="view-tabs" id="viewTabs">
+    <button data-view="list">📋 Liste</button>
     <button data-view="day">☀️ Jour</button>
     <button data-view="3day">📆 3j</button>
     <button data-view="5day">🗓️ 5j</button>
@@ -613,6 +615,7 @@ html.uca-app .footer-link{display:none;}
 <script src="../../core/env.js"></script>
 <script src="../../core/demo.js"></script>
 <script src="../../core/settings.js"></script>
+<script src="../../core/ade.js"></script>
 <script src="../../core/shared.js"></script>
 <script src="../../core/grades.js"></script>
 <script src="../../core/tools.js"></script>

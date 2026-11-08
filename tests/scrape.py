@@ -25,6 +25,24 @@ def check(name, ok, detail=""):
     print(("PASS " if ok else "FAIL ") + name + (f" — {detail}" if detail and not ok else ""))
 
 
+DAY_JS = """(n) => { const d = new Date(); d.setDate(d.getDate() + n); const p = (x) => String(x).padStart(2, '0');
+  return { date: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()), year: d.getFullYear(), month: d.getMonth(), day: d.getDate(), startH: 8, startM: 0, endH: 10, endM: 0, title: 'x', teacher: '', room: '' }; }"""
+JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+
+
+def edt_text(rows):
+    """Texte d'une page d'emploi du temps Odin : rows = [(décalage en jours, '08:00 - 10:00', titre, enseignant, salle)]."""
+    import datetime
+    out, last = ["Emploi du temps"], None
+    for off, slot, title, teacher, room in rows:
+        d = datetime.date.today() + datetime.timedelta(days=off)
+        if d != last:
+            out.append(f"{JOURS[d.weekday()]} {d.day} {MOIS[d.month - 1]} {d.year}"); last = d
+        out += [slot, title, f"Enseignants : {teacher}", f"Salle : {room}"]
+    return chr(10).join(out)
+
+
 def fx(name):
     return (FIX / name).read_text(encoding="utf-8")
 
@@ -127,9 +145,23 @@ def main():
         sw.evaluate("() => syncSucceeded('Lundi 5 janvier 2099 Semaine sans cours', true)")
         st = sw.evaluate("() => chrome.storage.local.get(['uca_events', 'uca_scrape_issues'])")
         check("semaine vide légitime (rien à venir avant) : emploi du temps remplacé", st["uca_events"] == [] and "edt" not in st["uca_scrape_issues"], str(st)[:300])
-        sw.evaluate("(t) => syncSucceeded(t, true)", fx("odin_edt.txt"))
+        # --- emploi du temps normal (dates proches d'aujourd'hui : l'historique est limité à 400 jours)
+        sw.evaluate("() => chrome.storage.local.set({ uca_events: [] })")
+        sw.evaluate("(t) => syncSucceeded(t, true)", edt_text([(1, "08:00 - 10:00", "R1.01 TD Initiation", "Martin Alice", "B1-12"), (1, "10:15 - 12:15", "R1.02 CM Systèmes", "Durand Paul", "Amphi A"), (2, "14:00 - 16:00", "SAE1.01 TP Projet", "Martin Alice", "B2-03")]))
         st = sw.evaluate("() => chrome.storage.local.get(['uca_events'])")
         check("EDT normal : 3 cours enregistrés", len(st["uca_events"]) == 3, str(len(st["uca_events"])))
+        # --- les jours passés restent consultables : la synchro ne remplace que aujourd'hui et le futur
+        past = sw.evaluate(DAY_JS, -1); old_tomorrow = sw.evaluate(DAY_JS, 1)
+        past.update(title="HIER-ANCIEN", startH=9, endH=11); old_tomorrow.update(title="DEMAIN-ANCIEN", startH=7, endH=8)
+        sw.evaluate("(evs) => chrome.storage.local.set({ uca_events: evs })", [past, old_tomorrow])
+        sw.evaluate("(t) => syncSucceeded(t, true)", edt_text([(1, "08:00 - 10:00", "R1.01 TD Initiation", "Martin Alice", "B1-12"), (2, "14:00 - 16:00", "SAE1.01 TP Projet", "Martin Alice", "B2-03")]))
+        titles = [e["title"] for e in sw.evaluate("() => chrome.storage.local.get('uca_events').then(d => d.uca_events)")]
+        check("synchro : le jour passé (anciennes synchros) est conservé", "HIER-ANCIEN" in titles, str(titles))
+        check("synchro : demain est remplacé par la nouvelle synchro", "DEMAIN-ANCIEN" not in titles and any("R1.01" in t for t in titles) and any("SAE1.01" in t for t in titles), str(titles))
+        merged = sw.evaluate("""() => { const e = (n, t) => { const d = new Date(); d.setDate(d.getDate() + n); const p = (x) => String(x).padStart(2, '0');
+            return { date: d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()), year: d.getFullYear(), month: d.getMonth(), day: d.getDate(), startH: 8, startM: 0, endH: 9, endM: 0, title: t, teacher: '', room: '' }; };
+          return UCA_mergeSchedule([e(-3, 'VU'), e(0, 'AUJ-OLD'), e(2, 'FUT-OLD'), e(-500, 'TROP-VIEUX')], [e(0, 'AUJ-NEW'), e(3, 'FUT-NEW'), e(-3, 'VU-REMPLACE'), e(-1, 'HIER-NOUVEAU')]).map((x) => x.title); }""")
+        check("fusion : passé gardé, aujourd'hui et futur remplacés, jour passé inconnu ajouté, trop ancien retiré", merged == ["VU", "HIER-NOUVEAU", "AUJ-NEW", "FUT-NEW"], str(merged))
         ctx.close()
     print(f"\n{sum(results)}/{len(results)} vérifications OK")
     sys.exit(0 if all(results) else 1)

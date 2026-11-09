@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'">
+<title>Télécharger My UCA pour Android</title>
+<meta name="description" content="Télécharge l'application Android My UCA : ton emploi du temps, tes notes et les lieux de l'Université Clermont Auvergne. Gratuit, sans pub, sans compte.">
+<meta property="og:title" content="My UCA pour Android">
+<meta property="og:description" content="Emploi du temps, notes, lieux : l'app étudiante non officielle de l'UCA.">
+<meta property="og:image" content="https://kiricoucou.github.io/uca-extension/telecharger/shots/agenda-anime.webp">
+<meta name="theme-color" content="#121418">
+<link rel="icon" type="image/png" href="../app/icons/icon-192.png">
+<style>
+:root{--bg:#0d0f13;--surface:#171a20;--border:#262a33;--text:#f2f3f5;--dim:#9aa0ab;--accent:#18b7b0;--accent2:#2fd6cd;--on:#05211f;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:var(--accent2)}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+.blob{position:fixed;border-radius:50%;filter:blur(90px);opacity:.35;z-index:-1;pointer-events:none;animation:float 18s ease-in-out infinite alternate}
+.b1{width:520px;height:520px;background:#18b7b0;top:-160px;left:-140px}
+.b2{width:460px;height:460px;background:#6d4aff;bottom:-180px;right:-120px;animation-delay:-6s}
+@keyframes float{to{transform:translate(80px,60px) scale(1.15)}}
+
+header{display:flex;align-items:center;gap:10px;padding:18px 0;font-weight:800;font-size:18px}
+header img{width:36px;height:36px;border-radius:10px}
+header a.small{margin-left:auto;font-weight:600;font-size:14px;color:var(--dim);text-decoration:none}
+header a.small:hover{color:var(--text)}
+
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;padding:30px 0 70px}
+.tag{display:inline-flex;gap:8px;align-items:center;padding:6px 12px;border-radius:20px;background:rgba(47,214,205,.12);color:var(--accent2);font-size:13px;font-weight:700}
+.tag i{width:8px;height:8px;border-radius:50%;background:var(--accent2);animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.25}}
+h1{font-size:clamp(36px,6vw,60px);line-height:1.05;margin:18px 0 16px;letter-spacing:-.02em}
+h1 span{color:var(--accent2)}
+.lead{color:var(--dim);font-size:18px;max-width:520px}
+.cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:28px}
+.dl{position:relative;display:inline-flex;align-items:center;gap:12px;padding:16px 26px;border-radius:16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:var(--on);font-weight:800;font-size:18px;text-decoration:none;box-shadow:0 10px 24px rgba(0,0,0,.4);transition:transform .2s,box-shadow .2s}
+.dl::after{content:"";position:absolute;inset:-2px;border-radius:inherit;border:2px solid var(--accent2);opacity:0;animation:ring 2.4s infinite}
+@keyframes ring{0%{opacity:.7;transform:scale(1)}70%,100%{opacity:0;transform:scale(1.12)}}
+.dl:hover{transform:translateY(-3px);box-shadow:0 16px 32px rgba(0,0,0,.5)}
+.dl svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.dl small{display:block;font-size:12.5px;font-weight:600;opacity:.8}
+.ghost{padding:15px 20px;border-radius:16px;border:1px solid var(--border);color:var(--text);text-decoration:none;font-weight:700;transition:background .2s}
+.ghost:hover{background:var(--surface)}
+.meta{margin-top:16px;color:var(--dim);font-size:13.5px}
+
+.phone{position:relative;justify-self:center;width:290px;aspect-ratio:390/844;border-radius:44px;padding:11px;background:#05060a;box-shadow:0 0 0 2px #2a2e37,0 40px 80px rgba(0,0,0,.6);animation:bob 6s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-14px) rotate(-1deg)}}
+.phone::before{content:"";position:absolute;top:20px;left:50%;width:84px;height:22px;transform:translateX(-50%);background:#05060a;border-radius:12px;z-index:3}
+.screen{position:relative;width:100%;height:100%;border-radius:34px;overflow:hidden;background:#121418}
+.screen img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;opacity:0;transform:scale(1.04);transition:opacity .8s,transform 1.2s}
+.screen img.on{opacity:1;transform:none}
+.dots{display:flex;gap:8px;justify-content:center;margin-top:18px}
+.dots button{width:9px;height:9px;padding:0;border-radius:5px;border:0;background:var(--border);cursor:pointer;transition:width .3s,background .3s}
+.dots button.on{width:26px;background:var(--accent2)}
+
+section{padding:60px 0}
+h2{font-size:clamp(26px,4vw,38px);margin:0 0 10px;letter-spacing:-.01em}
+.sub{color:var(--dim);margin:0 0 34px;max-width:620px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px;transition:transform .25s,border-color .25s}
+.card:hover{transform:translateY(-4px);border-color:rgba(47,214,205,.5)}
+.card .ic{font-size:28px}
+.card h3{margin:10px 0 6px;font-size:18px}
+.card p{margin:0;color:var(--dim);font-size:15px}
+
+.gallery{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;padding:10px 4px 26px;scrollbar-width:thin}
+.shot{flex:none;width:230px;scroll-snap-align:center;text-align:center}
+.shot img{width:100%;border-radius:26px;border:1px solid var(--border);box-shadow:0 20px 40px rgba(0,0,0,.45);transition:transform .3s}
+.shot:hover img{transform:translateY(-6px) rotate(-1deg)}
+.shot b{display:block;margin-top:12px;font-size:15px}
+.shot span{color:var(--dim);font-size:13px}
+
+.steps{counter-reset:s;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.step{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px 22px 22px 70px}
+.step::before{counter-increment:s;content:counter(s);position:absolute;left:20px;top:20px;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:rgba(47,214,205,.15);color:var(--accent2)}
+.step h3{margin:4px 0 6px;font-size:17px}
+.step p{margin:0;color:var(--dim);font-size:14.5px}
+
+.final{text-align:center;background:linear-gradient(135deg,rgba(24,183,176,.18),rgba(109,74,255,.14));border:1px solid var(--border);border-radius:28px;padding:50px 20px}
+.final .cta{justify-content:center}
+details{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px 20px;margin-bottom:10px}
+summary{cursor:pointer;font-weight:700}
+details p{color:var(--dim);margin:10px 0 0}
+footer{padding:40px 0 60px;color:var(--dim);font-size:13.5px;text-align:center}
+
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+.reveal.in{opacity:1;transform:none}
+
+@media (max-width:860px){
+  .hero{grid-template-columns:1fr;text-align:center;padding-top:10px}
+  .lead{margin:0 auto}.cta{justify-content:center}
+  .phone{width:250px;order:-1}
+  .grid,.steps{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="blob b1"></div><div class="blob b2"></div>
+<div class="wrap">
+  <header><img src="../app/icons/icon-192.png" alt="">My UCA<a class="small" href="../">Site de l'extension →</a></header>
+
+  <div class="hero">
+    <div>
+      <div class="tag"><i></i>Application Android · <span id="ver">dernière version</span></div>
+      <h1>Toute ta fac<br><span>dans ta poche.</span></h1>
+      <p class="lead">Emploi du temps, notes, absences, lieux du campus et statut des services de l'Université Clermont Auvergne, dans une seule app. Gratuite, sans pub, sans compte à créer.</p>
+      <div class="cta">
+        <a class="dl" id="dlTop" href="https://github.com/kiricoucou/uca-extension/raw/main/EdtUca.apk" download>
+          <svg viewBox="0 0 24 24"><path d="M12 3v12M6 11l6 6 6-6M4 21h16"/></svg>
+          <span>Télécharger l'APK<small id="size">Android 7 ou plus récent</small></span>
+        </a>
+        <a class="ghost" href="#installer">Comment l'installer ?</a>
+      </div>
+      <p class="meta">Application non officielle, faite par un étudiant. Code source ouvert sur <a href="https://github.com/kiricoucou/uca-extension">GitHub</a>.</p>
+    </div>
+    <div>
+      <div class="phone"><div class="screen" id="screen">
+        <img class="on" src="shots/agenda-anime.webp" alt="Agenda du jour">
+        <img src="shots/home.webp" alt="Accueil avec le statut des services" loading="lazy">
+        <img src="shots/agenda-carnet.webp" alt="Agenda, design Carnet" loading="lazy">
+        <img src="shots/lieux.webp" alt="Carte des lieux du campus" loading="lazy">
+        <img src="shots/agenda-professionnel.webp" alt="Agenda, design Professionnel" loading="lazy">
+      </div></div>
+      <div class="dots" id="dots"></div>
+    </div>
+  </div>
+
+  <section class="reveal">
+    <h2>Ce que fait l'app</h2>
+    <p class="sub">Elle se connecte avec ton compte UCA habituel et récupère tes infos directement depuis ton téléphone. Rien n'est envoyé à un serveur tiers.</p>
+    <div class="grid">
+      <div class="card"><div class="ic">📅</div><h3>Emploi du temps</h3><p>Vue liste du jour, jour en blocs, 3 jours, semaine et mois. Glisse sur le côté pour changer de jour.</p></div>
+      <div class="card"><div class="ic">📊</div><h3>Notes et absences</h3><p>Tes notes Odin avec moyennes, graphique d'évolution et alerte quand une nouvelle note arrive.</p></div>
+      <div class="card"><div class="ic">🔔</div><h3>Notifications</h3><p>Cours déplacé, salle changée ou annulé : tu es prévenu. Rappel avant chaque cours si tu le veux.</p></div>
+      <div class="card"><div class="ic">📍</div><h3>Lieux du campus</h3><p>BU, restos CROUS, IUT, écoles : carte et itinéraire en un geste avec Google Maps, Waze ou OSM.</p></div>
+      <div class="card"><div class="ic">🟢</div><h3>Statut des services</h3><p>Odin, CAS, Moodle ou la messagerie en panne ? L'accueil te le dit avant que tu perdes ton temps.</p></div>
+      <div class="card"><div class="ic">🎨</div><h3>4 designs</h3><p>Anime, Professionnel, Bulletin ou Carnet : mêmes fonctions, choisis le style qui te plaît.</p></div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2>Captures d'écran</h2>
+    <p class="sub">Exemples réalisés avec des données de démonstration.</p>
+    <div class="gallery">
+      <div class="shot"><img src="shots/agenda-anime.webp" alt="" loading="lazy"><b>Agenda</b><span>Design Anime</span></div>
+      <div class="shot"><img src="shots/home.webp" alt="" loading="lazy"><b>Accueil</b><span>Statut en direct</span></div>
+      <div class="shot"><img src="shots/etudes.webp" alt="" loading="lazy"><b>Études</b><span>Prochains cours, scolarité</span></div>
+      <div class="shot"><img src="shots/lieux.webp" alt="" loading="lazy"><b>Lieux</b><span>Carte du campus</span></div>
+      <div class="shot"><img src="shots/agenda-carnet.webp" alt="" loading="lazy"><b>Agenda</b><span>Design Carnet</span></div>
+      <div class="shot"><img src="shots/agenda-professionnel.webp" alt="" loading="lazy"><b>Agenda</b><span>Design Professionnel</span></div>
+      <div class="shot"><img src="shots/agenda-bulletin.webp" alt="" loading="lazy"><b>Agenda</b><span>Design Bulletin</span></div>
+    </div>
+  </section>
+
+  <section class="reveal" id="installer">
+    <h2>Installer en 1 minute</h2>
+    <p class="sub">L'app n'est pas sur le Play Store : Android demande donc une autorisation une seule fois.</p>
+    <div class="steps">
+      <div class="step"><h3>Télécharge</h3><p>Appuie sur « Télécharger l'APK » depuis ton téléphone Android.</p></div>
+      <div class="step"><h3>Autorise</h3><p>Ouvre le fichier. Si Android le demande, autorise ton navigateur à installer des applications.</p></div>
+      <div class="step"><h3>Connecte-toi</h3><p>Ouvre My UCA et connecte-toi sur la page officielle de l'UCA. Les mises à jour arriveront toutes seules.</p></div>
+    </div>
+  </section>
+
+  <section class="reveal">
+    <h2>Questions</h2>
+    <details><summary>Est-ce sûr ?</summary><p>L'APK est signé, et le code est public sur GitHub. Ton mot de passe est tapé sur la vraie page de connexion de l'UCA : l'app ne le voit pas et ne l'enregistre pas.</p></details>
+    <details><summary>J'ai un iPhone</summary><p>Utilise l'app web : ouvre <a href="../app/">la version web</a> dans Safari, puis « Partager » et « Sur l'écran d'accueil ».</p></details>
+    <details><summary>Comment avoir les mises à jour ?</summary><p>L'app vérifie toute seule s'il existe une nouvelle version et te propose de l'installer.</p></details>
+    <details><summary>C'est officiel ?</summary><p>Non. C'est un projet étudiant indépendant, sans lien avec l'Université Clermont Auvergne.</p></details>
+  </section>
+
+  <section class="reveal">
+    <div class="final">
+      <h2>Prêt ?</h2>
+      <p class="sub" style="margin:0 auto 6px">Gratuit, sans pub, sans compte à créer.</p>
+      <div class="cta"><a class="dl" href="https://github.com/kiricoucou/uca-extension/raw/main/EdtUca.apk" download><svg viewBox="0 0 24 24"><path d="M12 3v12M6 11l6 6 6-6M4 21h16"/></svg><span>Télécharger My UCA</span></a></div>
+    </div>
+  </section>
+
+  <footer>My UCA · application non officielle · <a href="../confidentialite.html">Confidentialité</a> · <a href="../nouveautes.html">Nouveautés</a></footer>
+</div>
+<script>
+(function () {
+  var imgs = document.querySelectorAll("#screen img"), dots = document.getElementById("dots"), i = 0, timer;
+  imgs.forEach(function (_, k) {
+    var b = document.createElement("button"); b.setAttribute("aria-label", "Capture " + (k + 1));
+    b.onclick = function () { show(k); restart(); }; dots.appendChild(b);
+  });
+  function show(k) {
+    imgs[i].classList.remove("on"); dots.children[i].classList.remove("on");
+    i = k; imgs[i].classList.add("on"); dots.children[i].classList.add("on");
+  }
+  function restart() { clearInterval(timer); timer = setInterval(function () { show((i + 1) % imgs.length); }, 3200); }
+  show(0); restart();
+
+  var io = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
+  }, { threshold: .12 }) : null;
+  document.querySelectorAll(".reveal").forEach(function (el) { io ? io.observe(el) : el.classList.add("in"); });
+
+  fetch("../version.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (v) {
+    if (v && /^[0-9.]+$/.test(v.version)) document.getElementById("ver").textContent = "version " + v.version;
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>

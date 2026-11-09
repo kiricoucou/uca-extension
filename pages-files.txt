@@ -31,3 +31,4 @@ designs
 en
 icons
 vendor
+telecharger

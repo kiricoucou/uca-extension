@@ -131,7 +131,8 @@ object GithubUpdateManager {
                     }
 
                     // On a besoin de retélécharger l'APK uniquement si le code natif a changé
-                    val isNativeApkRequired = minApkVersionCode > localVersionCode
+                    // Nouvel APK publié (versionCode plus grand) ou APK trop ancien : proposer l'installation.
+                    val isNativeApkRequired = remoteVersionCode > localVersionCode || minApkVersionCode > localVersionCode
                     val isOtaNeeded = false // voir downloadAndApplyOtaUpdate
                     val isNewer = isNativeApkRequired || isOtaNeeded
                     val isOtaAvailable = isOtaNeeded && !isNativeApkRequired

@@ -43,6 +43,8 @@ def main():
     check("aucun fichier de l'ancien système (github-updater, apk)", not [n for n in names if "github-updater" in n or n.endswith(".apk")])
     v = json.loads((ROOT / "version.json").read_text(encoding="utf-8"))
     check("version.json annonce ce paquet", v.get("ota_version") == meta["bundle_version"] and v.get("ota_base_version_code") == code, str({k: v.get(k) for k in ("ota_version", "ota_base_version_code")}))
+    # Les APK déjà installés ne proposent le nouvel APK que si min_apk_version_code dépasse leur versionCode.
+    check("version.json : min_apk_version_code = versionCode publié (anciens APK invités à se mettre à jour)", v.get("min_apk_version_code") == code == v.get("version_code"), str({k: v.get(k) for k in ("min_apk_version_code", "version_code")}))
     check("version.json ne donne plus d'adresse de téléchargement", not any(k.endswith("_url") and "ota" in k for k in v))
     if PROPS.exists():
         check("signature valable (clé de l'APK)", verify(zp, sp))

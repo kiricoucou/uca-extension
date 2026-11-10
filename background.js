@@ -3,6 +3,7 @@ if (typeof UCA_getSettings === "undefined" && typeof importScripts === "function
 if (typeof UCA_GRADES === "undefined" && typeof importScripts === "function") importScripts("core/grades.js");
 if (typeof UCA_STATUS === "undefined" && typeof importScripts === "function") importScripts("core/status.js");
 if (typeof UCA_ADE === "undefined" && typeof importScripts === "function") importScripts("core/ade.js");
+if (typeof UCA_ACTIVITY === "undefined" && typeof importScripts === "function") importScripts("core/activity.js");
 
 const EDT_URL = "https://odin.iut.uca.fr/etudiants/?p=edt";
 const ABSENCES_URL = "https://odin.iut.uca.fr/etudiants/?p=absences";
@@ -43,6 +44,19 @@ function looksLikeServiceError(text) {
 function notify(id, options) {
   if (typeof chrome.notifications === "undefined" || !chrome.notifications.create) return;
   try { chrome.notifications.create(id, options); } catch (e) { /* une notification ratée ne doit jamais casser une synchro */ }
+}
+
+/* Synchro lancée par l'utilisateur (bouton) : il regarde l'écran, pas de notification système, tout va dans la
+   cloche de l'agenda. Synchro automatique (alarme) : une seule notification groupée, cours à venir seulement. */
+let manualSync = false;
+
+/* Journal d'activité (cloche de l'agenda) : on y garde tout, y compris les changements sur des cours passés. */
+async function logActivity(entries) {
+  if (!entries.length) return;
+  const { uca_activity } = await chrome.storage.local.get("uca_activity");
+  const all = UCA_ACTIVITY.merge(uca_activity, entries, Date.now());
+  await chrome.storage.local.set({ uca_activity: all });
+  broadcast({ type: "UCA_ACTIVITY", activity: all });
 }
 
 function broadcast(msg) {
@@ -701,6 +715,8 @@ async function checkAbsenceAlert(absences) {
   if (!th || n < th) { if (last) await chrome.storage.local.remove("uca_absence_alert"); return; }
   if (n <= last) return;
   await chrome.storage.local.set({ uca_absence_alert: { count: n, at: Date.now() } });
+  await logActivity([{ id: `absence|${Date.now()}`, at: Date.now(), kind: "absence", type: "absence", title: `${n} absence${n > 1 ? "s" : ""} non justifiée${n > 1 ? "s" : ""}`, text: `Le seuil d'alerte (${th}) est atteint.` }]);
+  if (manualSync) return;
   const design = await currentDesign();
   notify("uca_absence|" + Date.now(), {
     type: "basic",
@@ -801,6 +817,7 @@ async function syncSucceeded(text, silent) {
 /* mode "background" (synchro automatique) : uniquement la reconnexion silencieuse,
    jamais la fenêtre CAS. Session expirée : trySilentResync met uca_session_expired. */
 async function handleSync(mode) {
+  manualSync = mode !== "background";
   let text = null;
   if (mode === "resync" || mode === "background") {
     try {
@@ -1175,7 +1192,12 @@ async function applyEdtChanges(prev, next) {
     && (c.type === "cancelled" ? !nextKeys.has(c.key) : nextKeys.has(c.key)));
   const all = kept.concat(found.map((c) => ({ ...c, at: now })));
   await chrome.storage.local.set({ uca_edt_changes: all });
-  if (found.length) await notifyEdtChanges(found);
+  await logActivity(found.filter((c) => c.ev).map((c, i) => ({
+    id: `edt|${now}|${i}|${c.key}`, at: now, kind: "edt", type: c.type, day: c.ev.date, past: eventEnd(c.ev) <= now,
+    title: `${CHANGE_LABELS_BG[c.type]} : ${c.ev.title}`,
+    text: [fmtEvShort(c.ev)].concat(c.type !== "added" && c.type !== "cancelled" && c.details ? c.details : []).join(" — "),
+  })));
+  if (found.length && !manualSync) await notifyEdtChanges(found);
   return found;
 }
 
@@ -1203,6 +1225,10 @@ async function notifyEdtChanges(all) {
 }
 
 async function notifyNewGrades(list) {
+  const fmtG = (n) => String(n).replace(".", ",");
+  const at = Date.now();
+  await logActivity(list.map((g, i) => ({ id: `grade|${at}|${i}`, at, kind: "grade", type: "grade", title: "Nouvelle note", text: `${g.label} : ${fmtG(g.note)}` })));
+  if (manualSync) return;
   const settings = await UCA_getSettings();
   if (!settings.notifyNewGrades) return;
   const design = await currentDesign();

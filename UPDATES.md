@@ -55,6 +55,13 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.11 — app Android 1.4.10 : cloche « Activité », fini les rafales de notifications
+
+- **Cloche « Activité » dans l'agenda** (les 4 designs, entrée « Activité » dans le menu du téléphone) : à chaque synchronisation, tout ce qui s'est passé est gardé 30 jours et relisible : cours ajouté, annulé, déplacé, salle ou enseignant changé, nouvelle note, seuil d'absences atteint. Pastille rouge avec le nombre de nouveautés, remise à zéro à l'ouverture ; un clic sur un changement ouvre le jour concerné ; « Tout effacer » vide le journal. Les changements sur des cours déjà passés restent lisibles, marqués « passé », mais ne comptent pas comme nouveaux.
+- **Notifications** : quand tu cliques sur « Synchroniser », plus aucune notification système (tu regardes l'écran, tout est dans la cloche). La synchro automatique envoie une seule notification groupée, uniquement pour les cours à venir.
+- **Mise à jour de l'APK** : `version.json` annonçait un minimum trop bas, donc une app en 1.4.8 ne proposait jamais la 1.4.9. Corrigé (et testé) : les anciennes versions sont invitées à installer le nouvel APK.
+- Données : `uca_activity` et `uca_activity_seen` sont exportées/importées avec le reste (téléphone, partage) et effacées par « Réinitialiser ».
+
 ## 1.46.10 — app Android 1.4.9 : app web identique à l'app Android, plus aucune donnée inventée
 
 - **App web installable (Android et iPhone)** : même structure que l'app Android, barre du bas Accueil / Études / Agenda / Lieux / Compte, sous-écrans Notifications, Préférences, Scolarité, Stage et emploi, Bibliothèques, Transports, mêmes couleurs (`app/shell.html`). Accueil : statut réel des services et raccourcis ; Études : prochains cours ; Lieux : carte (avec accord) et itinéraires Google Maps / Waze / OpenStreetMap (et Plans sur iPhone) ; Compte : photo de profil gardée sur l'appareil, groupes, préférences, effacement des données ; Notifications : changements d'emploi du temps et nouvelles notes.

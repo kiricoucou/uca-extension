@@ -31,9 +31,13 @@ def main():
     for src in candidates():
         rel = src.relative_to(ROOT).as_posix()
         dst = SITE / rel
-        if rel in EXCLUDE or not dst.exists():
+        if rel in EXCLUDE:
             continue
-        if src.read_bytes() != dst.read_bytes():
+        if not dst.exists():
+            if not rel.startswith("core/"):
+                continue   # pages des designs : seulement celles déjà dans l'app
+            # nouveau fichier du core : sans lui l'agenda de l'app serait cassé (les pages le chargent)
+        if not dst.exists() or src.read_bytes() != dst.read_bytes():
             changed.append(rel)
             if not check:
                 shutil.copyfile(src, dst)

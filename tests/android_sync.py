@@ -60,7 +60,20 @@ def edt_text(rows):
     return chr(10).join(out)
 
 
+def assets_complete():
+    """Toute page de design livrée dans l'APK doit trouver ses scripts locaux dans les assets (sinon l'agenda est cassé)."""
+    import re
+    site = Path(__file__).resolve().parent.parent / "app" / "webview-app" / "app" / "src" / "main" / "assets" / "legacy-site"
+    missing = []
+    for html in sorted(site.glob("designs/*/agenda.html")):
+        for src in re.findall(r'<script src="([^"]+)"', html.read_text(encoding="utf-8")):
+            if not src.startswith(("http", "//")) and not (html.parent / src).resolve().exists():
+                missing.append(f"{html.parent.name}: {src}")
+    check("APK : tous les scripts des pages de design sont dans les assets", not missing, ", ".join(missing))
+
+
 def main():
+    assets_complete()
     port = free_port()
     server = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(ROOT)],
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)

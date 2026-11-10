@@ -14,7 +14,8 @@ OPTIONAL = {"notesAvg", "moreBtn", "morePanel", "moreWrap", "updateOverlay", "up
             "updApplyBtn", "designBtn", "settingsBtn", "noteArea", "lbImg", "ucaSheetBackdrop", "phoneBtn", "phoneOverlay", "phoneClose", "phoneQrApp", "phoneFile", "phoneStart", "phoneQrData", "phoneCounter",
             "subjectColor", "nextCourse", "phoneShare", "phoneLink", "phoneLinkFallback", "phoneShareInfo", "appImportBtn",
             "gdmBody", "gdmTitle", "gradeDetailOverlay", "weekSubLabel",
-            "tasksBtn", "tasksPanel", "tasksWrap"}  # ces trois-là sont créés par le core (setupTasksUI)
+            "tasksBtn", "tasksPanel", "tasksWrap",
+            "bellBtn", "bellPanel", "bellWrap"}  # créés par le core (setupTasksUI, setupBellUI)
 VIEW_IDS = {"dayView", "threeDayView", "fiveDayView", "sixDayView", "weekView", "monthView"}
 
 

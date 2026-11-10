@@ -27,6 +27,7 @@ function connectClass() {
 }
 let simScope = "", simTarget = 10, chartScope = "overview";
 let notesSeen = {};
+let activity = [], activitySeenAt = 0; // journal d'activité (cloche) : changements d'EDT, nouvelles notes, absences
 let edtChanges = new Map(); // eventKey -> changement (ajouté / déplacé / salle) ; annulés : fantômes
 let cancelledGhosts = [];
 let settings = Object.assign({}, UCA_SETTINGS_DEFAULTS);
@@ -688,6 +689,7 @@ function buildMobileMenu() {
   m.appendChild(menuButton("mi", "🎓 Notes & Moyennes" + (avg != null ? ` — moyenne ${fmtNote(avg)}` : ""), () => openToolPanel("notesPanel", true)));
   m.appendChild(menuButton("mi", "📊 " + escapeHtml(absences ? `Absences : ${plural(absences.declarees, "déclarée")}, ${plural(absences.nonJustifiees, "non justifiée")}` : "Absences"), () => openToolPanel("absencesPanel", true)));
   ((absences && absences.declarations) || []).slice(0, 3).forEach(d => { const n = declarationNode(d); n.classList.add("m-decl"); m.appendChild(n); });
+  { const nb = UCA_ACTIVITY.unread(activity, activitySeenAt).length; m.appendChild(menuButton("mi", "🔔 Activité" + (nb ? ` (${nb})` : ""), () => openToolPanel("bellPanel", true))); }
   m.appendChild(menuButton("mi", "📝 Devoirs et examens" + (UCA_TASKS.openCount(tasks) ? ` (${UCA_TASKS.openCount(tasks)})` : ""), () => openToolPanel("tasksPanel", true)));
   m.appendChild(menuButton("mi", "🔗 Liens utiles (accueil, aide…)", () => openToolPanel("linksPanel", true)));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
@@ -839,7 +841,7 @@ async function updatePinnedNext() {
   } catch (e) { /* notification indisponible : sans conséquence */ }
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_class_events", "uca_my_groups", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_class_events", "uca_my_groups", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks", "uca_activity", "uca_activity_seen"], (data) => {
     // Hors Android natif (qui a sa propre synchro CAS en arrière-plan) : sans données, écran d'import.
     if (window.UCA_APP && !window.AndroidUCA && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) {
       location.href = chrome.runtime.getURL("app/import.html");
@@ -848,6 +850,7 @@ function loadFromStorage() {
     settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, data.uca_settings);
     subjectColors = data.uca_subject_colors || {};
     tasks = UCA_TASKS.sanitize(data.uca_tasks);
+    activity = UCA_ACTIVITY.sanitize(data.uca_activity); activitySeenAt = Number(data.uca_activity_seen) || 0; renderBellButton();
     personalEvents = (data.uca_events || []).map(ev => ({ ...ev, color: colorOf(ev.title) }));
     classEvents = (data.uca_class_events || []).map(ev => ({ ...ev, color: colorOf(ev.title) }));
     classGroups = data.uca_my_groups || [];
@@ -1601,6 +1604,35 @@ function displayedDays() {
   st.textContent = "@media (min-width:821px) and (max-width:1180px){ #tasksBtn .li-txt{display:none;} #tasksBtn{padding:0 10px;} header{column-gap:5px;} }";
   document.head.appendChild(st);
 })();
+/* Cloche : journal de ce qui s'est passé à chaque synchro (cours modifiés, nouvelles notes, absences), même place
+   dans les 4 designs (juste avant « Synchroniser »). Les changements sur des cours déjà passés y sont lisibles
+   mais ne comptent pas comme non lus. */
+(function setupBellUI() {
+  const before = $("syncBtn"), tpl = $("linksWrap");
+  if (!before || !tpl || $("bellWrap")) return;
+  const wrap = tpl.cloneNode(false); wrap.id = "bellWrap";
+  const btn = document.createElement("button"); btn.id = "bellBtn"; btn.type = "button"; btn.title = "Ce qui s'est passé à chaque synchronisation";
+  const panel = document.createElement("div"); panel.className = "absences-panel tool-panel"; panel.id = "bellPanel";
+  wrap.append(btn, panel);
+  before.before(wrap);
+  const st = document.createElement("style");
+  st.textContent = "@media (min-width:821px){ #bellBtn{padding:0 9px;min-width:0;} #bellBtn .filter-count{margin-left:2px;} } @media (min-width:821px) and (max-width:1180px){ #filterBtn>:is(.ic,.gi),#exportBtn>:is(.ic,.gi),#designBtn>:is(.ic,.gi){display:none;} }";
+  document.head.appendChild(st);
+})();
+function renderBellButton() {
+  const btn = $("bellBtn"); if (!btn) return;
+  const n = UCA_ACTIVITY.unread(activity, activitySeenAt).length;
+  btn.textContent = "🔔";
+  if (n) { const c = document.createElement("span"); c.className = "filter-count"; c.textContent = n > 99 ? "99+" : String(n); btn.append(" ", c); }
+  btn.setAttribute("aria-label", n ? `Activité, ${n} nouveau${n > 1 ? "x" : ""}` : "Activité");
+}
+function buildBellPanel(p) {
+  UCA_ACTIVITY.buildPanel(p, { log: activity, seenAt: activitySeenAt,
+    onOpenDay: (day) => { const [y, m, d] = day.split("-").map(Number); p.classList.remove("open"); if ($("ucaSheetBackdrop")) $("ucaSheetBackdrop").hidden = true; goToDate(new Date(y, m - 1, d)); },
+    onClear: () => { activity = []; chrome.storage.local.set({ uca_activity: [] }); renderBellButton(); buildBellPanel(p); } });
+  // Lu : les pastilles « nouveau » restent affichées dans ce panneau, le compteur repart à zéro.
+  if (UCA_ACTIVITY.unread(activity, activitySeenAt).length) chrome.storage.local.set({ uca_activity_seen: Date.now() });
+}
 function renderTasksButton() {
   const btn = $("tasksBtn"); if (!btn) return;
   const n = UCA_TASKS.openCount(tasks);
@@ -1614,6 +1646,7 @@ function saveTasks(list) {
 const TOOL_PANELS = {
   tasksPanel: { wrap: "tasksWrap", build: (p) => UCA_TASKS.buildPanel(p, { events, tasks, save: saveTasks, openEvent: goToEvent, openTask: goToTask,
     noteItems: events.filter((ev) => notes[eventKey(ev)]).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 40).map((ev) => ({ ev, text: String(notes[eventKey(ev)]) })) }) },
+  bellPanel: { wrap: "bellWrap", build: (p) => buildBellPanel(p) },
   notesPanel: { wrap: "notesWrap", build: () => {} },
   absencesPanel: { wrap: "absencesWrap", build: () => {} },
   filterPanel: { wrap: "filterWrap", build: (p) => UCA_TOOLS.buildFilterPanel(p, personalEvents, { classCount: classEvents.length, classGroups, classBusy, classError, onConnect: connectClass }) },
@@ -1626,6 +1659,7 @@ function ensurePanelHeader(panel, id) {
     notesPanel: "📊 Relevé de Notes",
     absencesPanel: "⚠️ Mes Absences",
     tasksPanel: "📝 Devoirs & Examens",
+    bellPanel: "🔔 Activité",
     filterPanel: "🔍 Filtres de Cours",
     exportPanel: "📅 Exporter l'Agenda",
     linksPanel: "🔗 Liens Universitaires"
@@ -1669,7 +1703,7 @@ function renderFilterButton() {
   $("filterBtn").innerHTML = D.icon("filter") + '<span class="btn-label">Filtres</span>' + (n ? ` <span class="filter-count">${n}</span>` : "");
   $("filterBtn").classList.toggle("active", n > 0);
 }
-["filterPanel", "exportPanel", "linksPanel", "tasksPanel"].forEach(id => {
+["filterPanel", "exportPanel", "linksPanel", "tasksPanel", "bellPanel"].forEach(id => {
   const btn = $(id.replace("Panel", "Btn"));
   if (!btn) return;
   btn.addEventListener("click", (e) => { e.stopPropagation(); openToolPanel(id, false); });
@@ -1919,6 +1953,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (changes.uca_my_groups) { classGroups = changes.uca_my_groups.newValue || []; }
   if (changes.uca_notes) { notes = changes.uca_notes.newValue || {}; render(); }
   if (changes.uca_tasks) { tasks = UCA_TASKS.sanitize(changes.uca_tasks.newValue); renderTasksButton(); }
+  if (changes.uca_activity) { activity = UCA_ACTIVITY.sanitize(changes.uca_activity.newValue); renderBellButton(); }
+  if (changes.uca_activity_seen) { activitySeenAt = Number(changes.uca_activity_seen.newValue) || 0; renderBellButton(); }
   if (changes.uca_absences) { absences = changes.uca_absences.newValue || null; renderAbsencesPanel(); }
 });
 UCA_TOOLS.load(() => { renderFilterButton(); loadFromStorage(); });

@@ -20,8 +20,8 @@ android {
         applicationId = "fr.edtuca.app"
         minSdk = 24
         targetSdk = 34
-        versionCode = 12
-        versionName = "1.4.9"
+        versionCode = 13
+        versionName = "1.4.10"
     }
 
     signingConfigs {

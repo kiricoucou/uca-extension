@@ -7,12 +7,12 @@
      ligne (ou si le réseau ne répond pas en NETWORK_TIMEOUT_MS).
    - Requêtes « no-store » (vérification de version, core/env.js) : jamais servies par le cache.
    - Android « Partager → EDT UCA » : le fichier .ucasync reçu est déposé en cache pour app/import.html. */
-const CACHE = "uca-app-v7";
+const CACHE = "uca-app-v8";
 const NETWORK_TIMEOUT_MS = 4000;
 const SHELL = [
   "index.html", "install.html", "aide.html", "404.html", "site.css", "app/index.html", "app/shell.html", "app/shell.js", "app/shell.css", "core/status.js", "lieux-map.html", "transport.html", "version.json", "app/import.html", "app/install.html", "app/import.js", "app/app.css", "app.webmanifest", "manifest.json",
   "app/icons/icon-192.png", "app/icons/icon-512.png",
-  "core/env.js", "core/settings.js", "core/shared.js", "core/grades.js", "core/tools.js", "core/tasks.js", "core/transfer.js", "core/agenda.js",
+  "core/env.js", "core/settings.js", "core/shared.js", "core/grades.js", "core/tools.js", "core/tasks.js", "core/activity.js", "core/transfer.js", "core/agenda.js",
   "choose.html", "choose.js", "settings.html", "settings.js", "designs/designs.json", "vendor/jsQR.js", "vendor/qrcode.js",
 ];
 

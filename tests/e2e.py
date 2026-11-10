@@ -174,6 +174,33 @@ def edt_change_checks(ctx, sw, base, data):
     page.wait_for_timeout(400)
     notifs = sw.evaluate("chrome.notifications.getAll()")
     check("notification de changement d'EDT", any(k.startswith("uca_edt|") for k in notifs), str(notifs))
+    log = sw.evaluate("chrome.storage.local.get('uca_activity').then(d => d.uca_activity || [])")
+    check("journal d'activité : les 4 changements y sont", sorted(e["type"] for e in log if e["kind"] == "edt") == ["added", "cancelled", "moved", "room"], str([e["type"] for e in log]))
+    check("journal d'activité : aucun changement marqué passé (cours de demain)", not any(e["past"] for e in log))
+    # Synchro manuelle : rien dans les notifications système, mais tout dans le journal.
+    sw.evaluate("chrome.notifications.getAll().then(n => Promise.all(Object.keys(n).map(k => chrome.notifications.clear(k))))")
+    sw.evaluate("manualSync = true")
+    prev2 = [ev(9, 0, 10, 0, "R2.09 Anglais TD", "E5")]
+    nxt2 = [ev(9, 0, 10, 0, "R2.09 Anglais TD", "E6")]
+    sw.evaluate("([p, n]) => applyEdtChanges(p, n)", [prev2, nxt2])
+    page.wait_for_timeout(300)
+    check("synchro manuelle : aucune notification système", not any(k.startswith("uca_edt|") for k in sw.evaluate("chrome.notifications.getAll()")))
+    log2 = sw.evaluate("chrome.storage.local.get('uca_activity').then(d => d.uca_activity || [])")
+    check("synchro manuelle : le changement est quand même dans le journal", len(log2) == len(log) + 1 and any("Anglais" in e["title"] for e in log2), str(len(log2)))
+    sw.evaluate("manualSync = false")
+    sw.evaluate("chrome.storage.local.set({uca_edt_changes: []})")
+    now = datetime.datetime.now()
+    if now.hour or now.minute > 2:   # cours déjà fini ce matin : gardé dans le journal, marqué « passé », pas « non lu »
+        t = datetime.date.today()
+        def evt(title, room):
+            return {"date": t.isoformat(), "year": t.year, "month": t.month - 1, "day": t.day, "startH": 0, "startM": 0, "endH": 0, "endM": 1, "title": title, "teacher": "M. Test", "room": room, "raw": title, "color": "#888"}
+        sw.evaluate("([p, n]) => applyEdtChanges(p, n)", [[evt("R2.10 Passé TD", "F1")], [evt("R2.10 Passé TD", "F2")]])
+        log3 = sw.evaluate("chrome.storage.local.get('uca_activity').then(d => d.uca_activity || [])")
+        past = [e for e in log3 if "Passé" in e["title"] or "Passé" in e["text"]]
+        check("cours déjà passé : dans le journal, marqué passé", len(past) == 1 and past[0]["past"] is True, str(past))
+        check("cours déjà passé : pas compté comme non lu", sw.evaluate("(l) => UCA_ACTIVITY.unread(l, 0).filter(e => e.title.includes('Passé') || e.text.includes('Passé')).length", log3) == 0)
+    sw.evaluate("chrome.storage.local.set({uca_activity: []})")
+    sw.evaluate("([p, n]) => chrome.storage.local.set({uca_events: n}).then(() => applyEdtChanges(p, n))", [prev, nxt])
     again = sw.evaluate("([n]) => applyEdtChanges(n, n).then(() => chrome.storage.local.get('uca_edt_changes')).then(d => d.uca_edt_changes.length)", [nxt])
     check("changements conservés à la synchro suivante (7 jours)", again == 4, str(again))
     weeks_ahead = (tomorrow - (tomorrow - datetime.timedelta(days=tomorrow.weekday()))).days >= 0 and (
@@ -184,6 +211,15 @@ def edt_change_checks(ctx, sw, base, data):
         ag.locator("#viewTabs button[data-view='week']").click(); ag.wait_for_timeout(300)
         if weeks_ahead:
             ag.locator("#nextBtn").click(); ag.wait_for_timeout(400)
+        check(f"{d['id']} : cloche Activité avant « Synchroniser »", ag.evaluate("() => document.getElementById('bellBtn') && document.getElementById('bellBtn').closest('.absences-wrap').nextElementSibling.id === 'syncBtn'"))
+        check(f"{d['id']} : cloche — 4 non lus", ag.locator("#bellBtn .filter-count").count() == 1 and ag.locator("#bellBtn .filter-count").inner_text() == "4", ag.locator("#bellBtn").inner_text())
+        ag.locator("#bellBtn").click(); ag.wait_for_timeout(400)
+        check(f"{d['id']} : panneau Activité liste les 4 changements", ag.locator("#bellPanel .act-item").count() == 4 and "Salle changée" in ag.locator("#bellPanel").inner_text(), ag.locator("#bellPanel").inner_text()[:200])
+        shot(ag, f"{d['id']}-cloche")
+        ag.locator("#bellPanel button.act-item").first.click(); ag.wait_for_timeout(400)
+        ag.wait_for_timeout(300)
+        check(f"{d['id']} : cloche lue, compteur remis à zéro", ag.locator("#bellBtn .filter-count").count() == 0)
+        sw.evaluate("chrome.storage.local.remove('uca_activity_seen')")
         badges = ag.evaluate("() => [...document.querySelectorAll('.view.active .chg-badge')].map(b => b.textContent).sort().join(',')")
         check(f"{d['id']} : badges des cours modifiés", badges == "Annulé,Déplacé,Nouveau,Salle changée", badges)
         check(f"{d['id']} : cours annulé affiché barré", ag.locator(".view.active .event-card.ev-cancelled").count() == 1)

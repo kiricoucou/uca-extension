@@ -50,7 +50,7 @@ const SECTIONS = [
 // changements d'EDT), jamais les réglages ni le design. Une sauvegarde est gardée 10 min pour
 // pouvoir annuler (uca_reset_backup, hors uca_settings : jamais exportée ni dans un lien de partage).
 const RESET_KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_absences_sync",
-  "uca_releve_notes", "uca_releve_notes_sync", "uca_notes_seen", "uca_notes_history", "uca_tasks", "uca_absence_alert", "uca_edt_changes", "uca_app_imported_at", "uca_app_exported_at"];
+  "uca_releve_notes", "uca_releve_notes_sync", "uca_notes_seen", "uca_notes_history", "uca_tasks", "uca_absence_alert", "uca_edt_changes", "uca_activity", "uca_activity_seen", "uca_app_imported_at", "uca_app_exported_at"];
 const UNDO_WINDOW_MS = 10 * 60 * 1000;
 
 function $(id) { return document.getElementById(id); }

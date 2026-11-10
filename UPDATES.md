@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.12 — app Android 1.4.11 : « Mes déclarations » dans les absences de l'app
+
+- **App Android, onglet Absences** : la liste « Mes déclarations » (dates et horaires, motif, date de dépôt, statut Justifiée / Refusée / En attente) s'affiche comme dans l'extension. L'app ne lisait que les compteurs ; elle lit maintenant aussi la liste des déclarations d'Odin (même lecture que l'extension). Si Odin ne la montre pas, rien n'est inventé : seuls les compteurs restent.
+
 ## 1.46.11 — app Android 1.4.10 : cloche « Activité », fini les rafales de notifications
 
 - **Cloche « Activité » dans l'agenda** (les 4 designs, entrée « Activité » dans le menu du téléphone) : à chaque synchronisation, tout ce qui s'est passé est gardé 30 jours et relisible : cours ajouté, annulé, déplacé, salle ou enseignant changé, nouvelle note, seuil d'absences atteint. Pastille rouge avec le nombre de nouveautés, remise à zéro à l'ouverture ; un clic sur un changement ouvre le jour concerné ; « Tout effacer » vide le journal. Les changements sur des cours déjà passés restent lisibles, marqués « passé », mais ne comptent pas comme nouveaux.

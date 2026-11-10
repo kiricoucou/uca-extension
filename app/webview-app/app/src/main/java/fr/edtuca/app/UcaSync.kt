@@ -249,11 +249,75 @@ object UcaSync {
             val text = unquoteJs(raw)
             extractProfile(webView.context, text)
             if (text.contains("absence", ignoreCase = true) || tries <= 1) {
-                onResult(parseAbsencesText(text))
+                val counts = parseAbsencesText(text)
+                // Liste « Mes déclarations » (bloc caché d'Odin) : même lecture que l'extension.
+                webView.evaluateJavascript(DECLARATIONS_JS) { rawDecl ->
+                    parseDeclarations(unquoteJs(rawDecl))?.let { counts.put("declarations", it) }
+                    onResult(counts)
+                }
                 return@evaluateJavascript
             }
             handler.postDelayed({ pollForAbsences(webView, tries - 1, delayMs, onResult) }, delayMs)
         }
+    }
+
+    /** Entrées brutes du bloc #id_liste_justifications : [{text, status}] (texte de la ligne, texte alternatif de l'icône de statut). */
+    private const val DECLARATIONS_JS = """
+        (function () {
+          var box = document.getElementById('id_liste_justifications');
+          if (!box) return null;
+          var entries = [], cur = null;
+          box.childNodes.forEach(function (n) {
+            if (n.nodeType === 3 && n.textContent.indexOf('•') >= 0) { cur = { parts: [], status: '' }; entries.push(cur); }
+            if (!cur) return;
+            if (n.nodeType === 1 && n.tagName === 'IMG') cur.status = n.alt || n.title || '';
+            else cur.parts.push(n.textContent);
+          });
+          return JSON.stringify(entries.map(function (e) { return { text: e.parts.join(' ').replace(/\s+/g, ' ').trim(), status: e.status }; }));
+        })()
+    """
+
+    private val DECLARATION_RE = Regex(
+        """Du\s+(\d{2}/\d{2}/\d{4})\s+à\s+(\d{1,2})h(\d{2})\s+au\s+(\d{2}/\d{2}/\d{4})\s+à\s+(\d{1,2})h(\d{2})\s*\(\s*Déposée le\s+(\d{2}/\d{2}/\d{4})\s+à\s+(\d{1,2})h(\d{2})\s*\)\s*(?:Motif\s*:\s*(.*))?""",
+        RegexOption.IGNORE_CASE
+    )
+
+    private fun isoFromFr(date: String, h: String, m: String): String {
+        val p = date.split("/")
+        return "${p[2]}-${p[1]}-${p[0]}T${h.padStart(2, '0')}:$m"
+    }
+
+    private fun declarationStatus(label: String): String {
+        val l = label.lowercase()
+        return when {
+            Regex("refus|rejet").containsMatchIn(l) -> "refusee"
+            Regex("attente|cours d'examen|à traiter").containsMatchIn(l) -> "attente"
+            Regex("justifi|valid").containsMatchIn(l) -> "justifiee"
+            label.isNotEmpty() -> "autre"
+            else -> "inconnu"
+        }
+    }
+
+    /** Déclarations d'absence triées de la plus récente à la plus ancienne ; null si le bloc est absent de la page. */
+    private fun parseDeclarations(json: String): org.json.JSONArray? {
+        if (json.isBlank() || json == "null") return null
+        val entries = try { org.json.JSONArray(json) } catch (e: Exception) { return null }
+        val list = mutableListOf<JSONObject>()
+        for (i in 0 until entries.length()) {
+            val e = entries.optJSONObject(i) ?: continue
+            val m = DECLARATION_RE.find(e.optString("text")) ?: continue
+            val status = e.optString("status")
+            list.add(JSONObject().apply {
+                put("debut", isoFromFr(m.groupValues[1], m.groupValues[2], m.groupValues[3]))
+                put("fin", isoFromFr(m.groupValues[4], m.groupValues[5], m.groupValues[6]))
+                put("depose", isoFromFr(m.groupValues[7], m.groupValues[8], m.groupValues[9]))
+                put("motif", m.groupValues[10].trim().take(300))
+                put("statut", declarationStatus(status))
+                put("statutLibelle", status.take(200))
+            })
+        }
+        list.sortByDescending { it.getString("debut") }
+        return org.json.JSONArray(list)
     }
 
     private fun parseAbsencesText(text: String): JSONObject {

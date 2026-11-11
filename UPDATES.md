@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.15 — app Android 1.4.14 : jour férié lisible
+
+- **Jour férié = aujourd'hui** : le numéro du jour courant restait rouge sur son fond coloré (illisible, ex. le 11 novembre) ; il garde maintenant sa couleur normale, l'infobulle indique toujours « férié ». Version web seule : installée sans APK (mise à jour silencieuse signée).
+
 ## 1.46.14 — app Android 1.4.13 : logo Université Clermont Auvergne
 
 - **Logo de l'app** : l'icône de l'APK (lanceur carré et rond), de l'app web (iPhone/Android, icône d'installation, écrans de démarrage iOS) et de la page de téléchargement est maintenant le logo « Université Clermont Auvergne », fond blanc. L'extension garde son icône d'origine. Source : `app/icons/logo-uca-source.jpg`, générée par `tests/gen_uca_logo.py`.

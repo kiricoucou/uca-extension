@@ -264,7 +264,8 @@ function markHoliday(node, d, numSel) {
   if (!name) return;
   node.classList.add("holiday"); node.title = name; node.setAttribute("aria-label", `${d.getDate()}, jour férié : ${name}`);
   const n = numSel ? node.querySelector(numSel) : node;
-  if (n) n.style.color = "var(--danger, #c5221f)";
+  // Le jour courant a un fond plein (accent) : du rouge dessus serait illisible ; l'infobulle et le libellé disent déjà « férié ».
+  if (n && !node.classList.contains("today")) n.style.color = "var(--danger, #c5221f)";
 }
 function renderMonth() {
   const el = $("monthView"); el.innerHTML = "";

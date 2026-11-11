@@ -181,5 +181,7 @@ $("scanBtn").addEventListener("click", startScan);
 $("stopBtn").addEventListener("click", stopScan);
 $("openBtn").addEventListener("click", () => location.replace("index.html"));
 $("skipBtn").addEventListener("click", () => { sessionStorage.setItem("uca_import_skip", "1"); location.replace("index.html"); });
+// Android (hors APK) : proposer l'app qui se connecte à Odin directement.
+if (/Android/i.test(navigator.userAgent) && !window.AndroidUCA && $("odinApk")) $("odinApk").classList.remove("hidden");
 window.UCA_IMPORT = { importText };
 })();

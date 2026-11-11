@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.17 — app web : explication de la connexion Odin
+
+- **Importer mes données (app web)** : explique pourquoi un navigateur ne peut pas se connecter à Odin (cookies isolés, fenêtre CAS dédiée, aucun serveur tiers) et, sur Android, propose l'APK qui se connecte directement comme l'extension.
+
 ## 1.46.16 — app Android 1.4.15 : barème sans doublon
 
 - **Barème des évaluations** : l'intitulé affichait « (sur 22.0) (sur 22) » quand Odin sépare « sur » et le nombre par une espace insécable ; le barème d'origine est maintenant retiré dans tous les cas. Constaté sur le vrai téléphone ; test ajouté. Version web seule : installée sans APK.

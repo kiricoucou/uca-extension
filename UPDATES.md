@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.14 — app Android 1.4.13 : logo Université Clermont Auvergne
+
+- **Logo de l'app** : l'icône de l'APK (lanceur carré et rond), de l'app web (iPhone/Android, icône d'installation, écrans de démarrage iOS) et de la page de téléchargement est maintenant le logo « Université Clermont Auvergne », fond blanc. L'extension garde son icône d'origine. Source : `app/icons/logo-uca-source.jpg`, générée par `tests/gen_uca_logo.py`.
+
 ## 1.46.13 — app Android 1.4.12 : barème des évaluations, mise à jour plus claire, carnet
 
 - **Barème des évaluations (extension, app Android, app web iPhone/Android)** : une évaluation dont l'intitulé contient « (sur 12.0) », « (sur 25) »… est ambiguë (la note affichée est-elle déjà ramenée sur 20 ?). Pour chacune, deux boutons demandent « Cette note est sur combien ? » : « sur 20 » ou « sur 12 ». Le choix recalcule la moyenne de la matière, de l'UE et la moyenne générale (note × 20 ÷ barème, avec le coefficient), évaluation par évaluation. Une flèche ⇄ à côté de « (sur 12) » permet de rebasculer à tout moment. Choix gardé sur l'appareil et partagé avec l'app web et l'APK par l'export.

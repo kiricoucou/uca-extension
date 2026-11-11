@@ -11,7 +11,7 @@
   "prefer_related_applications": false,
   "related_applications": [{ "platform": "webapp", "url": "https://kiricoucou.github.io/uca-extension/app.webmanifest", "id": "app/" }],
   "orientation": "any",
-  "background_color": "#0b57d0",
+  "background_color": "#ffffff",
   "theme_color": "#0b57d0",
   "categories": ["education", "productivity"],
   "icons": [

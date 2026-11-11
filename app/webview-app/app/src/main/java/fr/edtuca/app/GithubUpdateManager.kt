@@ -121,12 +121,24 @@ object GithubUpdateManager {
                     val repoUrl = json.optString("github_repo_url", GITHUB_REPO_URL)
 
                     val changelogList = mutableListOf<String>()
+                    // Toutes les versions de l'app publiées depuis celle installée (pas seulement la dernière).
+                    val history = json.optJSONArray("history")
+                    if (history != null) {
+                        for (i in 0 until history.length()) {
+                            val h = history.optJSONObject(i) ?: continue
+                            val app = h.optString("app")
+                            if (app.isEmpty() || compareSemver(app, localVersionName) <= 0) continue
+                            changelogList.add("##v$app · ${h.optString("title")}")
+                            val items = h.optJSONArray("items") ?: continue
+                            for (j in 0 until items.length()) changelogList.add(items.getString(j))
+                        }
+                    }
                     val changelogArr = json.optJSONArray("changelog")
-                    if (changelogArr != null) {
+                    if (changelogList.isEmpty() && changelogArr != null) {
                         for (i in 0 until changelogArr.length()) {
                             changelogList.add(changelogArr.getString(i))
                         }
-                    } else {
+                    } else if (changelogList.isEmpty()) {
                         changelogList.add("Mise à jour rapide des composants et synchronisation")
                     }
 
@@ -179,9 +191,17 @@ object GithubUpdateManager {
         onComplete: () -> Unit,
         onError: (String) -> Unit
     ) {
-        // Désactivé : le bundle n'était pas signé, donc un push sur le dépôt aurait suffi pour exécuter
-        // du code dans l'app. Les mises à jour passent par l'APK, protégé par sa signature Android.
-        mainHandler.post { onError("Les mises à jour rapides sont désactivées : installe le nouvel APK.") }
+        // Paquet signé avec la clé de l'APK et vérifié par LiveUpdate : un simple push sur le dépôt ne suffit pas à
+        // faire exécuter du code dans l'app. Pas d'installation d'APK, pas de redémarrage.
+        mainHandler.post { onProgress(15) }
+        LiveUpdate.checkAndApply(activity) { result ->
+            when (result) {
+                is LiveUpdate.Result.Applied -> { onProgress(100); onComplete() }
+                is LiveUpdate.Result.UpToDate -> { onProgress(100); onComplete() }
+                is LiveUpdate.Result.NeedsApk -> onError("Cette version demande d'installer le nouvel APK.")
+                is LiveUpdate.Result.Failed -> onError("Mise à jour impossible (${result.reason}).")
+            }
+        }
     }
 
     /**
@@ -192,11 +212,12 @@ object GithubUpdateManager {
      * Supprime l'APK téléchargé pour la mise à jour (il n'a plus d'utilité une fois installé et prend de la place).
      * Appelé au démarrage de l'app : après l'installation, c'est la nouvelle version qui se lance et fait le ménage.
      */
-    fun cleanupDownloadedApks(context: Context) {
+    fun cleanupDownloadedApks(context: Context, minAgeMs: Long = 0L) {
         executor.execute {
             try {
+                val now = System.currentTimeMillis()
                 listOfNotNull(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), context.cacheDir).forEach { dir ->
-                    dir.listFiles { f -> f.isFile && f.name.endsWith(".apk", ignoreCase = true) }?.forEach { it.delete() }
+                    dir.listFiles { f -> f.isFile && f.name.endsWith(".apk", ignoreCase = true) && now - f.lastModified() >= minAgeMs }?.forEach { it.delete() }
                 }
             } catch (_: Exception) { }
         }

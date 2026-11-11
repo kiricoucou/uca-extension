@@ -101,6 +101,7 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
 
 .sheet-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 50; }
 .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 51; background: var(--surface); border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
+.sheet { max-height: 90vh; overflow-y: auto; }
 .sheet h2 { margin: 0 0 12px; font-size: 17px; }
 .sheet .row { padding-left: 4px; }
 .toast { position: fixed; left: 50%; bottom: calc(var(--nav-h) + 18px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: #2c313a; color: var(--text); padding: 10px 16px; border-radius: 20px; z-index: 60; font-size: 14px; max-width: calc(100% - 32px); text-align: center; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
@@ -133,3 +134,9 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
   .row:hover, .notif:hover { background: rgba(255,255,255,.03); }
 }
 @media (prefers-reduced-motion: reduce) { .switch, .switch::after { transition: none; } }
+
+/* Nouveautés (fenêtre de mise à jour) : liste défilante, tout se lit sans quitter la fenêtre. */
+.news { max-height: min(48vh, 380px); overflow-y: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); border-radius: 12px; padding: 4px 14px 10px; background: var(--bg); }
+.news h3 { margin: 14px 0 4px; font-size: 14px; color: var(--accent2); }
+.news ul { margin: 0; padding-left: 18px; font-size: 13.5px; }
+.news li { margin: 4px 0; color: var(--text); }

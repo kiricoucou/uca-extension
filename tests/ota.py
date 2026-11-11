@@ -43,8 +43,12 @@ def main():
     check("aucun fichier de l'ancien système (github-updater, apk)", not [n for n in names if "github-updater" in n or n.endswith(".apk")])
     v = json.loads((ROOT / "version.json").read_text(encoding="utf-8"))
     check("version.json annonce ce paquet", v.get("ota_version") == meta["bundle_version"] and v.get("ota_base_version_code") == code, str({k: v.get(k) for k in ("ota_version", "ota_base_version_code")}))
-    # Les APK déjà installés ne proposent le nouvel APK que si min_apk_version_code dépasse leur versionCode.
-    check("version.json : min_apk_version_code = versionCode publié (anciens APK invités à se mettre à jour)", v.get("min_apk_version_code") == code == v.get("version_code"), str({k: v.get(k) for k in ("min_apk_version_code", "version_code")}))
+    # APK : l'écran d'installation s'affiche si min_apk_version_code ou version_code dépasse le versionCode installé.
+    # Version web seule (même code natif) : on ne change ni l'un ni l'autre, les téléphones se mettent à jour sans APK (paquet signé).
+    check("version.json : version_code = versionCode de l'APK publié et min_apk_version_code ne le dépasse pas", v.get("version_code") == code and 0 < v.get("min_apk_version_code", 0) <= code, str({k: v.get(k) for k in ("min_apk_version_code", "version_code")}))
+    hist = v.get("history") or []
+    check("version.json : historique des versions (nouveautés lisibles en entier)", len(hist) >= 3 and all(h.get("app") and h.get("items") for h in hist), str(len(hist)))
+    check("version.json : l'historique commence par la version publiée", hist and hist[0].get("app") == v.get("ota_version"), str(hist[:1]))
     check("version.json ne donne plus d'adresse de téléchargement", not any(k.endswith("_url") and "ota" in k for k in v))
     if PROPS.exists():
         check("signature valable (clé de l'APK)", verify(zp, sp))

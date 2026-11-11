@@ -1,19 +1,110 @@
 {
   "app_name": "My UCA",
-  "version": "1.4.11",
-  "version_code": 14,
-  "bundle_version": "1.4.11",
+  "version": "1.4.12",
+  "version_code": 15,
+  "bundle_version": "1.4.12",
   "commit_sha": "main",
   "branch": "main",
-  "published_at": "2026-11-10T12:00:00Z",
-  "min_apk_version_code": 14,
+  "published_at": "2026-11-11T11:00:00Z",
+  "min_apk_version_code": 15,
   "raw_base_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/",
   "apk_download_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/EdtUca.apk",
   "github_repo_url": "https://github.com/kiricoucou/uca-extension",
   "changelog": [
-    "Absences : la liste « Mes déclarations » (dates, motif, statut Justifiée / Refusée / En attente) s'affiche maintenant aussi dans l'app Android",
-    "Cloche « Activité » dans l'agenda : tout ce qui s'est passé à chaque synchro, au lieu d'une rafale de notifications"
+    "Notes : pour une évaluation « (sur 12) » ou « (sur 25) », l'app demande sur combien est la note (boutons) et recalcule les moyennes ; une flèche permet de changer",
+    "Écran de mise à jour : tout ce qui a changé depuis ta version se lit en défilant, boutons toujours visibles, rien (bandeau de connexion) par-dessus, APK supprimé après l'installation",
+    "Carnet : la marge rouge ne passe plus sur le texte, la moyenne générale tient sur une ligne"
   ],
-  "ota_version": "1.4.11",
-  "ota_base_version_code": 14
+  "ota_version": "1.4.12",
+  "ota_base_version_code": 15,
+  "history": [
+    {
+      "version": "1.46.13",
+      "app": "1.4.12",
+      "title": "barème des évaluations, mise à jour plus claire, carnet",
+      "items": [
+        "Barème des évaluations (extension, app Android, app web iPhone/Android) : une évaluation dont l'intitulé contient « (sur 12.0) », « (sur 25) »… est ambiguë (la note affichée est-elle…",
+        "Écran de mise à jour de l'APK : la liste des nouveautés défile et couvre toutes les versions publiées depuis celle installée (pas seulement la dernière) ; les boutons restent visibles en…",
+        "App web (PWA) : fenêtre « Nouvelle version disponible » (nouveautés défilantes, bouton « Mettre à jour maintenant » qui vide le cache et recharge) quand une version est publiée pendant…",
+        "Carnet : la marge rouge du relevé ne passe plus sur les premières lettres (le texte commence après, avec un petit espace) ; « Moyenne générale » et la note tiennent sur une ligne (aussi…"
+      ]
+    },
+    {
+      "version": "1.46.12",
+      "app": "1.4.11",
+      "title": "« Mes déclarations » dans les absences de l'app",
+      "items": [
+        "App Android, onglet Absences : la liste « Mes déclarations » (dates et horaires, motif, date de dépôt, statut Justifiée / Refusée / En attente) s'affiche comme dans l'extension. L'app ne…"
+      ]
+    },
+    {
+      "version": "1.46.11",
+      "app": "1.4.10",
+      "title": "cloche « Activité », fini les rafales de notifications",
+      "items": [
+        "Cloche « Activité » dans l'agenda (les 4 designs, entrée « Activité » dans le menu du téléphone) : à chaque synchronisation, tout ce qui s'est passé est gardé 30 jours et relisible :…",
+        "Notifications : quand tu cliques sur « Synchroniser », plus aucune notification système (tu regardes l'écran, tout est dans la cloche). La synchro automatique envoie une seule…",
+        "Mise à jour de l'APK : version.json annonçait un minimum trop bas, donc une app en 1.4.8 ne proposait jamais la 1.4.9. Corrigé (et testé) : les anciennes versions sont invitées à…",
+        "Données : uca_activity et uca_activity_seen sont exportées/importées avec le reste (téléphone, partage) et effacées par « Réinitialiser »."
+      ]
+    },
+    {
+      "version": "1.46.10",
+      "app": "1.4.9",
+      "title": "app web identique à l'app Android, plus aucune donnée inventée",
+      "items": [
+        "App web installable (Android et iPhone) : même structure que l'app Android, barre du bas Accueil / Études / Agenda / Lieux / Compte, sous-écrans Notifications, Préférences, Scolarité,…",
+        "App web sur ordinateur : mise en page de bureau (barre latérale à gauche au lieu de la barre du bas, écrans en deux colonnes, carte et liste des lieux côte à côte, agenda en pleine…",
+        "Menu du téléphone : l'entrée « Liste » avait une icône sans texte ; libellé ajouté dans les 4 designs.",
+        "Sécurité : politique de sécurité (CSP) sur la coque de l'app web ; nouveau test : données piégées (groupes, changements, notes, profil) affichées sans jamais exécuter de script.",
+        "Limites d'un navigateur (pas de contournement possible) : pas de connexion directe au CAS ni à Odin (les données arrivent par « Importer mes données »), pas de synchro ni de notification…",
+        "App Android, données inventées retirées : l'Accueil affichait « ● Ouvert » écrit en dur, « 3 mails non lus », des horaires de BU et un taux d'affluence ; la Scolarité un faux numéro…"
+      ]
+    },
+    {
+      "version": "1.46.9",
+      "app": "1.4.8",
+      "title": "vue Liste, vue Jour en blocs, emploi du temps de la classe fiable",
+      "items": [
+        "Nouvelle vue « Liste » (bouton 📋 Liste, les 4 designs) : un jour sous forme de liste ; sur téléphone, glisser à gauche ou à droite change de jour. Raccourci clavier L.",
+        "Vue « Jour » en blocs : même rendu que la vue 3 jours (blocs sur la grille horaire) mais un seul jour sur toute la largeur, glisser pour changer de jour. Le réglage « Vue à l'ouverture »…",
+        "Emploi du temps de la classe (app) : si aucune classe n'est sélectionnée dans ADE, l'app le dit (« Choisis ta classe dans ADE ») et lit le lien d'export toute seule dès qu'elle est…",
+        "Vues 3 et 5 jours de la classe : un même cours donné à plusieurs groupes en même temps devient une seule carte (profs et salles réunis) ; les cours simultanés partagent les colonnes au…"
+      ]
+    },
+    {
+      "version": "1.46.7",
+      "app": "1.4.7",
+      "title": "l'APK de mise à jour est supprimé après l'installation",
+      "items": [
+        "Quand tu télécharges l'APK complet depuis l'écran de mise à jour et que tu l'installes, l'app supprime ensuite le fichier téléchargé au premier démarrage de la nouvelle version : il ne…",
+        "Les cookies de connexion de l'app sont aussi écrits sur le disque quand l'app s'arrête.",
+        "Diagnostic de connexion (Préférences) : montre l'état de la session, les noms des cookies présents pour les sites de l'UCA (jamais leurs valeurs) et le journal des derniers contrôles,…",
+        "Ce correctif ne force pas la mise à jour : les 1.4.6 continuent de fonctionner, l'APK est proposé quand tu veux."
+      ]
+    },
+    {
+      "version": "1.46.6",
+      "app": "1.4.6",
+      "title": "consultation hors session, graphique des notes, carte, notifications",
+      "items": [
+        "Session expirée : l'app reste entièrement consultable avec les données déjà synchronisées. Un bandeau rouge en bas à gauche dit « Session expirée. Veuillez vous reconnecter. » ; un…",
+        "Notes : un clic sur « Moyenne générale » ouvre le graphique de toutes les matières, avec le trait pointillé horizontal de la moyenne générale et, dessous, les notes de chaque matière…",
+        "Carte : zoom et déplacement au doigt, fond OpenStreetMap ou Google Maps (sans clé d'API ; Google peut déposer des cookies), « Ouvrir avec Google Maps / Waze / OpenStreetMap » pour chaque…",
+        "Notifications : vraies notifications seulement (nouveau mail reçu, nouvelle note) ; réglage « Nouveau mail reçu » dans les Préférences ; les lignes écrites en dur sont retirées.",
+        "Compte : nom, prénom, date de naissance, numéro, formation, groupe et adresse @etu.uca.fr lus dans Odin avec la session de l'app (« non détecté » sinon), lien « Voir mon profil étudiant…",
+        "Préférences : textes périmés corrigés, bouton de test du blocage réservé aux versions de test."
+      ]
+    },
+    {
+      "version": "1.46.5",
+      "app": "1.4.5",
+      "title": "session CAS fiable, design dans les Préférences",
+      "items": [
+        "Session expirée à tort : l'app te demandait de te reconnecter dès que tu la quittais, alors que la session CAS dure plusieurs jours. Elle ne déclare maintenant la session expirée que si…",
+        "Design de l'application : Préférences → « Design », appliqué à l'agenda et mémorisé, y compris quand tu le changes depuis le menu de l'agenda. Les autres écrans de l'app gardent leur…",
+        "Cette version change le code natif : elle s'installe avec le nouvel APK (proposé par l'écran de mise à jour de l'app)."
+      ]
+    }
+  ]
 }

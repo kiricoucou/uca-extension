@@ -55,6 +55,13 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.13 — app Android 1.4.12 : barème des évaluations, mise à jour plus claire, carnet
+
+- **Barème des évaluations (extension, app Android, app web iPhone/Android)** : une évaluation dont l'intitulé contient « (sur 12.0) », « (sur 25) »… est ambiguë (la note affichée est-elle déjà ramenée sur 20 ?). Pour chacune, deux boutons demandent « Cette note est sur combien ? » : « sur 20 » ou « sur 12 ». Le choix recalcule la moyenne de la matière, de l'UE et la moyenne générale (note × 20 ÷ barème, avec le coefficient), évaluation par évaluation. Une flèche ⇄ à côté de « (sur 12) » permet de rebasculer à tout moment. Choix gardé sur l'appareil et partagé avec l'app web et l'APK par l'export.
+- **Écran de mise à jour de l'APK** : la liste des nouveautés défile et couvre toutes les versions publiées depuis celle installée (pas seulement la dernière) ; les boutons restent visibles en bas ; plus aucun bandeau « session expirée » par-dessus (d'abord la mise à jour, ensuite la connexion) ; l'APK téléchargé est supprimé après l'installation (à la mise à jour, au lancement suivant, et si on annule plus de 10 minutes après). Les versions qui ne changent que les pages (comme celle-ci pour l'extension et l'app web) passent par le paquet signé, sans installer d'APK.
+- **App web (PWA)** : fenêtre « Nouvelle version disponible » (nouveautés défilantes, bouton « Mettre à jour maintenant » qui vide le cache et recharge) quand une version est publiée pendant que l'app est ouverte ; au premier lancement après une mise à jour, « Mise à jour installée » avec tout ce qui a changé. Même source que l'APK : `version.json` (champ `history`).
+- **Carnet** : la marge rouge du relevé ne passe plus sur les premières lettres (le texte commence après, avec un petit espace) ; « Moyenne générale » et la note tiennent sur une ligne (aussi dans les 3 autres designs).
+
 ## 1.46.12 — app Android 1.4.11 : « Mes déclarations » dans les absences de l'app
 
 - **App Android, onglet Absences** : la liste « Mes déclarations » (dates et horaires, motif, date de dépôt, statut Justifiée / Refusée / En attente) s'affiche comme dans l'extension. L'app ne lisait que les compteurs ; elle lit maintenant aussi la liste des déclarations d'Odin (même lecture que l'extension). Si Odin ne la montre pas, rien n'est inventé : seuls les compteurs restent.

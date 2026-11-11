@@ -11,7 +11,9 @@ let events = [];
 let notes = {};
 let absences = null;
 let scrapeIssues = {};
-let releveNotes = null;
+let releveNotes = null;          // relevé avec les barèmes choisis appliqués (voir UCA_GRADES.applyScales)
+let releveRaw = null, scales = {}; // relevé tel que lu sur Odin ; barèmes choisis par évaluation (uca_scales)
+function setReleve(raw, sc) { releveRaw = raw || null; if (sc) scales = sc; releveNotes = UCA_GRADES.applyScales(releveRaw, scales); }
 let notesHistory = [];
 let subjectColors = {};
 let tasks = [];
@@ -841,7 +843,7 @@ async function updatePinnedNext() {
   } catch (e) { /* notification indisponible : sans conséquence */ }
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_class_events", "uca_my_groups", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks", "uca_activity", "uca_activity_seen"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_class_events", "uca_my_groups", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks", "uca_activity", "uca_activity_seen", "uca_scales"], (data) => {
     // Hors Android natif (qui a sa propre synchro CAS en arrière-plan) : sans données, écran d'import.
     if (window.UCA_APP && !window.AndroidUCA && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) {
       location.href = chrome.runtime.getURL("app/import.html");
@@ -860,7 +862,7 @@ function loadFromStorage() {
     scrapeIssues = data.uca_scrape_issues || {};
     notesHistory = data.uca_notes_history || [];
     subjectColors = data.uca_subject_colors || {};
-    releveNotes = data.uca_releve_notes || null;
+    setReleve(data.uca_releve_notes, data.uca_scales || {});
     notesSeen = data.uca_notes_seen || {};
     setEdtChanges(data.uca_edt_changes);
     if (!autoViewApplied) {
@@ -1108,6 +1110,56 @@ function openGradeDetailModal(label, row) {
   overlay.classList.add("open");
 }
 
+/* Barème d'une évaluation « (sur 12.0) » : tant que l'utilisateur n'a pas dit si la note est déjà sur 20 ou sur 12, deux
+   boutons sous la ligne ; ensuite le barème choisi suivi d'une flèche pour basculer vite. Les notes sur 20 n'ont rien.
+   Renvoie [nœud d'intitulé, nœud de question ou null], ou null si l'évaluation n'est pas concernée. */
+function setScale(key, value) {
+  const next = Object.assign({}, scales, { [key]: value });
+  const panel = $("notesPanel"), top = panel ? panel.scrollTop : 0;
+  scales = next; setReleve(releveRaw); renderNotesPanel();
+  if (panel) panel.scrollTop = top;
+  chrome.storage.local.set({ uca_scales: next });
+}
+(function injectScaleStyle() {
+  const st = document.createElement("style");
+  st.textContent = `.sc-ask{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:5px 0 2px;font-size:12px;white-space:normal}
+.sc-ask button,.sc-flip{font:inherit;font-size:12px;border:1px solid var(--border,#888);background:var(--surface,transparent);color:var(--text,inherit);border-radius:8px;padding:3px 10px;cursor:pointer;min-height:28px}
+.sc-ask button:hover,.sc-flip:hover{border-color:var(--accent,#18b7b0);color:var(--accent,#18b7b0)}
+.sc-flip{padding:0 6px!important;margin-left:4px;height:22px!important;min-height:0!important;line-height:18px;vertical-align:baseline;border-radius:8px!important}
+.sc-ask button{height:auto!important;min-height:30px!important}
+.sc-ask .sc-q{font-weight:700;color:var(--danger,#d93025)}
+.notes-avg .na-lbl,.notes-avg .na-val{white-space:nowrap}`;
+  document.head.appendChild(st);
+})();
+function scaleBlock(key, ev, label, inTable) {
+  if (!ev || !ev.max || ev.max === 20 || (ev.note == null && ev.rawNote == null)) return null;
+  const fmtMax = (n) => String(n).replace(".", ",");
+  const title = document.createElement("span");
+  title.append(document.createTextNode(inTable ? String(label).replace(/\s*\(sur [\d.,]+\)/i, "") : label));
+  let ask = null;
+  if (ev.choice == null) {
+    title.append(document.createTextNode(` (sur ${fmtMax(ev.max)})`));
+    ask = document.createElement("div"); ask.className = "sc-ask";
+    const q = document.createElement("span"); q.className = "sc-q"; q.textContent = `Cette note (${fmtNote(ev.rawNote)}) est sur combien ?`;
+    ask.appendChild(q);
+    [20, ev.max].forEach((v) => {
+      const b = document.createElement("button"); b.type = "button"; b.textContent = "sur " + fmtMax(v);
+      b.addEventListener("click", (e) => { e.stopPropagation(); setScale(key, v); });
+      ask.appendChild(b);
+    });
+  } else {
+    title.append(document.createTextNode(` (sur ${fmtMax(ev.choice)})`));
+    const other = ev.choice === 20 ? ev.max : 20;
+    const flip = document.createElement("button"); flip.type = "button"; flip.className = "sc-flip"; flip.textContent = "⇄";
+    flip.title = `Changer : passer en « sur ${fmtMax(other)} »`;
+    flip.setAttribute("aria-label", `Barème de ${label} : actuellement sur ${fmtMax(ev.choice)}, passer sur ${fmtMax(other)}`);
+    flip.addEventListener("click", (e) => { e.stopPropagation(); setScale(key, other); });
+    title.appendChild(flip);
+    if (ev.scaled) title.append(document.createTextNode(` = ${fmtNote(ev.note)} / 20`));
+  }
+  return [title, ask];
+}
+
 function ntRow(cls, label, row, seenKey) {
   const tr = document.createElement("tr");
   tr.className = cls + " clickable-grade-row";
@@ -1115,9 +1167,11 @@ function ntRow(cls, label, row, seenKey) {
   tr.addEventListener("click", () => {
     openGradeDetailModal(label, row);
   });
-  tr.appendChild(ntCell(label, "lbl"));
+  const lblTd = ntCell(label, "lbl");
+  if (cls.startsWith("eval-row")) { const sc = scaleBlock(seenKey, row, label, true); if (sc) { lblTd.textContent = ""; lblTd.append(...sc.filter(Boolean)); } }
+  tr.appendChild(lblTd);
   tr.appendChild(ntCell(fmtNote(row.coeff), "num"));
-  const ageCls = noteAgeClass(seenKey, row.note);
+  const ageCls = noteAgeClass(seenKey, row.rawNote !== undefined ? row.rawNote : row.note);
   const noteTd = ntCell(fmtNote(row.note), "num note note-val" + ageCls);
   if (ageCls) noteTd.title = noteAgeTitle(ageCls);
   tr.appendChild(noteTd);
@@ -1461,7 +1515,11 @@ function overviewChart() {
     box.appendChild(head);
     m.evals.forEach((e) => {
       const row = npEl("div", ""); row.style.cssText = "display:grid;grid-template-columns:1fr 42px;gap:8px;align-items:center;font-size:12px;margin-top:5px;";
-      const left = npEl("div", ""); left.append(npEl("div", "", `${e.label.replace(/\s*\(sur [\d.,]+\)/i, "")}${e.coeff != null ? ` · coeff ${fmtNote(e.coeff)}` : ""}${e.moy != null ? ` · classe ${fmtNote(e.moy)}` : ""}`));
+      const left = npEl("div", "");
+      const bare = e.label.replace(/\s*\(sur [\d.,]+\)/i, "");
+      const sc = scaleBlock(m.label + "|" + (e.key || e.label), e, bare, false);
+      const titleLine = npEl("div", ""); titleLine.append(sc ? sc[0] : document.createTextNode(bare), document.createTextNode(`${e.coeff != null ? ` · coeff ${fmtNote(e.coeff)}` : ""}${e.moy != null ? ` · classe ${fmtNote(e.moy)}` : ""}`));
+      left.append(titleLine); if (sc && sc[1]) left.append(sc[1]);
       const track = npEl("div", ""); track.style.cssText = "position:relative;height:8px;border-radius:4px;background:rgba(127,127,127,.18);margin-top:3px;";
       const fill = npEl("div", ""); fill.style.cssText = `height:100%;width:${Math.max(2, Math.min(100, e.note / 20 * 100))}%;border-radius:4px;background:${gradeColor(e.note)};`;
       track.appendChild(fill);
@@ -1913,7 +1971,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   } else if (msg.type === "UCA_ABSENCES_RESULT") {
     if (msg.ok) { absences = msg.absences; renderAbsencesPanel(); }
   } else if (msg.type === "UCA_NOTES_RESULT") {
-    if (msg.ok) chrome.storage.local.get(["uca_notes_seen", "uca_notes_history"], (data) => { releveNotes = msg.releve; notesSeen = data.uca_notes_seen || {}; notesHistory = data.uca_notes_history || notesHistory; renderNotesPanel(); });
+    if (msg.ok) chrome.storage.local.get(["uca_notes_seen", "uca_notes_history"], (data) => { setReleve(msg.releve); notesSeen = data.uca_notes_seen || {}; notesHistory = data.uca_notes_history || notesHistory; renderNotesPanel(); });
   } else if (msg.type === "UCA_UPDATE_STATE") {
     UCA_CORE.renderUpdate(msg.updateAvailable, msg.current, msg.latest);
   }
@@ -1940,9 +1998,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (changes.uca_settings) { settings = Object.assign({}, UCA_SETTINGS_DEFAULTS, changes.uca_settings.newValue); render(); renderNotesPanel(); renderAbsencesPanel(); updatePinnedNext(); }
   if (changes.uca_notes_seen || changes.uca_releve_notes) {
     if (changes.uca_notes_seen) notesSeen = changes.uca_notes_seen.newValue || {};
-    if (changes.uca_releve_notes) releveNotes = changes.uca_releve_notes.newValue || null;
+    if (changes.uca_releve_notes) setReleve(changes.uca_releve_notes.newValue);
     renderNotesPanel();
   }
+  if (changes.uca_scales) { scales = changes.uca_scales.newValue || {}; setReleve(releveRaw); renderNotesPanel(); }
   if (changes.uca_notes_history) { notesHistory = changes.uca_notes_history.newValue || []; renderNotesPanel(); }
   if (changes.uca_scrape_issues) { scrapeIssues = changes.uca_scrape_issues.newValue || {}; renderAbsencesPanel(); renderNotesPanel(); if (syncInfoArgs[0] || syncInfoArgs[1]) { renderSyncInfo(...syncInfoArgs); renderNextInfo(); } }
   if (changes.uca_subject_colors) { subjectColors = changes.uca_subject_colors.newValue || {}; [personalEvents, classEvents].forEach((l) => l.forEach((e) => { e.color = colorOf(e.title); })); render(); }

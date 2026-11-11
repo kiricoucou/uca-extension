@@ -42,6 +42,31 @@ def build(out_zip: Path, bundle_version: str, base_code: int):
     return len(files)
 
 
+def history(limit=8):
+    """Dernières versions de l'app (celles de UPDATES.md qui annoncent « app Android X.Y.Z »), la plus récente d'abord :
+    [{version (extension), app, title, items[]}]. Lu par l'écran de mise à jour de l'APK et par l'app web pour montrer
+    tout ce qui a changé depuis la version installée, pas seulement la dernière."""
+    text = (ROOT / "UPDATES.md").read_text(encoding="utf-8")
+    out = []
+    for m in re.finditer(r"^## (\d+\.\d+\.\d+) — (.+?)\n(.*?)(?=^## |\Z)", text, re.S | re.M):
+        ext, head, body = m.groups()
+        a = re.search(r"app Android (\d+\.\d+\.\d+)", head)
+        if not a:
+            continue
+        title = re.sub(r"^app Android \d+\.\d+\.\d+\s*:\s*", "", head).strip()
+        items = []
+        for line in body.splitlines():
+            if not line.startswith("- "):
+                continue
+            t = re.sub(r"\*\*(.+?)\*\*", r"\1", line[2:])
+            t = re.sub(r"`([^`]*)`", r"\1", t).strip()
+            items.append(t if len(t) <= 190 else t[:187].rsplit(" ", 1)[0] + "…")
+        out.append({"version": ext, "app": a.group(1), "title": title[:140], "items": items[:6]})
+        if len(out) >= limit:
+            break
+    return out
+
+
 def main():
     code, name = gradle_version()
     version = sys.argv[1] if len(sys.argv) > 1 else name
@@ -52,7 +77,7 @@ def main():
     subprocess.run(["java", str(ROOT / "tools" / "SignBundle.java"), "sign", str(out_zip), str(out_sig), str(PROPS)], check=True)
     subprocess.run(["java", str(ROOT / "tools" / "SignBundle.java"), "verify", str(out_zip), str(out_sig), str(PROPS)], check=True)
     v = json.loads((ROOT / "version.json").read_text(encoding="utf-8"))
-    v.update(ota_version=version, ota_base_version_code=code)
+    v.update(ota_version=version, ota_base_version_code=code, history=history())
     for k in ("ota_bundle_url", "ota_enabled"):
         v.pop(k, None)
     (ROOT / "version.json").write_text(json.dumps(v, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

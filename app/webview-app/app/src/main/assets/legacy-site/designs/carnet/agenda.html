@@ -666,10 +666,15 @@ button.primary:hover{background:#26418a;box-shadow:2px 2px 0 var(--highlight);}
 .fp-reset{color:var(--ink);font-family:var(--hand);font-size:19px;}
 /* Relevé : feuille quadrillée, note au stylo rouge */
 .notes-panel{background-color:#fffdf7;background-image:linear-gradient(rgba(47,79,162,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(47,79,162,.08) 1px,transparent 1px);background-size:18px 18px;}
-.notes-panel::before{content:"";position:absolute;left:34px;top:0;bottom:0;width:2px;background:rgba(192,57,43,.35);pointer-events:none;}
+.notes-panel::before{content:"";position:absolute;left:28px;top:0;bottom:0;width:2px;background:rgba(192,57,43,.35);pointer-events:none;}
+/* La marge rouge ne passe plus sur les lettres : le texte commence 9 px après elle (et sous l'en-tête Retour/Fermer sur téléphone). */
+.notes-panel #npContent{padding-left:12px;}
+.notes-panel.as-sheet::before{top:72px;}
 .notes-avg{border-bottom:2px solid var(--ink);}
 .notes-avg .na-lbl{font-family:var(--hand);font-size:21px;font-weight:700;text-transform:none;letter-spacing:0;color:var(--ink);}
 .notes-avg .na-val{font-family:var(--hand);font-size:32px;color:#1e7a34;}
+.notes-avg{flex-wrap:nowrap;gap:8px;}.notes-avg .na-lbl,.notes-avg .na-val{white-space:nowrap;}
+@media (max-width:520px){.notes-avg{padding-left:10px;padding-right:10px;}.notes-avg .na-lbl{font-size:18px;}.notes-avg .na-val{font-size:26px;}}
 .notes-table th{background:#fffdf7;color:var(--ink);border-bottom:2px solid var(--ink);font-weight:800;}
 .notes-table td{color:var(--text);border-bottom:1px solid rgba(47,79,162,.15);}
 .notes-table tr.ue-row td{background:rgba(255,230,109,.35);font-weight:800;}

@@ -80,10 +80,33 @@ window.UCA_CORE = {
   renderUpdate(available, current, latest) {
     const el = $("updateOverlay") || $("updateBar");
     if (!el) return;
-    el.classList.toggle("hidden", !available);
-    if (!available) return;
+    // App web ouverte dans sa coque (app/shell.html) : c'est la coque qui propose la mise à jour, sur tous les onglets.
+    const framed = window.UCA_APP && !window.AndroidUCA && window.top !== window;
+    el.classList.toggle("hidden", !available || framed);
+    if (!available || framed) return;
     if ($("updCurrent")) $("updCurrent").textContent = current || "?";
     if ($("updLatest")) $("updLatest").textContent = latest || "?";
+    UCA_CORE.renderUpdateNews(el);
+  },
+  /* Nouveautés défilantes dans l'écran de mise à jour de l'app web : tout ce qui a changé, pas seulement la dernière version
+     (version.json, champ history). Rien dans l'extension : son dossier ne contient pas version.json. */
+  renderUpdateNews(el) {
+    if (!window.UCA_APP || window.AndroidUCA || el.querySelector(".upd-news")) return;
+    const btn = el.querySelector("button");
+    if (!btn) return;
+    fetch(chrome.runtime.getURL("version.json?t=" + Date.now()), { cache: "no-store" }).then((r) => (r.ok ? r.json() : null)).then((v) => {
+      const hist = v && Array.isArray(v.history) ? v.history : [];
+      if (!hist.length || el.querySelector(".upd-news")) return;
+      const box = document.createElement("div"); box.className = "upd-news"; box.tabIndex = 0;
+      box.style.cssText = "max-height:min(40vh,300px);overflow-y:auto;text-align:left;margin:12px 0;padding:4px 12px 8px;border:1px solid var(--border,#888);border-radius:12px;font-size:13px;-webkit-overflow-scrolling:touch;";
+      hist.forEach((h) => {
+        const t = document.createElement("div"); t.style.cssText = "font-weight:700;margin:10px 0 2px;"; t.textContent = `v${h.app || h.version}${h.title ? " · " + h.title : ""}`;
+        const ul = document.createElement("ul"); ul.style.cssText = "margin:0;padding-left:18px;";
+        (h.items || []).forEach((i) => { const li = document.createElement("li"); li.textContent = String(i); ul.appendChild(li); });
+        box.append(t, ul);
+      });
+      btn.parentNode.insertBefore(box, btn);
+    }).catch(() => {});
   },
   initUpdate() {
     const refresh = () => chrome.storage.local.get(["uca_update_available", "uca_current_version", "uca_latest_version"], (data) => {

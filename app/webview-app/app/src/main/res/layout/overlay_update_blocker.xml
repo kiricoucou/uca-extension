@@ -1,19 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/updateBlockerRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
+    android:orientation="vertical"
+    android:elevation="40dp"
     android:background="@color/bg"
     android:clickable="true"
     android:focusable="true">
+
+  <ScrollView
+    android:layout_width="match_parent"
+    android:layout_height="0dp"
+    android:layout_weight="1"
+    android:fillViewport="false"
+    android:scrollbars="vertical"
+    android:scrollbarStyle="outsideOverlay">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="24dp"
+        android:paddingBottom="12dp"
         android:gravity="center_horizontal">
 
         <!-- En-tête Icone & Badge Rouge Bloquant -->
@@ -123,12 +135,26 @@
                 android:lineSpacingExtra="3dp" />
         </LinearLayout>
 
+    </LinearLayout>
+  </ScrollView>
+
+  <!-- Zone fixe en bas : progression et boutons toujours visibles -->
+  <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="16dp"
+        android:background="@color/bg">
+
         <!-- Barre de progression du téléchargement de l'APK -->
         <LinearLayout
             android:id="@+id/layoutDownloadProgress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginBottom="10dp"
             android:orientation="vertical"
             android:visibility="gone">
 
@@ -154,17 +180,14 @@
                 android:gravity="center" />
         </LinearLayout>
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:minHeight="20dp" />
-
         <!-- Bouton Principal : Forcer la Mise à Jour -->
         <Button
             android:id="@+id/btnForceUpdate"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
+            android:layout_height="wrap_content"
+            android:minHeight="52dp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
             android:text="Mettre à jour l'application"
             android:textColor="@color/on_accent"
             android:textStyle="bold"
@@ -194,5 +217,5 @@
             android:textSize="11.5sp"
             android:visibility="gone" />
 
-    </LinearLayout>
-</ScrollView>
+  </LinearLayout>
+</LinearLayout>

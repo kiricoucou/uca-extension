@@ -777,9 +777,9 @@ async function syncNotesQuietly() {
     await recordNotesSeen(releve);
     const sync = new Date().toISOString();
     await chrome.storage.local.set({ uca_releve_notes: releve, uca_releve_notes_sync: sync });
-    const { uca_notes_seen, uca_notes_history } = await chrome.storage.local.get(["uca_notes_seen", "uca_notes_history"]);
+    const { uca_notes_seen, uca_notes_history, uca_scales } = await chrome.storage.local.get(["uca_notes_seen", "uca_notes_history", "uca_scales"]);
     // Historique de la moyenne générale : un point seulement quand elle change.
-    const history = UCA_GRADES.nextHistory(uca_notes_history, releve, Date.now());
+    const history = UCA_GRADES.nextHistory(uca_notes_history, UCA_GRADES.applyScales(releve, uca_scales), Date.now());
     if (history) await chrome.storage.local.set({ uca_notes_history: history });
     broadcast({ type: "UCA_NOTES_RESULT", ok: true, releve, sync, notesSeen: uca_notes_seen || {}, notesHistory: history || uca_notes_history || [] });
   }

@@ -3,7 +3,9 @@
    (l'historique s'enregistre à chaque synchro, agenda ouvert ou non).
    Format du relevé (voir parseNotesText dans background.js) :
    { ue: [{ label, coeff, note, matieres: [{ label, coeff, note, evals: [{ label, key, coeff, note, moy, maxi, mini }] }] }] }
-   Les notes sont prises sur 20 (le relevé Odin donne « (sur 20.0) »). */
+   Les notes sont prises sur 20 (le relevé Odin donne « (sur 20.0) »). Une évaluation « (sur 12.0) » ou « (sur 25) » est
+   ambiguë (la note affichée est-elle déjà ramenée sur 20 ?) : l'utilisateur choisit, évaluation par évaluation,
+   (uca_scales : { "matière|évaluation": 20 | barème }) et applyScales() renvoie le relevé avec les notes ramenées sur 20. */
 (function (root) {
 "use strict";
 
@@ -143,5 +145,45 @@ function gradedMatieres(releve) {
   return out;
 }
 
-root.UCA_GRADES = { weightedAvg, matiereNote, ueNote, generalAvg, pendingEvals, scopes, simulate, projection, priorities, nextHistory, matiereSeries, gradedMatieres };
+/* Barème écrit dans l'intitulé : « QCM1 (sur 12.0) » -> 12 ; null si absent. */
+function maxOf(label) {
+  const m = /\(\s*sur\s*(\d+(?:[.,]\d+)?)\s*\)/i.exec(String(label || ""));
+  const n = m ? parseFloat(m[1].replace(",", ".")) : NaN;
+  return n > 0 && Number.isFinite(n) ? n : null;
+}
+/* Clé d'une évaluation dans uca_scales (la même que celle des notes vues). */
+function scaleKey(matLabel, ev) { return matLabel + "|" + (ev.key || ev.label); }
+
+/* Copie du relevé où chaque évaluation dont l'utilisateur a choisi un barème autre que 20 est ramenée sur 20
+   (note, moyenne, maxi, mini : × 20 / barème). Ajoute à chaque évaluation : max (barème de l'intitulé, ou null),
+   choice (20, le barème, ou null si pas encore choisi), rawNote (note telle qu'écrite par Odin) et scaled.
+   Les notes de matière et d'UE fixées par Odin ne sont pas gardées quand une de leurs évaluations est ramenée :
+   elles sont recalculées avec les coefficients, pour que la moyenne suive le choix. Sans choix : relevé inchangé. */
+function applyScales(releve, scales) {
+  if (!releve || !Array.isArray(releve.ue)) return releve;
+  const sc = scales && typeof scales === "object" ? scales : {};
+  return Object.assign({}, releve, { ue: releve.ue.map((ue) => {
+    let ueScaled = false;
+    const matieres = (ue.matieres || []).map((m) => {
+      let matScaled = false;
+      const evals = (m.evals || []).map((e) => {
+        const max = maxOf(e.label), out = Object.assign({}, e, { max, choice: null, rawNote: e.note, scaled: false });
+        if (!max || max === 20) return out;
+        const c = Number(sc[scaleKey(m.label, e)]);
+        if (c === 20 || c === max) out.choice = c;
+        if (out.choice === max && e.note != null) {
+          const k = 20 / max;
+          ["note", "moy", "maxi", "mini"].forEach((f) => { if (e[f] != null) out[f] = e[f] * k; });
+          out.scaled = true; matScaled = true;
+        }
+        return out;
+      });
+      if (matScaled) ueScaled = true;
+      return Object.assign({}, m, { evals }, matScaled ? { note: null } : {});
+    });
+    return Object.assign({}, ue, { matieres }, ueScaled ? { note: null } : {});
+  }) });
+}
+
+root.UCA_GRADES = { maxOf, scaleKey, applyScales, weightedAvg, matiereNote, ueNote, generalAvg, pendingEvals, scopes, simulate, projection, priorities, nextHistory, matiereSeries, gradedMatieres };
 })(self);

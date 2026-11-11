@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnOpenGithub: Button
     private lateinit var btnDevBypassTest: View
 
-    private var isAppBlockedForUpdate: Boolean = false
+    @Volatile var isAppBlockedForUpdate: Boolean = false   // écran de mise à jour affiché : rien d'autre ne doit passer au-dessus
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,6 +93,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // L'APK téléchargé ne sert plus une fois installé : on le supprime (celui de moins de 10 min peut encore être en cours d'installation).
+        GithubUpdateManager.cleanupDownloadedApks(this, 10 * 60 * 1000L)
         if (!isAppBlockedForUpdate) {
             checkGithubUpdate()
         }
@@ -154,7 +156,8 @@ class MainActivity : AppCompatActivity() {
         txtVersionsComparison.text = "Version installée : v${updateInfo.currentVersion} ➔ Nouvelle : v${updateInfo.latestVersion}"
         txtCommitDetails.text = "Branche : ${updateInfo.branch} · Commit : ${updateInfo.commitSha}"
         txtPublishedDate.text = "Publication GitHub : ${updateInfo.publishedAt}"
-        txtChangelog.text = updateInfo.changelog.joinToString("\n") { "• $it" }
+        txtChangelog.text = formatChangelog(updateInfo.changelog)
+        showSessionBanner(false)   // d'abord la mise à jour, ensuite la reconnexion
 
         layoutDownloadProgress.visibility = View.GONE
         btnForceUpdate.isEnabled = true
@@ -186,6 +189,7 @@ class MainActivity : AppCompatActivity() {
                         if (PrefsStore.isLoggedIn(this)) {
                             bottomNav.visibility = View.VISIBLE
                         }
+                        showSessionBanner(PrefsStore.isLoggedIn(this) && PrefsStore.sessionExpired(this))
                         Toast.makeText(this, "✅ My UCA est à jour (v${updateInfo.latestVersion}) !", Toast.LENGTH_SHORT).show()
                         (supportFragmentManager.findFragmentById(R.id.fragmentContainer) as? AgendaFragment)?.reloadWebView()
                     },
@@ -203,7 +207,7 @@ class MainActivity : AppCompatActivity() {
             txtUpdateBadge.setTextColor(getColor(R.color.danger))
             txtUpdateBadge.setBackgroundResource(R.drawable.bg_btn_logout)
             txtUpdateSubtitle.text = "Le socle natif Android a évolué (nouvelle version système ou permissions). L'installation du nouvel APK est nécessaire."
-            btnForceUpdate.text = "📦 Télécharger et installer l'APK (48 Mo)"
+            btnForceUpdate.text = "📦 Télécharger et installer l'APK"
 
             btnForceUpdate.setOnClickListener {
                 layoutDownloadProgress.visibility = View.VISIBLE
@@ -235,6 +239,24 @@ class MainActivity : AppCompatActivity() {
 
         val debuggable = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
         btnDevBypassTest.visibility = if (debuggable) View.VISIBLE else View.GONE
+    }
+
+    /** Lignes « ##v1.4.11 · titre » = en-tête de version (en gras), les autres = puces. */
+    private fun formatChangelog(lines: List<String>): CharSequence {
+        val sb = android.text.SpannableStringBuilder()
+        lines.forEach { line ->
+            if (sb.isNotEmpty()) sb.append("\n")
+            if (line.startsWith("##")) {
+                if (sb.isNotEmpty()) sb.append("\n")
+                val start = sb.length
+                sb.append(line.removePrefix("##"))
+                sb.setSpan(android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, sb.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                sb.setSpan(android.text.style.ForegroundColorSpan(getColor(R.color.text)), start, sb.length, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            } else {
+                sb.append("• ").append(line)
+            }
+        }
+        return sb
     }
 
     /**
@@ -335,6 +357,7 @@ class MainActivity : AppCompatActivity() {
 
     /** Ouvre la page de connexion officielle du CAS (l'utilisateur tape lui-même ses codes). */
     fun startLogin() {
+        if (isAppBlockedForUpdate) return   // d'abord la mise à jour
         loginLauncher.launch(android.content.Intent(this, LoginActivity::class.java))
     }
 
@@ -380,6 +403,7 @@ class MainActivity : AppCompatActivity() {
     /** Rouge, fixe en bas à gauche, il clignote doucement (cadenas animé) pour attirer l'attention. */
     private fun showSessionBanner(show: Boolean) {
         val banner = findViewById<View>(R.id.sessionBanner) ?: return
+        val show = show && !isAppBlockedForUpdate
         banner.visibility = if (show) View.VISIBLE else View.GONE
         sessionPulse?.cancel(); sessionPulse = null
         banner.alpha = 1f; banner.scaleX = 1f; banner.scaleY = 1f
@@ -404,7 +428,7 @@ class MainActivity : AppCompatActivity() {
         if (!PrefsStore.isLoggedIn(this)) return
         SessionDiag.log(this, "session déclarée expirée (bandeau affiché)")
         PrefsStore.setSessionExpired(this, true)
-        showSessionBanner(true)
+        showSessionBanner(true)   // sans effet tant que l'écran de mise à jour est affiché
         (supportFragmentManager.findFragmentById(R.id.fragmentContainer) as? AgendaFragment)?.notifySessionExpired(true)
     }
 

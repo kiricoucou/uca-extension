@@ -281,6 +281,66 @@ function openLieu(l) {
   </div><button class="btn secondary" type="button" data-act="closeSheet" style="margin-top:12px">Annuler</button>`;
   $("sheet").hidden = false; $("sheetBackdrop").hidden = false;
 }
+
+/* ============ Mises à jour depuis GitHub (version.json) ============
+   L'app web est toujours servie « réseau d'abord » (sw.js) : une ouverture en ligne charge déjà la dernière version.
+   Ici : (1) au premier lancement après une mise à jour, la liste de TOUT ce qui a changé depuis la version précédente
+   (défilante) ; (2) application ouverte longtemps : une fenêtre « Nouvelle version disponible » avec les nouveautés et un
+   bouton qui vide le cache et recharge. L'historique vient de version.json (champ history, généré à chaque publication). */
+const semver = (a) => String(a || "0").split(".").map((n) => parseInt(n, 10) || 0);
+function newer(a, b) { const x = semver(a), y = semver(b); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; }
+const buildId = (v) => `${v.ota_version || v.version}|${v.published_at || ""}`;
+async function fetchVersion() {
+  try { const r = await fetch("../version.json?t=" + Date.now(), { cache: "no-store" }); return r.ok ? await r.json() : null; } catch (e) { return null; }
+}
+/* Versions publiées depuis `since` (la plus récente d'abord) ; sans historique, le changelog de la dernière. */
+function newsSince(v, since) {
+  const out = [];
+  (Array.isArray(v.history) ? v.history : []).forEach((h) => {
+    if (h && h.app && (!since || newer(h.app, since))) out.push({ version: String(h.app), title: String(h.title || ""), items: (Array.isArray(h.items) ? h.items : []).map(String) });
+  });
+  if (!out.length && Array.isArray(v.changelog)) out.push({ version: String(v.version || ""), title: "", items: v.changelog.map(String) });
+  return out;
+}
+function newsHtml(list) {
+  return `<div class="news" tabindex="0" aria-label="Nouveautés">${list.map((n) => `<h3>v${esc(n.version)}${n.title ? ` · ${esc(n.title)}` : ""}</h3><ul>${n.items.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`).join("") || '<p class="muted small">Aucun détail publié.</p>'}</div>`;
+}
+async function applyUpdate() {
+  try {
+    const keys = await caches.keys();
+    await Promise.all(keys.filter((k) => k !== "uca-share").map((k) => caches.delete(k)));
+    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (reg) await reg.update().catch(() => {});
+  } catch (e) { /* rechargement quand même : réseau d'abord */ }
+  location.reload();
+}
+const UPD = { boot: null, shownFor: null };
+function showUpdateSheet(v, kind, since) {
+  const title = kind === "available" ? `Nouvelle version disponible (v${esc(v.version)})` : `Mise à jour installée (v${esc(v.version)})`;
+  $("sheet").innerHTML = `<h2>${title}</h2><p class="small muted" style="margin:0 0 8px">${kind === "available" ? "Voici ce qui change :" : "Voici ce qui a changé depuis ta dernière visite :"}</p>${newsHtml(newsSince(v, since))}`
+    + (kind === "available" ? `<button class="btn" type="button" data-act="applyUpdate" style="margin-top:12px">Mettre à jour maintenant</button><button class="btn secondary" type="button" data-act="closeSheet" style="margin-top:10px">Plus tard</button>`
+      : `<button class="btn" type="button" data-act="closeSheet" style="margin-top:12px">OK</button>`);
+  $("sheet").hidden = false; $("sheetBackdrop").hidden = false;
+}
+async function checkUpdates(manual) {
+  if (navigator.onLine === false) { if (manual) toast("Impossible de vérifier : pas de connexion"); return; }
+  const v = await fetchVersion();
+  if (!v) { if (manual) toast("Impossible de vérifier : pas de connexion"); return; }
+  if (UPD.boot === null) {
+    UPD.boot = buildId(v);
+    const seen = localStorage.getItem("uca_pwa_seen_app");
+    localStorage.setItem("uca_pwa_seen_app", String(v.version));
+    if (seen && newer(v.version, seen)) showUpdateSheet(v, "done", seen);   // venue d'être mise à jour : on montre les nouveautés
+    else if (manual) toast("L'app est à jour (v" + v.version + ")");
+    return;
+  }
+  if (buildId(v) !== UPD.boot) {
+    if (manual || UPD.shownFor !== buildId(v)) { UPD.shownFor = buildId(v); showUpdateSheet(v, "available", localStorage.getItem("uca_pwa_seen_app")); }
+  } else if (manual) toast("L'app est à jour (v" + v.version + ")");
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden && UPD.boot !== null) checkUpdates(false); });
+setInterval(() => { if (!document.hidden) checkUpdates(false); }, 15 * 60 * 1000);
+
 function closeSheet() { $("sheet").hidden = true; $("sheetBackdrop").hidden = true; }
 
 async function checkStatus() {
@@ -300,11 +360,9 @@ async function onAction(act, el) {
   else if (act === "photo") $("photoInput").click();
   else if (act === "readAll") { localStorage.setItem("uca_notif_read", JSON.stringify(notifications().map((n) => n.id))); toast("Toutes les notifications sont marquées comme lues"); show(); }
   else if (act === "askNotif") { await Notification.requestPermission(); show(); }
-  else if (act === "update") {
-    const reg = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
-    if (reg) { await reg.update().catch(() => {}); toast(reg.waiting || reg.installing ? "Nouvelle version téléchargée : elle s'applique au prochain lancement" : "L'app est à jour"); }
-    else toast("L'app est à jour");
-  } else if (act === "logout") {
+  else if (act === "update") await checkUpdates(true);
+  else if (act === "applyUpdate") await applyUpdate();
+  else if (act === "logout") {
     // Même effet que « Se déconnecter » de l'app Android : tout ce qui est enregistré sur l'appareil est effacé.
     if (!confirm("Effacer emploi du temps, notes, absences et réglages de cet appareil ?")) return;
     await chrome.storage.local.clear();
@@ -365,6 +423,7 @@ async function load() {
   else tab = data.uca_events ? "agenda" : "home";   // comme l'app : ouverture sur l'agenda une fois les données là
   history.replaceState({ t: tab }, "", location.pathname + location.search + "#" + tab);
   show();
+  checkUpdates(false);
   chrome.storage.onChanged && chrome.storage.onChanged.addListener(async () => { await load(); if (current() !== "agenda") show(); else refreshBell(); });
 })();
 })();

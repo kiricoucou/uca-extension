@@ -1,21 +1,29 @@
 {
   "app_name": "My UCA",
-  "version": "1.4.14",
+  "version": "1.4.15",
   "version_code": 16,
-  "bundle_version": "1.4.14",
+  "bundle_version": "1.4.15",
   "commit_sha": "main",
   "branch": "main",
-  "published_at": "2026-11-11T19:50:00Z",
+  "published_at": "2026-11-11T21:30:00Z",
   "min_apk_version_code": 16,
   "raw_base_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/",
   "apk_download_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/EdtUca.apk",
   "github_repo_url": "https://github.com/kiricoucou/uca-extension",
   "changelog": [
-    "Agenda : le numéro d'un jour férié n'est plus rouge sur rouge quand c'est aujourd'hui (lisible)"
+    "Notes : le barème « (sur 22.0) » n'apparaît plus en double dans l'intitulé des évaluations"
   ],
-  "ota_version": "1.4.14",
+  "ota_version": "1.4.15",
   "ota_base_version_code": 16,
   "history": [
+    {
+      "version": "1.46.16",
+      "app": "1.4.15",
+      "title": "barème sans doublon",
+      "items": [
+        "Barème des évaluations : l'intitulé affichait « (sur 22.0) (sur 22) » quand Odin sépare « sur » et le nombre par une espace insécable ; le barème d'origine est maintenant retiré dans…"
+      ]
+    },
     {
       "version": "1.46.15",
       "app": "1.4.14",
@@ -84,17 +92,6 @@
         "Vue « Jour » en blocs : même rendu que la vue 3 jours (blocs sur la grille horaire) mais un seul jour sur toute la largeur, glisser pour changer de jour. Le réglage « Vue à l'ouverture »…",
         "Emploi du temps de la classe (app) : si aucune classe n'est sélectionnée dans ADE, l'app le dit (« Choisis ta classe dans ADE ») et lit le lien d'export toute seule dès qu'elle est…",
         "Vues 3 et 5 jours de la classe : un même cours donné à plusieurs groupes en même temps devient une seule carte (profs et salles réunis) ; les cours simultanés partagent les colonnes au…"
-      ]
-    },
-    {
-      "version": "1.46.7",
-      "app": "1.4.7",
-      "title": "l'APK de mise à jour est supprimé après l'installation",
-      "items": [
-        "Quand tu télécharges l'APK complet depuis l'écran de mise à jour et que tu l'installes, l'app supprime ensuite le fichier téléchargé au premier démarrage de la nouvelle version : il ne…",
-        "Les cookies de connexion de l'app sont aussi écrits sur le disque quand l'app s'arrête.",
-        "Diagnostic de connexion (Préférences) : montre l'état de la session, les noms des cookies présents pour les sites de l'UCA (jamais leurs valeurs) et le journal des derniers contrôles,…",
-        "Ce correctif ne force pas la mise à jour : les 1.4.6 continuent de fonctionner, l'APK est proposé quand tu veux."
       ]
     }
   ]

@@ -61,7 +61,7 @@ def ui(browser, base, errors):
         rel = copy.deepcopy(st["uca_releve_notes"]); mat = rel["ue"][0]["matieres"][0]
         mat["evals"] = [{"label": "QCM1 (sur 12.0)", "key": "QCM1 (sur 12.0)", "coeff": 1, "note": 5, "moy": 5.84, "maxi": 11, "mini": 1},
                         {"label": "TEST TD N°1 (sur 20.0)", "key": "TEST TD N°1 (sur 20.0)", "coeff": 1, "note": 11, "moy": 10.21, "maxi": 18, "mini": 3},
-                        {"label": "DS (sur 25)", "key": "DS (sur 25)", "coeff": 2, "note": 15, "moy": 12, "maxi": 24, "mini": 4}]
+                        {"label": "DS (sur 25)", "key": "DS (sur 25)", "coeff": 2, "note": 15, "moy": 12, "maxi": 24, "mini": 4}]
         mat["note"] = None; rel["ue"][0]["note"] = None
         st["uca_releve_notes"] = rel; st["uca_scales"] = {}
         pg.evaluate("(s) => localStorage.setItem('uca_store', JSON.stringify(s))", st)
@@ -75,6 +75,7 @@ def ui(browser, base, errors):
         avg1 = fr.evaluate("() => document.querySelector('.notes-avg .na-val').textContent")
         check(f"{design} : « sur 12 » recalcule la moyenne générale", avg0 != avg1 and "10,33" in avg0 and "10,61" in avg1, f"{avg0} -> {avg1}")
         check(f"{design} : flèche ⇄ à côté de « (sur 12) », l'autre évaluation attend toujours sa réponse", fr.evaluate("() => document.querySelectorAll('.np-mat .sc-flip').length") == 1 and fr.evaluate("() => document.querySelectorAll('.np-mat .sc-ask').length") == 1)
+        check(f"{design} : barème affiché une seule fois par intitulé (pas « (sur 12.0) (sur 12) »)", fr.evaluate("() => ![...document.querySelectorAll('.np-mat span')].some(e => (e.textContent.match(/\\(sur/g) || []).length > 1)"))
         fr.evaluate("() => document.querySelector('.np-mat .sc-flip').click()"); pg.wait_for_timeout(500)
         avg2 = fr.evaluate("() => document.querySelector('.notes-avg .na-val').textContent")
         check(f"{design} : la flèche rebascule sur 20 (moyenne d'origine)", avg2 == avg0, f"{avg2} vs {avg0}")

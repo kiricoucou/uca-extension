@@ -1136,7 +1136,8 @@ function scaleBlock(key, ev, label, inTable) {
   if (!ev || !ev.max || ev.max === 20 || (ev.note == null && ev.rawNote == null)) return null;
   const fmtMax = (n) => String(n).replace(".", ",");
   const title = document.createElement("span");
-  title.append(document.createTextNode(inTable ? String(label).replace(/\s*\(sur [\d.,]+\)/i, "") : label));
+  // Le barème est toujours rajouté par ce bloc : on retire celui de l'intitulé (« (sur 22.0) ») pour ne pas l'afficher deux fois.
+  title.append(document.createTextNode(String(label).replace(/\s*\(\s*sur\s*\d+(?:[.,]\d+)?\s*\)/i, "")));
   let ask = null;
   if (ev.choice == null) {
     title.append(document.createTextNode(` (sur ${fmtMax(ev.max)})`));
@@ -1517,7 +1518,7 @@ function overviewChart() {
     m.evals.forEach((e) => {
       const row = npEl("div", ""); row.style.cssText = "display:grid;grid-template-columns:1fr 42px;gap:8px;align-items:center;font-size:12px;margin-top:5px;";
       const left = npEl("div", "");
-      const bare = e.label.replace(/\s*\(sur [\d.,]+\)/i, "");
+      const bare = e.label.replace(/\s*\(\s*sur\s*\d+(?:[.,]\d+)?\s*\)/i, "");
       const sc = scaleBlock(m.label + "|" + (e.key || e.label), e, bare, false);
       const titleLine = npEl("div", ""); titleLine.append(sc ? sc[0] : document.createTextNode(bare), document.createTextNode(`${e.coeff != null ? ` · coeff ${fmtNote(e.coeff)}` : ""}${e.moy != null ? ` · classe ${fmtNote(e.moy)}` : ""}`));
       left.append(titleLine); if (sc && sc[1]) left.append(sc[1]);

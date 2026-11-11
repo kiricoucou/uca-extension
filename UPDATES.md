@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.16 — app Android 1.4.15 : barème sans doublon
+
+- **Barème des évaluations** : l'intitulé affichait « (sur 22.0) (sur 22) » quand Odin sépare « sur » et le nombre par une espace insécable ; le barème d'origine est maintenant retiré dans tous les cas. Constaté sur le vrai téléphone ; test ajouté. Version web seule : installée sans APK.
+
 ## 1.46.15 — app Android 1.4.14 : jour férié lisible
 
 - **Jour férié = aujourd'hui** : le numéro du jour courant restait rouge sur son fond coloré (illisible, ex. le 11 novembre) ; il garde maintenant sa couleur normale, l'infobulle indique toujours « férié ». Version web seule : installée sans APK (mise à jour silencieuse signée).

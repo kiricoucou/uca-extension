@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.18 — iPhone : envoyer les données à l'app
+
+- **Extension sur iPhone/iPad** : bouton « Envoyer les données à l'app » (feuille de partage + lien copié, code affiché), visible seulement si la page de l'app a déjà été ouverte dans ce navigateur et que des données existent. iOS ne permet pas de savoir si l'app est installée sur l'écran d'accueil : la détection repose sur cette ouverture, enregistrée localement, rien n'est envoyé à un tiers.
+
 ## 1.46.17 — app web : explication de la connexion Odin
 
 - **Importer mes données (app web)** : explique pourquoi un navigateur ne peut pas se connecter à Odin (cookies isolés, fenêtre CAS dédiée, aucun serveur tiers) et, sur Android, propose l'APK qui se connecte directement comme l'extension.

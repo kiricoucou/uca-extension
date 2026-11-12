@@ -34,5 +34,11 @@
     }
   });
 
+  // Détection de l'app : sa page a été ouverte dans ce navigateur (l'extension y est injectée). Sert au bouton
+  // « Envoyer les données à l'app » sur iPhone ; jamais envoyé nulle part, stocké localement.
+  if (location.origin === "https://kiricoucou.github.io") {
+    try { chrome.storage.local.set({ uca_app_seen: Date.now() }); } catch (_) {}
+  }
+
   post({ type: "UCA_EXTENSION_READY" });
 })();

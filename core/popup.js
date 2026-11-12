@@ -242,5 +242,29 @@ $("linkBtn").addEventListener("click", async () => {
   }
   setTimeout(() => { btn.textContent = original; }, 3000);
 });
+/* iPhone/iPad uniquement : « Envoyer les données à l'app », seulement si la page de l'app a déjà été ouverte
+   dans ce navigateur (content-bridge.js pose uca_app_seen) et que des données existent. */
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
+if (IS_IOS && $("linkBtn")) {
+  chrome.storage.local.get(["uca_app_seen", "uca_events"], (d) => {
+    if (!d.uca_app_seen || !(d.uca_events || []).length || $("appSendBtn")) return;
+    const b = document.createElement("button");
+    b.id = "appSendBtn"; b.type = "button"; b.className = $("linkBtn").className; b.textContent = "Envoyer les données à l'app";
+    b.style.cssText = $("linkBtn").style.cssText;
+    $("linkBtn").after(b);
+    b.addEventListener("click", async () => {
+      const original = b.textContent;
+      try {
+        const share = await UCA_TRANSFER.makeShareLink();
+        let ok = false;
+        if (UCA_TRANSFER.canShare()) { try { ok = await UCA_TRANSFER.shareLink(share); } catch (_) {} }
+        const copied = await copyText(share.link);
+        b.textContent = ok || copied ? "Envoyé ✓" : "Envoi impossible";
+        showShareResult(share, copied);
+      } catch (e) { b.textContent = "Génération impossible"; }
+      setTimeout(() => { b.textContent = original; }, 3000);
+    });
+  });
+}
 UCA_TOOLS.load(loadFromStorage);
 })();

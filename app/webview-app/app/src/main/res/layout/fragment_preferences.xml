@@ -125,6 +125,18 @@
                     android:background="@drawable/bg_cta"
                     android:textSize="12sp"
                     android:textStyle="bold" />
+                <TextView android:text="NOTIFICATIONS" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                <Button
+                    android:id="@+id/btnNotifKeep"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="14dp"
+                    android:text="Conserver les notifications"
+                    android:textColor="@color/on_accent"
+                    android:background="@drawable/bg_cta"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
                 <TextView android:text="MISES À JOUR GITHUB" android:textColor="@color/text_dim" android:textSize="12sp" android:textStyle="bold" android:layout_width="wrap_content" android:layout_height="wrap_content"/>
                 <TextView
                     android:text="Les nouvelles versions de l'interface s'installent seules depuis GitHub. Un nouvel APK complet est proposé à l'ouverture quand il y en a un."

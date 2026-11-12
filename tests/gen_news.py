@@ -21,33 +21,58 @@ DATES_FILE = ROOT / "news-dates.json"
 MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."]
 
 
+def vkey(v):
+    return [int(n) for n in v.split(".")]
+
+
 def release_dates(vs):
     """Date et heure de sortie de chaque version, mémorisées dans news-dates.json (stable d'une génération à l'autre).
-    Première fois : le commit qui a posé « version »: « X » dans manifest.json (git log -S), sinon l'instant présent."""
+    Valeur : « ISO » (commit qui a posé la version dans manifest.json, git log -S) ou { "at": ISO, "with": "X.Y.Z" } pour une
+    version qui n'a jamais eu de commit à son nom : elle est livrée avec la suivante, dont on prend la date. La version en cours
+    de publication (sans commit encore) prend l'instant présent."""
     try:
         known = json.loads(DATES_FILE.read_text(encoding="utf-8"))
     except Exception:
         known = {}
     changed = False
+    own = {}   # versions qui ont leur propre commit
     for v in vs:
-        if v["version"] in known:
+        k = v["version"]
+        cur = known.get(k)
+        if isinstance(cur, str):
+            own[k] = cur
+            continue
+        if isinstance(cur, dict):
             continue
         iso = ""
         try:
-            out = subprocess.run(["git", "log", "-S", f'"version": "{v["version"]}"', "--format=%cI", "--", "manifest.json"],
+            out = subprocess.run(["git", "log", "-S", f'"version": "{k}"', "--format=%cI", "--", "manifest.json"],
                                  cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30).stdout.split()
             iso = out[-1] if out else ""  # le plus ancien commit qui l'introduit
         except Exception:
             iso = ""
-        if not iso:  # version sans commit à son nom : date de la version précédente connue, sinon maintenant
-            lower = [k for k in known if [int(n) for n in k.split(".")] < [int(n) for n in v["version"].split(".")]]
-            newest = v is vs[0]  # la version en cours de publication : pas encore de commit, donc « maintenant »
-            iso = known[max(lower, key=lambda k: [int(n) for n in k.split(".")])] if lower and not newest else datetime.datetime.now().astimezone().replace(microsecond=0).isoformat()
-        known[v["version"]] = iso
-        changed = True
+        if iso:
+            known[k] = own[k] = iso; changed = True
+        elif v is vs[0]:   # en cours de publication : pas encore de commit
+            known[k] = own[k] = datetime.datetime.now().astimezone().replace(microsecond=0).isoformat(); changed = True
+    # versions sans commit à leur nom : livrées avec la plus proche version suivante qui en a un
+    for v in vs:
+        k = v["version"]
+        if k in known and not (isinstance(known[k], str) and k not in own):
+            if isinstance(known[k], dict) or k in own:
+                continue
+        higher = sorted((x for x in own if vkey(x) > vkey(k)), key=vkey)
+        if higher:
+            known[k] = {"at": own[higher[0]], "with": higher[0]}; changed = True
+        elif k not in known:
+            known[k] = datetime.datetime.now().astimezone().replace(microsecond=0).isoformat(); changed = True
     if changed:
-        DATES_FILE.write_text(json.dumps(dict(sorted(known.items())), ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n")
+        DATES_FILE.write_text(json.dumps(dict(sorted(known.items(), key=lambda kv: vkey(kv[0]))), ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n")
     return known
+
+
+def date_of(entry):
+    return entry["at"] if isinstance(entry, dict) else entry
 
 
 def when(iso):
@@ -70,7 +95,9 @@ def tags(v):
 
 def meta_html(v, dates):
     chips = "".join(f'<span class="chip chip-{k}">{n}</span>' for k, n in tags(v))
-    return f'<div class="news-meta"><span class="vbadge">v{v["version"]}</span><time datetime="{dates[v["version"]]}">{when(dates[v["version"]])}</time>{chips}</div>'
+    e = dates[v["version"]]; iso = date_of(e)
+    extra = f' <span class="with">livrée avec la {e["with"]}</span>' if isinstance(e, dict) else ""
+    return f'<div class="news-meta"><span class="vbadge">v{v["version"]}</span><time datetime="{iso}">{when(iso)}</time>{extra}{chips}</div>'
 
 
 def versions():

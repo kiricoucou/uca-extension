@@ -54,8 +54,9 @@ let manualSync = false;
 /* Journal d'activité (cloche de l'agenda) : on y garde tout, y compris les changements sur des cours passés. */
 async function logActivity(entries) {
   if (!entries.length) return;
-  const { uca_activity } = await chrome.storage.local.get("uca_activity");
-  const all = UCA_ACTIVITY.merge(uca_activity, entries, Date.now());
+  const { uca_activity, uca_activity_dismissed } = await chrome.storage.local.get(["uca_activity", "uca_activity_dismissed"]);
+  const st = await UCA_getSettings();
+  const all = UCA_ACTIVITY.merge(uca_activity, entries, Date.now(), { keepDays: st.activityKeepDays, dismissed: uca_activity_dismissed });
   await chrome.storage.local.set({ uca_activity: all });
   broadcast({ type: "UCA_ACTIVITY", activity: all });
 }

@@ -21,6 +21,7 @@ const DEFAULTS = {
   taskReminders: true,    // notification la veille à 18 h pour chaque devoir à rendre et chaque examen
   absenceAlert: 0,        // 0 = désactivée ; sinon alerte à N absences non justifiées
   statusWatch: false,     // surveille Odin et la connexion toutes les 5 min, notifie panne / retour
+  activityKeepDays: 30,   // jours de conservation des notifications non gardées de la cloche (0 = illimité)
   noteNewDays: 2,         // note affichée en orange pendant N jours, puis en jaune pendant autant
 };
 

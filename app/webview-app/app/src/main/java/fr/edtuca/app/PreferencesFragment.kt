@@ -93,6 +93,22 @@ class PreferencesFragment : Fragment() {
             ((sw.parent as? View)?.takeIf { it.id != R.id.fragmentContainer } ?: sw).visibility = View.GONE
         }
 
+        // Durée de conservation des notifications (les « gardées » ne sont jamais supprimées).
+        val btnKeep = root.findViewById<android.widget.Button>(R.id.btnNotifKeep)
+        val keepChoices = listOf(7 to "7 jours", 14 to "14 jours", 30 to "30 jours", 90 to "90 jours", 0 to "Illimitée")
+        fun keepLabel() = "Conserver les notifications : " + (keepChoices.firstOrNull { it.first == PrefsStore.notifKeepDays(ctx) }?.second ?: "30 jours")
+        btnKeep?.text = keepLabel()
+        btnKeep?.setOnClickListener {
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Conserver les notifications non gardées")
+                .setSingleChoiceItems(keepChoices.map { it.second }.toTypedArray(), keepChoices.indexOfFirst { it.first == PrefsStore.notifKeepDays(ctx) }.coerceAtLeast(0)) { dialog, which ->
+                    PrefsStore.setNotifKeepDays(ctx, keepChoices[which].first)
+                    btnKeep.text = keepLabel()
+                    NotifStore.list(ctx)   // applique tout de suite la nouvelle durée
+                    dialog.dismiss()
+                }.setNegativeButton("Annuler", null).show()
+        }
+
         root.findViewById<View>(R.id.btnDiag)?.setOnClickListener {
             val report = SessionDiag.report(ctx)
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
@@ -107,11 +123,11 @@ class PreferencesFragment : Fragment() {
 
         // Design de l'application : choisi ici, appliqué à l'agenda et mémorisé.
         val btnDesign = root.findViewById<android.widget.Button>(R.id.btnDesign)
-        fun designLabel() = PrefsStore.DESIGNS.firstOrNull { it.first == (PrefsStore.design(ctx) ?: "anime") }?.second ?: "Animé"
+        fun designLabel() = PrefsStore.DESIGNS.firstOrNull { it.first == (PrefsStore.design(ctx) ?: "studio") }?.second ?: "Studio"
         btnDesign?.text = "Design : " + designLabel()
         btnDesign?.setOnClickListener {
             val ids = PrefsStore.DESIGNS.map { it.first }
-            val current = ids.indexOf(PrefsStore.design(ctx) ?: "anime").coerceAtLeast(0)
+            val current = ids.indexOf(PrefsStore.design(ctx) ?: "studio").coerceAtLeast(0)
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
                 .setTitle("Design de l'application")
                 .setSingleChoiceItems(PrefsStore.DESIGNS.map { it.second }.toTypedArray(), current) { dialog, which ->

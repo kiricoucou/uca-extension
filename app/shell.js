@@ -79,6 +79,8 @@ function readSet() { try { return new Set(JSON.parse(localStorage.getItem("uca_n
 function notifications() {
   const out = [];
   const todayKey = new Date().toISOString().slice(0, 10);
+  const keepDays = data.settings && data.settings.activityKeepDays !== undefined ? Number(data.settings.activityKeepDays) : 30;
+  const keepMs = keepDays > 0 ? keepDays * 86400000 : Infinity;   // durée réglée dans Préférences ; les « gardées » ne sont pas concernées
   (data.uca_edt_changes || []).forEach((c) => {
     if (!c.ev || (c.ev.date && c.ev.date < todayKey)) return;
     const label = { added: "Cours ajouté", cancelled: "Cours annulé", moved: "Cours déplacé", room: "Salle changée", changed: "Cours modifié" }[c.type] || "Emploi du temps modifié";
@@ -86,7 +88,7 @@ function notifications() {
   });
   // Notes apparues depuis moins de 7 jours (uca_notes_seen : { clé: { at, note } }, tenu à jour par la synchro).
   Object.entries(data.uca_notes_seen || {}).forEach(([k, v]) => {
-    if (!v || !v.at || Date.now() - v.at > 7 * 86400000) return;
+    if (!v || !v.at || Date.now() - v.at > keepMs) return;
     const label = String(k).split(/[|:]/).map((x) => x.trim()).filter(Boolean).slice(-2).join(" · ");
     out.push({ id: "note:" + k + ":" + v.note, type: "note", title: "Nouvelle note" + (label ? " : " + label : ""), text: v.note != null ? String(v.note) : "", at: v.at });
   });
@@ -211,6 +213,8 @@ const SCREENS = {
         ${sw("remindersEnabled", "Prochains cours", `Rappel ${s.reminderMinutes} min avant (app ouverte ou en arrière-plan récent)`)}
         ${sw("notifyEdtChanges", "Changements d'emploi du temps", "Cours ajouté, annulé, déplacé, salle changée")}
         ${sw("notifyNewGrades", "Nouvelle note")}
+        <div class="switch-row"><label for="sel-keep">Conserver les notifications<small>Les notifications « gardées » ne sont jamais supprimées ; les autres disparaissent après ce délai.</small></label>
+          <select id="sel-keep" data-set="activityKeepDays" aria-label="Durée de conservation des notifications">${[[7, "7 jours"], [14, "14 jours"], [30, "30 jours"], [90, "90 jours"], [0, "Illimité"]].map(([v, l]) => `<option value="${v}"${Number(s.activityKeepDays === undefined ? 30 : s.activityKeepDays) === v ? " selected" : ""}>${l}</option>`).join("")}</select></div>
         ${sw("taskReminders", "Devoirs et examens", "La veille à 18 h")}
       </div>
       <div class="section-title">Design de l'agenda</div>
@@ -435,7 +439,7 @@ document.addEventListener("click", (e) => {
 });
 document.addEventListener("change", async (e) => {
   const k = e.target.dataset && e.target.dataset.set;
-  if (k) { await UCA_saveSettings({ [k]: e.target.checked }); data.settings[k] = e.target.checked; toast("Enregistré"); }
+  if (k) { const val = e.target.type === "checkbox" ? e.target.checked : Number(e.target.value); await UCA_saveSettings({ [k]: val }); data.settings[k] = val; toast("Enregistré"); }
   if (e.target.id === "photoInput" && e.target.files[0]) {
     // Photo réduite à 256 px et gardée sur l'appareil uniquement (comme ProfilePhoto.kt).
     try {

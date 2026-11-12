@@ -128,6 +128,42 @@ function nextHistory(history, releve, now) {
   return list.concat({ at: now, avg: rounded }).slice(-HISTORY_MAX);
 }
 
+
+/* Reconstruit le passé de la courbe : Odin ne date pas les notes, mais l'extension retient depuis quand chaque évaluation est
+   connue (notesSeen : "matière|évaluation" -> { at }, at = 0 pour les notes déjà là au premier relevé). On recalcule la moyenne
+   générale telle qu'elle était à chaque date où une note est apparue (seules les évaluations connues à cette date comptent),
+   puis on fusionne avec l'historique enregistré (un point par synchro qui a changé la moyenne). Renvoie [{ at, avg }]. */
+function reconstructHistory(releve, notesSeen, history) {
+  const stored = Array.isArray(history) ? history.filter((p) => p && Number.isFinite(p.at) && Number.isFinite(p.avg)) : [];
+  const out = stored.slice();
+  const seen = notesSeen || {};
+  const times = [];
+  ((releve && releve.ue) || []).forEach((ue) => (ue.matieres || []).forEach((m) => (m.evals || []).forEach((e) => {
+    const rec = seen[m.label + "|" + (e.key || e.label)];
+    if (e.note != null && rec && rec.at > 0 && times.indexOf(rec.at) < 0) times.push(rec.at);
+  })));
+  times.sort((a, b) => a - b);
+  const at = (t) => {
+    const clone = { ue: ((releve && releve.ue) || []).map((ue) => ({ label: ue.label, coeff: ue.coeff, note: null, matieres: (ue.matieres || []).map((m) => ({
+      label: m.label, coeff: m.coeff, note: null,
+      evals: (m.evals || []).map((e) => { const rec = seen[m.label + "|" + (e.key || e.label)]; return rec && rec.at > t ? Object.assign({}, e, { note: null }) : e; }),
+    })) })) };
+    const v = generalAvg(clone);
+    return v == null ? null : Math.round(v * 100) / 100;
+  };
+  const known = out.map((p) => p.at);
+  // Point de départ : juste avant la première note datée (ce qui était déjà là au premier relevé).
+  const rebuilt = times.length ? [times[0] - 1].concat(times) : [];
+  rebuilt.forEach((t) => {
+    if (known.some((k) => Math.abs(k - t) < 60000)) return;   // un vrai point de synchro existe déjà à ce moment
+    const avg = at(t);
+    if (avg != null) out.push({ at: t, avg });
+  });
+  out.sort((a, b) => a.at - b.at);
+  // Pas deux points consécutifs identiques : la courbe ne montre que les changements.
+  return out.filter((p, i) => i === 0 || p.avg !== out[i - 1].avg).slice(-HISTORY_MAX);
+}
+
 /* Séries du graphique d'une matière : une barre par évaluation notée (note, moyenne de la classe). */
 function matiereSeries(releve, label) {
   for (const ue of (releve && releve.ue) || []) {
@@ -209,5 +245,5 @@ function competences(releve) {
   return { years, items };
 }
 
-root.UCA_GRADES = { competences, maxOf, scaleKey, applyScales, weightedAvg, matiereNote, ueNote, generalAvg, pendingEvals, scopes, simulate, projection, priorities, nextHistory, matiereSeries, gradedMatieres };
+root.UCA_GRADES = { reconstructHistory, competences, maxOf, scaleKey, applyScales, weightedAvg, matiereNote, ueNote, generalAvg, pendingEvals, scopes, simulate, projection, priorities, nextHistory, matiereSeries, gradedMatieres };
 })(self);

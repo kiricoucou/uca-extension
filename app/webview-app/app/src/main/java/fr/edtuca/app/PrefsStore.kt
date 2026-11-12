@@ -135,7 +135,7 @@ object PrefsStore {
         p.edit().putInt("profile_schema", 2).apply()
     }
 
-    val DESIGNS = listOf("anime" to "Animé (sombre turquoise)", "professionnel" to "Professionnel", "bulletin" to "Bulletin", "carnet" to "Carnet")
+    val DESIGNS = listOf("studio" to "Studio (clair, par défaut)", "anime" to "Animé (sombre turquoise)", "professionnel" to "Professionnel", "bulletin" to "Bulletin", "carnet" to "Carnet")
 
     /** Design choisi (agenda de l'app), ou null s'il n'a jamais été choisi. */
     fun design(context: Context): String? =
@@ -154,6 +154,10 @@ object PrefsStore {
     /** Session CAS expirée : l'app reste consultable (données déjà synchronisées), un bandeau propose de se reconnecter. */
     fun sessionExpired(context: Context): Boolean = prefs(context).getBoolean("session_expired", false)
     fun setSessionExpired(context: Context, value: Boolean) { prefs(context).edit().putBoolean("session_expired", value).apply() }
+
+    /** Durée de conservation des notifications non gardées, en jours (0 = illimité). */
+    fun notifKeepDays(context: Context): Int = prefs(context).getInt("notif_keep_days", 30)
+    fun setNotifKeepDays(context: Context, days: Int) { prefs(context).edit().putInt("notif_keep_days", days).apply() }
 
     fun notifMail(context: Context): Boolean = prefs(context).getBoolean("notif_mail", true)
     fun setNotifMail(context: Context, v: Boolean) { prefs(context).edit().putBoolean("notif_mail", v).apply() }

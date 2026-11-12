@@ -55,6 +55,14 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.28 — app Android 1.4.20 : notifications gérables, passé de la courbe, dates de sortie
+
+- **Notifications gérables partout** : dans la cloche « Activité » de l'extension et dans l'écran Notifications de l'APK (comme dans l'app web) : garder (★, jamais supprimée), supprimer, tout supprimer sauf les gardées, filtres (toutes, non lues, gardées), lue / non lue (APK). Une notification supprimée ne revient pas à la synchro suivante.
+- **Durée de conservation réglable** : 7, 14, 30 (défaut), 90 jours ou illimitée, dans Paramètres (extension), Préférences (APK et app web). Les notifications gardées ne sont jamais concernées.
+- **Courbe d'évolution de la moyenne** : le passé est reconstruit à partir de la date de première vue de chaque note (plus besoin d'attendre plusieurs synchros) ; un seul point est dessiné quand il n'y en a qu'un ; le dernier point est toujours la moyenne actuelle.
+- **APK** : le design Studio est proposé dans les Préférences.
+- **Site** : les versions qui n'ont jamais eu de publication à leur nom (1.46.1, 1.46.7, 1.46.8) indiquent « livrée avec la 1.46.x » et la date de cette version, au lieu d'une date approchée.
+
 ## 1.46.27 — mise à jour automatique de l'extension
 
 - **Mise à jour obligatoire = vraie mise à jour** : le bouton « Télécharger et appliquer la mise à jour » télécharge le ZIP publié, écrit les fichiers dans le dossier de l'extension (manifest.json en dernier) puis recharge l'extension. La première fois, le navigateur demande de choisir ce dossier et d'autoriser l'écriture ; il est ensuite mémorisé, et si l'autorisation est encore valable la mise à jour se fait même toute seule (sans clic) dès qu'une nouvelle version est détectée. Chemins hors dossier refusés, paquet qui n'est pas l'extension UCA refusé. Chrome, Edge, Brave, Chromium ; Firefox n'a pas cette API (étapes manuelles ou `install-linux.sh`).

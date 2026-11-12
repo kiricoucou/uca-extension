@@ -1411,8 +1411,21 @@ function chartScroll(svg) {
 }
 function svgText(x, y, text, anchor) { const t = svgEl("text", { x, y, "font-size": 10, "text-anchor": anchor || "middle", fill: "currentColor", opacity: ".75" }); t.textContent = text; return t; }
 function historyChart() {
-  const pts = notesHistory;
+  // Moyenne à chaque date où une note est apparue (reconstruite depuis les dates de première vue), fusionnée avec les points de synchro.
+  const pts = UCA_GRADES.reconstructHistory(releveNotes, notesSeen, notesHistory);
+  // Le dernier point est toujours la moyenne actuelle (même si aucune note datée ni synchro enregistrée : au moins 1 point).
+  const cur = generalAverage();
+  if (cur != null) { const r = Math.round(cur * 100) / 100; if (!pts.length || pts[pts.length - 1].avg !== r) pts.push({ at: Date.now(), avg: r }); }
   const wrap = npEl("div", "np-chart-body");
+  if (pts.length === 1) {
+    // Un seul point : on le montre quand même (la courbe apparaît dès la 2e valeur de moyenne).
+    const svg1 = chartSvg(300, 90); svg1.setAttribute("aria-label", `Moyenne générale actuelle : ${fmtNote(pts[0].avg)} sur 20`);
+    svg1.appendChild(svgEl("line", { x1: 20, x2: 280, y1: 50, y2: 50, stroke: "currentColor", "stroke-opacity": ".15" }));
+    svg1.appendChild(svgEl("circle", { cx: 150, cy: 50, r: 5, fill: "var(--accent)" }));
+    svg1.appendChild(svgText(150, 36, fmtNote(pts[0].avg) + " / 20", "middle"));
+    svg1.appendChild(svgText(150, 74, new Date(pts[0].at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }), "middle"));
+    wrap.appendChild(chartScroll(svg1));
+  }
   if (pts.length < 2) {
     wrap.appendChild(npEl("div", "fp-empty", pts.length ? `Moyenne actuelle : ${fmtNote(pts[0].avg)} / 20. La courbe se dessine à chaque synchro où ta moyenne change.` : "Pas encore d'historique : la courbe se dessine à chaque synchro où ta moyenne change."));
     return wrap;
@@ -1806,7 +1819,14 @@ function renderBellButton() {
 function buildBellPanel(p) {
   UCA_ACTIVITY.buildPanel(p, { log: activity, seenAt: activitySeenAt,
     onOpenDay: (day) => { const [y, m, d] = day.split("-").map(Number); p.classList.remove("open"); if ($("ucaSheetBackdrop")) $("ucaSheetBackdrop").hidden = true; goToDate(new Date(y, m - 1, d)); },
-    onClear: () => { activity = []; chrome.storage.local.set({ uca_activity: [] }); renderBellButton(); buildBellPanel(p); } });
+    onChange: (next, removed) => {
+      activity = next;
+      chrome.storage.local.get("uca_activity_dismissed", (d) => {
+        const gone = Array.from(new Set((Array.isArray(d.uca_activity_dismissed) ? d.uca_activity_dismissed : []).concat(removed))).slice(-500);
+        chrome.storage.local.set({ uca_activity: next, uca_activity_dismissed: gone });
+      });
+      renderBellButton();
+    } });
   // Lu : les pastilles « nouveau » restent affichées dans ce panneau, le compteur repart à zéro.
   if (UCA_ACTIVITY.unread(activity, activitySeenAt).length) chrome.storage.local.set({ uca_activity_seen: Date.now() });
 }

@@ -216,7 +216,7 @@ def edt_change_checks(ctx, sw, base, data):
         ag.locator("#bellBtn").click(); ag.wait_for_timeout(400)
         check(f"{d['id']} : panneau Activité liste les 4 changements", ag.locator("#bellPanel .act-item").count() == 4 and "Salle changée" in ag.locator("#bellPanel").inner_text(), ag.locator("#bellPanel").inner_text()[:200])
         shot(ag, f"{d['id']}-cloche")
-        ag.locator("#bellPanel button.act-item").first.click(); ag.wait_for_timeout(400)
+        ag.locator("#bellPanel .act-tx.go").first.click(); ag.wait_for_timeout(400)
         ag.wait_for_timeout(300)
         check(f"{d['id']} : cloche lue, compteur remis à zéro", ag.locator("#bellBtn .filter-count").count() == 0)
         sw.evaluate("chrome.storage.local.remove('uca_activity_seen')")

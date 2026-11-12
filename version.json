@@ -1,23 +1,35 @@
 {
   "app_name": "My UCA",
-  "version": "1.4.19",
-  "version_code": 16,
-  "bundle_version": "1.4.19",
+  "version": "1.4.20",
+  "version_code": 17,
+  "bundle_version": "1.4.20",
   "commit_sha": "main",
   "branch": "main",
-  "published_at": "2026-11-12T14:30:00Z",
+  "published_at": "2026-11-12T19:00:00Z",
   "min_apk_version_code": 16,
   "raw_base_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/",
   "apk_download_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/EdtUca.apk",
   "github_repo_url": "https://github.com/kiricoucou/uca-extension",
   "changelog": [
-    "Nouveau design « Studio » (par défaut) : panneaux blancs arrondis, cartes pastel, menu qui suit le design",
-    "Notes : légende, évolution de la moyenne, compétences (UE) ; notifications : garder, supprimer, filtrer",
-    "Compte : session privée et envoi vers un autre appareil par QR animé"
+    "Notifications : garder, supprimer, filtrer et durée de conservation réglable (aussi dans l'APK)",
+    "Notes : la courbe d'évolution de la moyenne se reconstruit depuis les dates de première vue des notes",
+    "Design Studio proposé dans les Préférences"
   ],
-  "ota_version": "1.4.19",
-  "ota_base_version_code": 16,
+  "ota_version": "1.4.20",
+  "ota_base_version_code": 17,
   "history": [
+    {
+      "version": "1.46.28",
+      "app": "1.4.20",
+      "title": "notifications gérables, passé de la courbe, dates de sortie",
+      "items": [
+        "Notifications gérables partout : dans la cloche « Activité » de l'extension et dans l'écran Notifications de l'APK (comme dans l'app web) : garder (★, jamais supprimée), supprimer, tout…",
+        "Durée de conservation réglable : 7, 14, 30 (défaut), 90 jours ou illimitée, dans Paramètres (extension), Préférences (APK et app web). Les notifications gardées ne sont jamais concernées.",
+        "Courbe d'évolution de la moyenne : le passé est reconstruit à partir de la date de première vue de chaque note (plus besoin d'attendre plusieurs synchros) ; un seul point est dessiné…",
+        "APK : le design Studio est proposé dans les Préférences.",
+        "Site : les versions qui n'ont jamais eu de publication à leur nom (1.46.1, 1.46.7, 1.46.8) indiquent « livrée avec la 1.46.x » et la date de cette version, au lieu d'une date approchée."
+      ]
+    },
     {
       "version": "1.46.24",
       "app": "1.4.19",
@@ -81,17 +93,6 @@
       "title": "logo Université Clermont Auvergne",
       "items": [
         "Logo de l'app : l'icône de l'APK (lanceur carré et rond), de l'app web (iPhone/Android, icône d'installation, écrans de démarrage iOS) et de la page de téléchargement est maintenant le…"
-      ]
-    },
-    {
-      "version": "1.46.13",
-      "app": "1.4.12",
-      "title": "barème des évaluations, mise à jour plus claire, carnet",
-      "items": [
-        "Barème des évaluations (extension, app Android, app web iPhone/Android) : une évaluation dont l'intitulé contient « (sur 12.0) », « (sur 25) »… est ambiguë (la note affichée est-elle…",
-        "Écran de mise à jour de l'APK : la liste des nouveautés défile et couvre toutes les versions publiées depuis celle installée (pas seulement la dernière) ; les boutons restent visibles en…",
-        "App web (PWA) : fenêtre « Nouvelle version disponible » (nouveautés défilantes, bouton « Mettre à jour maintenant » qui vide le cache et recharge) quand une version est publiée pendant…",
-        "Carnet : la marge rouge du relevé ne passe plus sur les premières lettres (le texte commence après, avec un petit espace) ; « Moyenne générale » et la note tiennent sur une ligne (aussi…"
       ]
     }
   ]

@@ -42,6 +42,8 @@ const SECTIONS = [
     { app: true, key: "pinNext", type: "pinNext", label: "Notification « prochain cours »", hint: "Garde le prochain cours (ou « Examen dans X h ») dans tes notifications. Mise à jour à chaque ouverture de l'app, pas en continu : l'app n'a pas de serveur qui peut la réveiller. Autorisation demandée à l'activation." },
     { key: "absenceAlert", type: "select", label: "Alerte d'absences non justifiées", hint: "Quand ce nombre est atteint : message dans le panneau Absences et notification. Désactivée par défaut.",
       options: [[0, "Désactivée"], [2, "À 2 absences"], [3, "À 3 absences"], [4, "À 4 absences"], [5, "À 5 absences"], [6, "À 6 absences"], [8, "À 8 absences"], [10, "À 10 absences"]] },
+    { key: "activityKeepDays", type: "select", label: "Conserver les notifications de la cloche", hint: "Les notifications que tu as « gardées » ne sont jamais supprimées ; les autres disparaissent après ce délai.",
+      options: [[7, "7 jours"], [14, "14 jours"], [30, "30 jours"], [90, "90 jours"], [0, "Illimité"]] },
     { notif: true, ext: true, key: "notifyNewGrades", type: "switch", label: "Nouvelle note", hint: "Notification quand une note apparaît (ou change) dans ton relevé." },
   ] },
 ];

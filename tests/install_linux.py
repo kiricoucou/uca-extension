@@ -66,6 +66,11 @@ def main():
         check("Chrome : installation réussie (code 0)", r.returncode == 0, (r.stdout + r.stderr)[-500:])
         check("Chrome : manifest.json et code installés", (d / "manifest.json").exists() and (d / "background.js").exists() and (d / "core").is_dir())
         check("Chrome : les étapes manuelles obligatoires sont expliquées", "Mode développeur" in r.stdout and "Charger l'extension non empaquetée" in r.stdout)
+        mid = re.search(r"chrome-extension://([a-p]{32})/choose\.html\?tab=1", r.stdout)
+        real = subprocess.run([BASH, "-c", f'cd "{d.as_posix()}" && pwd -P'], capture_output=True, text=True, encoding="utf-8").stdout.strip()
+        import hashlib
+        want = hashlib.sha256(real.encode()).hexdigest()[:32].translate(str.maketrans("0123456789abcdef", "abcdefghijklmnop"))
+        check("Chrome : adresse de la page de l'extension (identifiant calculé du dossier)", bool(mid) and mid.group(1) == want, f"{mid and mid.group(1)} / {want}")
         m = json.loads((d / "manifest.json").read_text(encoding="utf-8")); new = m["version"]; m["version"] = "1.0.0"
         (d / "manifest.json").write_text(json.dumps(m), encoding="utf-8")
         r = run({**base, "UCA_BROWSERS": "chrome", "UCA_DIR": d.as_posix()}, home, bindir)
@@ -100,6 +105,8 @@ def main():
         check("Firefox Developer : le .xpi contient le bon manifeste Firefox", ok_zip)
         r2 = run({**base, "UCA_BROWSERS": "firefox", "UCA_DIR": d2.as_posix()}, home, bindir)
         uj2 = (prof / "user.js").read_text(encoding="utf-8")
+        check("Firefox Developer : icône épinglée dans la barre d'outils (default_area)", json.loads(zipfile.ZipFile(xpi).read("manifest.json"))["action"].get("default_area") == "navbar")
+        check("Firefox Developer : annonce l icône épinglée dans la barre d outils", "épinglée dans la barre d" in out)
         check("Firefox Developer : relance sans doublon dans user.js", uj2.count("xpinstall.signatures.required") == 1 and r2.returncode == 0)
         # ---- aucune écriture hors du HOME de test et des dossiers demandés
         stray = [p for p in (Path(tempfile.gettempdir())).glob("uca-extension*")]

@@ -135,6 +135,14 @@ copy_clip() {   # copie dans le presse-papiers si possible
 }
 
 # ---------------------------------------------------------------- Chrome / Chromium / Brave / Edge
+chrome_ext_id() {   # chrome_ext_id /chemin/absolu  -> identifiant que Chrome / Chromium donne à ce dossier
+  local h=""
+  if command -v sha256sum >/dev/null 2>&1; then h="$(printf '%s' "$1" | sha256sum | cut -c1-32)"
+  elif command -v shasum >/dev/null 2>&1; then h="$(printf '%s' "$1" | shasum -a 256 | cut -c1-32)"
+  elif command -v openssl >/dev/null 2>&1; then h="$(printf '%s' "$1" | openssl dgst -sha256 | sed 's/^.* //' | cut -c1-32)"
+  else return 1; fi
+  printf '%s' "$h" | tr '0-9a-f' 'a-p'
+}
 install_chrome() {
   step "Chrome / Chromium / Brave / Edge"
   say "Le dossier choisi sera celui que le navigateur lit : ne le supprime pas et ne le déplace pas ensuite."
@@ -152,6 +160,17 @@ install_chrome() {
   if [ -n "$bin" ] && ask_yes_no "Ouvrir $bin sur chrome://extensions maintenant ?" o; then open_url "$bin" "chrome://extensions"; fi
   if command -v xdg-open >/dev/null 2>&1 && [ "$NO_OPEN" != "1" ] && ask_yes_no "Ouvrir le dossier dans ton explorateur de fichiers ?" n; then xdg-open "$dir" >/dev/null 2>&1 & fi
   say "Mises à jour : relance ce script, ou clique « Recharger » dans chrome://extensions après avoir remplacé le dossier."
+  # Fin : ouvre la page de l'extension (choix du design puis connexion à Odin) quand elle est chargée.
+  local real id; real="$(cd "$dir" 2>/dev/null && pwd -P)"; id="$(chrome_ext_id "$real" 2>/dev/null)"
+  if [ -n "$bin" ] && [ -n "$id" ] && [ "$YES" != "1" ]; then
+    say ""
+    if ask_yes_no "Extension chargée dans $bin ? J'ouvre sa page pour te connecter (l'icône puzzle > épingle pour la garder visible)." o; then
+      open_url "$bin" "chrome-extension://$id/choose.html?tab=1"
+      say "Page ouverte : choisis ton design, puis « Synchroniser » pour te connecter à Odin. Si rien ne s'ouvre, l'extension n'est pas encore chargée."
+    fi
+  elif [ -n "$id" ]; then
+    say "Page de l'extension une fois chargée : chrome-extension://$id/choose.html?tab=1"
+  fi
 }
 
 # ---------------------------------------------------------------- Firefox
@@ -250,13 +269,16 @@ install_firefox() {
     cp -f "$TMP/$ZIP_FIREFOX" "$profile/extensions/$GECKO_ID.xpi" || { warn "Copie du .xpi impossible."; return 1; }
     say "Installé : $profile/extensions/$GECKO_ID.xpi"
     say "Ouvre Firefox : l'extension est active (menu Extensions). Mise à jour : relance ce script."
-    ask_yes_no "Ouvrir Firefox maintenant ?" o && open_url "$bin" "about:addons"
+    say "L'icône « Emploi du temps UCA » est épinglée dans la barre d'outils et listée dans le menu Extensions (puzzle) de Firefox."
+    if ask_yes_no "Lancer Firefox maintenant ? La page de l'extension s'ouvre toute seule au premier démarrage pour te connecter." o; then
+      open_url "$bin" "about:addons"
+    fi
   else
     say ""
     say "Chargement temporaire : dans Firefox, page about:debugging#/runtime/this-firefox"
     say "  -> « Charger un module complémentaire temporaire… » -> choisis le fichier :  $dir/manifest.json"
     copy_clip "$dir/manifest.json" && say "  (chemin copié dans le presse-papiers : Ctrl+L dans la fenêtre pour le coller)"
-    ask_yes_no "Ouvrir about:debugging maintenant ?" o && open_url "$bin" "about:debugging#/runtime/this-firefox"
+    ask_yes_no "Ouvrir about:debugging maintenant ? Une fois chargée, la page de l'extension s'ouvre pour te connecter." o && open_url "$bin" "about:debugging#/runtime/this-firefox"
   fi
   return 0
 }

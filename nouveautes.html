@@ -31,6 +31,9 @@
 <main class="wrap news">
   <h1>Quoi de neuf</h1>
   <p class="lead">Les nouveautés de chaque version, de la plus récente à la plus ancienne. Page générée depuis <code>UPDATES.md</code>.</p>
+<section class="news-item" id="v1-46-26"><div class="news-meta"><span class="vbadge">v1.46.26</span><time datetime="2026-11-12T15:26:30+01:00">12 nov. 2026 à 15:26</time><span class="chip chip-ext">Extension</span></div><h2>Installateur Linux : page de connexion et icône visible</h2>
+<ul><li><strong>install-linux.sh</strong> : à la fin, ouvre la page de l'extension pour se connecter (choix du design puis « Synchroniser »). Chrome-like : adresse calculée à partir du dossier, ouverte quand tu confirmes avoir chargé l'extension. Firefox : l'extension ouvre sa page toute seule au premier démarrage.</li><li><strong>Firefox</strong> : l'icône « Emploi du temps UCA » est épinglée dans la barre d'outils dès l'installation (<code>default_area</code>), donc visible et listée dans le menu Extensions.</li></ul>
+</section>
 <section class="news-item" id="v1-46-25"><div class="news-meta"><span class="vbadge">v1.46.25</span><time datetime="2026-11-12T14:33:04+01:00">12 nov. 2026 à 14:33</time><span class="chip chip-ext">Extension</span></div><h2>Installateur Linux sans sudo</h2>
 <ul><li><strong>install-linux.sh</strong> : sous Linux, <code>bash install-linux.sh</code> demande où installer (explorateur de fichiers si zenity / kdialog / yad), télécharge la dernière version, guide le chargement dans Chrome / Chromium / Brave / Edge et, pour Firefox, vérifie le profil et l'édition (mode développeur), demande l'accord puis installe. Aucun sudo ; paquet Firefox publié à côté du ZIP Chrome. Limite de Mozilla : Firefox « release » refuse les extensions non signées de façon permanente (chargement temporaire proposé) ; Developer Edition, Nightly et ESR acceptent l'installation permanente.</li></ul>
 </section>

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Emploi du temps UCA (non officiel)",
-  "version": "1.46.25",
+  "version": "1.46.26",
   "description": "Emploi du temps, notes et absences de l'UCA (Odin) dans ton navigateur. Non officiel, aucune donnée envoyée à un tiers.",
   "permissions": [
     "scripting",
@@ -47,6 +47,7 @@
   "action": {
     "default_popup": "choose.html",
     "default_title": "Emploi du temps UCA",
+    "default_area": "navbar",
     "default_icon": {
       "16": "icons/icon16.png",
       "32": "icons/icon32.png",

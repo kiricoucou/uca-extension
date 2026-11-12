@@ -25,7 +25,7 @@ def main():
     check("mêmes permissions", set(a["permissions"]) == set(b["permissions"]), str(set(a["permissions"]) ^ set(b["permissions"])))
     check("mêmes host_permissions", set(a["host_permissions"]) == set(b["host_permissions"]), str(set(a["host_permissions"]) ^ set(b["host_permissions"])))
     check("mêmes content_scripts", a["content_scripts"] == b["content_scripts"], str(a["content_scripts"]))
-    check("même popup/icônes (action)", a["action"] == b["action"], str(a["action"]))
+    check("même popup/icônes (action)", {k: v for k, v in a["action"].items() if k != "default_area"} == {k: v for k, v in b["action"].items() if k != "default_area"}, str(a["action"]))
 
     check("Firefox : background par scripts (pas de service worker)", "scripts" in b.get("background", {}))
     check("Firefox : background.scripts inclut background.js", "background.js" in b["background"]["scripts"])

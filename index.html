@@ -48,8 +48,9 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
 <main>
   <section class="hero">
     <div class="wrap">
+      <div class="hero-copy">
       <img class="logo" src="app/icons/icon-192.png" alt="">
-      <h1>Ton emploi du temps de l'IUT,<br>lisible partout.</h1>
+      <h1>Ton emploi du temps de l'IUT, <span class="hl">lisible partout.</span></h1>
       <p class="lead">Cours, notes, moyenne et absences d'Odin, dans un agenda clair sur ordinateur et téléphone. Avec alertes quand un cours change de salle ou d'horaire, et quand une note tombe.</p>
       <div class="btns">
         <a class="btn primary" href="app/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Ouvrir l'agenda en ligne</a>
@@ -58,7 +59,10 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
         <a class="btn" href="extension/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4.5a2 2 0 1 1 4 0V6h3a1 1 0 0 1 1 1v3h-1.5a2 2 0 1 0 0 4H18v3a1 1 0 0 1-1 1h-3v-1.5a2 2 0 1 0-4 0V18H7a1 1 0 0 1-1-1v-3h1.5a2 2 0 1 0 0-4H6V7a1 1 0 0 1 1-1h3z"/></svg>Installer l'extension</a>
         <a class="btn" href="aide.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 17h.01"/></svg>Aide</a>
       </div>
+      <ul class="checks"><li>Gratuit, sans pub</li><li>Aucune donnée envoyée</li><li>Extension, app, agenda en ligne</li></ul>
       <p style="margin-top:22px"><span class="tag">Projet étudiant non officiel</span></p>
+      </div>
+      <div class="hero-visual" aria-hidden="true"><img class="s1" src="telecharger/shots/agenda-anime.webp" alt="" width="260" height="563"><img class="s2" src="telecharger/shots/home.webp" alt="" width="260" height="563"></div>
     </div>
   </section>
 
@@ -217,9 +221,9 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
       <p class="sub">Les dernières versions. <a href="nouveautes.html">Tout l'historique</a>.</p>
       <div class="cards">
         <!--news:start-->
+        <article class="card"><h3>1.46.22</h3><p><strong>nouveau look du site</strong></p><ul class="news-list"><li>Site et pages de téléchargement : fond blanc, titres serrés très gras avec mot clé souligné, boutons bleus dégradés, maquettes de téléphone…</li></ul></article>
         <article class="card"><h3>1.46.21</h3><p><strong>app Android 1.4.18 : compétences (UE)</strong></p><ul class="news-list"><li>Notes &gt; 👁 Voir mes compétences : la moyenne de chaque UE (« UE RT 1.1 - Assister l'administrateur du réseau ») calculée depuis les matières, en…</li></ul></article>
         <article class="card"><h3>1.46.20</h3><p><strong>app Android 1.4.17 : légende des notes, mises à jour forcées</strong></p><ul class="news-list"><li>Notes : légende des couleurs sous le graphique (vert 14 et plus, jaune 10 à 14, orange sous 10, gris moyenne de la classe). Dans le tableau, la note…</li><li>Extension : le code de déchiffrement est affiché sous « Générer le lien » (un clic le copie) et un bouton « Mises à jour » force la vérification ;…</li><li>À faire et examens : la date (jour, numéro, mois) s'affiche en plus de l'horaire pour les examens et les devoirs.</li></ul></article>
-        <article class="card"><h3>1.46.19</h3><p><strong>app Android 1.4.16 : détail de note au premier plan</strong></p><ul class="news-list"><li>Notes : la fenêtre de détail d'une évaluation passait derrière la liste des notes et se chevauchait avec elle ; elle s'ouvre maintenant au premier…</li><li>Site : nouvelle page « Télécharger l'extension » (extension/) avec le ZIP Chrome/Edge à charger en mode développeur ; le ZIP ne contient que le…</li><li>Pages de téléchargement : choix « ZIP de l'extension », « APK » ou « les deux d'un coup », avec le poids en Mo affiché sur chaque bouton.</li></ul></article>
         <!--news:end-->
       </div>
     </div>
@@ -259,5 +263,6 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
   </div>
 </footer>
 <script src="site-demo.js"></script>
+<script src="site-fx.js"></script>
 </body>
 </html>

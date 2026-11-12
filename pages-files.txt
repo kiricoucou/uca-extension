@@ -33,3 +33,4 @@ icons
 vendor
 telecharger
 extension
+site-fx.js

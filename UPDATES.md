@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.22 — nouveau look du site
+
+- **Site et pages de téléchargement** : fond blanc, titres serrés très gras avec mot clé souligné, boutons bleus dégradés, maquettes de téléphone inclinées, apparition douce au défilement (désactivée si « réduire les animations »). Mode sombre conservé. Aucun appel réseau ni police externe ajouté.
+
 ## 1.46.21 — app Android 1.4.18 : compétences (UE)
 
 - **Notes > 👁 Voir mes compétences** : la moyenne de chaque UE (« UE RT 1.1 - Assister l'administrateur du réseau ») calculée depuis les matières, en barres à la hauteur de la moyenne, avec un trait pointillé à 10 (seuil de validation). Semestres et années séparés, moyenne de chaque année et de chaque compétence sur l'année, liste « validée / sous 10 ».

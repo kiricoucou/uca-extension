@@ -42,8 +42,8 @@ BODY = """<body>
     </div>
     <div>
       <div class="phone"><div class="screen" id="screen">
-        <img class="on" src="../telecharger/shots/agenda-anime.webp" alt="Agenda du jour">
-        <img src="../telecharger/shots/home.webp" alt="Accueil avec le statut des services" loading="lazy">
+        <img class="on" src="../telecharger/shots/agenda-studio.webp" alt="Agenda du jour">
+        <img src="../telecharger/shots/home-studio.webp" alt="Accueil avec le statut des services" loading="lazy">
         <img src="../telecharger/shots/agenda-carnet.webp" alt="Agenda, design Carnet" loading="lazy">
         <img src="../telecharger/shots/agenda-professionnel.webp" alt="Agenda, design Professionnel" loading="lazy">
       </div></div>
@@ -65,9 +65,31 @@ BODY = """<body>
     <h2>Ajouter l'extension en 2 minutes</h2>
     <p class="sub">Elle n'est pas (encore) sur le Chrome Web Store : on la charge à la main, une seule fois.</p>
     <div class="steps">
-      <div class="step"><h3>Télécharge et décompresse</h3><p>Clique sur « Télécharger le ZIP », puis clic droit sur le fichier → « Extraire tout ». Garde le dossier obtenu : Chrome le lit depuis là.</p></div>
-      <div class="step"><h3>Mode développeur</h3><p>Dans Chrome, ouvre <code>chrome://extensions</code> (Edge : <code>edge://extensions</code>) et active « Mode développeur » en haut à droite.</p><a class="shot-link" href="tuto/etape-2-mode-developpeur.webp" target="_blank" rel="noopener"><img src="tuto/etape-2-mode-developpeur.webp" width="1024" height="610" loading="lazy" alt="Page chrome://extensions avec « Mode développeur » activé en haut à droite et le bouton « Charger l'extension non empaquetée »"></a></div>
-      <div class="step"><h3>Charge le dossier</h3><p>Clique « Charger l'extension non empaquetée » et choisis le dossier décompressé (celui qui contient <code>manifest.json</code>). Épingle l'icône, c'est prêt.</p><a class="shot-link" href="tuto/etape-3-choisir-le-dossier.webp" target="_blank" rel="noopener"><img src="tuto/etape-3-choisir-le-dossier.webp" width="1024" height="572" loading="lazy" alt="Fenêtre « Sélectionner le répertoire de l'extension » avec le dossier décompressé uca-extension-extrait sélectionné"></a></div>
+      <div class="step"><h3>Télécharge et décompresse</h3>
+        <ol class="sub-steps">
+          <li>Clique sur <b>« Télécharger le ZIP »</b> (en haut de cette page). Le fichier <code>uca-extension-chrome.zip</code> arrive dans ton dossier <b>Téléchargements</b>.</li>
+          <li>Ouvre ce dossier, fais un <b>clic droit</b> sur le fichier → <b>« Extraire tout… »</b> → <b>« Extraire »</b> (Mac : double-clic).</li>
+          <li>Tu obtiens un dossier, par exemple <code>uca-extension-chrome</code>, qui contient directement <code>manifest.json</code>. <b>Ne le supprime pas et ne le déplace plus</b> : Chrome le lit depuis cet endroit tant que l'extension est installée.</li>
+        </ol></div>
+      <div class="step"><h3>Active le mode développeur</h3>
+        <ol class="sub-steps">
+          <li>Ouvre un nouvel onglet, tape <code>chrome://extensions</code> (Edge : <code>edge://extensions</code>) puis <b>Entrée</b>.</li>
+          <li>En haut à droite, active l'interrupteur <b>« Mode développeur »</b>.</li>
+          <li>Une barre de trois boutons apparaît : <b>« Charger l'extension non empaquetée »</b>, « Empaqueter l'extension » et « Mettre à jour ». Tu vas utiliser le premier.</li>
+        </ol>
+        <button type="button" class="shot-link" data-full="tuto/etape-2-mode-developpeur.webp" data-cap="Étape 2 : « Mode développeur » activé en haut à droite, avec les trois boutons juste dessous"><img src="tuto/etape-2-mode-developpeur.webp" width="1024" height="610" loading="lazy" alt="Page chrome://extensions avec « Mode développeur » activé en haut à droite et le bouton « Charger l'extension non empaquetée »"><span class="zoom">🔍 Agrandir</span></button></div>
+      <div class="step"><h3>Charge le dossier</h3>
+        <ol class="sub-steps">
+          <li>Clique sur <b>« Charger l'extension non empaquetée »</b>.</li>
+          <li>Dans la fenêtre <b>« Sélectionner le répertoire de l'extension »</b>, ouvre <b>Téléchargements</b> et sélectionne le <b>dossier</b> décompressé (pas le fichier .zip).</li>
+          <li>Clique sur <b>« Sélectionner un dossier »</b>. L'extension « Emploi du temps UCA » apparaît dans la liste.</li>
+          <li>Clique sur l'icône puzzle de la barre d'outils, puis sur l'épingle à côté de l'extension pour l'avoir toujours sous la main.</li>
+        </ol>
+        <button type="button" class="shot-link" data-full="tuto/etape-3-choisir-le-dossier.webp" data-cap="Étape 3 : le dossier décompressé est sélectionné, clique sur « Sélectionner un dossier »"><img src="tuto/etape-3-choisir-le-dossier.webp" width="1024" height="572" loading="lazy" alt="Fenêtre « Sélectionner le répertoire de l'extension » avec le dossier décompressé sélectionné"><span class="zoom">🔍 Agrandir</span></button></div>
+    </div>
+    <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Capture agrandie" hidden>
+      <button type="button" class="lb-close" id="lbClose" aria-label="Fermer">✕</button>
+      <figure><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure>
     </div>
   </section>
 
@@ -80,7 +102,7 @@ BODY = """<body>
       <div class="card"><div class="ic">🔔</div><h3>Notifications</h3><p>Cours déplacé, salle changée ou annulé : tu es prévenu.</p></div>
       <div class="card"><div class="ic">📱</div><h3>Vers ton téléphone</h3><p>Envoie tes données à l'app (QR, lien chiffré ou fichier), sans serveur.</p></div>
       <div class="card"><div class="ic">🟢</div><h3>Statut des services</h3><p>Odin, CAS, Moodle en panne ? Tu le sais avant de perdre ton temps.</p></div>
-      <div class="card"><div class="ic">🎨</div><h3>4 designs</h3><p>Anime, Professionnel, Bulletin ou Carnet : mêmes fonctions, ton style.</p></div>
+      <div class="card"><div class="ic">🎨</div><h3>5 designs</h3><p>Studio, Anime, Professionnel, Bulletin ou Carnet : mêmes fonctions, ton style.</p></div>
     </div>
   </section>
 
@@ -107,6 +129,10 @@ BODY = """<body>
 """
 
 
+LB_CSS = '.sub-steps{margin:8px 0 0;padding-left:20px;font-size:14.5px;color:var(--dim)}.sub-steps li{margin:6px 0}.sub-steps b{color:var(--text)}button.shot-link{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in;position:relative;margin-top:14px;text-align:left;font:inherit}.shot-link .zoom{position:absolute;right:10px;bottom:10px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(22,24,29,.82);color:#fff}.lightbox{position:fixed;inset:0;z-index:100;background:rgba(10,12,16,.86);display:flex;align-items:center;justify-content:center;padding:56px 16px 24px}.lightbox[hidden]{display:none}.lightbox figure{margin:0;max-width:min(1200px,100%);max-height:100%;display:flex;flex-direction:column;align-items:center;gap:10px}.lightbox img{max-width:100%;max-height:calc(100vh - 130px);border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.6);background:#fff}.lightbox figcaption{color:#e6e8ee;font-size:14px;text-align:center}.lb-close{position:absolute;top:14px;right:14px;width:46px;height:46px;border-radius:50%;border:0;background:#fff;color:#16181d;font-size:22px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.4)}.lb-close:focus-visible{outline:3px solid #7cc0ee;outline-offset:2px}'
+LB_JS = "\n  var lb = document.getElementById('lightbox'), lbImg = document.getElementById('lbImg'), lbCap = document.getElementById('lbCap'), lastFocus = null;\n  function openLb(b) { lastFocus = b; lbImg.src = b.dataset.full; lbImg.alt = b.querySelector('img').alt; lbCap.textContent = b.dataset.cap || ''; lb.hidden = false; document.body.style.overflow = 'hidden'; document.getElementById('lbClose').focus(); }\n  function closeLb() { lb.hidden = true; lbImg.removeAttribute('src'); document.body.style.overflow = ''; if (lastFocus) lastFocus.focus(); }\n  document.querySelectorAll('button.shot-link').forEach(function (b) { b.addEventListener('click', function () { openLb(b); }); });\n  document.getElementById('lbClose').addEventListener('click', closeLb);\n  lb.addEventListener('click', function (e) { if (e.target === lb) closeLb(); });\n  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !lb.hidden) closeLb(); });\n"
+
+
 def main():
     s = (ROOT / "telecharger" / "index.html").read_text(encoding="utf-8")
     head = s[: s.index("<body>")]
@@ -121,7 +147,9 @@ def main():
   if (location.hash === '#maj' && m) { m.open = true; m.scrollIntoView(); }
   if (/[?&]auto=1/.test(location.search)) setTimeout(function () { var z = document.querySelector('#choix a[data-dl=zip]'); if (z) z.click(); }, 700);
 """
+    maj_js += LB_JS
     tail = tail.replace("})();\n</script>", maj_js + "})();\n</script>", 1)
+    head = head.replace("</style>", LB_CSS + "</style>", 1)
     OUT.mkdir(exist_ok=True)
     page = head + BODY.replace("@ZIP@", ZIP).replace("@DL@", DL) + tail
     (OUT / "index.html").write_text(page, encoding="utf-8")

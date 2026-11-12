@@ -55,6 +55,14 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.24 — app Android 1.4.19 : design Studio, notifications, session privée
+
+- **Design Studio (nouveau, par défaut)** : tableau de bord clair, panneaux blancs très arrondis, cartes de cours pastel, accent marine ; mêmes fonctions que les 4 autres designs. Appliqué à l'extension, à l'app web, à l'APK, au site et aux pages de téléchargement. Dans l'app web, le menu (à gauche sur ordinateur, en bas sur téléphone) suit maintenant le design choisi.
+- **Notifications (app)** : marquer lue / non lue, **garder** (reste même quand le changement disparaît à la synchro), supprimer, tout supprimer sauf les gardées, restaurer, filtres (toutes, non lues, gardées, notes, emploi du temps).
+- **Compte (app web)** : carte « Session privée » (données uniquement dans ce navigateur, rien d'envoyé, app vide sur un autre ordinateur tant qu'on n'importe pas) et bouton d'envoi vers un autre appareil par QR animé (trames, comme l'APK).
+- **Notes** : le texte du panneau Notes redevient lisible dans la démo du site (téléphone) ; nouvelle courbe « Évolution de la moyenne générale », elle s'élargit à chaque synchro qui apporte une note.
+- **Site** : menu hamburger sur téléphone, colonne « Recommandé » (Extension) dans le comparatif, « Site » renommé « Aide », fiches de version avec date et heure de sortie, tutoriel d'installation précis avec captures qui s'agrandissent (croix pour fermer).
+
 ## 1.46.23 — mise à jour obligatoire et script de mise à jour
 
 - **Mise à jour obligatoire (extension)** : tant que la version installée est plus ancienne que la dernière version publiée, une fenêtre plein écran verrouille le popup, l'agenda, les paramètres et le choix du design, et plus aucune synchro ne part. Elle ne se ferme pas (ni Échap, ni suppression dans la page) et revient si on quitte puis revient : l'état est recalculé à chaque ouverture, une panne réseau ne le lève pas. Inactive dans l'app web / l'APK et dans les paquets des magasins (ils se mettent à jour seuls).

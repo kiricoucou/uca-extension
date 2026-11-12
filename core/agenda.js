@@ -1219,9 +1219,19 @@ function panelInk() {
   }
   return "#1f1f1f";
 }
+/* La couleur du texte dépend du fond réel de la fenêtre, qui n'est connu qu'une fois celle-ci ouverte : on la recalcule
+   à chaque ouverture (classe « open ») et après sa transition, sinon le texte reste clair sur fond blanc. */
+function reinkNotes() {
+  const ink = panelInk();
+  document.querySelectorAll("#npContent .np-inked").forEach((n) => {
+    n.style.color = ink;
+    n.querySelectorAll(".fp-h, .fp-empty").forEach((e) => { e.style.color = ink; });
+  });
+}
 function inkify(node) {
   if (!node) return node;
   const ink = panelInk();
+  node.classList.add("np-inked");
   node.style.color = ink;
   node.querySelectorAll(".fp-h, .fp-empty").forEach((e) => { e.style.color = ink; e.style.opacity = ".72"; });
   return node;
@@ -1407,7 +1417,7 @@ function historyChart() {
     wrap.appendChild(npEl("div", "fp-empty", pts.length ? `Moyenne actuelle : ${fmtNote(pts[0].avg)} / 20. La courbe se dessine à chaque synchro où ta moyenne change.` : "Pas encore d'historique : la courbe se dessine à chaque synchro où ta moyenne change."));
     return wrap;
   }
-  const W = 360, H = 150, L = 30, Rr = 12, T = 12, B = 24;
+  const W = Math.max(300, 60 + pts.length * 46), H = 160, L = 30, Rr = 16, T = 18, B = 26;  // plus il y a de synchros, plus le graphique s'élargit (il défile)
   const lo = Math.max(0, Math.floor(Math.min(...pts.map((p) => p.avg)) - 1)), hi = Math.min(20, Math.ceil(Math.max(...pts.map((p) => p.avg)) + 1));
   const x = (i) => L + (W - L - Rr) * i / (pts.length - 1), y = (v) => T + (H - T - B) * (1 - (v - lo) / Math.max(1, hi - lo));
   const svg = chartSvg(W, H); svg.setAttribute("aria-label", `Évolution de la moyenne générale : de ${fmtNote(pts[0].avg)} à ${fmtNote(pts[pts.length - 1].avg)}`);
@@ -1423,8 +1433,12 @@ function historyChart() {
     svg.appendChild(c);
   });
   const d = (p) => new Date(p.at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
-  svg.appendChild(svgText(L, H - 6, d(pts[0]), "start")); svg.appendChild(svgText(W - Rr, H - 6, d(pts[pts.length - 1]), "end"));
-  wrap.appendChild(svg);
+  const step = Math.max(1, Math.ceil(pts.length / Math.floor((W - L) / 62)));
+  pts.forEach((p, i) => {
+    if (i % step === 0 || i === pts.length - 1) svg.appendChild(svgText(x(i), H - 6, d(p), i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle"));
+    if (pts.length <= 12 || i === 0 || i === pts.length - 1) svg.appendChild(svgText(x(i), y(p.avg) - 7, fmtNote(p.avg), "middle"));
+  });
+  wrap.appendChild(chartScroll(svg));
   return wrap;
 }
 function matiereChart(label) {
@@ -1672,7 +1686,9 @@ function renderNotesPanel() {
       eye.addEventListener("click", () => { compView = true; renderNotesPanel(); });
       const eyeBox = npEl("div", ""); eyeBox.style.cssText = "padding:8px 16px 0;"; eyeBox.appendChild(eye); content.appendChild(inkify(eyeBox));
     }
-    [examsBlock(), simulatorBlock(), chartBlock(), npEl("div", "fp-h", "Détail des notes")].forEach((b) => { if (b) content.appendChild(inkify(b)); });
+    // Évolution de la moyenne générale : un point à chaque synchro qui apporte une nouvelle note ; le graphique se construit tout seul.
+    const evoBlock = () => { const box = npEl("div", "np-evo"); box.appendChild(npEl("div", "fp-h", "Évolution de la moyenne générale")); const body = npEl("div"); body.style.cssText = "padding:4px 16px 0;"; body.appendChild(historyChart()); box.appendChild(body); return box; };
+    [examsBlock(), simulatorBlock(), chartBlock(), evoBlock(), npEl("div", "fp-h", "Détail des notes")].forEach((b) => { if (b) content.appendChild(inkify(b)); });
     fitNotesPanel();
     const hintPill = document.createElement("div");
     hintPill.className = "notes-hint-pill";
@@ -1725,6 +1741,9 @@ $("notesBtn").addEventListener("click", (e) => {
   togglePanel($("notesPanel"));
 });
 closeOnOutsideClick("notesPanel", "notesWrap");
+if ($("notesPanel")) {
+  new MutationObserver(() => { reinkNotes(); setTimeout(reinkNotes, 120); setTimeout(reinkNotes, 450); }).observe($("notesPanel"), { attributes: true, attributeFilter: ["class", "style"] });
+}
 if (/[?&]openNotes=1/.test(location.search)) {
   setTimeout(() => { if ($("notesBtn")) $("notesBtn").click(); }, 300);
 }

@@ -1,5 +1,47 @@
 [
   {
+    "id": "studio",
+    "name": "Design Studio",
+    "description": "Tableau de bord clair, panneaux arrondis, cartes pastel : le style par défaut",
+    "folder": "designs/studio",
+    "badgeColor": "#17323c",
+    "preview": {
+      "background": "#f4f4f7",
+      "surface": "#ffffff",
+      "accent": "#17323c",
+      "text": "#16181d",
+      "textDim": "#6b6f7a",
+      "border": "#ececf1",
+      "onAccent": "#ffffff"
+    },
+    "screenshots": [
+      {
+        "src": "designs/studio/previews/1-semaine.jpg",
+        "label": "Agenda de la semaine"
+      },
+      {
+        "src": "designs/studio/previews/2-notes.jpg",
+        "label": "Relevé de notes et moyenne"
+      },
+      {
+        "src": "designs/studio/previews/3-popup.jpg",
+        "label": "Popup de la barre d'outils"
+      },
+      {
+        "src": "designs/studio/previews/4-mobile.jpg",
+        "label": "Vue Jour sur téléphone"
+      },
+      {
+        "src": "designs/studio/previews/5-mois.jpg",
+        "label": "Vue Mois"
+      },
+      {
+        "src": "designs/studio/previews/6-detail.jpg",
+        "label": "Détail d'un cours et note perso"
+      }
+    ]
+  },
+  {
     "id": "anime",
     "name": "Design animé",
     "description": "Sombre turquoise, icônes animées",

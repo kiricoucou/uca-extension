@@ -223,3 +223,67 @@ section.block > .wrap > p.sub{font-size:clamp(16px,1.5vw,18px);max-width:680px;}
   .hero-visual{height:380px;}
 }
 @media (prefers-reduced-motion:reduce){.fx .reveal-up{opacity:1;transform:none;}.hero-visual img{transition:none;}}
+
+/* ===== Nouveautés : fiches de version (numéro, date et heure de sortie, étiquettes) ===== */
+.news-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:0 0 10px;font-size:13px;color:var(--text-dim);}
+.news-meta time{font-variant-numeric:tabular-nums;}
+.vbadge{font-family:var(--mono);font-weight:700;font-size:12.5px;padding:3px 9px;border-radius:8px;background:var(--accent);color:var(--on-accent);letter-spacing:0;}
+.chip{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;letter-spacing:.01em;}
+.chip-ext{background:var(--accent-tint);color:var(--accent);}
+.chip-app{background:var(--ok-tint);color:var(--ok);}
+.chip-site{background:var(--warn-tint);color:var(--warn);}
+.news-card{gap:2px;}
+.news-card h3{font-size:19px;line-height:1.25;margin:4px 0 6px;display:block;}
+.news-card .news-list{padding-left:20px;margin:6px 0 12px;font-size:14.5px;}
+.news-card .more{margin-top:auto;font-weight:600;font-size:14px;text-decoration:none;}
+.news-card .more:hover{text-decoration:underline;}
+.news{position:relative;}
+.news-item{position:relative;margin-left:22px;border:0;box-shadow:var(--shadow);}
+.news-item::before{content:"";position:absolute;left:-22px;top:26px;width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-tint);}
+.news-item::after{content:"";position:absolute;left:-18px;top:40px;bottom:-26px;width:2px;background:var(--border);}
+.news-item:last-of-type::after{display:none;}
+.news-item h2{font-size:clamp(19px,2.6vw,24px);letter-spacing:-.02em;margin:0 0 10px;display:block;}
+.news-item ul{margin:6px 0 10px;padding-left:22px;}
+.news-item li{line-height:1.55;}
+.news-item strong{color:var(--text);}
+
+/* ===== Comparatif : colonne « Recommandé » ===== */
+.compare thead th.reco{position:relative;background:var(--accent-tint);box-shadow:inset 0 3px 0 var(--accent);}
+.reco-badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:800;letter-spacing:.02em;padding:3px 10px;border-radius:999px;margin:0 0 6px;
+  color:#fff;background:linear-gradient(#1577bb,#0568a6);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 6px 14px -6px rgba(5,104,166,.7);white-space:nowrap;}
+.compare td.reco{background:color-mix(in srgb,var(--accent-tint) 55%,transparent);}
+
+/* ===== Téléphone : la barre du haut devient un menu hamburger ===== */
+.nav-toggle{display:none;margin-left:auto;width:44px;height:44px;border-radius:10px;border:0;background:transparent;color:var(--text);cursor:pointer;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px var(--border);}
+.nav-toggle svg{width:22px;height:22px;}
+.nav-toggle .x{display:none;}
+.topbar.open .nav-toggle .bars{display:none;}
+.topbar.open .nav-toggle .x{display:block;}
+@media (max-width:760px){
+  .nav-toggle{display:inline-flex;}
+  .topbar .nav{display:none;position:absolute;left:0;right:0;top:100%;flex-direction:column;gap:2px;margin:0;padding:10px 16px 16px;overflow:visible;
+    background:var(--bg);border-bottom:1px solid var(--border);box-shadow:0 18px 30px -18px rgba(9,9,11,.35);}
+  .topbar.open .nav{display:flex;}
+  .topbar .nav a,.topbar .nav a.hide-sm{display:block;padding:13px 12px;font-size:16px;border-radius:10px;}
+  .topbar{position:sticky;}
+  .brand span{display:inline;}
+}
+
+/* ===== Habillage Studio : fond gris doux, panneaux blancs très arrondis, accent marine, cartes pastel (même style que l'agenda) ===== */
+:root{--bg:#f4f4f7;--surface:#ffffff;--surface-2:#eef0f4;--border:#ececf1;--text:#16181d;--text-dim:#5d616c;--accent:#17323c;--accent-2:#2b5666;--accent-tint:#e6eef1;
+  --shadow:0 1px 2px rgba(22,24,29,.04),0 10px 28px -14px rgba(22,24,29,.16);--radius:24px;
+  --font:"DM Sans",Inter,"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1114;--surface:#171a1f;--surface-2:#1e2229;--border:#262b33;--text:#f0f2f5;--text-dim:#9aa1ad;--accent:#9cc5d3;--accent-2:#c1dde7;--accent-tint:#16262d;}}
+body{background:var(--bg);}
+.topbar{background:color-mix(in srgb,var(--bg) 82%,transparent);}
+.card,.table-scroll,details.qa,.news-item{border-radius:var(--radius);box-shadow:var(--shadow);}
+.btn{border-radius:999px;}
+.btn.primary{background:linear-gradient(#24495a,#17323c 60%,#10252e);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 0 0 1px #10252e,0 14px 30px -14px rgba(23,50,60,.7);}
+.btn.primary:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 0 0 1px #10252e,0 18px 34px -14px rgba(23,50,60,.85);}
+.hero h1 .hl{color:var(--accent);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 8' preserveAspectRatio='none'%3E%3Cpath d='M1 5 Q 25 1 50 4 T 99 3' fill='none' stroke='%2317323c' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");}
+.vbadge,.reco-badge{background:#17323c;color:#fff;box-shadow:none;}
+.card:hover{box-shadow:0 18px 38px -18px rgba(22,24,29,.28);}
+.card:nth-child(4n+1) .ico{background:#fde6d8;color:#7a3b12;}
+.card:nth-child(4n+2) .ico{background:#f3efc8;color:#5a5300;}
+.card:nth-child(4n+3) .ico{background:#e5e7ec;color:#2a2f3a;}
+.card:nth-child(4n) .ico{background:#dfeaee;color:#17323c;}

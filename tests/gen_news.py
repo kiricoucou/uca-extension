@@ -5,14 +5,72 @@ Aucune requête, aucun script côté visiteur : du HTML déjà prêt.
 Usage : python -I -X utf8 tests/gen_news.py            écrit nouveautes.html et met à jour index.html
         python -I -X utf8 tests/gen_news.py --check    échoue si ces fichiers ne correspondent pas à UPDATES.md
 """
+import datetime
 import html
+import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE = "https://kiricoucou.github.io/uca-extension/"
 START, END = "<!--news:start-->", "<!--news:end-->"
+
+DATES_FILE = ROOT / "news-dates.json"
+MOIS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."]
+
+
+def release_dates(vs):
+    """Date et heure de sortie de chaque version, mémorisées dans news-dates.json (stable d'une génération à l'autre).
+    Première fois : le commit qui a posé « version »: « X » dans manifest.json (git log -S), sinon l'instant présent."""
+    try:
+        known = json.loads(DATES_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        known = {}
+    changed = False
+    for v in vs:
+        if v["version"] in known:
+            continue
+        iso = ""
+        try:
+            out = subprocess.run(["git", "log", "-S", f'"version": "{v["version"]}"', "--format=%cI", "--", "manifest.json"],
+                                 cwd=ROOT, capture_output=True, text=True, encoding="utf-8", timeout=30).stdout.split()
+            iso = out[-1] if out else ""  # le plus ancien commit qui l'introduit
+        except Exception:
+            iso = ""
+        if not iso:  # version sans commit à son nom : date de la version précédente connue, sinon maintenant
+            lower = [k for k in known if [int(n) for n in k.split(".")] < [int(n) for n in v["version"].split(".")]]
+            newest = v is vs[0]  # la version en cours de publication : pas encore de commit, donc « maintenant »
+            iso = known[max(lower, key=lambda k: [int(n) for n in k.split(".")])] if lower and not newest else datetime.datetime.now().astimezone().replace(microsecond=0).isoformat()
+        known[v["version"]] = iso
+        changed = True
+    if changed:
+        DATES_FILE.write_text(json.dumps(dict(sorted(known.items())), ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n")
+    return known
+
+
+def when(iso):
+    """« 12 nov. 2026 à 13:24 » (heure telle qu'enregistrée à la sortie)."""
+    d = datetime.datetime.fromisoformat(iso)
+    return f"{d.day} {MOIS[d.month - 1]} {d.year} à {d:%H:%M}"
+
+
+def tags(v):
+    t = (v["title"] + " " + v["body"]).lower()
+    out = []
+    if re.search(r"app android|apk|\bapp\b", v["title"].lower()):
+        out.append(("app", "App"))
+    if re.search(r"extension|popup|chrome|firefox", t):
+        out.append(("ext", "Extension"))
+    if re.search(r"\bsite\b|page de t[ée]l[ée]chargement|accueil du site|look du site", t):
+        out.append(("site", "Site"))
+    return out or [("ext", "Extension")]
+
+
+def meta_html(v, dates):
+    chips = "".join(f'<span class="chip chip-{k}">{n}</span>' for k, n in tags(v))
+    return f'<div class="news-meta"><span class="vbadge">v{v["version"]}</span><time datetime="{dates[v["version"]]}">{when(dates[v["version"]])}</time>{chips}</div>'
 
 
 def versions():
@@ -71,17 +129,18 @@ def first_bullets(body, n=3):
     return [plain(l[2:].strip()) for l in body.splitlines() if l.startswith("- ")][:n]
 
 
-def teaser(vs):
+def teaser(vs, dates):
     parts = []
     for v in vs[:3]:
-        lis = "".join(f"<li>{html.escape(b, quote=False)}</li>" for b in first_bullets(v["body"]))
-        parts.append(f'<article class="card"><h3>{v["version"]}</h3><p><strong>{html.escape(v["title"], quote=False)}</strong></p><ul class="news-list">{lis}</ul></article>')
+        lis = "".join(f"<li>{inline(b)}</li>" for b in [l[2:].strip() for l in v["body"].splitlines() if l.startswith("- ")][:4])
+        parts.append(f'<article class="card news-card">{meta_html(v, dates)}<h3>{html.escape(v["title"], quote=False)}</h3><ul class="news-list">{lis}</ul>'
+                     f'<a class="more" href="nouveautes.html#v{v["version"].replace(".", "-")}">Tout le détail de la {v["version"]} →</a></article>')
     return "\n        ".join(parts)
 
 
-def page(vs):
+def page(vs, dates):
     sections = "\n".join(
-        f'<section class="news-item" id="v{v["version"].replace(".", "-")}"><h2>{v["version"]} <small>{html.escape(v["title"], quote=False)}</small></h2>\n{md_to_html(v["body"])}\n</section>' for v in vs)
+        f'<section class="news-item" id="v{v["version"].replace(".", "-")}">{meta_html(v, dates)}<h2>{html.escape(v["title"][:1].upper() + v["title"][1:], quote=False)}</h2>\n{md_to_html(v["body"])}\n</section>' for v in vs)
     return f"""<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -123,26 +182,28 @@ def page(vs):
     <span><a href="aide.html">Aide</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="https://github.com/kiricoucou/uca-extension">Code source</a></span>
   </div>
 </footer>
+<script src="site-fx.js"></script>
 </body>
 </html>
 """
 
 
-def apply_index(index_html, vs):
+def apply_index(index_html, vs, dates):
     if START not in index_html or END not in index_html:
         raise SystemExit("index.html : marqueurs <!--news:start--> / <!--news:end--> introuvables")
     head, rest = index_html.split(START, 1)
     _, tail = rest.split(END, 1)
-    return head + START + "\n        " + teaser(vs) + "\n        " + END + tail
+    return head + START + "\n        " + teaser(vs, dates) + "\n        " + END + tail
 
 
 def main():
     vs = versions()
     if not vs:
         raise SystemExit("UPDATES.md : aucune version trouvée")
-    want_page = page(vs)
+    dates = release_dates(vs)
+    want_page = page(vs, dates)
     index_path = ROOT / "index.html"
-    want_index = apply_index(index_path.read_text(encoding="utf-8"), vs)
+    want_index = apply_index(index_path.read_text(encoding="utf-8"), vs, dates)
     page_path = ROOT / "nouveautes.html"
     if "--check" in sys.argv[1:]:
         ok_page = page_path.exists() and page_path.read_text(encoding="utf-8") == want_page

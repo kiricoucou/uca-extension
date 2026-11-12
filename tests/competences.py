@@ -72,7 +72,7 @@ def main():
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(args=[NO_REAL_SERVERS])
-            for design in ("anime", "professionnel", "bulletin", "carnet"):
+            for design in ("studio", "anime", "professionnel", "bulletin", "carnet"):
                 for label, vp in (("bureau", {"width": 1280, "height": 800}), ("téléphone", {"width": 390, "height": 800})):
                     ctx = browser.new_context(viewport=vp)
                     page = ctx.new_page()
@@ -88,6 +88,14 @@ def main():
                     else:
                         page.locator("#notesBtn").click()
                     page.wait_for_timeout(600)
+                    page.wait_for_timeout(600)
+                    contrast = page.evaluate("""() => {
+                      const lum = (c) => { const [r, g, b] = c.match(/[\d.]+/g).slice(0, 3).map(Number).map((v) => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
+                      const bg = lum(getComputedStyle(document.getElementById('notesPanel')).backgroundColor);
+                      const el = document.querySelector('#npContent .fp-h, #npContent .fp-empty');
+                      const fg = lum(getComputedStyle(el).color); const hi = Math.max(bg, fg), lo = Math.min(bg, fg);
+                      return (hi + .05) / (lo + .05); }""")
+                    check(f"{design} {label} : texte du panneau Notes lisible (contraste >= 4,5)", contrast >= 4.5, str(contrast))
                     btn = page.locator("#compBtn")
                     check(f"{design} {label} : bouton « Voir mes compétences »", btn.count() == 1 and "compétences" in btn.inner_text())
                     btn.click(); page.wait_for_timeout(500)

@@ -71,6 +71,10 @@ function whenLabel(ev) {
 }
 
 /* ------------------------------ notifications (comme NotifStore de l'app : seulement de vrais évènements) ------------------------------ */
+const NK = { dismissed: "uca_notif_dismissed", saved: "uca_notif_saved" };
+let notifFilter = "all";
+function lsJson(k, d) { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? d : v; } catch (e) { return d; } }
+function lsSet(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
 function readSet() { try { return new Set(JSON.parse(localStorage.getItem("uca_notif_read") || "[]")); } catch (e) { return new Set(); } }
 function notifications() {
   const out = [];
@@ -86,9 +90,13 @@ function notifications() {
     const label = String(k).split(/[|:]/).map((x) => x.trim()).filter(Boolean).slice(-2).join(" · ");
     out.push({ id: "note:" + k + ":" + v.note, type: "note", title: "Nouvelle note" + (label ? " : " + label : ""), text: v.note != null ? String(v.note) : "", at: v.at });
   });
+  // Gestion par l'utilisateur : « supprimées » (masquées), « gardées » (copie conservée même quand la source disparaît à la synchro).
+  const dismissed = new Set(lsJson(NK.dismissed, [])), saved = lsJson(NK.saved, []), savedIds = new Set(saved.map((n) => n.id));
+  const list = out.filter((n) => !dismissed.has(n.id));
+  saved.forEach((n) => { if (!list.some((x) => x.id === n.id)) list.push(n); });
   const read = readSet();
-  out.forEach((n) => { n.read = read.has(n.id); });
-  return out.sort((a, b) => b.at - a.at);
+  list.forEach((n) => { n.read = read.has(n.id); n.kept = savedIds.has(n.id); });
+  return list.sort((a, b) => b.at - a.at);
 }
 function refreshBell() { $("bellDot").hidden = !notifications().some((n) => !n.read); }
 
@@ -155,6 +163,12 @@ const SCREENS = {
       <div class="card" style="margin-top:10px">${details.map(([l, v], i) => `<div class="detail"><i style="background:${palette[i % palette.length]}"></i><div><small style="color:${palette[i % palette.length]}">${esc(l)}</small>${v ? `<b>${esc(v)}</b>` : '<span class="muted">non détecté</span>'}</div></div>`).join("")}</div>
       <a class="btn secondary" style="margin-top:10px" href="${ODIN}" target="_blank" rel="noopener">Voir mon profil étudiant (Odin)</a>
       </div><div>
+      <div class="card private" style="margin:0 0 14px">
+        <b>🔒 Session privée</b>
+        <p class="small muted" style="margin:6px 0 10px">Tes données restent <b>uniquement dans ce navigateur</b> (stockage local de cet appareil, aucun serveur, aucune donnée envoyée). Le site ne lit pas Odin à ta place : ouvre ce même lien sur un autre ordinateur et l'app y sera vide, jusqu'à ce que tu y importes tes données. ${data.uca_app_imported_at ? "Dernière importation ici : " + esc(new Date(data.uca_app_imported_at).toLocaleString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })) + "." : ""}</p>
+        <button class="btn" type="button" data-act="sendFrames">Envoyer vers un autre appareil (QR animé)</button>
+        <p class="small muted" style="margin:8px 0 0">Même système de trames que l'application Android : l'autre appareil scanne le code qui tourne, via « Importer ».</p>
+      </div>
       <div class="section-title">Mes groupes (repérés dans ton emploi du temps)</div>
       <div class="pills">${groups.map((g, i) => `<span class="pill" style="color:${palette[(i * 2 + 1) % 7]};background:${palette[(i * 2 + 1) % 7]}33">${esc(g)}</span>`).join("")}</div>
       <p class="small muted">${groups.length ? "Repérés d'après les intitulés de tes cours sur Odin." : "Aucun groupe repéré : importe ton emploi du temps, ils apparaissent d'après les intitulés (TD, TP)."}</p>
@@ -170,10 +184,17 @@ const SCREENS = {
   }, after() { fetch("../version.json", { cache: "no-store" }).then((r) => r.json()).then((v) => { const e = $("ver"); if (e) e.textContent = v.version; }).catch(() => {}); } },
 
   notifications: { title: "Notifications", sub: true, render() {
-    const list = notifications();
-    if (!list.length) return `<div class="empty"><div class="big">🔔</div><b>Aucune nouvelle notification</b><p class="small">${data.uca_events ? "Un changement d'emploi du temps ou une nouvelle note apparaîtra ici." : "Importe tes données pour recevoir tes alertes de notes et de cours."}</p></div>`;
-    return `<button class="btn secondary" type="button" data-act="readAll" style="margin-bottom:12px">Tout marquer comme lu</button>` +
-      list.map((n) => `<button class="notif${n.read ? " read" : ""}" type="button" data-notif="${esc(n.id)}" data-ntype="${n.type}"><b>${n.type === "note" ? "🎓" : "📍"} ${esc(n.title)}</b><span class="small muted">${esc(n.text)}</span></button>`).join("");
+    const all = notifications();
+    if (!all.length) return `<div class="empty"><div class="big">🔔</div><b>Aucune notification</b><p class="small">${data.uca_events ? "Un changement d'emploi du temps ou une nouvelle note apparaîtra ici." : "Importe tes données pour recevoir tes alertes de notes et de cours."}</p>${lsJson(NK.dismissed, []).length ? '<button class="btn secondary" type="button" data-act="nRestore">Restaurer les notifications supprimées</button>' : ""}</div>`;
+    const filters = [["all", "Toutes"], ["unread", "Non lues"], ["kept", "Gardées"], ["note", "Notes"], ["edt", "Emploi du temps"]];
+    const match = (n) => notifFilter === "unread" ? !n.read : notifFilter === "kept" ? n.kept : notifFilter === "note" ? n.type === "note" : notifFilter === "edt" ? n.type === "edt" : true;
+    const list = all.filter(match);
+    const kept = all.filter((n) => n.kept).length, unread = all.filter((n) => !n.read).length;
+    const chips = filters.map(([v, l]) => `<button type="button" class="nchip${notifFilter === v ? " on" : ""}" data-act="nFilter" data-v="${v}" aria-pressed="${notifFilter === v}">${l}${v === "unread" && unread ? ` (${unread})` : v === "kept" && kept ? ` (${kept})` : ""}</button>`).join("");
+    const tools = `<div class="ntools"><button class="btn secondary" type="button" data-act="readAll">Tout marquer comme lu</button><button class="btn danger" type="button" data-act="nClear">Supprimer tout sauf les gardées</button>${lsJson(NK.dismissed, []).length ? '<button class="btn secondary" type="button" data-act="nRestore">Restaurer les supprimées</button>' : ""}</div>`;
+    const cards = list.map((n) => `<div class="notif${n.read ? " read" : ""}${n.kept ? " kept" : ""}" data-notif="${esc(n.id)}" data-ntype="${n.type}" role="button" tabindex="0"><b>${n.kept ? "★ " : ""}${n.type === "note" ? "🎓" : "📍"} ${esc(n.title)}</b><span class="small muted">${esc(n.text)}${n.at ? " · " + new Date(n.at).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : ""}</span>
+      <span class="nact"><button type="button" class="nbtn" data-act="nRead" data-id="${esc(n.id)}" aria-label="${n.read ? "Marquer comme non lue" : "Marquer comme lue"}">${n.read ? "Non lue" : "Lue"}</button><button type="button" class="nbtn" data-act="nKeep" data-id="${esc(n.id)}" aria-pressed="${n.kept}" aria-label="${n.kept ? "Ne plus garder" : "Garder cette notification"}">${n.kept ? "★ Gardée" : "☆ Garder"}</button><button type="button" class="nbtn del" data-act="nDel" data-id="${esc(n.id)}" aria-label="Supprimer cette notification">Supprimer</button></span></div>`).join("");
+    return `<div class="nchips" role="group" aria-label="Filtrer">${chips}</div>${tools}` + (cards || `<div class="empty"><b>Rien dans cette catégorie</b></div>`);
   } },
 
   preferences: { title: "Préférences", sub: true, render() {
@@ -341,7 +362,19 @@ async function checkUpdates(manual) {
 document.addEventListener("visibilitychange", () => { if (!document.hidden && UPD.boot !== null) checkUpdates(false); });
 setInterval(() => { if (!document.hidden) checkUpdates(false); }, 15 * 60 * 1000);
 
-function closeSheet() { $("sheet").hidden = true; $("sheetBackdrop").hidden = true; }
+let frameTimer = 0;
+function closeSheet() { clearInterval(frameTimer); $("sheet").hidden = true; $("sheetBackdrop").hidden = true; }
+/* Trames : instantané des données en QR animé (core/transfer.js, comme l'APK et l'extension) ; l'autre appareil le lit via « Importer ». */
+async function sendFrames() {
+  const T = window.UCA_TRANSFER;
+  if (!T) { toast("Transfert indisponible"); return; }
+  const frames = await T.encodeFrames(await T.snapshot());
+  $("sheet").innerHTML = `<h2>Envoyer vers un autre appareil</h2><p class="small muted" style="margin:0 0 10px">Sur l'autre appareil : ouvre l'app, « Importer », puis « Scanner » et vise ce code qui tourne en boucle. Rien ne passe par un serveur.</p><div style="text-align:center"><canvas id="frameQr" aria-label="Code QR animé"></canvas><div class="small muted" id="frameCount" style="margin-top:6px"></div></div><button class="btn secondary" type="button" data-act="closeSheet" style="margin-top:12px">Fermer</button>`;
+  $("sheet").hidden = false; $("sheetBackdrop").hidden = false;
+  let i = 0;
+  const show1 = () => { T.drawQr($("frameQr"), frames[i], 280); $("frameCount").textContent = `Trame ${i + 1} / ${frames.length}`; i = (i + 1) % frames.length; };
+  show1(); clearInterval(frameTimer); frameTimer = setInterval(show1, 280);
+}
 
 async function checkStatus() {
   const ids = ["odin", "cas", "moodle", "mail", "site"];
@@ -360,13 +393,31 @@ async function onAction(act, el) {
   else if (act === "photo") $("photoInput").click();
   else if (act === "readAll") { localStorage.setItem("uca_notif_read", JSON.stringify(notifications().map((n) => n.id))); toast("Toutes les notifications sont marquées comme lues"); show(); }
   else if (act === "askNotif") { await Notification.requestPermission(); show(); }
+  else if (act === "sendFrames") await sendFrames();
+  else if (act === "nFilter") { notifFilter = el.dataset.v; show(); }
+  else if (act === "nRead") { const r = readSet(), id = el.dataset.id; if (r.has(id)) r.delete(id); else r.add(id); lsSet("uca_notif_read", [...r]); refreshBell(); show(); }
+  else if (act === "nKeep") {
+    const id = el.dataset.id, saved = lsJson(NK.saved, []), n = notifications().find((x) => x.id === id);
+    if (saved.some((x) => x.id === id)) lsSet(NK.saved, saved.filter((x) => x.id !== id));
+    else if (n) lsSet(NK.saved, saved.concat([{ id: n.id, type: n.type, title: n.title, text: n.text, at: n.at }]));
+    show();
+  }
+  else if (act === "nDel") {
+    const id = el.dataset.id, d = new Set(lsJson(NK.dismissed, [])); d.add(id); lsSet(NK.dismissed, [...d]);
+    lsSet(NK.saved, lsJson(NK.saved, []).filter((x) => x.id !== id)); refreshBell(); toast("Notification supprimée"); show();
+  }
+  else if (act === "nClear") {
+    const keep = new Set(lsJson(NK.saved, []).map((x) => x.id)), d = new Set(lsJson(NK.dismissed, []));
+    notifications().forEach((n) => { if (!keep.has(n.id)) d.add(n.id); }); lsSet(NK.dismissed, [...d]); refreshBell(); toast("Notifications supprimées (les gardées restent)"); show();
+  }
+  else if (act === "nRestore") { localStorage.removeItem(NK.dismissed); refreshBell(); toast("Notifications restaurées"); show(); }
   else if (act === "update") await checkUpdates(true);
   else if (act === "applyUpdate") await applyUpdate();
   else if (act === "logout") {
     // Même effet que « Se déconnecter » de l'app Android : tout ce qui est enregistré sur l'appareil est effacé.
     if (!confirm("Effacer emploi du temps, notes, absences et réglages de cet appareil ?")) return;
     await chrome.storage.local.clear();
-    ["uca_profile_photo", "uca_notif_read", "uca_maps_consent", "uca_install_seen"].forEach((k) => localStorage.removeItem(k));
+    ["uca_profile_photo", "uca_notif_read", "uca_notif_dismissed", "uca_notif_saved", "uca_maps_consent", "uca_install_seen"].forEach((k) => localStorage.removeItem(k));
     location.replace("index.html");
   }
 }
@@ -399,7 +450,10 @@ $("backBtn").addEventListener("click", back);
 $("bellBtn").addEventListener("click", () => open("notifications"));
 $("personBtn").addEventListener("click", () => goTab("compte"));
 $("sheetBackdrop").addEventListener("click", closeSheet);
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") { if (!$("sheet").hidden) closeSheet(); else back(); } });
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") { if (!$("sheet").hidden) closeSheet(); else back(); }
+  if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("notif")) { e.preventDefault(); e.target.click(); }
+});
 
 async function load() {
   const keys = ["uca_events", "uca_edt_changes", "uca_notes_seen", "uca_my_groups", "uca_profile", "uca_last_sync", "uca_app_imported_at", "uca_session_expired", "uca_design"];
@@ -409,6 +463,9 @@ async function load() {
   $("sessionBanner").hidden = !(data.uca_session_expired || stale);
 }
 
+/* Le menu et la coque prennent l'aspect du design choisi (voir html[data-design] dans shell.css). */
+function applyDesign(id) { document.documentElement.dataset.design = id; }
+
 (async function init() {
   const designs = await fetch(chrome.runtime.getURL("designs/designs.json")).then((r) => r.json()).catch(() => []);
   await load();
@@ -416,6 +473,7 @@ async function load() {
   if (!(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) { location.replace("import.html"); return; }
   const d = designs.find((x) => x.id === data.uca_design);
   if (d) designFolder = d.folder;
+  applyDesign(d ? d.id : "anime");
   const params = new URLSearchParams(location.search);
   const want = location.hash.slice(1);
   if (params.get("view") || params.get("open")) { show.agendaParams = location.search.replace(/[?&]source=pwa/, "").replace(/^&/, "?"); tab = "agenda"; }
@@ -424,6 +482,6 @@ async function load() {
   history.replaceState({ t: tab }, "", location.pathname + location.search + "#" + tab);
   show();
   checkUpdates(false);
-  chrome.storage.onChanged && chrome.storage.onChanged.addListener(async () => { await load(); if (current() !== "agenda") show(); else refreshBell(); });
+  chrome.storage.onChanged && chrome.storage.onChanged.addListener(async () => { await load(); { const dd = designs.find((x) => x.id === data.uca_design); if (dd) { designFolder = dd.folder; applyDesign(dd.id); } } if (current() !== "agenda") show(); else refreshBell(); });
 })();
 })();

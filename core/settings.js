@@ -15,7 +15,7 @@ const DEFAULTS = {
   shareLinkHours: 48,     // durée de validité d'un lien de partage chiffré (core/transfer.js)
   compactCards: false,    // blocs de cours sans le nom de l'enseignant (visible dans le détail)
   autoDesign: false,      // le design suit le thème clair/sombre du système
-  designLight: "professionnel",
+  designLight: "studio",
   designDark: "anime",
   pinNext: false,         // app seulement : notification « prochain cours » épinglée (mise à jour à l'ouverture)
   taskReminders: true,    // notification la veille à 18 h pour chaque devoir à rendre et chaque examen

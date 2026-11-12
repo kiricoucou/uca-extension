@@ -202,8 +202,8 @@ def site_pages(browser, base, errors):
     page.goto(base); page.wait_for_timeout(800)
     check("accueil : reste sur la racine (plus de redirection)", page.url.rstrip("/") == base.rstrip("/") or page.url.endswith("index.html"), page.url)
     heads = page.locator("table.compare thead th").all_inner_texts()
-    check("accueil : comparatif site / agenda en ligne / extension / app",
-          all(any(k in h for h in heads) for k in ["Site", "Agenda en ligne", "Extension", "App"]), str(heads))
+    check("accueil : comparatif aide / agenda en ligne / extension / app",
+          all(any(k in h for h in heads) for k in ["Aide", "Agenda en ligne", "Extension", "App"]), str(heads))
     check("accueil : ligne « connexion directe à Odin » mise en avant", page.locator("tr.key th", has_text="directement à Odin").count() == 1)
     check("accueil : pas de défilement horizontal", page.evaluate("document.documentElement.scrollWidth <= innerWidth + 1"))
     shot(page, "accueil")

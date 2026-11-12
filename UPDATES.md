@@ -55,6 +55,11 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.30 — app Android 1.4.22 : bouton « Relancer la demande d'installation »
+
+- **APK : mise à jour obligatoire plus tolérante.** Quand on lance le téléchargement du nouvel APK puis qu'on annule l'installateur Android (« Ouvrir avec… » une seule fois / toujours, ou l'écran d'installation), le bouton devient « ↻ Relancer la demande d'installation » : un appui relance aussitôt la demande avec l'APK déjà téléchargé, sans quitter l'app ni retélécharger. Si le fichier a disparu, l'app le retélécharge.
+- **Téléchargement plus sûr** : l'APK est écrit dans un fichier temporaire et ne prend son nom définitif qu'une fois complet.
+
 ## 1.46.29 — app Android 1.4.21 : logos par design, Studio, Lumen, calendrier à l'installation
 
 - **Un logo SVG animé par design** (Animé, Professionnel, Carnet, Lumen, Studio), affichés sur chaque carte du choix de design et sur le bouton « Design » (agenda et popup). Respectent « réduire les animations ».

@@ -55,13 +55,14 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
-## 1.46.20 — app 1.4.17 : légende des notes, mises à jour forcées
+## 1.46.20 — app Android 1.4.17 : légende des notes, mises à jour forcées
 
 - **Notes** : légende des couleurs sous le graphique (vert 14 et plus, jaune 10 à 14, orange sous 10, gris moyenne de la classe). Dans le tableau, la note dont le barème peut changer (sur 20 ou sur N) est violette tant qu'on n'a pas répondu, rose ensuite.
 - **Extension** : le code de déchiffrement est affiché sous « Générer le lien » (un clic le copie) et un bouton « Mises à jour » force la vérification ; les trois boutons sont sur la même ligne. Vérification automatique toutes les 5 minutes (au lieu de 20).
+- **À faire et examens** : la date (jour, numéro, mois) s'affiche en plus de l'horaire pour les examens et les devoirs.
 - **Mise à jour forcée** : dès qu'une nouvelle version est détectée, l'extension se recharge si le dossier est déjà à jour, sinon ouvre une fois par version la page de téléchargement qui lance le ZIP. Une extension en mode développeur ne peut pas se réécrire elle-même : il faut remplacer le dossier puis « Recharger ».
 
-## 1.46.19 — app 1.4.16 : détail de note au premier plan
+## 1.46.19 — app Android 1.4.16 : détail de note au premier plan
 
 - **Notes** : la fenêtre de détail d'une évaluation passait derrière la liste des notes et se chevauchait avec elle ; elle s'ouvre maintenant au premier plan. Version web seule (mise à jour silencieuse).
 - **Site** : nouvelle page « Télécharger l'extension » (`extension/`) avec le ZIP Chrome/Edge à charger en mode développeur ; le ZIP ne contient que le code, aucune donnée personnelle (`tests/gen_extension_page.py` le régénère à chaque version).

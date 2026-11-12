@@ -131,6 +131,7 @@ function buildPanel(panel, ctx) {
   });
   panel.appendChild(form);
 
+  const dateLabel = (ms) => new Date(ms).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
   const now = Date.now();
   const exams = examsFrom(ctx.events, now);
   const open = tasks.filter((t) => !t.done), done = tasks.filter((t) => t.done);
@@ -147,7 +148,7 @@ function buildPanel(panel, ctx) {
       li.appendChild(el("span", "tk-tag", "Examen"));
       main.appendChild(el("div", "tk-name", it.x.title));
       const meta = el("div", "tk-meta");
-      meta.append(el("span", "tk-due " + info.level, info.text), document.createTextNode(` · ${it.x.time}${it.x.room ? " · " + it.x.room : ""}`));
+      meta.append(el("span", "tk-due " + info.level, info.text), document.createTextNode(` · ${dateLabel(it.dueMs)} · ${it.x.time}${it.x.room ? " · " + it.x.room : ""}`));
       main.appendChild(meta);
       li.appendChild(main);
       makeClickable(li, () => ctx.openEvent && ctx.openEvent(it.x.ev), "Voir ce cours dans l'agenda");
@@ -159,6 +160,7 @@ function buildPanel(panel, ctx) {
       const meta = el("div", "tk-meta");
       if (it.t.subject) meta.appendChild(el("span", "tk-tag", it.t.subject));
       meta.appendChild(el("span", "tk-due " + info.level, info.text));
+      if (it.dueMs !== null) meta.appendChild(document.createTextNode(" · " + dateLabel(it.dueMs)));
       main.appendChild(meta);
       li.appendChild(main);
       if (it.dueMs !== null) makeClickable(li, (e) => { if (!e.target.closest("input,button")) ctx.openTask && ctx.openTask(it.t); }, "Voir ce jour dans l'agenda");

@@ -17,15 +17,15 @@
   --border:rgba(60,60,67,.16);
   --border-strong:rgba(60,60,67,.29);
   --text:#000000;
-  --text-dim:rgba(60,60,67,.62);
+  --text-dim:rgba(60,60,67,.8);
   --text-faint:rgba(60,60,67,.3);
-  --accent:#007aff;
-  --accent2:#007aff;
-  --accent-hover:#0a6cdc;
+  --accent:#0062cc;
+  --accent2:#0062cc;
+  --accent-hover:#0052ad;
   --accent-light:rgba(0,122,255,.15);
   --accent-tint:rgba(0,122,255,.08);
   --on-accent:#ffffff;
-  --link:#007aff;
+  --link:#0062cc;
   --danger:#d70015;
   --danger-solid:#ff3b30;
   --danger-bright:#ff3b30;
@@ -966,10 +966,10 @@ button.danger{background:var(--danger-solid);color:#fff;}
 /* ---- Corps ---- */
 main{background:transparent;}
 .view{transition:opacity .3s var(--ease);}
-#syncInfo{background:transparent;border-bottom:none;font-size:12.5px;color:var(--text-dim);padding:6px 18px;letter-spacing:0;}
+#syncInfo{background:color-mix(in srgb,var(--surface) 70%,transparent);border-bottom:none;font-size:12.5px;color:var(--text-dim);padding:6px 18px;letter-spacing:0;}
 .update-bar{background:var(--accent-tint);border-bottom:none;border-radius:18px;margin:6px 14px 0;padding:8px 8px 8px 14px;font-size:13.5px;}
 .update-bar button{height:32px;}
-.week-sub-label{background:transparent;border-bottom:none;font-weight:600;font-size:12.5px;color:var(--text-dim);}
+.week-sub-label{background:var(--surface);border-bottom:none;font-weight:600;font-size:12.5px;color:var(--text-dim);}
 
 /* Grille horaire : traits très fins, contenu en dessous des barres */
 .grid-view{background:var(--surface);}

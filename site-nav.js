@@ -29,6 +29,7 @@
     sun:     ['#f59e0b', 'M8 12a4 4 0 108 0 4 4 0 10-8 0', 'M8 12a4 4 0 108 0 4 4 0 10-8 0M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5'],
     moon:    ['#6366f1', 'M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z', 'M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z'],
     auto:    ['#64748b', 'M3 5h18v11H3z', 'M3 5h18v11H3zM8 20h8M12 16v4'],
+    guide:   ['#7c3aed', 'M3 6l9-3 9 3v13l-9 3-9-3z', 'M3 6l9-3 9 3v13l-9 3-9-3zM12 3v19M3 6l9 3 9-3'],
     burger:  ['currentColor', '', 'M4 6h16M4 12h16M4 18h16'],
     back:    ['#0b7bc4', '', 'M15 5l-7 7 7 7']
   };
@@ -41,10 +42,10 @@
   /* ---------- liste des liens (une icône différente par bouton) ---------- */
   var L = [
     ['Site', [['Accueil', '', 'home'], ['Agenda en ligne', 'app/shell.html#home', 'agenda'], ['Nouveautés', 'nouveautes.html', 'news'], ['Aide', 'aide.html', 'help'], ['Transports', 'transport.html', 'bus'], ['Carte des lieux', 'lieux-map.html', 'pin']]],
-    ['Installer', [['Télécharger l’extension (ZIP)', 'extension/', 'puzzle'], ['Installateurs Windows · Mac · Linux', 'extension/#installateurs', 'install'], ['Application Android (APK)', 'telecharger/', 'phone'], ['Mettre à jour l’extension', 'extension/#maj', 'update']]],
+    ['Installer', [['Télécharger l’extension (ZIP)', 'extension/', 'puzzle'], ['Installateurs Windows · Mac · Linux', 'extension/#installateurs', 'install'], ['Application Android (APK)', 'telecharger/', 'phone'], ['Mettre à jour l’extension', 'extension/#maj', 'update'], ['Aide à l’installation (en images)', 'installation.html', 'guide']]],
     ['Projet', [['Soutenir le projet (don)', 'don.html', 'heart'], ['Merci d’avoir installé', 'merci.html', 'thanks'], ['Confidentialité', 'confidentialite.html', 'shield'], ['English', 'en/', 'globe']]]
   ];
-  var TOP = { '': 'home', 'index.html': 'home', 'nouveautes.html': 'news', 'transport.html': 'bus', 'aide.html': 'help', 'app/': 'agenda', 'app/index.html': 'agenda', 'en/': 'globe', 'extension/': 'puzzle', 'lieux-map.html': 'pin', 'don.html': 'heart', '#demo': 'play', '#comparatif': 'compare', '#faq': 'faq' };
+  var TOP = { '': 'home', 'index.html': 'home', 'nouveautes.html': 'news', 'transport.html': 'bus', 'aide.html': 'help', 'app/': 'agenda', 'app/index.html': 'agenda', 'en/': 'globe', 'extension/': 'puzzle', 'installation.html': 'guide', 'lieux-map.html': 'pin', 'don.html': 'heart', '#demo': 'play', '#comparatif': 'compare', '#faq': 'faq' };
 
   /* ---------- thème ---------- */
   function getTheme() { try { return localStorage.getItem(KEY) || 'auto'; } catch (e) { return 'auto'; } }

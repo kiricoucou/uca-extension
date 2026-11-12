@@ -39,3 +39,5 @@ site-nav.js
 merci.html
 don.html
 stats.json
+installation.html
+aide-install

@@ -70,7 +70,7 @@ const changes = [], activity = [];
 function record(type, ev, before, details, hoursAgo) {
   const t = nowMs - hoursAgo * 3600000;
   changes.push({ type, kinds: [type], details, before: before ? snap(before) : undefined, key: eventKey(ev), ev, at: t });
-  const label = { added: "Ajouté", cancelled: "Annulé", moved: "Déplacé", room: "Salle changée", teacher: "Enseignant changé", time: "Horaire modifié", title: "Intitulé modifié", info: "Infos modifiées" }[type];
+  const label = { added: "Nouveau cours", cancelled: "Annulé", moved: "Déplacé", room: "Salle changée", teacher: "Enseignant changé", time: "Horaire modifié", title: "Intitulé modifié", info: "Infos modifiées" }[type];
   activity.push({ id: `edt|${t}|${activity.length}|${eventKey(ev)}`, at: t, kind: "edt", type, day: ev.date, past: false, title: `${label} : ${ev.title}`,
     text: [`${dshort(ev)} ${pad(ev.startH)}:${pad(ev.startM)}`].concat(type !== "added" && type !== "cancelled" ? details : []).join(" — ") });
 }
@@ -89,9 +89,9 @@ const SCENARIOS = {
 };
 const PLAN = {   // chaque design a son scénario d'emploi du temps : un cours annulé, ou déplacé, ou une salle changée, etc.
   studio:        [["cancel", 3], ["room", 7], ["added", 20], ["teacher", 30]],
-  anime:         [["moved", 2], ["room", 9], ["cancel", 26], ["title", 40]],
+  anime:         [["added", 1], ["moved", 2], ["room", 9], ["cancel", 26], ["title", 40]],
   professionnel: [["room", 4], ["time", 8], ["title", 21], ["added2", 30], ["cancel", 52]],
-  lumen:         [["cancel", 5], ["teacher", 11], ["moved", 24], ["time", 36]],
+  lumen:         [["added2", 2], ["cancel", 5], ["teacher", 11], ["moved", 24], ["time", 36]],
   carnet:        [["added", 3], ["added2", 14], ["room", 22], ["moved", 38], ["teacher", 49]],
 };
 const m = /\/designs\/([\w-]+)\//.exec(location.pathname);
@@ -148,6 +148,9 @@ const data = {
   ],
 };
 if (m) data.uca_design = m[1];
+/* Démo : rien de ce qu'on « lit » ou supprime ne survit à une actualisation (cloche, notifications, notes nouvelles).
+   Le stockage de session garde sinon « vu » et « supprimé » ; on les remet à zéro avant de réinjecter les données. */
+chrome.storage.local.remove(["uca_activity_dismissed", "uca_activity_seen", "uca_notes_seen", "uca_edt_changes", "uca_activity"]);
 chrome.storage.local.set(data);
 
 // La démo ne propose que ce qui y fonctionne

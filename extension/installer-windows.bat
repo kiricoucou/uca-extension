@@ -207,6 +207,7 @@ function Stop-Browsers($sel) {
   $list = ($sel | Where-Object { Get-Process -Name $_.proc -ErrorAction SilentlyContinue } | ForEach-Object { $_.name }) -join ', '
   [void]$MB.Show("Ferme correctement : $list`r`n(enregistre ton travail, puis ferme toutes les fenetres).`r`nClique sur OK une fois fait : s'il en reste d'ouverts, ils seront fermes de force.", 'My UCA', 'OK', 'Information')
   for ($i = 0; $i -lt 20 -and (& $running); $i++) { Start-Sleep -Milliseconds 500; [System.Windows.Forms.Application]::DoEvents() }
+  if ($env:MYUCA_NOKILL -eq '1') { Say 'Navigateurs laisses ouverts (mode test).'; return }
   if (& $running) { Say 'Fermeture forcee des navigateurs restants...'; & $running | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
 }
 function New-Shortcut($name, $exe, $lnkArgs) {

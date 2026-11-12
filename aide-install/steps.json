@@ -1,0 +1,196 @@
+{
+ "pwa": {
+  "title": "Installer l'application sur ton téléphone (PWA)",
+  "intro": "L'application s'installe depuis le navigateur du téléphone, sans magasin d'applications. Les captures de l'application sont réelles ; les écrans propres à Android (menu du navigateur, écran d'accueil) sont des illustrations. Compte environ 2 minutes.",
+  "steps": [
+   {
+    "n": 1,
+    "title": "Ouvre le site sur ton téléphone",
+    "what": "Dans Chrome (Android) ou Safari (iPhone), ouvre kiricoucou.github.io/uca-extension. Le gros bouton bleu « Ouvrir l'agenda en ligne » mène à l'application.",
+    "why": "L'application est une page web : rien à télécharger dans un magasin d'applications.",
+    "img": "aide-install/img/pwa-01.webp"
+   },
+   {
+    "n": 2,
+    "title": "Appuie sur « Installer l'app »",
+    "what": "Sur la page d'accueil, appuie sur « Installer l'app » : un guide adapté à ton téléphone s'ouvre.",
+    "why": "Il te montre les étapes exactes pour ton navigateur (Android ou iPhone).",
+    "img": "aide-install/img/pwa-02.webp"
+   },
+   {
+    "n": 3,
+    "title": "Lis le guide d'installation",
+    "what": "Le guide explique comment ajouter l'application à l'écran d'accueil. Les étapes suivantes montrent le chemin sur Android avec Chrome ; sur iPhone, c'est le bouton Partager de Safari puis « Sur l'écran d'accueil ».",
+    "why": "Une fois ajoutée, l'application s'ouvre en plein écran, comme une vraie application.",
+    "img": "aide-install/img/pwa-03.webp"
+   },
+   {
+    "n": 4,
+    "title": "Ouvre le menu ⋮ puis « Installer l'application »",
+    "what": "Appuie sur les trois points ⋮ en haut à droite de Chrome, puis sur « Installer l'application » (parfois « Ajouter à l'écran d'accueil »). Image d'illustration : l'aspect exact dépend de ta version d'Android.",
+    "why": "Cette commande transforme le site en application avec sa propre icône.",
+    "img": "aide-install/img/pwa-04.webp"
+   },
+   {
+    "n": 5,
+    "title": "Confirme avec « Installer »",
+    "what": "Une fenêtre te demande de confirmer : appuie sur « Installer ». Image d'illustration.",
+    "why": "L'application est ajoutée en quelques secondes, sans téléchargement lourd.",
+    "img": "aide-install/img/pwa-05.webp"
+   },
+   {
+    "n": 6,
+    "title": "Retrouve l'icône My UCA",
+    "what": "L'icône « My UCA » apparaît sur ton écran d'accueil (ou dans la liste de tes applications). Appuie dessus pour lancer l'application. Image d'illustration.",
+    "why": "Un seul appui pour ouvrir ton emploi du temps, comme n'importe quelle application.",
+    "img": "aide-install/img/pwa-06.webp"
+   },
+   {
+    "n": 7,
+    "title": "Au premier lancement : importe tes données",
+    "what": "L'application s'ouvre sur l'écran d'import : elle est vide au départ, car le site ne lit jamais Odin à ta place. Tes données viennent de l'extension sur ordinateur.",
+    "why": "Tes notes et ton emploi du temps restent uniquement sur ton téléphone : aucun serveur.",
+    "img": "aide-install/img/pwa-07.webp"
+   },
+   {
+    "n": 8,
+    "title": "Choisis comment importer",
+    "what": "Trois moyens : scanner le QR animé affiché par l'extension, coller le lien chiffré, ou ouvrir le fichier d'export. Sur ordinateur, dans l'extension : bouton « Liens » puis « Envoyer vers le téléphone ».",
+    "why": "Le QR animé fonctionne même hors connexion : rien n'est envoyé sur Internet.",
+    "img": "aide-install/img/pwa-08.webp"
+   },
+   {
+    "n": 9,
+    "title": "Tes données arrivent",
+    "what": "Dès que l'import est fini, l'application s'ouvre sur l'Accueil : statut des services UCA, notifications, raccourcis. La barre du bas donne accès à Études, Agenda, Lieux et Compte. (Données de démonstration.)",
+    "why": "Tu as maintenant ton emploi du temps et tes notes dans la poche, sans ouvrir l'ordinateur.",
+    "img": "aide-install/img/pwa-09.webp"
+   },
+   {
+    "n": 10,
+    "title": "Ouvre l'agenda",
+    "what": "L'onglet « Agenda » affiche ton emploi du temps : jour, 3 jours, semaine, mois. Appuie sur un cours pour voir la salle, l'enseignant et les horaires.",
+    "why": "Tu sais où aller en un coup d'œil, avec les changements de salle et les annulations signalés.",
+    "img": "aide-install/img/pwa-10.webp"
+   },
+   {
+    "n": 11,
+    "title": "Consulte tes études",
+    "what": "L'onglet « Études » regroupe tes notes, tes absences et ta scolarité. Les notes récentes sont en couleur.",
+    "why": "Tu suis ta moyenne sans te reconnecter à Odin.",
+    "img": "aide-install/img/pwa-11.webp"
+   },
+   {
+    "n": 12,
+    "title": "Trouve les lieux du campus",
+    "what": "L'onglet « Lieux » liste les restaurants U, bibliothèques et services, avec la carte du campus.",
+    "why": "Pratique à la rentrée pour trouver une salle ou un resto.",
+    "img": "aide-install/img/pwa-12.webp"
+   },
+   {
+    "n": 13,
+    "title": "Garde la main sur tes données",
+    "what": "L'onglet « Compte » rappelle que tes données restent sur cet appareil. Tu peux les envoyer vers un autre appareil (QR animé), ouvrir les préférences ou tout effacer.",
+    "why": "C'est ici que tu règles les notifications et que tu supprimes tes données si tu changes de téléphone.",
+    "img": "aide-install/img/pwa-13.webp"
+   },
+   {
+    "n": 14,
+    "title": "Passe du clair au sombre",
+    "what": "Le bouton menu en haut ouvre le menu du site : retour à l'accueil, aide, don, et le choix du thème clair, sombre ou automatique (soleil et lune).",
+    "why": "Tu règles l'apparence selon ta préférence ou la luminosité.",
+    "img": "aide-install/img/pwa-14.webp"
+   }
+  ]
+ },
+ "installateur": {
+  "title": "Installer l'extension avec l'installateur Windows (.bat)",
+  "intro": "Méthode automatique : une fenêtre te guide (dossiers, navigateurs, progression). Sans droits administrateur. Compte environ 2 minutes.",
+  "steps": [
+   {
+    "n": 1,
+    "title": "Trouve les installateurs",
+    "what": "Sur la page « Extension » du site, descends jusqu'à « Installateurs automatiques » : un installateur existe pour Windows, macOS et Linux. Pour Windows, clique sur « Installateur Windows ».",
+    "why": "L'installateur fait à ta place le téléchargement, la copie des fichiers et l'ouverture de la bonne page : tu ne manipules pas de ZIP.",
+    "img": "aide-install/img/inst-01.webp"
+   },
+   {
+    "n": 2,
+    "title": "Le fichier .bat se télécharge",
+    "what": "Chrome télécharge installer-windows.bat. S'il affiche un avertissement (« ce type de fichier peut endommager votre ordinateur »), clique sur « Conserver » : le script est public et lisible, tu peux l'ouvrir avec le Bloc-notes avant de le lancer.",
+    "why": "Chrome prévient pour tous les scripts. Ici, le code est ouvert sur GitHub et n'envoie rien : il ne fait que télécharger l'extension et copier des fichiers dans ton profil.",
+    "img": "aide-install/img/inst-02.webp"
+   },
+   {
+    "n": 3,
+    "title": "Double-clique sur installer-windows.bat",
+    "what": "Ouvre ton dossier Téléchargements dans l'Explorateur et double-clique sur installer-windows.bat. Aucun droit administrateur n'est nécessaire.",
+    "why": "Windows lance l'assistant graphique : une fenêtre s'ouvre, pas besoin de taper de commande.",
+    "img": "aide-install/img/inst-03.webp"
+   },
+   {
+    "n": 4,
+    "title": "Choisis où installer et où télécharger",
+    "what": "Un assistant s'ouvre. Indique (ou choisis avec « Parcourir ») le dossier d'installation de l'extension, puis le dossier où télécharger les fichiers. La dernière version est vérifiée automatiquement. Clique sur « Suivant ».",
+    "why": "Le dossier d'installation doit rester en place : Chrome le lit à chaque démarrage.",
+    "img": "aide-install/img/inst-04.webp"
+   },
+   {
+    "n": 5,
+    "title": "Choisis tes navigateurs",
+    "what": "L'assistant détecte les navigateurs installés (Chrome, Edge, Brave, Vivaldi, Firefox). Coche ceux où tu veux l'extension : un seul, deux ou tous. Clique sur « Installer ».",
+    "why": "Le même code s'adapte à ton choix : il prépare le bon paquet pour chaque navigateur.",
+    "img": "aide-install/img/inst-05.webp"
+   },
+   {
+    "n": 6,
+    "title": "Ferme tes navigateurs",
+    "what": "Après le téléchargement (barre de progression), l'assistant te demande de fermer correctement les navigateurs choisis. Enregistre ton travail, ferme-les, puis clique sur « OK ». Ceux qui restent ouverts sont fermés de force.",
+    "why": "Un navigateur ouvert verrouille ses fichiers : le fermer évite toute erreur pendant l'installation.",
+    "img": "aide-install/img/inst-06.webp"
+   },
+   {
+    "n": 7,
+    "title": "L'installation est terminée",
+    "what": "Le journal indique chaque étape réussie : version trouvée, fichiers installés, navigateurs ouverts. Clique sur « Fermer ». L'installateur ouvre aussi, dans chaque navigateur, la page de l'extension et une page de remerciement.",
+    "why": "Tu sais ainsi que tout s'est bien passé, sans avoir à deviner.",
+    "img": "aide-install/img/inst-07.webp"
+   },
+   {
+    "n": 8,
+    "title": "Chrome s'ouvre sur la page des extensions",
+    "what": "L'installateur ouvre chrome://extensions. Active « Mode développeur » en haut à droite.",
+    "why": "C'est la seule étape manuelle : Chrome l'exige pour toute extension hors Chrome Web Store.",
+    "img": "aide-install/img/inst-08.webp"
+   },
+   {
+    "n": 9,
+    "title": "Clique sur « Charger l'extension non empaquetée »",
+    "what": "Le bouton apparaît à gauche de la page. Dans la fenêtre qui s'ouvre, colle le chemin du dossier (Ctrl+V : l'installateur l'a copié pour toi) puis valide avec Entrée.",
+    "why": "Chrome charge l'extension depuis le dossier installé par l'assistant.",
+    "img": "aide-install/img/inst-09.webp"
+   },
+   {
+    "n": 10,
+    "title": "Choisis le dossier installé",
+    "what": "Le chemin du dossier d'installation (sous-dossier « chrome ») est saisi. Clique sur « Sélectionner un dossier ».",
+    "why": "C'est le dossier que l'installateur vient de remplir avec la dernière version.",
+    "img": "aide-install/img/inst-10.webp"
+   },
+   {
+    "n": 11,
+    "title": "La page de bienvenue de l'extension",
+    "what": "L'extension s'ouvre sur « Choisis ton design » : c'est le premier lien de connexion. Choisis un design, puis « Synchroniser » pour te connecter à Odin.",
+    "why": "Cette page prouve que l'extension est bien chargée dans ce navigateur.",
+    "img": "aide-install/img/inst-11.webp"
+   },
+   {
+    "n": 12,
+    "title": "La page de remerciement",
+    "what": "Dans un second onglet, l'installateur ouvre une page de remerciement : premiers pas, aide, tutoriel et, si tu veux, un don pour soutenir le projet.",
+    "why": "Un coup d'œil aux premiers pas t'évite de chercher où cliquer.",
+    "img": "aide-install/img/inst-12.webp"
+   }
+  ]
+ }
+}

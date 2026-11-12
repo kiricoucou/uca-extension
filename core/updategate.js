@@ -33,16 +33,35 @@
       var p = el("p", "margin:0 0 6px;color:" + dim + ";"); p.id = "ucaGateDesc";
       p.textContent = "Cette version de l'extension est périmée : elle est verrouillée tant qu'elle n'est pas à jour (rien ne fonctionne en attendant).";
       var v = el("p", "margin:0 0 18px;font-weight:700;"); v.id = "ucaGateVersions";
-      var btn = el("button", "font:inherit;font-weight:700;border:0;border-radius:12px;padding:13px 22px;min-height:46px;background:" + accent + ";color:" + (dark ? "#0b1d3a" : "#fff") + ";cursor:pointer;width:100%;", "Mettre à jour maintenant");
+      var btn = el("button", "font:inherit;font-weight:700;border:0;border-radius:12px;padding:13px 22px;min-height:46px;background:" + accent + ";color:" + (dark ? "#0b1d3a" : "#fff") + ";cursor:pointer;width:100%;", "Télécharger et appliquer la mise à jour");
       btn.type = "button";
-      btn.addEventListener("click", function () { chrome.runtime.sendMessage({ type: "UCA_APPLY_UPDATE" }); });
-      var how = el("p", "margin:14px 0 6px;font-size:14px;color:" + dim + ";", "Si rien ne change : télécharge la dernière version, remplace le dossier de l'extension, puis « Recharger » dans chrome://extensions.");
+      var status = el("p", "min-height:22px;margin:12px 0 0;font-size:14px;font-weight:600;"); status.id = "ucaGateStatus"; status.setAttribute("role", "status");
+      var busy = false;
+      btn.addEventListener("click", function () {
+        if (busy) return;
+        var SU = window.UCA_SELFUPDATE;
+        // Le popup se ferme dès qu'une boîte de sélection s'ouvre : la mise à jour se fait dans un onglet.
+        if (/popup\.html$/.test(location.pathname)) { chrome.tabs.create({ url: chrome.runtime.getURL("settings.html") }); window.close(); return; }
+        if (!SU || !SU.supported(true)) { status.textContent = "Mise à jour automatique indisponible ici : suis les étapes manuelles ci-dessous."; chrome.runtime.sendMessage({ type: "UCA_APPLY_UPDATE" }); return; }
+        busy = true; btn.disabled = true; status.style.color = dim;
+        SU.run({ interactive: true, onProgress: function (n, total, label) { status.textContent = total > 1 ? "Application des changements : " + n + " / " + total : label; } })
+          .then(function (v) {
+            status.textContent = "Mise à jour installée (" + v + "). Rechargement de l'extension…";
+            setTimeout(function () { chrome.runtime.reload(); }, 600);
+          })
+          .catch(function (e) {
+            busy = false; btn.disabled = false;
+            status.style.color = dark ? "#f28b82" : "#b3261e";
+            status.textContent = e && e.name === "AbortError" ? "Choix du dossier annulé : réessaie." : "Échec : " + ((e && e.message) || e);
+          });
+      });
+      var how = el("p", "margin:14px 0 6px;font-size:14px;color:" + dim + ";", "Première fois : choisis le dossier de l'extension (celui chargé dans chrome://extensions) et autorise l'écriture. La dernière version est téléchargée, appliquée, puis l'extension se recharge. Ensuite, les mises à jour suivantes se font avec ce même dossier. Firefox ou échec : remplace le dossier à la main puis « Recharger ».");
       var link = el("a", "display:inline-block;margin:4px 0;color:" + accent + ";font-weight:600;", "Page de téléchargement (ZIP et script maj-extension.bat)");
       link.href = "https://kiricoucou.github.io/uca-extension/extension/#maj"; link.target = "_blank"; link.rel = "noopener";
       var again = el("button", "display:block;margin:10px auto 0;font:inherit;border:0;background:none;color:" + accent + ";text-decoration:underline;cursor:pointer;padding:8px;min-height:36px;", "Vérifier à nouveau");
       again.type = "button";
       again.addEventListener("click", function () { again.textContent = "Vérification…"; chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" }); setTimeout(function () { again.textContent = "Vérifier à nouveau"; evaluate(); }, 3500); });
-      box.append(h, p, v, btn, how, link, again);
+      box.append(h, p, v, btn, status, how, link, again);
       g.appendChild(box);
       // Ni Échap ni Tab ne permettent de sortir de la fenêtre.
       g.addEventListener("keydown", function (e) {

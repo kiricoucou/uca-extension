@@ -55,9 +55,9 @@ BODY = """<body>
     <h2>Que veux-tu télécharger ?</h2>
     <p class="sub">L'extension pour ton ordinateur, l'application pour ton téléphone Android, ou les deux d'un coup.</p>
     <div class="grid">
-      <div class="card"><div class="ic">💻</div><h3>Extension (ZIP)</h3><p>Chrome, Edge, Brave, à ajouter en mode développeur.</p><p style="margin-top:14px"><a class="ghost" data-dl="zip" href="@ZIP@" download>Télécharger le ZIP · <span class="sz" data-sz="zip">?</span></a></p></div>
-      <div class="card"><div class="ic">📱</div><h3>Application (APK)</h3><p>Android 7 ou plus récent, se connecte seule à Odin.</p><p style="margin-top:14px"><a class="ghost" data-dl="apk" href="https://github.com/kiricoucou/uca-extension/raw/main/EdtUca.apk" download>Télécharger l'APK · <span class="sz" data-sz="apk">?</span></a></p></div>
-      <div class="card"><div class="ic">📦</div><h3>Les deux</h3><p>Le ZIP et l'APK l'un après l'autre (autorise les téléchargements multiples si le navigateur le demande).</p><p style="margin-top:14px"><a class="dl" id="dlBoth" href="#choix" style="padding:12px 20px;font-size:16px">Tout télécharger · <span class="sz" data-sz="both">?</span></a></p></div>
+      <div class="card"><div class="ic">💻</div><h3>Extension (ZIP)</h3><p>Chrome, Edge, Brave, à ajouter en mode développeur.</p><p class="btn-row"><a class="ghost" data-dl="zip" href="@ZIP@" download>Télécharger le ZIP · <span class="sz" data-sz="zip">?</span></a></p></div>
+      <div class="card"><div class="ic">📱</div><h3>Application (APK)</h3><p>Android 7 ou plus récent, se connecte seule à Odin.</p><p class="btn-row"><a class="ghost" data-dl="apk" href="https://github.com/kiricoucou/uca-extension/raw/main/EdtUca.apk" download>Télécharger l'APK · <span class="sz" data-sz="apk">?</span></a></p></div>
+      <div class="card"><div class="ic">📦</div><h3>Les deux</h3><p>Le ZIP et l'APK l'un après l'autre (autorise les téléchargements multiples si le navigateur le demande).</p><p class="btn-row"><a class="dl" id="dlBoth" href="#choix">Tout télécharger · <span class="sz" data-sz="both">?</span></a></p></div>
     </div>
   </section>
 

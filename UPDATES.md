@@ -55,6 +55,11 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.27 — mise à jour automatique de l'extension
+
+- **Mise à jour obligatoire = vraie mise à jour** : le bouton « Télécharger et appliquer la mise à jour » télécharge le ZIP publié, écrit les fichiers dans le dossier de l'extension (manifest.json en dernier) puis recharge l'extension. La première fois, le navigateur demande de choisir ce dossier et d'autoriser l'écriture ; il est ensuite mémorisé, et si l'autorisation est encore valable la mise à jour se fait même toute seule (sans clic) dès qu'une nouvelle version est détectée. Chemins hors dossier refusés, paquet qui n'est pas l'extension UCA refusé. Chrome, Edge, Brave, Chromium ; Firefox n'a pas cette API (étapes manuelles ou `install-linux.sh`).
+- **Pages de téléchargement** : boutons ZIP / APK / les deux corrigés (taille et alignement).
+
 ## 1.46.26 — installateur Linux : page de connexion et icône visible
 
 - **install-linux.sh** : à la fin, ouvre la page de l'extension pour se connecter (choix du design puis « Synchroniser »). Chrome-like : adresse calculée à partir du dossier, ouverte quand tu confirmes avoir chargé l'extension. Firefox : l'extension ouvre sa page toute seule au premier démarrage.

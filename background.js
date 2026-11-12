@@ -4,6 +4,7 @@ if (typeof UCA_GRADES === "undefined" && typeof importScripts === "function") im
 if (typeof UCA_STATUS === "undefined" && typeof importScripts === "function") importScripts("core/status.js");
 if (typeof UCA_ADE === "undefined" && typeof importScripts === "function") importScripts("core/ade.js");
 if (typeof UCA_ACTIVITY === "undefined" && typeof importScripts === "function") importScripts("core/activity.js");
+if (typeof UCA_SELFUPDATE === "undefined" && typeof importScripts === "function") { try { importScripts("core/selfupdate.js"); } catch (e) { /* Firefox : absent */ } }
 
 const EDT_URL = "https://odin.iut.uca.fr/etudiants/?p=edt";
 const ABSENCES_URL = "https://odin.iut.uca.fr/etudiants/?p=absences";
@@ -144,8 +145,30 @@ async function checkForUpdate() {
    ses propres fichiers : (1) si le dossier sur le disque est déjà plus récent (git pull, dossier remplacé), on
    recharge tout de suite ; (2) sinon on ouvre une seule fois par version la page de téléchargement, qui lance le
    ZIP toute seule (?auto=1). Jamais en boucle : une version n'est « forcée » qu'une fois. */
+/* Téléchargement du ZIP publié pour la mise à jour automatique (les pages de l'extension ont connect-src 'self' : c'est le
+   service worker, qui a le droit d'hôte raw.githubusercontent.com, qui télécharge et renvoie le paquet en base64). */
+async function fetchPackageBuffer() {
+  const url = (typeof UCA_SELFUPDATE !== "undefined" ? UCA_SELFUPDATE.PACKAGE_URL : "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/extension/uca-extension-chrome.zip") + "?t=" + Date.now();
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error("Téléchargement impossible (HTTP " + r.status + ").");
+  return await r.arrayBuffer();
+}
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || msg.type !== "UCA_FETCH_PACKAGE") return false;
+  fetchPackageBuffer().then((buf) => {
+    const a = new Uint8Array(buf); let bin = "";
+    for (let i = 0; i < a.length; i += 0x8000) bin += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000));
+    sendResponse({ ok: true, b64: btoa(bin) });
+  }).catch((e) => sendResponse({ ok: false, error: String((e && e.message) || e) }));
+  return true;
+});
+
 async function forceUpdate(latest) {
   try {
+    // Dossier déjà autorisé (mise à jour automatique) : on télécharge, on applique et on recharge sans rien demander.
+    if (typeof UCA_SELFUPDATE !== "undefined" && UCA_SELFUPDATE.supported(false) && !(await isStoreBuild())) {
+      try { if (await UCA_SELFUPDATE.run({ interactive: false, getPackage: fetchPackageBuffer })) { chrome.runtime.reload(); return; } } catch (e) { /* on retombe sur la page de mise à jour */ }
+    }
     const disk = await (await fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" })).json();
     if (compareVersions(chrome.runtime.getManifest().version, disk.version) < 0 && compareVersions(disk.version, latest) >= 0) { chrome.runtime.reload(); return; }
     const { uca_update_forced } = await chrome.storage.local.get("uca_update_forced");

@@ -131,13 +131,14 @@ function render(designs, currentId) {
     card.appendChild(buildGallery(d.screenshots || [], d.preview || { background: "#888" }));
     const info = el("div", "info");
     const txt = el("div", "txt");
+    const logo = el("img", "design-logo"); logo.src = chrome.runtime.getURL(d.logo || (d.folder + "/svg/logo.svg")); logo.alt = ""; logo.width = 44; logo.height = 44;
     const name = el("div", "name", d.name);
     if (d.id === currentId) name.appendChild(el("span", "tag", "Actuel"));
     txt.append(name, el("div", "desc", d.description || ""));
     const btn = el("button", "choose-btn", d.id === currentId ? "Garder" : "Choisir");
     btn.type = "button";
     btn.addEventListener("click", () => choose(d.id));
-    info.append(txt, btn);
+    info.append(logo, txt, btn);
     card.appendChild(info);
     wrap.appendChild(card);
   });

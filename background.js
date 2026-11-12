@@ -252,8 +252,22 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     .catch((err) => sendResponse({ ok: false, error: String((err && err.message) || err) }));
   return true;
 });
-chrome.runtime.onInstalled.addListener((details) => {
-  if (details.reason === "install") chrome.tabs.create({ url: chrome.runtime.getURL("choose.html?tab=1") });
+/* Première installation : le design par défaut (Studio) est appliqué et l'onglet de l'agenda s'ouvre tout de suite (calendrier des cours,
+   avec le bouton pour se connecter à Odin). Changer de design reste à un clic (bouton « Design »). Si le registre ne contient pas
+   Studio, on retombe sur le sélecteur. */
+chrome.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason !== "install") return;
+  try {
+    const [{ uca_design }, designs] = await Promise.all([chrome.storage.local.get("uca_design"), loadDesigns()]);
+    const chosen = findDesign(designs, uca_design) || designs.find((d) => d.id === "studio");
+    if (chosen) {
+      if (!uca_design) await chrome.storage.local.set({ uca_design: chosen.id });
+      await applyDesign();
+      await chrome.tabs.create({ url: chrome.runtime.getURL(`${chosen.folder}/agenda.html`) });
+      return;
+    }
+  } catch (e) { /* retombe sur le sélecteur */ }
+  chrome.tabs.create({ url: chrome.runtime.getURL("choose.html?tab=1") });
 });
 chrome.runtime.onStartup.addListener(applyDesign);
 applyDesign();

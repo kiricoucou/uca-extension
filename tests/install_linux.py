@@ -66,7 +66,7 @@ def main():
         check("Chrome : installation réussie (code 0)", r.returncode == 0, (r.stdout + r.stderr)[-500:])
         check("Chrome : manifest.json et code installés", (d / "manifest.json").exists() and (d / "background.js").exists() and (d / "core").is_dir())
         check("Chrome : les étapes manuelles obligatoires sont expliquées", "Mode développeur" in r.stdout and "Charger l'extension non empaquetée" in r.stdout)
-        mid = re.search(r"chrome-extension://([a-p]{32})/choose\.html\?tab=1", r.stdout)
+        mid = re.search(r"chrome-extension://([a-p]{32})/designs/studio/agenda\.html", r.stdout)
         real = subprocess.run([BASH, "-c", f'cd "{d.as_posix()}" && pwd -P'], capture_output=True, text=True, encoding="utf-8").stdout.strip()
         import hashlib
         want = hashlib.sha256(real.encode()).hexdigest()[:32].translate(str.maketrans("0123456789abcdef", "abcdefghijklmnop"))

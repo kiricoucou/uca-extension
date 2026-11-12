@@ -353,13 +353,17 @@ def main():
             page.on("console", lambda m: m.type == "error" and errors.append(f"[{tag}] {m.text}"))
 
         opened = False
+        # Première installation : le design par défaut (Studio) est appliqué et l'onglet du calendrier s'ouvre (voir tests/first_run.py).
+        cdp = ctx.new_cdp_session(ctx.pages[0]); urls = []
         for _ in range(25):
-            opened = any("choose.html?tab=1" in pg.url for pg in ctx.pages)
-            if opened:
+            urls = [t["url"] for t in cdp.send("Target.getTargets")["targetInfos"] if t["type"] == "page"]
+            if any(u.endswith("/designs/studio/agenda.html") for u in urls):
                 break
             ctx.pages[0].wait_for_timeout(200)
-        check("sélecteur ouvert à l'installation", opened)
-        check("popup = sélecteur avant choix", sw.evaluate("chrome.action.getPopup({})").endswith("/choose.html"))
+        check("agenda (design par défaut) ouvert à l'installation", any(u.endswith("/designs/studio/agenda.html") for u in urls), str(urls))
+        check("popup = design par défaut après l'installation", sw.evaluate("chrome.action.getPopup({})").endswith("/designs/studio/popup.html"))
+        sw.evaluate("() => chrome.storage.local.remove('uca_design').then(() => applyDesign())")
+        check("sans design choisi, le popup redevient le sélecteur", sw.evaluate("chrome.action.getPopup({})").endswith("/choose.html"))
         sw.evaluate("(s) => chrome.storage.local.set(s)", data)
 
         orders = {}

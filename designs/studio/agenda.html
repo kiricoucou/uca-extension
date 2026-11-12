@@ -839,6 +839,40 @@ button,.btn,.tb-btn,select,input[type="text"],input[type="date"],input[type="sea
   :root:not([data-theme="light"]) .event-card.current{background:#dfeaee!important;color:#17323c!important;}
   :root:not([data-theme="light"]) .event-card.current .ev-time,:root:not([data-theme="light"]) .event-card.current .ev-title,:root:not([data-theme="light"]) .event-card.current .ev-sub{color:#17323c;}
 }
+/* ===== Studio v2 : tableau de bord planning, cartes à liseré coloré, colonnes hachurées ===== */
+html,body{background:var(--bg);}
+.grid-view{background:var(--surface);border-radius:20px;box-shadow:var(--shadow);margin:0 12px 6px;}
+.grid-headrow{background:var(--surface);border-bottom:1px solid var(--border);}
+.grid-timegutter,.grid-timegutter-head{background:var(--surface);}
+.grid-daycol-head{padding:6px 4px 4px;}
+.grid-daycol-head .dname{font-size:12.5px;font-weight:600;color:var(--text-dim);text-transform:none;letter-spacing:0;}
+.grid-daycol-head .dnum{font-size:16px;font-weight:700;width:30px;height:30px;line-height:30px;border-radius:10px;color:var(--text);margin:1px auto 0;}
+.grid-daycol-head.today .dnum{background:#101114;color:#fff;}
+.grid-daycol{border-left:1px solid var(--border);background:repeating-linear-gradient(135deg,rgba(22,24,29,.03) 0 7px,transparent 7px 14px);}
+.hour-line{border-top:1px solid var(--border);}
+.hour-label{font-size:12px;font-weight:500;color:var(--text-dim);}
+.event-card{border-radius:14px!important;border:0!important;border-left:4px solid var(--evc,#6b6f7a)!important;padding:6px 9px!important;margin:1px 2px;
+  background:color-mix(in srgb,var(--evc,#6b6f7a) 11%,#fff)!important;color:#16181d!important;box-shadow:none;}
+.event-card .ev-title{font-size:calc(14px * var(--s,1));font-weight:650;color:#16181d;line-height:1.25;}
+.event-card .ev-time,.event-card .ev-sub{font-size:calc(12.5px * var(--s,1));color:#4d515c;opacity:1;}
+.event-card::after{content:"";position:absolute;top:10px;right:10px;width:15px;height:15px;border-radius:6px;background:var(--evc,#6b6f7a);opacity:.9;}
+.event-card.tiny::after,.event-card.short::after{display:none;}
+.event-card.short,.event-card.tiny,.event-card.cascade{padding:2px 6px!important;border-radius:10px!important;border-left-width:3px!important;}
+.event-card.cascade .ev-title{font-size:calc(12px * var(--s,1));}
+.grid-body{margin-top:0!important;}
+.event-card:hover{box-shadow:0 12px 26px -14px rgba(22,24,29,.35);}
+.event-card.current{background:#101114!important;color:#fff!important;border-left-color:var(--evc,#6b6f7a)!important;box-shadow:0 16px 30px -16px rgba(16,17,20,.8);}
+.event-card.current .ev-title,.event-card.current .ev-time,.event-card.current .ev-sub{color:#fff;}
+#syncBtn,.sync-primary,.msync.primary{background:#101114;color:#fff;border-color:transparent;}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .grid-daycol{background:repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 7px,transparent 7px 14px);}
+  :root:not([data-theme="light"]) .grid-daycol-head.today .dnum{background:#f0f2f5;color:#101114;}
+  :root:not([data-theme="light"]) .event-card{background:color-mix(in srgb,var(--evc,#444) 24%,#1e1f20)!important;color:#f1f2f5!important;}
+  :root:not([data-theme="light"]) .event-card .ev-title{color:#f1f2f5;}
+  :root:not([data-theme="light"]) .event-card .ev-time,:root:not([data-theme="light"]) .event-card .ev-sub{color:#c9ccd4;}
+  :root:not([data-theme="light"]) .event-card.current{background:#f0f2f5!important;color:#101114!important;}
+  :root:not([data-theme="light"]) .event-card.current .ev-title,:root:not([data-theme="light"]) .event-card.current .ev-time,:root:not([data-theme="light"]) .event-card.current .ev-sub{color:#101114;}
+}
 </style>
 </head>
 <body>
@@ -907,7 +941,7 @@ button,.btn,.tb-btn,select,input[type="text"],input[type="date"],input[type="sea
   <span id="sessionWarn" class="session-warn hidden"><svg class="ic sm" aria-hidden="true"><use href="#i-alert"/></svg>Session expirée</span>
   <a class="hdr-link icon mobile-hide-zoom" href="aide.html" target="_blank" rel="noopener" title="Aide" aria-label="Aide"><svg class="ic sm" aria-hidden="true"><use href="#i-help"/></svg></a>
   <button class="mobile-hide-zoom" id="settingsBtn" title="Paramètres"><svg class="ic sm" aria-hidden="true"><use href="#i-settings"/></svg>Paramètres</button>
-  <button class="mobile-hide-zoom" id="designBtn" title="Changer de design"><svg class="ic sm" aria-hidden="true"><use href="#i-design"/></svg>Design</button>
+  <button class="mobile-hide-zoom" id="designBtn" title="Changer de design"><img class="design-logo" src="svg/logo.svg" alt="" width="18" height="18" style="width:18px;height:18px;vertical-align:-4px;margin-right:6px;border-radius:5px">Design</button>
   <button class="primary" id="syncBtn"><svg class="ic" aria-hidden="true"><use href="#i-sync"/></svg><span class="btn-label">Synchroniser</span></button>
 </header>
 <div class="update-bar hidden" id="updateBar">

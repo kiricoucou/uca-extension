@@ -55,6 +55,11 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.19 — app 1.4.16 : détail de note au premier plan
+
+- **Notes** : la fenêtre de détail d'une évaluation passait derrière la liste des notes et se chevauchait avec elle ; elle s'ouvre maintenant au premier plan. Version web seule (mise à jour silencieuse).
+- **Site** : nouvelle page « Télécharger l'extension » (`extension/`) avec le ZIP Chrome/Edge à charger en mode développeur ; le ZIP ne contient que le code, aucune donnée personnelle (`tests/gen_extension_page.py` le régénère à chaque version).
+
 ## 1.46.18 — iPhone : envoyer les données à l'app
 
 - **Extension sur iPhone/iPad** : bouton « Envoyer les données à l'app » (feuille de partage + lien copié, code affiché), visible seulement si la page de l'app a déjà été ouverte dans ce navigateur et que des données existent. iOS ne permet pas de savoir si l'app est installée sur l'écran d'accueil : la détection repose sur cette ouverture, enregistrée localement, rien n'est envoyé à un tiers.

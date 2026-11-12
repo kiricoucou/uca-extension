@@ -1058,6 +1058,7 @@ function openGradeDetailModal(label, row) {
     overlay = document.createElement("div");
     overlay.id = "gradeDetailOverlay";
     overlay.className = "modal-overlay";
+    overlay.style.zIndex = "6000"; // au-dessus du panneau Notes (z-index 150) et de ses feuilles : le détail passe au premier plan
     overlay.innerHTML = `
       <div class="modal grade-modal-box">
         <div class="modal-head">

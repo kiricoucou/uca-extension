@@ -32,3 +32,4 @@ en
 icons
 vendor
 telecharger
+extension

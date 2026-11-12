@@ -223,18 +223,38 @@ object GithubUpdateManager {
         }
     }
 
+    /** APK déjà téléchargé en entier (le fichier n'a son nom définitif qu'une fois complet) : permet de relancer l'installation sans retélécharger. */
+    fun pendingApk(context: Context): File? {
+        val dir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS) ?: context.cacheDir
+        val f = File(dir, "MyUCA-latest.apk")
+        return if (f.isFile && f.length() > 0) f else null
+    }
+
+    /**
+     * Relance la demande d'installation Android avec l'APK déjà téléchargé (après un refus de l'utilisateur dans « Ouvrir avec… »
+     * ou dans l'écran d'installation). Renvoie false s'il n'y a plus de fichier : il faut alors retélécharger.
+     */
+    fun relaunchInstall(activity: Activity): Boolean {
+        val f = pendingApk(activity) ?: return false
+        installApk(activity, f)
+        return true
+    }
+
     fun downloadAndInstallApk(
         activity: Activity,
         apkUrl: String,
         onProgress: (Int) -> Unit,
-        onError: (String) -> Unit
+        onError: (String) -> Unit,
+        onInstallLaunched: () -> Unit = {}
     ) {
         executor.execute {
             try {
                 val targetDir = activity.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
                     ?: activity.cacheDir
                 val apkFile = File(targetDir, "MyUCA-latest.apk")
+                val partFile = File(targetDir, "MyUCA-latest.apk.part")   // renommé en .apk seulement quand le téléchargement est complet
                 if (apkFile.exists()) apkFile.delete()
+                if (partFile.exists()) partFile.delete()
 
                 val url = URL(apkUrl)
                 val conn = (url.openConnection() as HttpURLConnection).apply {
@@ -252,7 +272,7 @@ object GithubUpdateManager {
                 var downloaded = 0L
 
                 conn.inputStream.use { input ->
-                    FileOutputStream(apkFile).use { output ->
+                    FileOutputStream(partFile).use { output ->
                         val buffer = ByteArray(8192)
                         var bytesRead: Int
                         while (input.read(buffer).also { bytesRead = it } != -1) {
@@ -266,9 +286,14 @@ object GithubUpdateManager {
                     }
                 }
 
+                if (!partFile.renameTo(apkFile)) {
+                    mainHandler.post { onError("Impossible d'enregistrer l'APK téléchargé.") }
+                    return@execute
+                }
                 mainHandler.post {
                     onProgress(100)
                     installApk(activity, apkFile)
+                    onInstallLaunched()
                 }
             } catch (e: Exception) {
                 mainHandler.post {

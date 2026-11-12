@@ -34,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnOpenGithub: Button
     private lateinit var btnDevBypassTest: View
 
+    private var apkInstallPending = false   // APK téléchargé, installation demandée à Android : le bouton devient « Relancer la demande »
     @Volatile var isAppBlockedForUpdate: Boolean = false   // écran de mise à jour affiché : rien d'autre ne doit passer au-dessus
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -97,6 +98,8 @@ class MainActivity : AppCompatActivity() {
         GithubUpdateManager.cleanupDownloadedApks(this, 10 * 60 * 1000L)
         if (!isAppBlockedForUpdate) {
             checkGithubUpdate()
+        } else if (apkInstallPending) {
+            showRelaunchInstall()   // retour de l'installateur (annulé ou refusé) : le bouton est de nouveau disponible
         }
         checkSessionIfNeeded()
         checkLiveUpdate()
@@ -209,7 +212,14 @@ class MainActivity : AppCompatActivity() {
             txtUpdateSubtitle.text = "Le socle natif Android a évolué (nouvelle version système ou permissions). L'installation du nouvel APK est nécessaire."
             btnForceUpdate.text = "📦 Télécharger et installer l'APK"
 
+            apkInstallPending = false
             btnForceUpdate.setOnClickListener {
+                // Installation déjà demandée puis annulée : on relance tout de suite la demande avec l'APK déjà téléchargé (rapide, sans retélécharger).
+                if (apkInstallPending && GithubUpdateManager.relaunchInstall(this)) {
+                    txtDownloadStatus.text = "Demande d'installation relancée…"
+                    return@setOnClickListener
+                }
+                apkInstallPending = false
                 layoutDownloadProgress.visibility = View.VISIBLE
                 progressBarDownload.progress = 0
                 txtDownloadStatus.text = "Connexion à GitHub..."
@@ -228,6 +238,10 @@ class MainActivity : AppCompatActivity() {
                         btnForceUpdate.text = "Réessayer le téléchargement"
                         Toast.makeText(this, err, Toast.LENGTH_LONG).show()
                         GithubUpdateManager.openGithubDownload(this, updateInfo.githubRepoUrl)
+                    },
+                    onInstallLaunched = {
+                        apkInstallPending = true
+                        showRelaunchInstall()
                     }
                 )
             }
@@ -239,6 +253,15 @@ class MainActivity : AppCompatActivity() {
 
         val debuggable = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
         btnDevBypassTest.visibility = if (debuggable) View.VISIBLE else View.GONE
+    }
+
+    /** APK prêt, installation demandée : si l'utilisateur annule (« Ouvrir avec… », écran d'installation), un bouton permet de relancer la demande tout de suite. */
+    private fun showRelaunchInstall() {
+        layoutDownloadProgress.visibility = View.VISIBLE
+        progressBarDownload.progress = 100
+        txtDownloadStatus.text = "APK téléchargé. Si tu as annulé l'installation, appuie sur « Relancer la demande »."
+        btnForceUpdate.isEnabled = true
+        btnForceUpdate.text = "↻ Relancer la demande d'installation"
     }
 
     /** Lignes « ##v1.4.11 · titre » = en-tête de version (en gras), les autres = puces. */

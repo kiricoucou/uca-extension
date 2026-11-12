@@ -13,9 +13,10 @@ set -u
 BASE_URL="${UCA_BASE_URL:-https://kiricoucou.github.io/uca-extension}"
 YES="${UCA_YES:-0}"; NO_OPEN="${UCA_NO_OPEN:-0}"
 GECKO_ID="uca-connecteur@site-emploi-du-temps.local"
+PROTO="--proto =https --tlsv1.2"; [ -n "${UCA_BASE_URL:-}" ] && PROTO=""   # UCA_BASE_URL : tests locaux uniquement
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 [ "$(id -u)" = "0" ] && { echo "Ne lance pas ce script avec sudo."; exit 1; }
-[ "$(uname -s)" = "Darwin" ] || { echo "Ce fichier est pour macOS. Sous Linux : install-linux.sh"; exit 1; }
+[ "${UCA_FAKE_OS:-$(uname -s)}" = "Darwin" ] || { echo "Ce fichier est pour macOS. Sous Linux : install-linux.sh"; exit 1; }
 
 BLUE=$'\033[38;2;61;155;233m'; BOLD=$'\033[1m'; RST=$'\033[0m'
 say() { printf '%s\n' "$*"; }
@@ -25,6 +26,7 @@ bar() {   # bar pourcentage texte
   f=$((p * w / 100)); for ((i = 0; i < w; i++)); do [ $i -lt $f ] && s="$s#" || s="$s-"; done
   printf '\r\033[K%s[%s]%s %3d%%  %s' "$BLUE" "$s" "$RST" "$p" "$t"
   [ "$p" -ge 100 ] && printf '\n'
+  return 0
 }
 osa() { osascript "$@" 2>/dev/null; }
 
@@ -46,7 +48,7 @@ mkdir -p "$INST" "$DLDIR" || { warn "Dossiers inutilisables."; exit 1; }
 say "Installation : $INST"; say "Téléchargements : $DLDIR"
 
 # ---------------------------------------------------------------- 3) derniere version
-VERSION="$(curl -fsSL --proto '=https' --tlsv1.2 "$BASE_URL/manifest.json?t=$(date +%s)" 2>/dev/null | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+VERSION="$(curl -fsSL $PROTO "$BASE_URL/manifest.json?t=$(date +%s)" 2>/dev/null | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
 [ -z "$VERSION" ] && { warn "Site injoignable : vérifie ta connexion."; exit 1; }
 say "Dernière version : $VERSION"
 
@@ -77,7 +79,7 @@ for i in "${SEL[@]}"; do [ "${KINDS[$i]}" = "chromium" ] && NEED_C=1 || NEED_F=1
 # ---------------------------------------------------------------- 5) telechargement et fichiers
 dl_pkg() {   # dl_pkg nom.zip dossier p0 p1
   bar "$3" "Téléchargement $1"
-  curl -fsSL --proto '=https' --tlsv1.2 --retry 2 -o "$DLDIR/$1" "$BASE_URL/extension/$1?t=$(date +%s)" || { echo; warn "Téléchargement impossible ($1)."; return 1; }
+  curl -fsSL $PROTO --retry 2 -o "$DLDIR/$1" "$BASE_URL/extension/$1?t=$(date +%s)" || { echo; warn "Téléchargement impossible ($1)."; return 1; }
   bar "$(( ($3 + $4) / 2 ))" "Décompression $1"
   local x="$TMP/x-${1%.zip}"; rm -rf "$x"; mkdir -p "$x"
   /usr/bin/unzip -q -o "$DLDIR/$1" -d "$x" || return 1

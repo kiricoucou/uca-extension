@@ -138,11 +138,14 @@ prog_start() {
   fi
 }
 prog() {   # prog pourcentage texte
-  if [ -n "$PROG_FD" ]; then printf '%s
-# %s
-' "$1" "$2" >&3 2>/dev/null
-  else local w=40 f i s=""; f=$(( $1 * w / 100 )); for ((i = 0; i < w; i++)); do [ $i -lt $f ] && s="$s#" || s="$s-"; done; printf '[K[%s] %3d%%  %s' "$s" "$1" "$2"; [ "$1" -ge 100 ] && printf '
-'; fi
+  if [ -n "$PROG_FD" ]; then printf '%s\n# %s\n' "$1" "$2" >&3 2>/dev/null
+  else
+    local w=40 f i s=""; f=$(( $1 * w / 100 ))
+    for ((i = 0; i < w; i++)); do [ $i -lt $f ] && s="$s#" || s="$s-"; done
+    printf '\r\033[K[%s] %3d%%  %s' "$s" "$1" "$2"
+    [ "$1" -ge 100 ] && printf '\n'
+  fi
+  return 0
 }
 prog_end() { [ -n "$PROG_FD" ] && { exec 3>&-; PROG_FD=""; }; }
 
@@ -192,16 +195,16 @@ install_chrome() {
   if [ -n "$bin" ] && ask_yes_no "Ouvrir $bin sur chrome://extensions (et la page de remerciement) maintenant ?" o; then open_url "$bin" "chrome://extensions" "$THANKS_URL"; fi
   if command -v xdg-open >/dev/null 2>&1 && [ "$NO_OPEN" != "1" ] && ask_yes_no "Ouvrir le dossier dans ton explorateur de fichiers ?" n; then xdg-open "$dir" >/dev/null 2>&1 & fi
   say "Mises à jour : relance ce script, ou clique « Recharger » dans chrome://extensions après avoir remplacé le dossier."
-  # Fin : ouvre la page de l'extension (choix du design puis connexion à Odin) quand elle est chargée.
+  # Fin : ouvre la page de l'extension (le calendrier des cours, avec le bouton pour te connecter à Odin) quand elle est chargée.
   local real id; real="$(cd "$dir" 2>/dev/null && pwd -P)"; id="$(chrome_ext_id "$real" 2>/dev/null)"
   if [ -n "$bin" ] && [ -n "$id" ] && [ "$YES" != "1" ]; then
     say ""
     if ask_yes_no "Extension chargée dans $bin ? J'ouvre sa page pour te connecter (l'icône puzzle > épingle pour la garder visible)." o; then
-      open_url "$bin" "chrome-extension://$id/choose.html?tab=1" "$THANKS_URL"
-      say "Page ouverte : choisis ton design, puis « Synchroniser » pour te connecter à Odin. Si rien ne s'ouvre, l'extension n'est pas encore chargée."
+      open_url "$bin" "chrome-extension://$id/designs/studio/agenda.html" "$THANKS_URL"
+      say "Calendrier des cours ouvert : clique « Importer » pour te connecter à Odin (le bouton « Design » change de design en un clic). Si rien ne s'ouvre, l'extension n'est pas encore chargée."
     fi
   elif [ -n "$id" ]; then
-    say "Page de l'extension une fois chargée : chrome-extension://$id/choose.html?tab=1"
+    say "Page de l'extension une fois chargée : chrome-extension://$id/designs/studio/agenda.html"
   fi
 }
 

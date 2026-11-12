@@ -22,6 +22,13 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $Base = $env:MYUCA_URL.TrimEnd('/')
+# Crochets de test (MYUCA_AUTO=1 : sans fenetre ni dialogue ; MYUCA_NOLAUNCH=1 : ne lance aucun navigateur ; MYUCA_FFPROFILE / MYUCA_FFEDITION).
+$MB = New-Object PSObject
+$MB | Add-Member -MemberType ScriptMethod -Name Show -Value { param($a, $b, $c, $d) if ($env:MYUCA_AUTO -eq '1') { return }; if ($b) { [System.Windows.Forms.MessageBox]::Show($a, $b, $c, $d) } else { [System.Windows.Forms.MessageBox]::Show($a) } }
+function Launch($exe, $argList) {
+  if ($env:MYUCA_NOLAUNCH -eq '1') { Say ('(test) lancement ignore : ' + $exe + ' ' + ($argList -join ' ')); return }
+  Start-Process $exe -ArgumentList $argList
+}
 $Blue = [System.Drawing.Color]::FromArgb(0,105,164)
 $Sky  = [System.Drawing.Color]::FromArgb(61,155,233)
 $Font = New-Object System.Drawing.Font('Segoe UI', 10)
@@ -57,6 +64,7 @@ function Find-Browsers {
   return $out
 }
 function Get-FirefoxEdition($exePath) {
+  if ($env:MYUCA_FFEDITION) { return $env:MYUCA_FFEDITION }
   $dir = Split-Path $exePath
   $cp = Join-Path $dir 'defaults\pref\channel-prefs.js'
   if (Test-Path $cp) {
@@ -67,6 +75,7 @@ function Get-FirefoxEdition($exePath) {
   return 'release'
 }
 function Get-FirefoxProfile {
+  if ($env:MYUCA_FFPROFILE) { return $env:MYUCA_FFPROFILE }
   $root = Join-Path $env:APPDATA 'Mozilla\Firefox'
   $ini = Join-Path $root 'profiles.ini'
   if (-not (Test-Path $ini)) { return $null }
@@ -167,12 +176,17 @@ if ($script:browsers.Count -eq 0) { [void]$clb.Items.Add('Aucun navigateur detec
 
 # ---------------------------------------------------------------- telechargement / installation
 function Get-File($url, $dest, $from, $to) {
-  $wc = New-Object System.Net.WebClient
-  $script:dlPct = 0
-  $wc.Add_DownloadProgressChanged({ param($s, $e) $script:dlPct = $e.ProgressPercentage })
-  $task = $wc.DownloadFileTaskAsync($url, $dest)
-  while (-not $task.IsCompleted) { Prog ($from + ($to - $from) * $script:dlPct / 100) $null; Start-Sleep -Milliseconds 60 }
-  if ($task.IsFaulted) { throw $task.Exception.InnerException.Message }
+  # Flux lu par morceaux dans le fil de l'interface : la fenetre reste vivante et la barre avance (pas de gestionnaire d'evenement : sans runspace il plante).
+  $req = [System.Net.HttpWebRequest]::Create($url); $req.Timeout = 30000; $req.UserAgent = 'MyUCA-installer'
+  $resp = $req.GetResponse(); $len = $resp.ContentLength
+  $in = $resp.GetResponseStream(); $out = [System.IO.File]::Create($dest)
+  try {
+    $buf = New-Object byte[] 65536; $got = 0
+    while (($n = $in.Read($buf, 0, $buf.Length)) -gt 0) {
+      $out.Write($buf, 0, $n); $got += $n
+      if ($len -gt 0) { Prog ($from + ($to - $from) * $got / $len) $null } else { [System.Windows.Forms.Application]::DoEvents() }
+    }
+  } finally { $out.Close(); $in.Close(); $resp.Close() }
   Prog $to $null
 }
 function Expand-Pkg($zip, $dest) {
@@ -186,11 +200,12 @@ function Expand-Pkg($zip, $dest) {
   Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
 }
 function Stop-Browsers($sel) {
+  if ($env:MYUCA_AUTO -eq '1') { return }
   $names = $sel | ForEach-Object { $_.proc } | Select-Object -Unique
   $running = { Get-Process -Name $names -ErrorAction SilentlyContinue }
   if (-not (& $running)) { return }
   $list = ($sel | Where-Object { Get-Process -Name $_.proc -ErrorAction SilentlyContinue } | ForEach-Object { $_.name }) -join ', '
-  [void][System.Windows.Forms.MessageBox]::Show("Ferme correctement : $list`r`n(enregistre ton travail, puis ferme toutes les fenetres).`r`nClique sur OK une fois fait : s'il en reste d'ouverts, ils seront fermes de force.", 'My UCA', 'OK', 'Information')
+  [void]$MB.Show("Ferme correctement : $list`r`n(enregistre ton travail, puis ferme toutes les fenetres).`r`nClique sur OK une fois fait : s'il en reste d'ouverts, ils seront fermes de force.", 'My UCA', 'OK', 'Information')
   for ($i = 0; $i -lt 20 -and (& $running); $i++) { Start-Sleep -Milliseconds 500; [System.Windows.Forms.Application]::DoEvents() }
   if (& $running) { Say 'Fermeture forcee des navigateurs restants...'; & $running | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
 }
@@ -218,7 +233,7 @@ function Run-Install {
     if ($needChromium) { Prog 8 'Telechargement (Chrome, Edge, Brave...)'; Say 'Telechargement du paquet Chrome / Edge / Brave...'; Get-File "$Base/extension/uca-extension-chrome.zip?t=$stamp" $zc 8 40; Prog 42 'Installation des fichiers'; Expand-Pkg $zc $dirC; Say ('Fichiers installes dans ' + $dirC) }
     if ($needFirefox)  { Prog 44 'Telechargement (Firefox)'; Say 'Telechargement du paquet Firefox...'; Get-File "$Base/extension/uca-extension-firefox.zip?t=$stamp" $zf 44 70; Prog 72 'Installation des fichiers'; Expand-Pkg $zf $dirF; Say ('Fichiers installes dans ' + $dirF) }
     # dossier memorise pour maj-extension.bat
-    if ($needChromium) { $cfg = Join-Path $env:LOCALAPPDATA 'MyUCA'; New-Item -ItemType Directory -Path $cfg -Force | Out-Null; Set-Content -Path (Join-Path $cfg 'dossier-extension.txt') -Value $dirC -Encoding ASCII }
+    if ($needChromium) { $cfg = $(if ($env:MYUCA_CFGDIR) { $env:MYUCA_CFGDIR } else { Join-Path $env:LOCALAPPDATA 'MyUCA' }); New-Item -ItemType Directory -Path $cfg -Force | Out-Null; Set-Content -Path (Join-Path $cfg 'dossier-extension.txt') -Value $dirC -Encoding ASCII }
 
     Prog 74 'Fermeture des navigateurs'
     Stop-Browsers $sel
@@ -232,12 +247,12 @@ function Run-Install {
         $major = 0; try { $major = [int]($b.version.Split('.')[0]) } catch {}
         if ($b.id -eq 'chrome' -and $major -ge 137) {
           Say ($b.name + ' : chargement automatique bloque par Chrome, mode guide.')
-          Start-Process $b.path -ArgumentList 'chrome://extensions', $thanks
+          Launch $b.path @('chrome://extensions', $thanks)
           $manual += $b
         } else {
           $argLoad = "--disable-features=DisableLoadExtensionCommandLineSwitch --load-extension=`"$dirC`""
-          Start-Process $b.path -ArgumentList ($argLoad + " `"$thanks`"")
-          $lnk = New-Shortcut ($b.name + ' (My UCA)') $b.path $argLoad
+          Launch $b.path ($argLoad + " `"$thanks`"")
+          $lnk = $(if ($env:MYUCA_NOLAUNCH -eq '1') { $null } else { New-Shortcut ($b.name + ' (My UCA)') $b.path $argLoad })
           Say ($b.name + ' : extension chargee. ' + $(if ($lnk) { 'Raccourci cree sur le Bureau pour la retrouver a chaque lancement.' } else { '' }))
           $manual += $b
         }
@@ -253,10 +268,10 @@ function Run-Install {
           $ed = Join-Path $prof 'extensions'; New-Item -ItemType Directory -Path $ed -Force | Out-Null
           Copy-Item $zf (Join-Path $ed 'uca-connecteur@site-emploi-du-temps.local.xpi') -Force
           Say 'Firefox : extension installee dans ton profil (permanente).'
-          Start-Process $b.path -ArgumentList $thanks
+          Launch $b.path $thanks
         } else {
           Say 'Firefox (version standard) : refuse les extensions non signees de facon permanente, chargement temporaire guide.'
-          Start-Process $b.path -ArgumentList 'about:debugging#/runtime/this-firefox', $thanks
+          Launch $b.path @('about:debugging#/runtime/this-firefox', $thanks)
           $manual += $b
         }
       }
@@ -270,7 +285,7 @@ function Run-Install {
       $msg = 'Il reste une etape manuelle (regle du navigateur, pas de contournement possible sans admin) :' + "`r`n`r`n"
       if ($guided | Where-Object { $_.id -eq 'chrome' }) { $msg += "Chrome : page chrome://extensions > active Mode developpeur > Charger l'extension non empaquetee > colle le chemin (Ctrl+V, deja copie) : $dirC`r`n`r`n" }
       if ($guided | Where-Object { $_.kind -eq 'firefox' }) { $msg += "Firefox : page about:debugging > Charger un module complementaire temporaire > choisis $dirF\manifest.json (a refaire a chaque demarrage ; Firefox Developer Edition l'installe de facon permanente).`r`n" }
-      [void][System.Windows.Forms.MessageBox]::Show($msg, 'My UCA : derniere etape', 'OK', 'Information')
+      [void]$MB.Show($msg, 'My UCA : derniere etape', 'OK', 'Information')
     }
     $btnNext.Text = 'Fermer'; $btnNext.Enabled = $true; $script:done = $true
   } catch {
@@ -292,12 +307,12 @@ $btnBack.Add_Click({ Show-Page ($script:page - 1) })
 $btnNext.Add_Click({
   if ($script:done) { $form.Close(); return }
   if ($script:page -eq 1) {
-    if (-not $tbInstall.Text.Trim() -or -not $tbDl.Text.Trim()) { [void][System.Windows.Forms.MessageBox]::Show('Choisis les deux dossiers.'); return }
+    if (-not $tbInstall.Text.Trim() -or -not $tbDl.Text.Trim()) { [void]$MB.Show('Choisis les deux dossiers.'); return }
     Show-Page 2
   } elseif ($script:page -eq 2) {
-    if ($script:browsers.Count -eq 0) { [void][System.Windows.Forms.MessageBox]::Show('Aucun navigateur compatible detecte.'); return }
-    if ($clb.CheckedItems.Count -eq 0) { [void][System.Windows.Forms.MessageBox]::Show('Coche au moins un navigateur.'); return }
-    if (-not $script:latest) { [void][System.Windows.Forms.MessageBox]::Show('Impossible de joindre le site : verifie ta connexion.'); return }
+    if ($script:browsers.Count -eq 0) { [void]$MB.Show('Aucun navigateur compatible detecte.'); return }
+    if ($clb.CheckedItems.Count -eq 0) { [void]$MB.Show('Coche au moins un navigateur.'); return }
+    if (-not $script:latest) { [void]$MB.Show('Impossible de joindre le site : verifie ta connexion.'); return }
     Show-Page 3; Run-Install
   }
 })
@@ -311,5 +326,14 @@ $form.Add_Shown({
 })
 Show-Page 1
 if ($env:MYUCA_SELFTEST -eq '1') { Write-Host 'selftest ok'; exit 0 }
+if ($env:MYUCA_AUTO -eq '1') {
+  $tbInstall.Text = $env:MYUCA_INSTALL; $tbDl.Text = $env:MYUCA_DL
+  $m = Invoke-RestMethod -Uri ("$Base/manifest.json?t=" + [DateTime]::UtcNow.Ticks) -TimeoutSec 20; $script:latest = $m.version
+  $want = @(($env:MYUCA_BROWSERS -split ',') | Where-Object { $_ })
+  for ($i = 0; $i -lt $script:browsers.Count; $i++) { $clb.SetItemChecked($i, ($want -contains $script:browsers[$i].id)) }
+  Run-Install
+  Write-Host $log.Text
+  if ($lblStep.Text -eq 'Termine !') { Write-Host 'AUTO OK'; exit 0 } else { Write-Host 'AUTO ECHEC'; exit 1 }
+}
 [void]$form.ShowDialog()
 exit 0

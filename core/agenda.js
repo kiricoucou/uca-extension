@@ -1130,6 +1130,8 @@ function setScale(key, value) {
 .sc-flip{padding:0 6px!important;margin-left:4px;height:22px!important;min-height:0!important;line-height:18px;vertical-align:baseline;border-radius:8px!important}
 .sc-ask button{height:auto!important;min-height:30px!important}
 .sc-ask .sc-q{font-weight:700;color:var(--danger,#d93025)}
+.note-val.sc-note-ask{color:var(--sc-ask,#a78bfa)!important;font-weight:800}
+.note-val.sc-note-done{color:var(--sc-done,#f472b6)!important;font-weight:800}
 .notes-avg .na-lbl,.notes-avg .na-val{white-space:nowrap}`;
   document.head.appendChild(st);
 })();
@@ -1177,6 +1179,12 @@ function ntRow(cls, label, row, seenKey) {
   const ageCls = noteAgeClass(seenKey, row.rawNote !== undefined ? row.rawNote : row.note);
   const noteTd = ntCell(fmtNote(row.note), "num note note-val" + ageCls);
   if (ageCls) noteTd.title = noteAgeTitle(ageCls);
+  // Note dont le barème peut changer (sur 20 ou sur N) : violette tant que l'étudiant n'a pas répondu, rose ensuite.
+  if (cls.startsWith("eval-row") && row.max && row.max !== 20 && (row.note != null || row.rawNote != null)) {
+    const asked = row.choice == null;
+    noteTd.classList.add(asked ? "sc-note-ask" : "sc-note-done");
+    noteTd.title = asked ? "Barème à confirmer : réponds « sur 20 » ou « sur " + String(row.max).replace(".", ",") + " »" : "Barème choisi (⇄ pour le changer)";
+  }
   tr.appendChild(noteTd);
   tr.appendChild(ntCell(fmtNote(row.moy), "num"));
   tr.appendChild(ntCell(fmtNote(row.maxi), "num"));
@@ -1327,6 +1335,17 @@ function prioritiesBlock(getTarget) {
 
 /* Couleur d'une note sur 20 : vert ≥ 14, jaune de 10 à 14, orange sous 10. */
 function gradeColor(v) { return v >= 14 ? "#2fd68f" : v >= 10 ? "#ffd23f" : "#ff8c1a"; }
+/* Légende des couleurs du graphique des notes : même seuils que gradeColor. */
+function gradeLegend() {
+  const box = npEl("div", "grade-legend"); box.setAttribute("role", "list");
+  box.style.cssText = "display:flex;flex-wrap:wrap;gap:6px 14px;padding:8px 16px 2px;font-size:12.5px;line-height:1.3;";
+  [[gradeColor(15), 1, "14 et plus : très bien"], [gradeColor(12), 1, "de 10 à 14 : correct"], [gradeColor(5), 1, "moins de 10 : à améliorer"], ["currentColor", .35, "moyenne de la classe"], ["#a78bfa", 1, "violet : barème à choisir (sur 20 ou sur N)"], ["#f472b6", 1, "rose : barème choisi"]].forEach(([c, op, txt]) => {
+    const it = npEl("span", ""); it.setAttribute("role", "listitem"); it.style.cssText = "display:inline-flex;align-items:center;gap:6px;";
+    const sw = npEl("i", ""); sw.setAttribute("aria-hidden", "true"); sw.style.cssText = `width:12px;height:12px;border-radius:3px;background:${c};opacity:${op};flex:none;`;
+    it.append(sw, document.createTextNode(txt)); box.appendChild(it);
+  });
+  return box;
+}
 const SVG_NS = "http://www.w3.org/2000/svg";
 function svgEl(tag, attrs) { const e = document.createElementNS(SVG_NS, tag); Object.keys(attrs || {}).forEach((k) => e.setAttribute(k, attrs[k])); return e; }
 /* Largeur en pixels (pas 100 %) : plus il y a de matières, plus le graphique est large et défile à l'horizontale
@@ -1436,6 +1455,7 @@ function matiereChart(label) {
     svg.appendChild(svgText(cx, H - 5, fmtNote(e.note)));
   });
   wrap.appendChild(chartScroll(svg));
+  wrap.appendChild(gradeLegend());
   const legend = npEl("div", "fp-empty", "Barre pleine : ta note · barre claire : moyenne de la classe · trait pointillé : moyenne générale");
   wrap.appendChild(legend);
   return wrap;
@@ -1508,6 +1528,7 @@ function overviewChart() {
     svg.appendChild(svgText(W - 8, 8, `- - ta moyenne générale ${fmtNote(gAvg)}`, "end"));
   }
   wrap.appendChild(chartScroll(svg));
+  wrap.appendChild(gradeLegend());
   wrap.appendChild(npEl("div", "fp-empty", "Barre pleine : ta note · barre claire : moyenne de la classe · trait pointillé : ta moyenne générale · trait transparent : moyenne générale de la classe. Touche une matière sous le graphique pour y aller."));
   // Les notes de chaque matière, sous le graphique, chacune avec le repère de ta moyenne générale.
   mats.forEach((m, i) => {

@@ -135,7 +135,7 @@ code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size
     <div class="grid">
       <div class="card"><div class="ic">💻</div><h3>Extension (ZIP)</h3><p>Chrome, Edge, Brave, à ajouter en mode développeur.</p><p style="margin-top:14px"><a class="ghost" data-dl="zip" href="uca-extension-chrome.zip" download>Télécharger le ZIP · <span class="sz" data-sz="zip">2,2 Mo</span></a></p></div>
       <div class="card"><div class="ic">📱</div><h3>Application (APK)</h3><p>Android 7 ou plus récent, se connecte seule à Odin.</p><p style="margin-top:14px"><a class="ghost" data-dl="apk" href="https://github.com/kiricoucou/uca-extension/raw/main/EdtUca.apk" download>Télécharger l'APK · <span class="sz" data-sz="apk">4,8 Mo</span></a></p></div>
-      <div class="card"><div class="ic">📦</div><h3>Les deux</h3><p>Le ZIP et l'APK l'un après l'autre (autorise les téléchargements multiples si le navigateur le demande).</p><p style="margin-top:14px"><a class="dl" id="dlBoth" href="#choix" style="padding:12px 20px;font-size:16px">Tout télécharger · <span class="sz" data-sz="both">6,9 Mo</span></a></p></div>
+      <div class="card"><div class="ic">📦</div><h3>Les deux</h3><p>Le ZIP et l'APK l'un après l'autre (autorise les téléchargements multiples si le navigateur le demande).</p><p style="margin-top:14px"><a class="dl" id="dlBoth" href="#choix" style="padding:12px 20px;font-size:16px">Tout télécharger · <span class="sz" data-sz="both">7,0 Mo</span></a></p></div>
     </div>
   </section>
 
@@ -167,7 +167,7 @@ code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size
     <details><summary>Est-ce que le ZIP contient mes données ?</summary><p>Non. Le ZIP est généré depuis le code public : cours, notes et identifiants n'existent que dans le navigateur de chacun. Chaque personne démarre à vide et se connecte avec son propre compte UCA.</p></details>
     <details><summary>Et mon mot de passe ?</summary><p>Il est tapé sur la vraie page de connexion de l'UCA (CAS). L'extension ne le voit pas et ne l'enregistre pas.</p></details>
     <details><summary>Chrome affiche « Désactiver les extensions en mode développeur »</summary><p>Message normal pour toute extension chargée à la main : ferme-le sans désactiver. Ne déplace ni ne supprime le dossier décompressé, sinon l'extension disparaît.</p></details>
-    <details><summary>Comment mettre à jour ?</summary><p>Retélécharge le ZIP ici, remplace le contenu du dossier, puis clique sur « Recharger » dans <code>chrome://extensions</code>. L'extension te prévient quand une nouvelle version existe.</p></details>
+    <details id="maj"><summary>Comment mettre à jour ?</summary><p>Retélécharge le ZIP ici, remplace le contenu du dossier, puis clique sur « Recharger » dans <code>chrome://extensions</code>. L'extension te prévient quand une nouvelle version existe.</p></details>
     <details><summary>Firefox, iPhone, Android ?</summary><p>Android : <a href="../telecharger/">l'application APK</a>. iPhone : <a href="../app/">la version web</a>, à ajouter à l'écran d'accueil.</p></details>
     <details><summary>C'est officiel ?</summary><p>Non. Projet étudiant indépendant, sans lien avec l'Université Clermont Auvergne.</p></details>
   </section>
@@ -209,6 +209,9 @@ code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size
   fetch("../manifest.json", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (v) {
     if (v && /^[0-9.]+$/.test(v.version)) document.getElementById("ver").textContent = "version " + v.version;
   }).catch(function () {});
+  var m = document.getElementById('maj');
+  if (location.hash === '#maj' && m) { m.open = true; m.scrollIntoView(); }
+  if (/[?&]auto=1/.test(location.search)) setTimeout(function () { var z = document.querySelector('#choix a[data-dl=zip]'); if (z) z.click(); }, 700);
 })();
 </script>
 </body>

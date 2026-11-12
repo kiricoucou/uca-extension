@@ -219,11 +219,14 @@ function showShareResult(share, linkCopied) {
   const mk = (tag, text, css) => { const e = document.createElement(tag); e.textContent = text; if (css) e.style.cssText = css; return e; };
   const line1 = mk("div", linkCopied ? "✓ Lien copié dans le presse-papiers." : "Copie du lien impossible : utilise le bouton ci-dessous.", "font-weight:700;");
   const line2 = document.createElement("div"); line2.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;";
-  const code = mk("code", share.code, "font-size:16px;font-weight:800;letter-spacing:.12em;padding:2px 8px;border-radius:6px;background:rgba(127,127,127,.18);user-select:all;");
+  const code = mk("code", share.code, "font-size:16px;font-weight:800;letter-spacing:.12em;padding:2px 8px;border-radius:6px;background:rgba(127,127,127,.18);user-select:all;cursor:pointer;");
+  code.title = "Cliquer pour copier le code"; code.tabIndex = 0; code.setAttribute("role", "button");
   const bCode = mk("button", "Copier le code"), bLink = mk("button", "Copier le lien");
   [bCode, bLink].forEach((b) => { b.type = "button"; b.style.cssText = "font:inherit;font-weight:700;padding:3px 9px;border-radius:7px;cursor:pointer;"; });
   const flash = (b, label) => { const t = b.textContent; b.textContent = label; setTimeout(() => { b.textContent = t; }, 1600); };
   bCode.addEventListener("click", async () => flash(bCode, (await copyText(share.code)) ? "Code copié ✓" : "Copie impossible"));
+  code.addEventListener("click", () => bCode.click());
+  code.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); bCode.click(); } });
   bLink.addEventListener("click", async () => flash(bLink, (await copyText(share.link)) ? "Lien copié ✓" : "Copie impossible"));
   const note = mk("div", "Donne le lien puis le code (deux messages séparés).", "opacity:.75;font-size:11px;");
   line2.append(mk("span", "Code :"), code, bCode, bLink);
@@ -266,5 +269,41 @@ if (IS_IOS && $("linkBtn")) {
     });
   });
 }
+/* Code de déchiffrement toujours visible sous « Générer le lien » ; un clic le copie. */
+(async function showCodeChip() {
+  const btn = $("linkBtn"); if (!btn || typeof UCA_TRANSFER === "undefined") return;
+  let code; try { code = (await UCA_TRANSFER.shareDetails()).code; } catch (_) { return; }
+  const chip = document.createElement("button");
+  chip.id = "codeChip"; chip.type = "button"; chip.className = btn.className;
+  chip.style.cssText = btn.style.cssText;
+  chip.style.minHeight = "28px"; chip.style.minWidth = "44px"; chip.style.padding = "4px 8px"; chip.style.display = "inline-block"; chip.style.margin = "2px 3px";
+  const label = "Code : " + code;
+  chip.textContent = label; chip.title = "Code de déchiffrement du lien : clique pour le copier";
+  chip.setAttribute("aria-label", "Code de déchiffrement " + code + ", clique pour le copier");
+  chip.addEventListener("click", async () => {
+    chip.textContent = (await copyText(code)) ? "Code copié ✓" : "Copie impossible";
+    setTimeout(() => { chip.textContent = label; }, 1800);
+  });
+  btn.after(chip);
+})();
+/* Bouton « Vérifier les mises à jour » : force la lecture de la version sur GitHub (sinon toutes les 5 min). */
+(function updateBtn() {
+  const anchor = $("codeChip") || $("linkBtn"); if (!$("linkBtn")) return;
+  const b = document.createElement("button");
+  b.id = "updNowBtn"; b.type = "button"; b.className = $("linkBtn").className; b.style.cssText = $("linkBtn").style.cssText;
+  b.style.minHeight = "28px"; b.style.padding = "4px 8px"; b.style.display = "inline-block"; b.style.margin = "2px 3px";
+  const LABEL = "🔄 Mises à jour"; b.textContent = LABEL;
+  const KEYS = ["uca_store_build", "uca_update_available", "uca_current_version", "uca_latest_version", "uca_update_check_failed"];
+  b.addEventListener("click", () => {
+    b.disabled = true; b.textContent = "Vérification…";
+    chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
+    setTimeout(() => chrome.storage.local.get(KEYS, (d) => {
+      b.disabled = false;
+      b.textContent = d.uca_store_build ? "Mises à jour gérées par le magasin" : d.uca_update_check_failed ? "Vérification impossible : réessayer" : d.uca_update_available ? "Nouvelle version " + d.uca_latest_version + " : voir Paramètres" : "À jour ✓ (v" + (d.uca_current_version || "?") + ")";
+      setTimeout(() => { b.textContent = LABEL; }, 4000);
+    }), 2800);
+  });
+  setTimeout(() => { const a = $("codeChip") || $("linkBtn"); a.after(b); }, 0);
+})();
 UCA_TOOLS.load(loadFromStorage);
 })();

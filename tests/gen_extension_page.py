@@ -89,7 +89,7 @@ BODY = """<body>
     <details><summary>Est-ce que le ZIP contient mes données ?</summary><p>Non. Le ZIP est généré depuis le code public : cours, notes et identifiants n'existent que dans le navigateur de chacun. Chaque personne démarre à vide et se connecte avec son propre compte UCA.</p></details>
     <details><summary>Et mon mot de passe ?</summary><p>Il est tapé sur la vraie page de connexion de l'UCA (CAS). L'extension ne le voit pas et ne l'enregistre pas.</p></details>
     <details><summary>Chrome affiche « Désactiver les extensions en mode développeur »</summary><p>Message normal pour toute extension chargée à la main : ferme-le sans désactiver. Ne déplace ni ne supprime le dossier décompressé, sinon l'extension disparaît.</p></details>
-    <details><summary>Comment mettre à jour ?</summary><p>Retélécharge le ZIP ici, remplace le contenu du dossier, puis clique sur « Recharger » dans <code>chrome://extensions</code>. L'extension te prévient quand une nouvelle version existe.</p></details>
+    <details id="maj"><summary>Comment mettre à jour ?</summary><p>Retélécharge le ZIP ici, remplace le contenu du dossier, puis clique sur « Recharger » dans <code>chrome://extensions</code>. L'extension te prévient quand une nouvelle version existe.</p></details>
     <details><summary>Firefox, iPhone, Android ?</summary><p>Android : <a href="../telecharger/">l'application APK</a>. iPhone : <a href="../app/">la version web</a>, à ajouter à l'écran d'accueil.</p></details>
     <details><summary>C'est officiel ?</summary><p>Non. Projet étudiant indépendant, sans lien avec l'Université Clermont Auvergne.</p></details>
   </section>
@@ -117,6 +117,11 @@ def main():
     head = head.replace("</style>", "code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size:.92em}\n</style>")
     tail = s[s.index("<script>"):]
     tail = tail.replace('fetch("../version.json"', 'fetch("../manifest.json"')
+    maj_js = """  var m = document.getElementById('maj');
+  if (location.hash === '#maj' && m) { m.open = true; m.scrollIntoView(); }
+  if (/[?&]auto=1/.test(location.search)) setTimeout(function () { var z = document.querySelector('#choix a[data-dl=zip]'); if (z) z.click(); }, 700);
+"""
+    tail = tail.replace("})();\n</script>", maj_js + "})();\n</script>", 1)
     OUT.mkdir(exist_ok=True)
     page = head + BODY.replace("@ZIP@", ZIP).replace("@DL@", DL) + tail
     (OUT / "index.html").write_text(page, encoding="utf-8")

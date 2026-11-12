@@ -1,6 +1,6 @@
 # Système de mise à jour
 
-L'extension vérifie au démarrage, puis toutes les 20 minutes, si `manifest.json` sur la branche `main` de [kiricoucou/uca-extension](https://github.com/kiricoucou/uca-extension) a un numéro de version supérieur à celui actuellement chargé. Si oui, un écran ou un bandeau de mise à jour apparaît (popup et agenda, quel que soit le design choisi) avec le numéro de version et un bouton **Mettre à jour**.
+L'extension vérifie au démarrage, puis toutes les 5 minutes, si `manifest.json` sur la branche `main` de [kiricoucou/uca-extension](https://github.com/kiricoucou/uca-extension) a un numéro de version supérieur à celui actuellement chargé. Si oui, un écran ou un bandeau de mise à jour apparaît (popup et agenda, quel que soit le design choisi) avec le numéro de version et un bouton **Mettre à jour**.
 
 ## Limite technique (lis ça avant de penser que c'est cassé)
 
@@ -54,6 +54,12 @@ Ajouté :
 - **Partage en image** (panneau Exporter, tous les designs) : image PNG du jour ou de la semaine dessinée localement (aucune requête, sans les notes personnelles), envoyée par la feuille de partage native quand le navigateur sait partager un fichier, sinon enregistrée.
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
+
+## 1.46.20 — app 1.4.17 : légende des notes, mises à jour forcées
+
+- **Notes** : légende des couleurs sous le graphique (vert 14 et plus, jaune 10 à 14, orange sous 10, gris moyenne de la classe). Dans le tableau, la note dont le barème peut changer (sur 20 ou sur N) est violette tant qu'on n'a pas répondu, rose ensuite.
+- **Extension** : le code de déchiffrement est affiché sous « Générer le lien » (un clic le copie) et un bouton « Mises à jour » force la vérification ; les trois boutons sont sur la même ligne. Vérification automatique toutes les 5 minutes (au lieu de 20).
+- **Mise à jour forcée** : dès qu'une nouvelle version est détectée, l'extension se recharge si le dossier est déjà à jour, sinon ouvre une fois par version la page de téléchargement qui lance le ZIP. Une extension en mode développeur ne peut pas se réécrire elle-même : il faut remplacer le dossier puis « Recharger ».
 
 ## 1.46.19 — app 1.4.16 : détail de note au premier plan
 

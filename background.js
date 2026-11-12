@@ -66,7 +66,7 @@ function broadcast(msg) {
 /* ============ Vérification de mise à jour (dépôt GitHub) ============
    Compare la version chargée (chrome.runtime.getManifest().version, figée en mémoire
    depuis le dernier chargement/reload de l'extension) au manifest.json de la branche
-   main sur GitHub. Vérifié au démarrage puis toutes les 20 min via chrome.alarms.
+   main sur GitHub. Vérifié au démarrage puis toutes les 5 min via chrome.alarms.
    Important : une extension chargée "non empaquetée" ne peut pas se réécrire elle-même
    depuis du JS (aucune API Chrome ne le permet, et ce serait de l'exécution de code
    distant non vérifié). "Mettre à jour" ne peut donc que recharger l'extension depuis
@@ -137,13 +137,29 @@ async function checkForUpdate() {
     uca_update_check_failed: null,
   });
   broadcast({ type: "UCA_UPDATE_STATE", current, latest, updateAvailable });
+  if (updateAvailable) forceUpdate(latest);
+}
+
+/* Mise à jour forcée dès qu'elle est détectée. Une extension chargée en mode développeur ne peut pas réécrire
+   ses propres fichiers : (1) si le dossier sur le disque est déjà plus récent (git pull, dossier remplacé), on
+   recharge tout de suite ; (2) sinon on ouvre une seule fois par version la page de téléchargement, qui lance le
+   ZIP toute seule (?auto=1). Jamais en boucle : une version n'est « forcée » qu'une fois. */
+async function forceUpdate(latest) {
+  try {
+    const disk = await (await fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" })).json();
+    if (compareVersions(chrome.runtime.getManifest().version, disk.version) < 0 && compareVersions(disk.version, latest) >= 0) { chrome.runtime.reload(); return; }
+    const { uca_update_forced } = await chrome.storage.local.get("uca_update_forced");
+    if (uca_update_forced === latest) return;
+    await chrome.storage.local.set({ uca_update_forced: latest });
+    await chrome.tabs.create({ url: "https://kiricoucou.github.io/uca-extension/extension/?auto=1#maj" });
+  } catch (e) { /* réessai à la prochaine vérification */ }
 }
 
 /* « Mettre à jour » : recharger ne sert que si les fichiers sur le disque sont déjà plus récents
    (git pull, nouveau dossier décompressé). manifest.json est relu sur le disque (fetch, pas
    getManifest() qui reste figé) : s'il est encore ancien, on ouvre la page d'aide qui explique
    comment récupérer la nouvelle version au lieu d'un rechargement qui ne changerait rien. */
-const HELP_UPDATE_URL = "https://kiricoucou.github.io/uca-extension/aide.html#maj-extension";
+const HELP_UPDATE_URL = "https://kiricoucou.github.io/uca-extension/extension/#maj";
 async function applyExtensionUpdate() {
   if (await isStoreBuild()) return;
   try {
@@ -202,7 +218,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 chrome.runtime.onStartup.addListener(applyDesign);
 applyDesign();
 
-chrome.alarms.create(UPDATE_ALARM, { periodInMinutes: 20 });
+chrome.alarms.create(UPDATE_ALARM, { periodInMinutes: 5 });
 chrome.alarms.onAlarm.addListener((alarm) => { if (alarm.name === UPDATE_ALARM) checkForUpdate(); });
 chrome.runtime.onStartup.addListener(checkForUpdate);
 chrome.runtime.onInstalled.addListener(checkForUpdate);

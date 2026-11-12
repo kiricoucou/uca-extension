@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.25 — installateur Linux sans sudo
+
+- **install-linux.sh** : sous Linux, `bash install-linux.sh` demande où installer (explorateur de fichiers si zenity / kdialog / yad), télécharge la dernière version, guide le chargement dans Chrome / Chromium / Brave / Edge et, pour Firefox, vérifie le profil et l'édition (mode développeur), demande l'accord puis installe. Aucun sudo ; paquet Firefox publié à côté du ZIP Chrome. Limite de Mozilla : Firefox « release » refuse les extensions non signées de façon permanente (chargement temporaire proposé) ; Developer Edition, Nightly et ESR acceptent l'installation permanente.
+
 ## 1.46.24 — app Android 1.4.19 : design Studio, notifications, session privée
 
 - **Design Studio (nouveau, par défaut)** : tableau de bord clair, panneaux blancs très arrondis, cartes de cours pastel, accent marine ; mêmes fonctions que les 4 autres designs. Appliqué à l'extension, à l'app web, à l'APK, au site et aux pages de téléchargement. Dans l'app web, le menu (à gauche sur ordinateur, en bas sur téléphone) suit maintenant le design choisi.

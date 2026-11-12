@@ -61,6 +61,17 @@ BODY = """<body>
     </div>
   </section>
 
+  <section class="reveal" id="installateurs">
+    <h2>Installateurs automatiques</h2>
+    <p class="sub">Une fenêtre te guide : où installer, où télécharger, quels navigateurs (un ou plusieurs), barre de progression. Sans droits administrateur, ils récupèrent la dernière version, ferment tes navigateurs (après ton accord), puis ouvrent la page de connexion de l'extension et une page de remerciement.</p>
+    <div class="grid">
+      <div class="card"><div class="ic">🪟</div><h3>Windows</h3><p>Chrome, Edge, Brave, Vivaldi, Firefox. Double-clique le fichier .bat.</p><p class="btn-row"><a class="dl" href="installer-windows.bat" download>Installateur Windows</a></p></div>
+      <div class="card"><div class="ic">🍎</div><h3>macOS</h3><p>Chrome, Edge, Brave, Vivaldi, Firefox. Dans le Terminal : <code>bash ~/Downloads/installer-mac.command</code> (ou double-clic après <code>chmod +x</code>).</p><p class="btn-row"><a class="dl" href="installer-mac.command" download>Installateur macOS</a></p></div>
+      <div class="card"><div class="ic">🐧</div><h3>Linux</h3><p>Chromium, Chrome, Brave, Edge, Firefox. Lance <code>bash install-linux.sh</code>.</p><p class="btn-row"><a class="dl" href="install-linux.sh" download>Installateur Linux</a></p></div>
+    </div>
+    <p class="sub" style="margin-top:16px">Limite imposée par les navigateurs : Chrome (v137 et plus) refuse le chargement automatique d'une extension hors magasin, et Firefox standard refuse les extensions non signées de façon permanente. L'installateur le détecte, ouvre la bonne page et te guide en deux clics. Edge, Brave et Vivaldi chargent l'extension tout seuls (raccourci créé sur Windows).</p>
+  </section>
+
   <section class="reveal" id="installer">
     <h2>Ajouter l'extension en 2 minutes</h2>
     <p class="sub">Elle n'est pas (encore) sur le Chrome Web Store : on la charge à la main, une seule fois.</p>

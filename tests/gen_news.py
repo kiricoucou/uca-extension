@@ -184,6 +184,7 @@ def page(vs, dates):
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="app/icons/icon-192.png">
 <link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="site-theme.css">
 </head>
 <body>
 <header class="topbar">
@@ -210,6 +211,7 @@ def page(vs, dates):
   </div>
 </footer>
 <script src="site-fx.js"></script>
+<script src="site-nav.js" defer></script>
 </body>
 </html>
 """

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Merci d'avoir installé My UCA</title>
+<meta name="description" content="Merci d'avoir installé l'extension My UCA : premiers pas, aide, tutoriel et soutien au projet.">
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="app/icons/icon-192.png">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="site-theme.css">
+<style>
+.thx{padding:44px 0 20px;text-align:center}
+.thx .check{width:84px;height:84px;margin:0 auto 18px;border-radius:50%;display:grid;place-items:center;background:#0069a4;box-shadow:0 2px 6px rgba(9,9,11,.25);animation:pop .6s cubic-bezier(.2,1.4,.4,1) both}
+.thx .check svg{width:44px;height:44px;stroke:#fff;fill:none;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:40;stroke-dashoffset:40;animation:draw .5s .35s ease forwards}
+@keyframes pop{from{transform:scale(.4);opacity:0}}
+@keyframes draw{to{stroke-dashoffset:0}}
+.thx h1{font-size:clamp(30px,5.5vw,50px);line-height:1.1;margin:0 0 12px;letter-spacing:-.03em}
+.thx h1 span{color:var(--accent)}
+.thx .lead{color:var(--text-dim);font-size:clamp(16px,2.2vw,19px);max-width:640px;margin:0 auto 22px}
+.stats{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:26px 0}
+.stat{min-width:170px;padding:16px 22px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow)}
+.stat b{display:block;font-size:30px;color:var(--accent);letter-spacing:-.02em}
+.stat span{color:var(--text-dim);font-size:14px}
+.stat[hidden]{display:none}
+.live{display:inline-flex;align-items:center;gap:8px}
+.live i{width:9px;height:9px;border-radius:50%;background:#16a34a;animation:blink 1.6s infinite}
+@keyframes blink{50%{opacity:.3}}
+.next{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;text-align:left;margin:10px 0 0}
+.ask{margin:34px auto 0;max-width:680px;padding:26px;border-radius:24px;border:1px solid var(--border);background:linear-gradient(135deg,rgba(61,155,233,.14),rgba(0,105,164,.05));text-align:center}
+.ask h2{margin:0 0 8px;font-size:24px}
+.ask p{color:var(--text-dim);margin:0 0 16px}
+</style>
+</head>
+<body>
+<main class="wrap thx">
+  <div class="check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+  <h1>Merci d'avoir <span>installé My UCA</span> !</h1>
+  <p class="lead">Ton emploi du temps, tes notes et tes absences de l'UCA sont maintenant à un clic. Le projet est gratuit, sans pub, fait par un étudiant, et il vit grâce à vous.</p>
+
+  <div class="stats" aria-live="polite">
+    <div class="stat" id="stUsers" hidden><b id="nUsers">0</b><span>étudiants utilisent déjà l'application</span></div>
+    <div class="stat" id="stLive" hidden><b class="live"><i></i><span id="nLive">0</span></b><span>en ligne en ce moment</span></div>
+    <div class="stat" id="stStars" hidden><b id="nStars">0</b><span>étoiles sur GitHub</span></div>
+    <div class="stat"><b id="nVer">…</b><span>version installée</span></div>
+  </div>
+
+  <div class="btns" style="justify-content:center">
+    <a class="btn primary" id="btnStart" href="aide.html#debuter">Bienvenue : premiers pas</a>
+    <a class="btn" href="aide.html">Aide</a>
+    <a class="btn" href="extension/#installer">Tutoriel en images</a>
+    <a class="btn" href="nouveautes.html">Nouveautés</a>
+  </div>
+
+  <section class="ask">
+    <h2>Un petit coup de pouce ?</h2>
+    <p>Si l'extension te sert, tu peux contribuer : en parler à ta promo, signaler un bug, ou faire un don (PayPal ou cryptomonnaie). Chaque euro paie les outils et le temps passé dessus. Aucune obligation, jamais.</p>
+    <div class="btns" style="justify-content:center">
+      <a class="btn primary" href="don.html">Faire un don</a>
+      <a class="btn" href="https://github.com/kiricoucou/uca-extension">Étoiler sur GitHub</a>
+    </div>
+  </section>
+
+  <div class="next" style="margin-top:34px">
+    <div class="card"><h3>1. Connecte-toi</h3><p>Dans l'onglet de l'extension, choisis ton design puis « Synchroniser » : tu te connectes à Odin sur la vraie page de l'UCA.</p></div>
+    <div class="card"><h3>2. Épingle l'icône</h3><p>Icône puzzle de ton navigateur, puis l'épingle à côté de la barre d'adresse.</p></div>
+    <div class="card"><h3>3. Sur ton téléphone</h3><p>Télécharge l'<a href="telecharger/">application Android</a> ou ouvre l'<a href="app/">agenda en ligne</a>.</p></div>
+  </div>
+</main>
+<footer class="wrap" style="text-align:center;color:var(--text-dim);font-size:13.5px;padding:34px 16px 50px">My UCA · projet étudiant non officiel · <a href="confidentialite.html">Confidentialité</a></footer>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  document.getElementById('nVer').textContent = q.get('v') || '—';
+  function show(id, n, el) { if (typeof n === 'number' && n > 0) { document.getElementById(el).textContent = n.toLocaleString('fr-FR'); document.getElementById(id).hidden = false; } }
+  fetch('stats.json?t=' + Date.now()).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }).then(function (s) {
+    show('stUsers', s.users, 'nUsers'); show('stLive', s.online, 'nLive');
+  });
+  fetch('https://api.github.com/repos/kiricoucou/uca-extension').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (d) show('stStars', d.stargazers_count, 'nStars');
+  }).catch(function () {});
+})();
+</script>
+<script src="site-nav.js" defer></script>
+</body>
+</html>

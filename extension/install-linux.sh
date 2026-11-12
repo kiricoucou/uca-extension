@@ -123,9 +123,41 @@ download_package() {   # download_package nom.zip dossier_destination  -> instal
   return 0
 }
 
-open_url() {   # open_url binaire url
+open_url() {   # open_url binaire url [url2...]  (la page de remerciement s'ouvre en second onglet)
   [ "$NO_OPEN" = "1" ] && return 0
-  nohup "$1" "$2" >/dev/null 2>&1 &
+  nohup "$1" "${@:2}" >/dev/null 2>&1 &
+}
+THANKS_URL="${BASE_URL%/extension}/merci.html"
+
+# Barre de progression : fenêtre zenity si disponible, sinon barre dans le terminal.
+PROG_FD=""
+prog_start() {
+  [ "$YES" = "1" ] && return 0
+  if [ "$GUI" = "zenity" ]; then
+    exec 3> >(zenity --progress --no-cancel --auto-close --width=460 --title="Extension UCA" --text="Préparation..." --percentage=0 2>/dev/null) && PROG_FD=3
+  fi
+}
+prog() {   # prog pourcentage texte
+  if [ -n "$PROG_FD" ]; then printf '%s
+# %s
+' "$1" "$2" >&3 2>/dev/null
+  else local w=40 f i s=""; f=$(( $1 * w / 100 )); for ((i = 0; i < w; i++)); do [ $i -lt $f ] && s="$s#" || s="$s-"; done; printf '[K[%s] %3d%%  %s' "$s" "$1" "$2"; [ "$1" -ge 100 ] && printf '
+'; fi
+}
+prog_end() { [ -n "$PROG_FD" ] && { exec 3>&-; PROG_FD=""; }; }
+
+# Ferme les navigateurs choisis : demande d'abord à l'utilisateur de les fermer, puis kill de ceux qui restent.
+close_browsers() {   # close_browsers motif_pgrep ...
+  local p running=0
+  for p in "$@"; do pgrep -u "$(id -u)" -x "$p" >/dev/null 2>&1 && running=1; done
+  [ "$running" = 0 ] && return 0
+  ask_yes_no "Ferme correctement tes navigateurs (enregistre ton travail) puis clique Oui. Ceux qui resteront ouverts seront fermés de force. Continuer ?" o || return 1
+  local i; for i in 1 2 3 4 5 6 7 8 9 10; do
+    running=0; for p in "$@"; do pgrep -u "$(id -u)" -x "$p" >/dev/null 2>&1 && running=1; done
+    [ "$running" = 0 ] && return 0; sleep 0.5
+  done
+  for p in "$@"; do pkill -u "$(id -u)" -x "$p" 2>/dev/null; done
+  sleep 2
 }
 copy_clip() {   # copie dans le presse-papiers si possible
   if command -v wl-copy >/dev/null 2>&1; then printf '%s' "$1" | wl-copy 2>/dev/null && return 0
@@ -157,7 +189,7 @@ install_chrome() {
   say "  1. Active « Mode développeur » en haut à droite de la page chrome://extensions"
   say "  2. Clique « Charger l'extension non empaquetée » et choisis :  $dir"
   copy_clip "$dir" && say "  (le chemin est déjà dans ton presse-papiers : colle-le dans la fenêtre avec Ctrl+L)"
-  if [ -n "$bin" ] && ask_yes_no "Ouvrir $bin sur chrome://extensions maintenant ?" o; then open_url "$bin" "chrome://extensions"; fi
+  if [ -n "$bin" ] && ask_yes_no "Ouvrir $bin sur chrome://extensions (et la page de remerciement) maintenant ?" o; then open_url "$bin" "chrome://extensions" "$THANKS_URL"; fi
   if command -v xdg-open >/dev/null 2>&1 && [ "$NO_OPEN" != "1" ] && ask_yes_no "Ouvrir le dossier dans ton explorateur de fichiers ?" n; then xdg-open "$dir" >/dev/null 2>&1 & fi
   say "Mises à jour : relance ce script, ou clique « Recharger » dans chrome://extensions après avoir remplacé le dossier."
   # Fin : ouvre la page de l'extension (choix du design puis connexion à Odin) quand elle est chargée.
@@ -165,7 +197,7 @@ install_chrome() {
   if [ -n "$bin" ] && [ -n "$id" ] && [ "$YES" != "1" ]; then
     say ""
     if ask_yes_no "Extension chargée dans $bin ? J'ouvre sa page pour te connecter (l'icône puzzle > épingle pour la garder visible)." o; then
-      open_url "$bin" "chrome-extension://$id/choose.html?tab=1"
+      open_url "$bin" "chrome-extension://$id/choose.html?tab=1" "$THANKS_URL"
       say "Page ouverte : choisis ton design, puis « Synchroniser » pour te connecter à Odin. Si rien ne s'ouvre, l'extension n'est pas encore chargée."
     fi
   elif [ -n "$id" ]; then
@@ -271,14 +303,14 @@ install_firefox() {
     say "Ouvre Firefox : l'extension est active (menu Extensions). Mise à jour : relance ce script."
     say "L'icône « Emploi du temps UCA » est épinglée dans la barre d'outils et listée dans le menu Extensions (puzzle) de Firefox."
     if ask_yes_no "Lancer Firefox maintenant ? La page de l'extension s'ouvre toute seule au premier démarrage pour te connecter." o; then
-      open_url "$bin" "about:addons"
+      open_url "$bin" "$THANKS_URL"
     fi
   else
     say ""
     say "Chargement temporaire : dans Firefox, page about:debugging#/runtime/this-firefox"
     say "  -> « Charger un module complémentaire temporaire… » -> choisis le fichier :  $dir/manifest.json"
     copy_clip "$dir/manifest.json" && say "  (chemin copié dans le presse-papiers : Ctrl+L dans la fenêtre pour le coller)"
-    ask_yes_no "Ouvrir about:debugging maintenant ? Une fois chargée, la page de l'extension s'ouvre pour te connecter." o && open_url "$bin" "about:debugging#/runtime/this-firefox"
+    ask_yes_no "Ouvrir about:debugging maintenant ? Une fois chargée, la page de l'extension s'ouvre pour te connecter." o && open_url "$bin" "about:debugging#/runtime/this-firefox" "$THANKS_URL"
   fi
   return 0
 }
@@ -291,12 +323,20 @@ command -v curl >/dev/null 2>&1 || command -v wget >/dev/null 2>&1 || { warn "In
 
 CHOICE="$(choose_option)"
 FAIL=0
+prog_start; prog 5 "Préparation"
+case "$CHOICE" in
+  chrome)  close_browsers chrome chromium brave msedge vivaldi-bin ;;
+  firefox) close_browsers firefox firefox-bin ;;
+  *)       close_browsers chrome chromium brave msedge vivaldi-bin firefox firefox-bin ;;
+esac
+prog 15 "Téléchargement et installation"
 case "$CHOICE" in
   chrome)  install_chrome  || FAIL=1 ;;
   firefox) install_firefox || FAIL=1 ;;
   *)       install_chrome  || FAIL=1; install_firefox || FAIL=1 ;;
 esac
 
+prog 100 "Terminé"; prog_end
 step "Terminé"
 [ "$FAIL" = "0" ] && say "Tout s'est bien passé. L'extension est prête : ouvre-la depuis la barre d'outils du navigateur." || say "Certaines étapes ont échoué : lis les messages ci-dessus, rien n'a été cassé."
 exit "$FAIL"

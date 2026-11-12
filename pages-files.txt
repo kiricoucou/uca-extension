@@ -34,3 +34,8 @@ vendor
 telecharger
 extension
 site-fx.js
+site-theme.css
+site-nav.js
+merci.html
+don.html
+stats.json

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soutenir My UCA</title>
+<meta name="description" content="Soutenir le projet My UCA par un don PayPal ou en cryptomonnaie. Gratuit, sans pub, sans obligation.">
+<link rel="icon" type="image/png" href="app/icons/icon-192.png">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="site-theme.css">
+<style>
+.don{padding:40px 0 30px;text-align:center}
+.don h1{font-size:clamp(30px,5.5vw,46px);margin:0 0 10px;letter-spacing:-.03em}
+.don .lead{color:var(--text-dim);max-width:620px;margin:0 auto 28px;font-size:18px}
+.ways{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;text-align:left;margin-top:8px}
+.way{padding:22px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px}
+.way h2{margin:0;font-size:20px}
+.way p{margin:0;color:var(--text-dim);font-size:15px}
+.addr{display:flex;gap:8px;align-items:center}
+.addr code{flex:1;min-width:0;overflow-wrap:anywhere;padding:9px 11px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);font-size:13px}
+.addr button{flex-shrink:0;min-height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:600 13.5px var(--font);cursor:pointer}
+.addr button:hover{border-color:var(--accent-2);color:var(--accent)}
+.soon{color:var(--text-dim);font-style:italic;font-size:14px}
+.why{margin:34px auto 0;max-width:680px;text-align:left;color:var(--text-dim)}
+.why h2{color:var(--text);font-size:22px}
+</style>
+</head>
+<body>
+<main class="wrap don">
+  <h1>Soutenir <span style="color:var(--accent)">My UCA</span></h1>
+  <p class="lead">L'extension est gratuite, sans publicité et sans collecte de données. Si elle te fait gagner du temps, un don aide à la faire vivre. Rien d'obligatoire.</p>
+  <div class="ways" id="ways"></div>
+  <section class="why">
+    <h2>À quoi ça sert ?</h2>
+    <p>À payer les outils (tests, signatures de l'application, publication sur les magasins d'extensions) et à financer le temps passé à corriger, mettre à jour et améliorer le projet quand l'UCA change son site.</p>
+    <p>Autre façon d'aider, gratuite : en parler à ta promo, <a href="https://github.com/kiricoucou/uca-extension">étoiler le projet sur GitHub</a>, signaler un bug.</p>
+  </section>
+</main>
+<footer class="wrap" style="text-align:center;color:var(--text-dim);font-size:13.5px;padding:34px 16px 50px">My UCA · projet étudiant non officiel · <a href="confidentialite.html">Confidentialité</a></footer>
+<script>
+/* Renseigne ici les moyens de don. Une entrée vide ("") est affichée « bientôt disponible ». */
+var DON = {
+  paypal: "",                                   // lien PayPal.me, ex. https://paypal.me/pseudo
+  crypto: [
+    { name: "Bitcoin (BTC)", address: "" },
+    { name: "Ethereum (ETH)", address: "" },
+    { name: "Monero (XMR)", address: "" }
+  ]
+};
+(function () {
+  var box = document.getElementById('ways'), esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+  var h = '<div class="way"><h2>PayPal</h2><p>Don libre par carte ou compte PayPal, en quelques clics.</p>' +
+    (DON.paypal ? '<a class="btn primary" target="_blank" rel="noopener" href="' + esc(DON.paypal) + '">Donner avec PayPal</a>' : '<span class="soon">Bientôt disponible.</span>') + '</div>';
+  h += '<div class="way"><h2>Cryptomonnaie</h2><p>Envoie le montant que tu veux à l\'une de ces adresses.</p>';
+  var any = false;
+  DON.crypto.forEach(function (c) {
+    if (!c.address) return; any = true;
+    h += '<div><b>' + esc(c.name) + '</b><div class="addr"><code>' + esc(c.address) + '</code><button type="button" data-copy="' + esc(c.address) + '">Copier</button></div></div>';
+  });
+  if (!any) h += '<span class="soon">Bientôt disponible.</span>';
+  box.innerHTML = h + '</div>';
+  box.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-copy]'); if (!b) return;
+    var t = b.getAttribute('data-copy');
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { b.textContent = 'Copié ✓'; setTimeout(function () { b.textContent = 'Copier'; }, 1800); }, function () { window.prompt('Copie l\'adresse :', t); });
+  });
+})();
+</script>
+<script src="site-nav.js" defer></script>
+</body>
+</html>

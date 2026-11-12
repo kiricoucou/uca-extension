@@ -1047,6 +1047,13 @@ function noteAgeClass(seenKey, note) {
   st.textContent = ".notes-table td.note.note-week{color:#4d9fff!important;font-weight:800}.notes-table td.note.note-fortnight{color:#a78bfa!important;font-weight:800}.notes-table td.note.note-old{color:#ef6b6b!important}.event-card .ev-note{bottom:7px!important;right:8px!important;line-height:1.15!important;font-size:calc(15px * var(--s,1))!important;overflow:visible!important;z-index:2}.event-card:has(.ev-note){padding-bottom:max(var(--pb,0px),4px)}.day-note{line-height:1.2;padding:2px 3px;overflow:visible}";
   document.head.appendChild(st);
 })();
+/* Date précise à laquelle l'extension a vu la note apparaître (infobulle au survol) ; vide si la note était déjà là au premier relevé. */
+function noteDateTitle(seenKey) {
+  const s = seenKey && notesSeen[seenKey];
+  if (!s || !s.at) return "";
+  const d = new Date(s.at);
+  return "Note qui date du " + d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }) + " à " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+}
 function noteAgeTitle(cls) {
   const n = noteDays();
   return { " note-new": `Nouvelle note (moins de ${n} jour${n > 1 ? "s" : ""})`, " note-recent": `Note récente (moins de ${2 * n} jours)`, " note-week": "Note de cette semaine (moins de 7 jours)",
@@ -1178,7 +1185,7 @@ function ntRow(cls, label, row, seenKey) {
   tr.appendChild(ntCell(fmtNote(row.coeff), "num"));
   const ageCls = noteAgeClass(seenKey, row.rawNote !== undefined ? row.rawNote : row.note);
   const noteTd = ntCell(fmtNote(row.note), "num note note-val" + ageCls);
-  if (ageCls) noteTd.title = noteAgeTitle(ageCls);
+  if (ageCls) noteTd.title = noteDateTitle(seenKey) || noteAgeTitle(ageCls);
   // Note dont le barème peut changer (sur 20 ou sur N) : violette tant que l'étudiant n'a pas répondu, rose ensuite.
   if (cls.startsWith("eval-row") && row.max && row.max !== 20 && (row.note != null || row.rawNote != null)) {
     const asked = row.choice == null;

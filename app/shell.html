@@ -13,11 +13,12 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="shell.css">
 </head>
-<body>
+<body data-nv-none>
 <div id="app">
   <header class="topbar">
     <button class="icon-btn" id="backBtn" hidden aria-label="Retour"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
     <h1 id="topbarTitle">Accueil</h1>
+    <button class="icon-btn" id="menuBtn" aria-label="Menu du site"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
     <button class="icon-btn" id="bellBtn" aria-label="Notifications"><svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 1112 0v5l2 2H4zM10 20a2 2 0 004 0"/></svg><span class="dot" id="bellDot" hidden></span></button>
     <button class="icon-btn" id="personBtn" aria-label="Mon compte"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg></button>
   </header>
@@ -41,6 +42,7 @@
 <script src="../core/status.js"></script>
 <script src="../vendor/qrcode.js"></script>
 <script src="../core/transfer.js"></script>
+<script src="../site-nav.js"></script>
 <script src="shell.js"></script>
 </body>
 </html>

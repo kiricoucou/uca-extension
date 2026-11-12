@@ -156,7 +156,14 @@ const SCREENS = {
     const photo = localStorage.getItem("uca_profile_photo");
     const palette = ["#2FD6CD", "#A78BFA", "#FF7EB6", "#FFB454", "#60A5FA", "#6EE7A0", "#FFD84D"];
     const details = [["Nom", p.lastName], ["Prénom", p.firstName], ["N° étudiant", p.id], ["Formation", p.formation], ["Groupe", groups.join(" · ")], ["Email", p.email]];
-    return `<div class="grid2"><div>
+    const siteMenu = window.UCA_NAV ? window.UCA_NAV.menuHtml() : "";
+    const homeUrl = window.UCA_NAV ? window.UCA_NAV.homeUrl : "../";
+    return `<div class="home-card card" style="margin-bottom:14px">
+        <a class="btn" href="${esc(homeUrl)}" data-act="siteHome">← Retour au site d'accueil</a>
+        <details class="site-menu"><summary>Menu du site</summary>${siteMenu}</details>
+        <button class="btn secondary" type="button" data-act="openNav">Ouvrir le menu complet (thème clair / sombre)</button>
+      </div>
+      <div class="grid2"><div>
       <div class="profile-head">
         <button class="avatar" type="button" data-act="photo" aria-label="Photo de profil : touche pour la changer">${photo ? `<img src="${esc(photo)}" alt="">` : ICON.person}</button>
         <div><div class="kicker">PROFIL ÉTUDIANT</div><div class="name">${esc(p.name || "Profil non détecté")}</div><div class="small">${esc(p.formation || "Université Clermont Auvergne")}</div></div>
@@ -398,6 +405,7 @@ async function onAction(act, el) {
   else if (act === "readAll") { localStorage.setItem("uca_notif_read", JSON.stringify(notifications().map((n) => n.id))); toast("Toutes les notifications sont marquées comme lues"); show(); }
   else if (act === "askNotif") { await Notification.requestPermission(); show(); }
   else if (act === "sendFrames") await sendFrames();
+  else if (act === "openNav") { if (window.UCA_NAV) window.UCA_NAV.open(); }
   else if (act === "nFilter") { notifFilter = el.dataset.v; show(); }
   else if (act === "nRead") { const r = readSet(), id = el.dataset.id; if (r.has(id)) r.delete(id); else r.add(id); lsSet("uca_notif_read", [...r]); refreshBell(); show(); }
   else if (act === "nKeep") {
@@ -452,6 +460,7 @@ document.addEventListener("change", async (e) => {
 });
 $("backBtn").addEventListener("click", back);
 $("bellBtn").addEventListener("click", () => open("notifications"));
+$("menuBtn").addEventListener("click", () => { if (window.UCA_NAV) window.UCA_NAV.open(); });
 $("personBtn").addEventListener("click", () => goTab("compte"));
 $("sheetBackdrop").addEventListener("click", closeSheet);
 document.addEventListener("keydown", (e) => {

@@ -5,6 +5,18 @@
   --nav-h: 64px; --top-h: 56px;
   color-scheme: dark;
 }
+:root[data-theme="light"] {
+  --bg: #f4f7fb; --surface: #ffffff; --border: #dde3ee; --text: #18202e; --dim: #5a6478;
+  --accent: #0069a4; --accent2: #0069a4; --on-accent: #ffffff; --danger: #c62828; --warn: #a04e00; --info: #0b57d0; --ok: #137333;
+  color-scheme: light;
+}
+.home-card { display: flex; flex-direction: column; gap: 10px; }
+details.site-menu { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 0 14px; }
+details.site-menu > summary { cursor: pointer; font-weight: 700; padding: 14px 0; list-style: none; display: flex; align-items: center; justify-content: space-between; }
+details.site-menu > summary::after { content: "▾"; transition: transform .2s; }
+details.site-menu[open] > summary::after { transform: rotate(180deg); }
+details.site-menu .nv-menu { max-height: 42vh; overflow-y: auto; padding-bottom: 8px; }
+.nv-menu a svg { width: 22px; height: 22px; }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }

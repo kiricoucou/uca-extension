@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.21 — app Android 1.4.18 : compétences (UE)
+
+- **Notes > 👁 Voir mes compétences** : la moyenne de chaque UE (« UE RT 1.1 - Assister l'administrateur du réseau ») calculée depuis les matières, en barres à la hauteur de la moyenne, avec un trait pointillé à 10 (seuil de validation). Semestres et années séparés, moyenne de chaque année et de chaque compétence sur l'année, liste « validée / sous 10 ».
+
 ## 1.46.20 — app Android 1.4.17 : légende des notes, mises à jour forcées
 
 - **Notes** : légende des couleurs sous le graphique (vert 14 et plus, jaune 10 à 14, orange sous 10, gris moyenne de la classe). Dans le tableau, la note dont le barème peut changer (sur 20 ou sur N) est violette tant qu'on n'a pas répondu, rose ensuite.

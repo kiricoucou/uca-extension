@@ -1557,6 +1557,63 @@ function overviewChart() {
   });
   return wrap;
 }
+/* ---- Compétences (UE) : moyenne de chaque UE, seuil de validation à 10, par semestre et par année ---- */
+let compView = false;
+function compBarColor(v) { return v == null ? "currentColor" : v >= 10 ? "#2fd68f" : "#ff8c1a"; }
+function yearChart(yr) {
+  const ues = yr.ues, n = ues.length, W = Math.max(300, 44 + n * 70), H = 220, L = 28, T = 30, B = 62;
+  const gw = (W - L - 10) / n, bw = Math.min(30, gw * .55), y = (v) => T + (H - T - B) * (1 - v / 20);
+  const svg = chartSvg(W, H);
+  svg.setAttribute("aria-label", `Année ${yr.year} : moyenne de chaque UE sur 20, seuil de validation à 10`);
+  [0, 5, 15, 20].forEach((v) => {
+    svg.appendChild(svgEl("line", { x1: L, x2: W - 6, y1: y(v), y2: y(v), stroke: "currentColor", opacity: ".15" }));
+    svg.appendChild(svgText(L - 4, y(v) + 3, String(v), "end"));
+  });
+  // Semestres : fond alterné et nom du semestre sous les barres.
+  let at = 0;
+  yr.sems.forEach((sm, k) => {
+    const x0 = L + at * gw, w = sm.ues.length * gw; at += sm.ues.length;
+    if (k % 2 === 0) svg.appendChild(svgEl("rect", { x: x0, y: T - 14, width: w, height: H - T - B + 14, fill: "currentColor", opacity: ".06", rx: 6 }));
+    svg.appendChild(svgText(x0 + w / 2, H - 8, (w >= 150 ? "Semestre " : "S") + sm.sem + (sm.avg != null ? " · moy. " + fmtNote(sm.avg) : ""), "middle"));
+  });
+  ues.forEach((u, i) => {
+    const cx = L + gw * i + gw / 2, v = u.note;
+    if (v != null) {
+      const bar = svgEl("rect", { x: cx - bw / 2, y: y(v), width: bw, height: Math.max(2, y(0) - y(v)), rx: 4, fill: compBarColor(v) });
+      const tt = svgEl("title", {}); tt.textContent = `${u.label} : ${fmtNote(v)} / 20 — ${v >= 10 ? "validée" : "sous 10"}`; bar.appendChild(tt);
+      svg.appendChild(bar);
+      svg.appendChild(svgText(cx, y(v) - 5, fmtNote(v), "middle"));
+    } else svg.appendChild(svgText(cx, y(0) - 6, "—", "middle"));
+    svg.appendChild(svgText(cx, y(0) + 14, "UE " + u.short.replace(/^\S+\s/, ""), "middle"));
+  });
+  // Seuil de validation : trait pointillé à 10, par-dessus les barres.
+  svg.appendChild(svgEl("line", { x1: L, x2: W - 6, y1: y(10), y2: y(10), stroke: "#18b7b0", "stroke-width": 2, "stroke-dasharray": "6 4" }));
+  svg.appendChild(svgText(L - 4, y(10) + 3, "10", "end"));
+  const lab = svgText(W - 8, y(10) - 4, "seuil 10", "end"); lab.setAttribute("fill", "#18b7b0"); lab.setAttribute("opacity", "1"); svg.appendChild(lab);
+  return chartScroll(svg);
+}
+function competencesView() {
+  const wrap = npEl("div", "np-comp");
+  const { years } = UCA_GRADES.competences(releveNotes);
+  if (!years.length) { wrap.appendChild(npEl("div", "fp-empty", "Aucune UE reconnue (titres de la forme « UE RT 1.1 - … ») dans ton relevé.")); return wrap; }
+  wrap.appendChild(npEl("div", "fp-empty", "Chaque UE doit atteindre 10 / 20 de moyenne : le trait pointillé marque ce seuil. Vert : validée · orange : sous 10."));
+  years.forEach((yr) => {
+    const sec = npEl("section", "np-year"); sec.style.cssText = "margin:12px 0 18px;";
+    sec.appendChild(npEl("div", "fp-h", `Année ${yr.year} (BUT ${yr.year})${yr.avg != null ? " — moyenne des UE : " + fmtNote(yr.avg) + " / 20" : ""}`));
+    sec.appendChild(yearChart(yr));
+    sec.appendChild(npEl("div", "fp-empty", "Moyenne par compétence sur l'année : " + yr.comps.map((c) => `UE ${c.idx} ${c.avg != null ? fmtNote(c.avg) + (c.avg >= 10 ? " ✓" : " ✗") : "—"}`).join(" · ")));
+    const ul = npEl("ul", ""); ul.style.cssText = "list-style:none;margin:6px 0 0;padding:0 4px;display:flex;flex-direction:column;gap:5px;font-size:13px;";
+    yr.ues.forEach((u) => {
+      const li = npEl("li", ""); li.style.cssText = "display:flex;gap:8px;justify-content:space-between;align-items:baseline;";
+      const t = npEl("span", "", `${u.short} · ${u.title || u.label}`);
+      const v = npEl("b", "", u.note == null ? "—" : `${fmtNote(u.note)} ${u.note >= 10 ? "✓ validée" : "✗ sous 10"}`); v.style.cssText = `white-space:nowrap;color:${compBarColor(u.note)};`;
+      li.append(t, v); ul.appendChild(li);
+    });
+    sec.appendChild(ul);
+    wrap.appendChild(sec);
+  });
+  return wrap;
+}
 function chartBlock() {
   const box = npEl("div", "np-chart");
   box.appendChild(npEl("div", "fp-h", "Évolution des notes"));
@@ -1595,6 +1652,25 @@ function renderNotesPanel() {
       avgBar.addEventListener("click", openChart);
       avgBar.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openChart(); } });
       content.appendChild(avgBar);
+    }
+    const hasComp = UCA_GRADES.competences(releveNotes).years.length > 0;
+    if (compView && hasComp) {
+      const back = npEl("button", "np-comp-btn", "← Retour aux notes"); back.type = "button"; back.id = "compBack";
+      back.style.cssText = "margin:8px 16px;color:inherit;background:transparent;border:1px solid currentColor;padding:6px 12px;border-radius:10px;font:inherit;font-weight:700;cursor:pointer;min-height:32px;";
+      back.addEventListener("click", () => { compView = false; renderNotesPanel(); });
+      content.appendChild(inkify(Object.assign(npEl("div", ""), {}))); content.lastChild.appendChild(back);
+      content.appendChild(inkify(npEl("div", "fp-h", "Mes compétences (UE)")));
+      content.appendChild(inkify(competencesView()));
+      fitNotesPanel();
+      const badge0 = $("notesAvg"); if (badge0) { badge0.textContent = avg != null ? fmtNote(avg) : ""; badge0.classList.toggle("hidden", avg == null); }
+      return;
+    }
+    if (hasComp) {
+      const eye = npEl("button", "np-comp-btn", "👁 Voir mes compétences"); eye.type = "button"; eye.id = "compBtn";
+      eye.setAttribute("aria-label", "Voir mes compétences : moyenne de chaque UE, seuil de validation à 10");
+      eye.style.cssText = "margin:0;color:inherit;background:transparent;border:1px solid currentColor;padding:6px 12px;border-radius:10px;font:inherit;font-weight:700;cursor:pointer;min-height:32px;";
+      eye.addEventListener("click", () => { compView = true; renderNotesPanel(); });
+      const eyeBox = npEl("div", ""); eyeBox.style.cssText = "padding:8px 16px 0;"; eyeBox.appendChild(eye); content.appendChild(inkify(eyeBox));
     }
     [examsBlock(), simulatorBlock(), chartBlock(), npEl("div", "fp-h", "Détail des notes")].forEach((b) => { if (b) content.appendChild(inkify(b)); });
     fitNotesPanel();

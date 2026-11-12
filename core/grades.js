@@ -185,5 +185,29 @@ function applyScales(releve, scales) {
   }) });
 }
 
-root.UCA_GRADES = { maxOf, scaleKey, applyScales, weightedAvg, matiereNote, ueNote, generalAvg, pendingEvals, scopes, simulate, projection, priorities, nextHistory, matiereSeries, gradedMatieres };
+
+/* Compétences (UE) : « UE RT 1.1 - Assister l'administrateur du réseau » = département RT, semestre 1, compétence 1.
+   Il faut 10/20 de moyenne à chaque UE ; la note d'une UE est celle d'Odin ou, à défaut, la moyenne pondérée de ses
+   matières. Regroupées par année (BUT 1 = semestres 1 et 2...), avec la moyenne de chaque année et de chaque
+   compétence sur l'année. */
+const UE_RE = /^\s*UE\s+(?:([A-Za-zÀ-ÿ]+)\s+)?(\d+)\.(\d+)\s*[-–—:]?\s*(.*)$/;
+function mean(list) { const v = list.filter((x) => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }
+function competences(releve) {
+  const items = [], seen = new Set();
+  ((releve && releve.ue) || []).forEach((ue) => {
+    const m = UE_RE.exec(ue.label || ""); if (!m || seen.has(ue.label)) return; seen.add(ue.label);
+    const sem = +m[2], idx = +m[3];
+    items.push({ label: ue.label, dept: m[1], sem, idx, year: Math.ceil(sem / 2), title: m[4].trim(), short: `${m[1] ? m[1] + " " : ""}${sem}.${idx}`, note: ueNote(ue) });
+  });
+  items.sort((a, b) => a.sem - b.sem || a.idx - b.idx);
+  const years = [...new Set(items.map((i) => i.year))].sort((a, b) => a - b).map((year) => {
+    const ues = items.filter((i) => i.year === year);
+    const sems = [...new Set(ues.map((i) => i.sem))].map((sem) => ({ sem, ues: ues.filter((i) => i.sem === sem), avg: mean(ues.filter((i) => i.sem === sem).map((i) => i.note)) }));
+    const comps = [...new Set(ues.map((i) => i.idx))].sort((a, b) => a - b).map((idx) => ({ idx, avg: mean(ues.filter((i) => i.idx === idx).map((i) => i.note)), count: ues.filter((i) => i.idx === idx && i.note != null).length }));
+    return { year, ues, sems, comps, avg: mean(ues.map((i) => i.note)) };
+  });
+  return { years, items };
+}
+
+root.UCA_GRADES = { competences, maxOf, scaleKey, applyScales, weightedAvg, matiereNote, ueNote, generalAvg, pendingEvals, scopes, simulate, projection, priorities, nextHistory, matiereSeries, gradedMatieres };
 })(self);

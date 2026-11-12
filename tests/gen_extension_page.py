@@ -14,6 +14,13 @@ OUT = ROOT / "extension"
 ZIP = "uca-extension-chrome.zip"
 DL = '<svg viewBox="0 0 24 24"><path d="M12 3v12M6 11l6 6 6-6M4 21h16"/></svg>'
 
+BOTH_JS_UNUSED = """  var both = document.getElementById("dlBoth");
+  if (both) both.addEventListener("click", function (e) {
+    e.preventDefault();
+    document.querySelectorAll("#choix a[data-dl]").forEach(function (a, k) { setTimeout(function () { a.click(); }, k * 900); });
+  });
+"""
+
 BODY = """<body>
 <div class="blob b1"></div><div class="blob b2"></div>
 <div class="wrap">
@@ -27,7 +34,7 @@ BODY = """<body>
       <div class="cta">
         <a class="dl" id="dlTop" href="@ZIP@" download>
           @DL@
-          <span>Télécharger le ZIP<small id="size">Chrome, Edge, Brave · gratuit</small></span>
+          <span>Télécharger le ZIP<small id="size">Chrome, Edge, Brave · <span class="sz" data-sz="zip">?</span></small></span>
         </a>
         <a class="ghost" href="#installer">Comment l'ajouter ?</a>
       </div>
@@ -43,6 +50,16 @@ BODY = """<body>
       <div class="dots" id="dots"></div>
     </div>
   </div>
+
+  <section class="reveal" id="choix">
+    <h2>Que veux-tu télécharger ?</h2>
+    <p class="sub">L'extension pour ton ordinateur, l'application pour ton téléphone Android, ou les deux d'un coup.</p>
+    <div class="grid">
+      <div class="card"><div class="ic">💻</div><h3>Extension (ZIP)</h3><p>Chrome, Edge, Brave, à ajouter en mode développeur.</p><p style="margin-top:14px"><a class="ghost" data-dl="zip" href="@ZIP@" download>Télécharger le ZIP · <span class="sz" data-sz="zip">?</span></a></p></div>
+      <div class="card"><div class="ic">📱</div><h3>Application (APK)</h3><p>Android 7 ou plus récent, se connecte seule à Odin.</p><p style="margin-top:14px"><a class="ghost" data-dl="apk" href="https://github.com/kiricoucou/uca-extension/raw/main/EdtUca.apk" download>Télécharger l'APK · <span class="sz" data-sz="apk">?</span></a></p></div>
+      <div class="card"><div class="ic">📦</div><h3>Les deux</h3><p>Le ZIP et l'APK l'un après l'autre (autorise les téléchargements multiples si le navigateur le demande).</p><p style="margin-top:14px"><a class="dl" id="dlBoth" href="#choix" style="padding:12px 20px;font-size:16px">Tout télécharger · <span class="sz" data-sz="both">?</span></a></p></div>
+    </div>
+  </section>
 
   <section class="reveal" id="installer">
     <h2>Ajouter l'extension en 2 minutes</h2>
@@ -81,7 +98,7 @@ BODY = """<body>
     <div class="final">
       <h2>Prêt ?</h2>
       <p class="sub" style="margin:0 auto 6px">Gratuit, sans pub, sans compte à créer.</p>
-      <div class="cta"><a class="dl" href="@ZIP@" download>@DL@<span>Télécharger le ZIP</span></a></div>
+      <div class="cta"><a class="dl" href="@ZIP@" download>@DL@<span>Télécharger le ZIP<small><span class="sz" data-sz="zip">?</span></small></span></a></div>
     </div>
   </section>
 
@@ -101,11 +118,19 @@ def main():
     tail = s[s.index("<script>"):]
     tail = tail.replace('fetch("../version.json"', 'fetch("../manifest.json"')
     OUT.mkdir(exist_ok=True)
-    (OUT / "index.html").write_text(head + BODY.replace("@ZIP@", ZIP).replace("@DL@", DL) + tail, encoding="utf-8")
+    page = head + BODY.replace("@ZIP@", ZIP).replace("@DL@", DL) + tail
+    (OUT / "index.html").write_text(page, encoding="utf-8")
     subprocess.run([sys.executable, "-I", "-X", "utf8", str(ROOT / "tests" / "build_chrome.py")], check=True, stdout=subprocess.DEVNULL)
     import json
     ver = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))["version"]
     shutil.copyfile(ROOT / "dist" / f"uca-extension-chrome-{ver}.zip", OUT / ZIP)
+    mo = lambda f: f"{f.stat().st_size / 1048576:.1f}".replace(".", ",") + " Mo"
+    z, a = OUT / ZIP, ROOT / "EdtUca.apk"
+    sizes = {"zip": mo(z), "apk": mo(a), "both": f"{(z.stat().st_size + a.stat().st_size) / 1048576:.1f}".replace(".", ",") + " Mo"}
+    for f in (OUT / "index.html", ROOT / "telecharger" / "index.html"):
+        t = f.read_text(encoding="utf-8")
+        t = re.sub(r'(data-sz="(zip|apk|both)">)[^<]*', lambda m: m.group(1) + sizes[m.group(2)], t)
+        f.write_text(t, encoding="utf-8")
     print("ok", ver, (OUT / ZIP).stat().st_size // 1024, "Ko")
 
 

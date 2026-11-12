@@ -59,6 +59,7 @@ Ajouté :
 
 - **Notes** : la fenêtre de détail d'une évaluation passait derrière la liste des notes et se chevauchait avec elle ; elle s'ouvre maintenant au premier plan. Version web seule (mise à jour silencieuse).
 - **Site** : nouvelle page « Télécharger l'extension » (`extension/`) avec le ZIP Chrome/Edge à charger en mode développeur ; le ZIP ne contient que le code, aucune donnée personnelle (`tests/gen_extension_page.py` le régénère à chaque version).
+- **Pages de téléchargement** : choix « ZIP de l'extension », « APK » ou « les deux d'un coup », avec le poids en Mo affiché sur chaque bouton.
 
 ## 1.46.18 — iPhone : envoyer les données à l'app
 

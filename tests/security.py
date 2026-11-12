@@ -4,7 +4,7 @@
    (balise malveillante), l'app ne doit jamais l'exécuter — juste l'afficher comme texte. On
    injecte un faux relevé avec des intitulés piégés et on vérifie qu'aucun script ne s'exécute
    (pas d'alerte interceptée, aucune balise <img>/<script> injectée réellement dans le DOM) dans
-   les 3 designs (le 4e, « bulletin », est une copie structurelle de « professionnel »).
+   tous les designs.
 2. Permissions : host_permissions strictement limités aux domaines réellement contactés par
    fetch/XHR (pas de <all_urls>).
 3. Pont app <-> extension (content-bridge.js / core/env.js) : origine des postMessage contrôlée
@@ -94,8 +94,6 @@ def main():
         ctx, sw, base = launch(p, viewport={"width": 1280, "height": 860})
         data = poisoned_seed()
         for d in designs():
-            if d["id"] == "bulletin":
-                continue  # copie structurelle de "professionnel", même rendu HTML, pas la peine de redoubler.
             sw.evaluate("(d) => chrome.storage.local.set(d)", data)
             sw.evaluate("(id) => chrome.storage.local.set({uca_design: id})", d["id"])
             page = ctx.new_page()

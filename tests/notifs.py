@@ -38,7 +38,7 @@ def main():
     try:
         with sync_playwright() as p:
             b = p.chromium.launch()
-            for design in ("studio", "anime", "professionnel", "bulletin", "carnet"):
+            for design in ("studio", "anime", "professionnel", "lumen", "carnet"):
                 ctx = b.new_context(viewport={"width": 390, "height": 800}); pg = ctx.new_page(); errors = []
                 pg.on("pageerror", lambda e: errors.append(str(e)))
                 pg.goto(base + "app/index.html"); pg.wait_for_timeout(300)

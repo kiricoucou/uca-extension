@@ -221,9 +221,14 @@ async function loadDesigns() {
   const res = await fetch(chrome.runtime.getURL("designs/designs.json"));
   return res.json();
 }
+/* Un design retiré du registre (ex. « bulletin », remplacé par « lumen ») est migré via son champ "replaces". */
+function findDesign(designs, id) {
+  return designs.find((d) => d.id === id) || designs.find((d) => Array.isArray(d.replaces) && d.replaces.includes(id));
+}
 async function applyDesign() {
   const [{ uca_design }, designs] = await Promise.all([chrome.storage.local.get("uca_design"), loadDesigns()]);
-  const design = designs.find((d) => d.id === uca_design);
+  const design = findDesign(designs, uca_design);
+  if (design && design.id !== uca_design) await chrome.storage.local.set({ uca_design: design.id });
   if (!design) {
     await chrome.action.setPopup({ popup: "choose.html" });
     await chrome.action.setIcon({ path: iconPaths("icons") });
@@ -987,7 +992,7 @@ function eventEnd(ev) { return new Date(ev.year, ev.month, ev.day, ev.endH, ev.e
 
 async function currentDesign() {
   const [{ uca_design }, designs] = await Promise.all([chrome.storage.local.get("uca_design"), loadDesigns()]);
-  return designs.find((d) => d.id === uca_design) || null;
+  return findDesign(designs, uca_design) || null;
 }
 
 async function scheduleReminders() {

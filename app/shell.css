@@ -220,3 +220,131 @@ html[data-design="studio"] .banner, html[data-design="studio"] .profile-head { b
 .nbtn[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 14%, transparent); border-color: var(--accent); font-weight: 700; }
 .nbtn.del { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
 .nbtn:focus-visible, .nchip:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
+
+/* =====================================================================
+   Design LUMEN (verre liquide iOS 26) : toute la coque de l'application suit le design choisi.
+   Clair par défaut, sombre selon le système ou le réglage du site (data-theme).
+   ===================================================================== */
+html:root[data-design="lumen"] {
+  --bg:#f2f2f7;--surface:#ffffff;--border:rgba(60,60,67,.16);--text:#000;--dim:rgba(60,60,67,.62);
+  --accent:#007aff;--accent2:#007aff;--on-accent:#fff;--danger:#d70015;--warn:#b25e00;--info:#007aff;--ok:#1f8a3b;
+  --glass:rgba(255,255,255,.62);--glass-strong:rgba(255,255,255,.82);--glass-edge:rgba(255,255,255,.65);--glass-line:rgba(255,255,255,.85);--glass-shadow:0 8px 32px rgba(0,0,0,.12);
+  --fill:rgba(120,120,128,.12);--fill-hover:rgba(120,120,128,.2);--scrim:rgba(0,0,0,.28);--ease:cubic-bezier(.32,.72,0,1);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark) {
+  html:root[data-design="lumen"]:not([data-theme="light"]) {
+  --bg:#000;--surface:#1c1c1e;--border:rgba(84,84,88,.55);--text:#fff;--dim:rgba(235,235,245,.62);
+  --accent:#0a84ff;--accent2:#0a84ff;--on-accent:#fff;--danger:#ff6961;--warn:#ff9f0a;--info:#0a84ff;--ok:#30d158;
+  --glass:rgba(30,30,32,.55);--glass-strong:rgba(34,34,36,.82);--glass-edge:rgba(255,255,255,.14);--glass-line:rgba(255,255,255,.2);--glass-shadow:0 8px 32px rgba(0,0,0,.5);
+  --fill:rgba(120,120,128,.24);--fill-hover:rgba(120,120,128,.36);--scrim:rgba(0,0,0,.5);
+  color-scheme:dark;
+  }
+}
+html:root[data-design="lumen"][data-theme="dark"] {
+  --bg:#000;--surface:#1c1c1e;--border:rgba(84,84,88,.55);--text:#fff;--dim:rgba(235,235,245,.62);
+  --accent:#0a84ff;--accent2:#0a84ff;--on-accent:#fff;--danger:#ff6961;--warn:#ff9f0a;--info:#0a84ff;--ok:#30d158;
+  --glass:rgba(30,30,32,.55);--glass-strong:rgba(34,34,36,.82);--glass-edge:rgba(255,255,255,.14);--glass-line:rgba(255,255,255,.2);--glass-shadow:0 8px 32px rgba(0,0,0,.5);
+  --fill:rgba(120,120,128,.24);--fill-hover:rgba(120,120,128,.36);--scrim:rgba(0,0,0,.5);
+  color-scheme:dark;
+}
+html:root[data-design="lumen"], html:root[data-design="lumen"] body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI Variable Text", "Segoe UI", system-ui, Inter, sans-serif; letter-spacing: -.005em; }
+html:root[data-design="lumen"] body { background: transparent; }
+html:root[data-design="lumen"] body::before { content: ""; position: fixed; inset: -10%; z-index: -1; pointer-events: none;
+  background: radial-gradient(40% 34% at 12% 8%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%), radial-gradient(34% 30% at 88% 14%, rgba(175,82,222,.16), transparent 70%), radial-gradient(40% 36% at 78% 92%, rgba(90,200,250,.18), transparent 70%), radial-gradient(30% 30% at 8% 88%, rgba(52,199,89,.10), transparent 70%); }
+html:root[data-design="lumen"] { background: var(--bg); }
+html:root[data-design="lumen"] #agendaFrame { background: transparent; }
+
+/* Barre supérieure : verre */
+html:root[data-design="lumen"] .topbar { background: var(--glass); -webkit-backdrop-filter: blur(30px) saturate(180%); backdrop-filter: blur(30px) saturate(180%); border-bottom: .5px solid var(--border); box-shadow: inset 0 1px 0 var(--glass-line); }
+html:root[data-design="lumen"] .topbar h1 { font-size: 28px; font-weight: 700; letter-spacing: -.03em; }
+html:root[data-design="lumen"] .icon-btn { width: 44px; height: 44px; background: transparent; transition: background-color .2s var(--ease), transform .35s var(--ease); }
+html:root[data-design="lumen"] .icon-btn:active { background: var(--fill-hover); transform: scale(.92); }
+html:root[data-design="lumen"] .icon-btn .dot { background: var(--danger); box-shadow: 0 0 0 2px var(--surface); }
+html:root[data-design="lumen"] .session-banner { background: color-mix(in srgb, #ff3b30 14%, var(--surface)); color: var(--danger); border-radius: 16px; margin: 8px 14px 0; }
+html:root[data-design="lumen"] .session-banner a { color: var(--danger); }
+
+/* Contenu : cartes et listes « inset grouped » */
+html:root[data-design="lumen"] .card, html:root[data-design="lumen"] .rows, html:root[data-design="lumen"] .notif, html:root[data-design="lumen"] details.site-menu { background: var(--surface); border: none; border-radius: 22px; box-shadow: 0 1px 3px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.05); }
+html:root[data-design="lumen"] .news { background: var(--fill); border: none; border-radius: 18px; }
+html:root[data-design="lumen"] .section-title { font-size: 13px; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; color: var(--dim); margin: 26px 16px 8px; }
+html:root[data-design="lumen"] .section-title:first-child { margin-top: 4px; }
+html:root[data-design="lumen"] .row { padding: 11px 16px; min-height: 52px; transition: background-color .2s var(--ease); }
+html:root[data-design="lumen"] .row + .row { border-top: none; position: relative; }
+html:root[data-design="lumen"] .row + .row::before { content: ""; position: absolute; top: 0; left: 62px; right: 0; height: .5px; background: var(--border); }
+html:root[data-design="lumen"] .row:active { background: var(--fill); }
+html:root[data-design="lumen"] .row .ic { width: 30px; height: 30px; border-radius: 8px; color: #fff; background: #007aff; }
+html:root[data-design="lumen"] .row .ic svg { width: 18px; height: 18px; }
+html:root[data-design="lumen"] .rows .row:nth-child(6n+2) .ic { background: #34c759; }
+html:root[data-design="lumen"] .rows .row:nth-child(6n+3) .ic { background: #ff9500; }
+html:root[data-design="lumen"] .rows .row:nth-child(6n+4) .ic { background: #5856d6; }
+html:root[data-design="lumen"] .rows .row:nth-child(6n+5) .ic { background: #ff2d55; }
+html:root[data-design="lumen"] .rows .row:nth-child(6n+6) .ic { background: #30b0c7; }
+html:root[data-design="lumen"] .row .tx b { font-weight: 600; letter-spacing: -.01em; }
+html:root[data-design="lumen"] .row .chev { opacity: .35; }
+html:root[data-design="lumen"] .status + .status { border-top: none; }
+html:root[data-design="lumen"] .banner, html:root[data-design="lumen"] .profile-head { border-radius: 26px; background: linear-gradient(145deg, #5ac8fa, #007aff 55%, #5856d6); box-shadow: 0 10px 30px rgba(0,122,255,.3), inset 0 1px 0 rgba(255,255,255,.35); }
+html:root[data-design="lumen"] .pill, html:root[data-design="lumen"] .tag { border-radius: 999px; }
+html:root[data-design="lumen"] .lieu-map { border-radius: 22px; }
+
+/* Boutons : capsule remplie / teintée */
+html:root[data-design="lumen"] .btn { min-height: 50px; border-radius: 999px; font-weight: 600; letter-spacing: -.01em; background: var(--accent); color: var(--on-accent); box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 38%, transparent), inset 0 1px 0 rgba(255,255,255,.28); transition: transform .35s var(--ease), opacity .2s; }
+html:root[data-design="lumen"] .btn:active { transform: scale(.97); opacity: .75; }
+html:root[data-design="lumen"] .btn.secondary { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); border: none; box-shadow: none; }
+html:root[data-design="lumen"] .btn.danger { background: color-mix(in srgb, #ff3b30 14%, transparent); color: var(--danger); border: none; box-shadow: none; }
+html:root[data-design="lumen"] .nchip, html:root[data-design="lumen"] .nbtn { border: none; background: var(--fill); border-radius: 999px; }
+html:root[data-design="lumen"] .nchip.on { background: var(--accent); color: var(--on-accent); }
+html:root[data-design="lumen"] .nbtn[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border: none; }
+html:root[data-design="lumen"] .nbtn.del { background: color-mix(in srgb, #ff3b30 14%, transparent); color: var(--danger); border: none; }
+html:root[data-design="lumen"] .notif.kept { box-shadow: inset 0 0 0 1.5px var(--accent), 0 4px 14px rgba(0,0,0,.05); }
+
+/* Interrupteur iOS : 51 x 31, vert, pastille à ressort */
+html:root[data-design="lumen"] .switch { width: 51px; height: 31px; border-radius: 999px; background: rgba(120,120,128,.32); transition: background-color .3s var(--ease); }
+html:root[data-design="lumen"] .switch::after { top: 2px; left: 2px; width: 27px; height: 27px; background: #fff; box-shadow: 0 3px 8px rgba(0,0,0,.15), 0 1px 1px rgba(0,0,0,.16); transition: transform .45s var(--ease), width .2s; }
+html:root[data-design="lumen"] .switch:checked { background: #34c759; }
+html:root[data-design="lumen"] .switch:checked::after { transform: translateX(20px); background: #fff; }
+html:root[data-design="lumen"] .switch:active::after { width: 32px; }
+html:root[data-design="lumen"] .switch:checked:active::after { transform: translateX(15px); }
+html:root[data-design="lumen"] .switch-row + .switch-row { border-top: none; }
+
+/* Barre d'onglets : capsule de verre flottante */
+html:root[data-design="lumen"] .bottom-nav {
+  background: var(--glass-strong); -webkit-backdrop-filter: blur(30px) saturate(190%); backdrop-filter: blur(30px) saturate(190%);
+  border: .5px solid var(--glass-edge);
+  box-shadow: inset 0 1px 0 var(--glass-line), inset 0 -1px 0 rgba(255,255,255,.1), var(--glass-shadow);
+}
+html:root[data-design="lumen"] .bottom-nav button { border-radius: 999px; font-size: 11px; font-weight: 600; letter-spacing: 0; transition: background-color .3s var(--ease), color .2s, transform .35s var(--ease); }
+html:root[data-design="lumen"] .bottom-nav button:active { transform: scale(.94); }
+html:root[data-design="lumen"] .bottom-nav button.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 0 1px 0 var(--glass-line), 0 1px 6px color-mix(in srgb, var(--accent) 22%, transparent); font-weight: 700; }
+html:root[data-design="lumen"] .bottom-nav button.active svg { stroke-width: 2.1; fill: color-mix(in srgb, var(--accent) 18%, transparent); }
+html:root[data-design="lumen"] .bottom-nav button svg { stroke-width: 1.7; }
+@media (max-width: 899px) {
+  html:root[data-design="lumen"] #app:not(.agenda) .bottom-nav { position: fixed; left: 14px; right: 14px; bottom: max(12px, env(safe-area-inset-bottom)); height: 66px; padding: 6px; border-radius: 999px; z-index: 40; gap: 2px; }
+  html:root[data-design="lumen"] #app.agenda .bottom-nav { margin: 6px 14px max(10px, env(safe-area-inset-bottom)); height: 62px; padding: 5px; border-radius: 999px; }
+  html:root[data-design="lumen"] #app:not(.agenda) #screen { padding-bottom: calc(var(--nav-h) + 40px + env(safe-area-inset-bottom)); }
+  html:root[data-design="lumen"] .bottom-nav button { height: 100%; padding: 0; }
+  html:root[data-design="lumen"] .toast { bottom: calc(var(--nav-h) + 32px + env(safe-area-inset-bottom)); }
+}
+@media (min-width: 900px) {
+  html:root[data-design="lumen"] .bottom-nav, html:root[data-design="lumen"] .bottom-nav[hidden] { margin: 14px 0 14px 14px; padding: 16px 12px; border-radius: 30px; }
+  html:root[data-design="lumen"] .bottom-nav button { border-radius: 18px; }
+  html:root[data-design="lumen"] .side-brand { font-weight: 700; letter-spacing: -.02em; }
+  html:root[data-design="lumen"] .side-brand img { border-radius: 22.37%; }
+  html:root[data-design="lumen"] .topbar { background: transparent; border-bottom: 0; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  html:root[data-design="lumen"] .row:hover, html:root[data-design="lumen"] .notif:hover { background: var(--fill); }
+}
+
+/* Feuilles : verre, grabber, ressort */
+html:root[data-design="lumen"] .sheet-backdrop { background: var(--scrim); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: lumFade .3s ease both; }
+html:root[data-design="lumen"] .sheet { background: var(--glass-strong); -webkit-backdrop-filter: blur(34px) saturate(180%); backdrop-filter: blur(34px) saturate(180%); border: .5px solid var(--glass-edge); border-radius: 32px 32px 0 0; box-shadow: inset 0 1px 0 var(--glass-line), 0 -10px 40px rgba(0,0,0,.16); animation: lumSheet .55s var(--ease) both; padding-top: 24px; }
+html:root[data-design="lumen"] .sheet::before { content: ""; position: absolute; top: 8px; left: 50%; width: 36px; height: 5px; margin-left: -18px; border-radius: 3px; background: color-mix(in srgb, var(--text) 25%, transparent); }
+html:root[data-design="lumen"] .sheet h2 { font-size: 20px; font-weight: 700; letter-spacing: -.02em; }
+@media (min-width: 900px) { html:root[data-design="lumen"] .sheet { border-radius: 28px; animation: lumPop .45s var(--ease) both; } html:root[data-design="lumen"] .sheet::before { display: none; } }
+html:root[data-design="lumen"] .toast { background: rgba(44,44,46,.82); color: #fff; border-radius: 999px; padding: 12px 20px; -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%); border: .5px solid rgba(255,255,255,.18); box-shadow: 0 10px 40px rgba(0,0,0,.25); font-weight: 500; }
+@keyframes lumFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lumSheet { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes lumPop { from { opacity: 0; transform: translate(-50%, -48%) scale(.95); } to { opacity: 1; transform: translate(-50%, -50%); } }
+@media (prefers-reduced-transparency: reduce) {
+  html:root[data-design="lumen"] .topbar, html:root[data-design="lumen"] .bottom-nav, html:root[data-design="lumen"] .sheet, html:root[data-design="lumen"] .toast { background: var(--surface) !important; -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
+@media (prefers-reduced-motion: reduce) { html:root[data-design="lumen"] *, html:root[data-design="lumen"] *::before { animation-duration: .01ms !important; transition-duration: .01ms !important; } }

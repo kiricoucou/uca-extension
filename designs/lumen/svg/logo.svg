@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="t">
+<title id="t">Design Lumen</title>
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ac8fa"/><stop offset=".55" stop-color="#007aff"/><stop offset="1" stop-color="#5856d6"/></linearGradient>
+<linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".78"/><stop offset="1" stop-color="#fff" stop-opacity=".34"/></linearGradient>
+</defs>
+<style>
+.orb{transform-box:fill-box;transform-origin:center;animation:float 5s ease-in-out infinite}
+.o2{animation-delay:-2s}
+@keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(3px,-4px)}}
+@media (prefers-reduced-motion:reduce){.orb{animation:none}}
+</style>
+<rect width="96" height="96" rx="21.5" fill="url(#bg)"/>
+<circle class="orb" cx="30" cy="28" r="22" fill="#fff" opacity=".22"/>
+<circle class="orb o2" cx="72" cy="74" r="20" fill="#af52de" opacity=".4"/>
+<rect x="21" y="25" width="54" height="50" rx="14" fill="url(#gl)" stroke="#fff" stroke-opacity=".85" stroke-width="1.2"/>
+<path d="M21 42h54" stroke="#fff" stroke-opacity=".7" stroke-width="1.2"/>
+<rect x="33" y="19" width="5" height="12" rx="2.5" fill="#fff"/>
+<rect x="58" y="19" width="5" height="12" rx="2.5" fill="#fff"/>
+<circle cx="48" cy="58" r="7.5" fill="#fff"/>
+</svg>

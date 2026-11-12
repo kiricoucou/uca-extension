@@ -135,11 +135,12 @@ object PrefsStore {
         p.edit().putInt("profile_schema", 2).apply()
     }
 
-    val DESIGNS = listOf("studio" to "Studio (clair, par défaut)", "anime" to "Animé (sombre turquoise)", "professionnel" to "Professionnel", "bulletin" to "Bulletin", "carnet" to "Carnet")
+    val DESIGNS = listOf("studio" to "Studio (clair, par défaut)", "anime" to "Animé (sombre turquoise)", "professionnel" to "Professionnel", "lumen" to "Lumen (verre liquide, iOS)", "carnet" to "Carnet")
 
     /** Design choisi (agenda de l'app), ou null s'il n'a jamais été choisi. */
     fun design(context: Context): String? =
-        prefs(context).getString("design", null)?.takeIf { id -> DESIGNS.any { it.first == id } }
+        prefs(context).getString("design", null)?.let { id -> if (id == "bulletin") "lumen" else id } // « bulletin » est devenu « lumen »
+            ?.takeIf { id -> DESIGNS.any { it.first == id } }
 
     fun setDesign(context: Context, id: String) {
         if (DESIGNS.none { it.first == id }) return

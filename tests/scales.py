@@ -53,7 +53,7 @@ def open_notes(pg, fr, mobile):
 
 
 def ui(browser, base, errors):
-    for design in ("anime", "professionnel", "bulletin", "carnet"):
+    for design in ("anime", "professionnel", "lumen", "carnet"):
         ctx = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=2, is_mobile=True, has_touch=True)
         pg = ctx.new_page(); pg.on("pageerror", lambda e: errors.append(f"[{design}] {e}"))
         pg.goto(base + "app/index.html"); pg.wait_for_timeout(300)

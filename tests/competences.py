@@ -72,7 +72,7 @@ def main():
     try:
         with sync_playwright() as p:
             browser = p.chromium.launch(args=[NO_REAL_SERVERS])
-            for design in ("studio", "anime", "professionnel", "bulletin", "carnet"):
+            for design in ("studio", "anime", "professionnel", "lumen", "carnet"):
                 for label, vp in (("bureau", {"width": 1280, "height": 800}), ("téléphone", {"width": 390, "height": 800})):
                     ctx = browser.new_context(viewport=vp)
                     page = ctx.new_page()

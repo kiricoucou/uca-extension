@@ -62,7 +62,7 @@ def main():
     try:
         with sync_playwright() as p:
             b = p.chromium.launch()
-            for design in ("studio", "anime", "professionnel", "bulletin", "carnet"):
+            for design in ("studio", "anime", "professionnel", "lumen", "carnet"):
                 for label, vp in (("bureau", {"width": 1280, "height": 800}), ("téléphone", {"width": 390, "height": 800})):
                     ctx = b.new_context(viewport=vp); pg = ctx.new_page(); errors = []
                     pg.on("pageerror", lambda e: errors.append(str(e)))

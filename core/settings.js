@@ -26,7 +26,11 @@ const DEFAULTS = {
 };
 
 function getSettings() {
-  return chrome.storage.local.get("uca_settings").then((d) => Object.assign({}, DEFAULTS, d.uca_settings));
+  return chrome.storage.local.get("uca_settings").then((d) => {
+    const st = Object.assign({}, DEFAULTS, d.uca_settings);
+    ["designLight", "designDark"].forEach((k) => { if (st[k] === "bulletin") st[k] = "lumen"; }); // « bulletin » est devenu « lumen »
+    return st;
+  });
 }
 function saveSettings(patch) {
   return getSettings().then((s) => chrome.storage.local.set({ uca_settings: Object.assign(s, patch) }));

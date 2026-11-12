@@ -16,7 +16,14 @@ window.UCA_APP = { root: ROOT, demo: DEMO };
 
 /* ---------- chrome.storage.local sur localStorage (données de quelques centaines de Ko) ---------- */
 const listeners = [];
-function readAll() { try { return JSON.parse(mem.getItem(STORE) || "{}"); } catch (e) { return {}; } }
+/* Design « bulletin » remplacé par « lumen » : on migre le choix mémorisé (design courant et designs auto clair/sombre). */
+function migrateDesign(all) {
+  if (all.uca_design === "bulletin") all.uca_design = "lumen";
+  const st = all.uca_settings;
+  if (st && typeof st === "object") ["designLight", "designDark"].forEach((k) => { if (st[k] === "bulletin") st[k] = "lumen"; });
+  return all;
+}
+function readAll() { try { return migrateDesign(JSON.parse(mem.getItem(STORE) || "{}")); } catch (e) { return {}; } }
 function writeAll(all) { mem.setItem(STORE, JSON.stringify(all)); }
 function clone(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
 function notify(changes) { if (Object.keys(changes).length) setTimeout(() => listeners.forEach((fn) => fn(changes, "local")), 0); }

@@ -73,7 +73,7 @@ def main():
         pg = agenda("professionnel"); snap(pg, "1-semaine-professionnel.png")
         pg.locator("#notesBtn").click(); pg.wait_for_timeout(500); snap(pg, "4-notes-simulateur.png"); pg.close()
         pg = agenda("anime"); snap(pg, "2-semaine-anime.png"); pg.close()
-        pg = agenda("bulletin"); pg.locator("#tasksBtn").click(); pg.wait_for_timeout(500); snap(pg, "3-devoirs-bulletin.png"); pg.close()
+        pg = agenda("lumen"); pg.locator("#tasksBtn").click(); pg.wait_for_timeout(500); snap(pg, "3-devoirs-lumen.png"); pg.close()
         sw.evaluate("(id) => chrome.storage.local.set({uca_design: id})", "professionnel")
         pg = ctx.new_page(); pg.set_viewport_size(SIZE); pg.goto(f"{base}/settings.html"); pg.wait_for_function("() => document.querySelectorAll('.st-row[data-state=ok]').length === 6", timeout=20000)
         pg.wait_for_timeout(400); snap(pg, "5-parametres-statut.png")

@@ -91,7 +91,7 @@ const PLAN = {   // chaque design a son scénario d'emploi du temps : un cours a
   studio:        [["cancel", 3], ["room", 7], ["added", 20], ["teacher", 30]],
   anime:         [["moved", 2], ["room", 9], ["cancel", 26], ["title", 40]],
   professionnel: [["room", 4], ["time", 8], ["title", 21], ["added2", 30], ["cancel", 52]],
-  bulletin:      [["cancel", 5], ["teacher", 11], ["moved", 24], ["time", 36]],
+  lumen:         [["cancel", 5], ["teacher", 11], ["moved", 24], ["time", 36]],
   carnet:        [["added", 3], ["added2", 14], ["room", 22], ["moved", 38], ["teacher", 49]],
 };
 const m = /\/designs\/([\w-]+)\//.exec(location.pathname);

@@ -654,7 +654,7 @@ function buildMobileMenu() {
   let curDesign = "Design Actuel";
   try {
     const p = location.pathname;
-    if (p.includes("bulletin")) curDesign = "Design Bulletin (Académique)";
+    if (p.includes("lumen")) curDesign = "Design Lumen (Verre liquide)";
     else if (p.includes("professionnel")) curDesign = "Design Professionnel (Tech & Slate)";
     else if (p.includes("anime")) curDesign = "Design Animé (Studio)";
     else if (p.includes("carnet")) curDesign = "Design Carnet (Papier)";

@@ -55,6 +55,14 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.29 — app Android 1.4.21 : logos par design, Studio, Lumen, calendrier à l'installation
+
+- **Un logo SVG animé par design** (Animé, Professionnel, Carnet, Lumen, Studio), affichés sur chaque carte du choix de design et sur le bouton « Design » (agenda et popup). Respectent « réduire les animations ».
+- **Design Studio** recalé sur un tableau de bord planning : colonnes hachurées, cartes à liseré coloré sur fond pastel, jour courant et bouton « Importer » en noir, coins très arrondis.
+- **Design Lumen (verre liquide)** remplace Bulletin ; le choix mémorisé est migré automatiquement. Contrastes conformes WCAG AA.
+- **Première installation** : le design par défaut (Studio) est appliqué et l'onglet du calendrier des cours s'ouvre tout seul, avec le bouton pour se connecter à Odin ; changer de design reste à un clic. L'installateur Linux ouvre aussi directement le calendrier.
+- **Démo et navigation du site / de l'app web** : menu avec icônes, bascule clair / sombre, démo avec des cours jusqu'en septembre 2027 et des scénarios de changements.
+
 ## 1.46.28 — app Android 1.4.20 : notifications gérables, passé de la courbe, dates de sortie
 
 - **Notifications gérables partout** : dans la cloche « Activité » de l'extension et dans l'écran Notifications de l'APK (comme dans l'app web) : garder (★, jamais supprimée), supprimer, tout supprimer sauf les gardées, filtres (toutes, non lues, gardées), lue / non lue (APK). Une notification supprimée ne revient pas à la synchro suivante.

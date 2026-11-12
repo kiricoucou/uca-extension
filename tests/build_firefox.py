@@ -18,7 +18,7 @@ DIST = ROOT / "dist" / "firefox"
 
 # Fichiers/dossiers de dev jamais envoyés dans le paquet de l'extension (tests, app téléphone,
 # dépôt git, scratch...). Tout le reste de la racine est inclus.
-EXCLUDE_DIRS = {".git", ".github", ".claude", ".impeccable", "tests", "app", "dist", "store", "en", "tools", "telecharger", "extension", "__pycache__"}
+EXCLUDE_DIRS = {".git", ".github", ".claude", ".impeccable", "tests", "app", "dist", "store", "en", "tools", "telecharger", "extension", "aide-install", "__pycache__"}
 EXCLUDE_FILES = {"manifest.firefox.json", ".gitignore", ".nojekyll", "app.webmanifest", "sw.js"}
 # Pages du site public, à la racine seulement (designs/<id>/aide.html reste dans le paquet).
 EXCLUDE_ROOT_FILES = {"index.html", "install.html", "aide.html", "404.html", "confidentialite.html", "site.css", "site-demo.js", "site-fx.js", "nouveautes.html", "sitemap.xml", "robots.txt", "transport.html", "site-theme.css", "site-nav.js", "merci.html", "don.html", "stats.json"}

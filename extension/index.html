@@ -99,7 +99,7 @@ footer{padding:40px 0 60px;color:var(--dim);font-size:13.5px;text-align:center}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.reveal{opacity:1;transform:none}}
 #choix .card{display:flex;flex-direction:column}#choix .card .btn-row{margin:auto 0 0;padding-top:16px}#choix .card .ghost,#choix .card .dl{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;padding:12px 16px;border-radius:14px;font-size:16px;font-weight:700;line-height:1.2;text-align:center;white-space:nowrap}#choix .card .ghost{background:var(--surface);color:var(--text);box-shadow:inset 0 0 0 1px rgba(22,24,29,.22)}#choix .card .ghost:hover{background:var(--bg)}#choix .card .dl::after{display:none}.sz{font-weight:600;opacity:.72;font-variant-numeric:tabular-nums}@media (max-width:420px){#choix .card .ghost,#choix .card .dl{white-space:normal;font-size:15px}}
 code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size:.92em}.shot-link{display:block;margin-top:14px}.shot-link img{display:block;width:100%;height:auto;border-radius:12px;box-shadow:0 0 0 1px var(--border),0 12px 28px -16px rgba(9,9,11,.4);transition:transform .25s}.shot-link:hover img{transform:scale(1.02)}.step{overflow:hidden}
-.sub-steps{margin:8px 0 0;padding-left:20px;font-size:14.5px;color:var(--dim)}.sub-steps li{margin:6px 0}.sub-steps b{color:var(--text)}button.shot-link{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in;position:relative;margin-top:14px;text-align:left;font:inherit}.shot-link .zoom{position:absolute;right:10px;bottom:10px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(22,24,29,.82);color:#fff}.lightbox{position:fixed;inset:0;z-index:100;background:rgba(10,12,16,.86);display:flex;align-items:center;justify-content:center;padding:56px 16px 24px}.lightbox[hidden]{display:none}.lightbox figure{margin:0;max-width:min(1200px,100%);max-height:100%;display:flex;flex-direction:column;align-items:center;gap:10px}.lightbox img{max-width:100%;max-height:calc(100vh - 130px);border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.6);background:#fff}.lightbox figcaption{color:#e6e8ee;font-size:14px;text-align:center}.lb-close{position:absolute;top:14px;right:14px;width:46px;height:46px;border-radius:50%;border:0;background:#fff;color:#16181d;font-size:22px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.4)}.lb-close:focus-visible{outline:3px solid #7cc0ee;outline-offset:2px}</style>
+.sub-steps{margin:8px 0 0;padding-left:20px;font-size:14.5px;color:var(--dim)}.sub-steps li{margin:6px 0}.sub-steps b{color:var(--text)}button.shot-link{display:block;width:100%;padding:0;border:0;background:none;cursor:zoom-in;position:relative;margin-top:14px;text-align:left;font:inherit}.shot-link .zoom{position:absolute;right:10px;bottom:10px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(22,24,29,.82);color:#fff}.lightbox{position:fixed;inset:0;z-index:3000;background:rgba(10,12,16,.86);display:flex;align-items:center;justify-content:center;padding:56px 16px 24px}.lightbox[hidden]{display:none}.lightbox figure{margin:0;max-width:min(1200px,100%);max-height:100%;display:flex;flex-direction:column;align-items:center;gap:10px}.lightbox img{max-width:100%;max-height:calc(100vh - 130px);border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.6);background:#fff}.lightbox figcaption{color:#e6e8ee;font-size:14px;text-align:center}.lb-close{position:absolute;top:14px;right:14px;width:46px;height:46px;border-radius:50%;border:0;background:#fff;color:#16181d;font-size:22px;font-weight:700;cursor:pointer;box-shadow:0 8px 24px rgba(0,0,0,.4)}.lb-close:focus-visible{outline:3px solid #7cc0ee;outline-offset:2px}</style>
 <link rel="stylesheet" href="../site-theme.css">
 </head>
 <body>
@@ -115,7 +115,7 @@ code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size
       <div class="cta">
         <a class="dl" id="dlTop" href="uca-extension-chrome.zip" download>
           <svg viewBox="0 0 24 24"><path d="M12 3v12M6 11l6 6 6-6M4 21h16"/></svg>
-          <span>Télécharger le ZIP<small id="size">Chrome, Edge, Brave · <span class="sz" data-sz="zip">2,6 Mo</span></small></span>
+          <span>Télécharger le ZIP<small id="size">Chrome, Edge, Brave · <span class="sz" data-sz="zip">2,7 Mo</span></small></span>
         </a>
         <a class="ghost" href="#installer">Comment l'ajouter ?</a>
       </div>
@@ -136,9 +136,9 @@ code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size
     <h2>Que veux-tu télécharger ?</h2>
     <p class="sub">L'extension pour ton ordinateur, l'application pour ton téléphone Android, ou les deux d'un coup.</p>
     <div class="grid">
-      <div class="card"><div class="ic">💻</div><h3>Extension (ZIP)</h3><p>Chrome, Edge, Brave, à ajouter en mode développeur.</p><p class="btn-row"><a class="ghost" data-dl="zip" href="uca-extension-chrome.zip" download>Télécharger le ZIP · <span class="sz" data-sz="zip">2,6 Mo</span></a></p></div>
+      <div class="card"><div class="ic">💻</div><h3>Extension (ZIP)</h3><p>Chrome, Edge, Brave, à ajouter en mode développeur.</p><p class="btn-row"><a class="ghost" data-dl="zip" href="uca-extension-chrome.zip" download>Télécharger le ZIP · <span class="sz" data-sz="zip">2,7 Mo</span></a></p></div>
       <div class="card"><div class="ic">📱</div><h3>Application (APK)</h3><p>Android 7 ou plus récent, se connecte seule à Odin.</p><p class="btn-row"><a class="ghost" data-dl="apk" href="https://github.com/kiricoucou/uca-extension/raw/main/EdtUca.apk" download>Télécharger l'APK · <span class="sz" data-sz="apk">4,8 Mo</span></a></p></div>
-      <div class="card"><div class="ic">📦</div><h3>Les deux</h3><p>Le ZIP et l'APK l'un après l'autre (autorise les téléchargements multiples si le navigateur le demande).</p><p class="btn-row"><a class="dl" id="dlBoth" href="#choix">Tout télécharger · <span class="sz" data-sz="both">7,4 Mo</span></a></p></div>
+      <div class="card"><div class="ic">📦</div><h3>Les deux</h3><p>Le ZIP et l'APK l'un après l'autre (autorise les téléchargements multiples si le navigateur le demande).</p><p class="btn-row"><a class="dl" id="dlBoth" href="#choix">Tout télécharger · <span class="sz" data-sz="both">7,5 Mo</span></a></p></div>
     </div>
   </section>
 
@@ -213,7 +213,7 @@ code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size
     <div class="final">
       <h2>Prêt ?</h2>
       <p class="sub" style="margin:0 auto 6px">Gratuit, sans pub, sans compte à créer.</p>
-      <div class="cta"><a class="dl" href="uca-extension-chrome.zip" download><svg viewBox="0 0 24 24"><path d="M12 3v12M6 11l6 6 6-6M4 21h16"/></svg><span>Télécharger le ZIP<small><span class="sz" data-sz="zip">2,6 Mo</span></small></span></a></div>
+      <div class="cta"><a class="dl" href="uca-extension-chrome.zip" download><svg viewBox="0 0 24 24"><path d="M12 3v12M6 11l6 6 6-6M4 21h16"/></svg><span>Télécharger le ZIP<small><span class="sz" data-sz="zip">2,7 Mo</span></small></span></a></div>
     </div>
   </section>
 

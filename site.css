@@ -287,3 +287,5 @@ body{background:var(--bg);}
 .card:nth-child(4n+2) .ico{background:#f3efc8;color:#5a5300;}
 .card:nth-child(4n+3) .ico{background:#e5e7ec;color:#2a2f3a;}
 .card:nth-child(4n) .ico{background:#dfeaee;color:#17323c;}
+
+.news-meta .with{font-size:12px;font-style:italic;color:var(--text-dim);}

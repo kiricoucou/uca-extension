@@ -66,8 +66,8 @@ BODY = """<body>
     <p class="sub">Elle n'est pas (encore) sur le Chrome Web Store : on la charge à la main, une seule fois.</p>
     <div class="steps">
       <div class="step"><h3>Télécharge et décompresse</h3><p>Clique sur « Télécharger le ZIP », puis clic droit sur le fichier → « Extraire tout ». Garde le dossier obtenu : Chrome le lit depuis là.</p></div>
-      <div class="step"><h3>Mode développeur</h3><p>Dans Chrome, ouvre <code>chrome://extensions</code> (Edge : <code>edge://extensions</code>) et active « Mode développeur » en haut à droite.</p></div>
-      <div class="step"><h3>Charge le dossier</h3><p>Clique « Charger l'extension non empaquetée » et choisis le dossier décompressé (celui qui contient <code>manifest.json</code>). Épingle l'icône, c'est prêt.</p></div>
+      <div class="step"><h3>Mode développeur</h3><p>Dans Chrome, ouvre <code>chrome://extensions</code> (Edge : <code>edge://extensions</code>) et active « Mode développeur » en haut à droite.</p><a class="shot-link" href="tuto/etape-2-mode-developpeur.webp" target="_blank" rel="noopener"><img src="tuto/etape-2-mode-developpeur.webp" width="1024" height="610" loading="lazy" alt="Page chrome://extensions avec « Mode développeur » activé en haut à droite et le bouton « Charger l'extension non empaquetée »"></a></div>
+      <div class="step"><h3>Charge le dossier</h3><p>Clique « Charger l'extension non empaquetée » et choisis le dossier décompressé (celui qui contient <code>manifest.json</code>). Épingle l'icône, c'est prêt.</p><a class="shot-link" href="tuto/etape-3-choisir-le-dossier.webp" target="_blank" rel="noopener"><img src="tuto/etape-3-choisir-le-dossier.webp" width="1024" height="572" loading="lazy" alt="Fenêtre « Sélectionner le répertoire de l'extension » avec le dossier décompressé uca-extension-extrait sélectionné"></a></div>
     </div>
   </section>
 
@@ -89,7 +89,7 @@ BODY = """<body>
     <details><summary>Est-ce que le ZIP contient mes données ?</summary><p>Non. Le ZIP est généré depuis le code public : cours, notes et identifiants n'existent que dans le navigateur de chacun. Chaque personne démarre à vide et se connecte avec son propre compte UCA.</p></details>
     <details><summary>Et mon mot de passe ?</summary><p>Il est tapé sur la vraie page de connexion de l'UCA (CAS). L'extension ne le voit pas et ne l'enregistre pas.</p></details>
     <details><summary>Chrome affiche « Désactiver les extensions en mode développeur »</summary><p>Message normal pour toute extension chargée à la main : ferme-le sans désactiver. Ne déplace ni ne supprime le dossier décompressé, sinon l'extension disparaît.</p></details>
-    <details id="maj"><summary>Comment mettre à jour ?</summary><p>Retélécharge le ZIP ici, remplace le contenu du dossier, puis clique sur « Recharger » dans <code>chrome://extensions</code>. L'extension te prévient quand une nouvelle version existe.</p></details>
+    <details id="maj"><summary>Comment mettre à jour ?</summary><p>Le plus simple : télécharge <a href="maj-extension.bat" download>maj-extension.bat</a> (sans droits administrateur), mets-le dans le dossier de l'extension et double-clique : il télécharge la dernière version, remplace les fichiers, puis il te reste à cliquer « Recharger » dans <code>chrome://extensions</code> (ou à attendre la vérification automatique). À la main : retélécharge le ZIP, remplace le contenu du dossier et recharge. L'extension te prévient quand une nouvelle version existe. Le script est ajouté dans le ZIP, à côté de <code>manifest.json</code>.</p></details>
     <details><summary>Firefox, iPhone, Android ?</summary><p>Android : <a href="../telecharger/">l'application APK</a>. iPhone : <a href="../app/">la version web</a>, à ajouter à l'écran d'accueil.</p></details>
     <details><summary>C'est officiel ?</summary><p>Non. Projet étudiant indépendant, sans lien avec l'Université Clermont Auvergne.</p></details>
   </section>
@@ -114,7 +114,7 @@ def main():
     head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Télécharge l\'extension Chrome / Edge My UCA en ZIP et ajoute-la en mode développeur : emploi du temps, notes et absences de l\'UCA. Gratuit, sans pub, sans données personnelles.">', head)
     head = head.replace('content="My UCA pour Android"', 'content="Extension My UCA pour Chrome (ZIP)"')
     head = head.replace("Emploi du temps, notes, lieux : l'app étudiante non officielle de l'UCA.", "Emploi du temps, notes, absences : l'extension étudiante non officielle de l'UCA.")
-    head = head.replace("</style>", "code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size:.92em}\n</style>")
+    head = head.replace("</style>", "code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size:.92em}.shot-link{display:block;margin-top:14px}.shot-link img{display:block;width:100%;height:auto;border-radius:12px;box-shadow:0 0 0 1px var(--border),0 12px 28px -16px rgba(9,9,11,.4);transition:transform .25s}.shot-link:hover img{transform:scale(1.02)}.step{overflow:hidden}\n</style>")
     tail = s[s.index("<script>"):]
     tail = tail.replace('fetch("../version.json"', 'fetch("../manifest.json"')
     maj_js = """  var m = document.getElementById('maj');
@@ -129,6 +129,12 @@ def main():
     import json
     ver = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))["version"]
     shutil.copyfile(ROOT / "dist" / f"uca-extension-chrome-{ver}.zip", OUT / ZIP)
+    CRLF = chr(13) + chr(10)
+    bat = CRLF.join((ROOT / "tests" / "maj-extension.bat.src").read_text(encoding="utf-8").splitlines()) + CRLF
+    (OUT / "maj-extension.bat").write_bytes(bat.encode("utf-8"))
+    import zipfile
+    with zipfile.ZipFile(OUT / ZIP, "a", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("maj-extension.bat", bat.encode("utf-8"))
     mo = lambda f: f"{f.stat().st_size / 1048576:.1f}".replace(".", ",") + " Mo"
     z, a = OUT / ZIP, ROOT / "EdtUca.apk"
     sizes = {"zip": mo(z), "apk": mo(a), "both": f"{(z.stat().st_size + a.stat().st_size) / 1048576:.1f}".replace(".", ",") + " Mo"}

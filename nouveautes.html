@@ -31,6 +31,9 @@
 <main class="wrap news">
   <h1>Quoi de neuf</h1>
   <p class="lead">Les nouveautés de chaque version, de la plus récente à la plus ancienne. Page générée depuis <code>UPDATES.md</code>.</p>
+<section class="news-item" id="v1-46-23"><h2>1.46.23 <small>mise à jour obligatoire et script de mise à jour</small></h2>
+<ul><li><strong>Mise à jour obligatoire (extension)</strong> : tant que la version installée est plus ancienne que la dernière version publiée, une fenêtre plein écran verrouille le popup, l'agenda, les paramètres et le choix du design, et plus aucune synchro ne part. Elle ne se ferme pas (ni Échap, ni suppression dans la page) et revient si on quitte puis revient : l'état est recalculé à chaque ouverture, une panne réseau ne le lève pas. Inactive dans l'app web / l'APK et dans les paquets des magasins (ils se mettent à jour seuls).</li><li><strong>maj-extension.bat</strong> : script sans droits administrateur qui télécharge le ZIP officiel (HTTPS) et remplace les fichiers du dossier de l'extension ; il est aussi dans le ZIP, à côté de <code>manifest.json</code>.</li><li><strong>Page de téléchargement</strong> : captures du tutoriel d'installation (mode développeur, choix du dossier).</li></ul>
+</section>
 <section class="news-item" id="v1-46-22"><h2>1.46.22 <small>nouveau look du site</small></h2>
 <ul><li><strong>Site et pages de téléchargement</strong> : fond blanc, titres serrés très gras avec mot clé souligné, boutons bleus dégradés, maquettes de téléphone inclinées, apparition douce au défilement (désactivée si « réduire les animations »). Mode sombre conservé. Aucun appel réseau ni police externe ajouté.</li></ul>
 </section>

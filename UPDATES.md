@@ -55,6 +55,12 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.23 — mise à jour obligatoire et script de mise à jour
+
+- **Mise à jour obligatoire (extension)** : tant que la version installée est plus ancienne que la dernière version publiée, une fenêtre plein écran verrouille le popup, l'agenda, les paramètres et le choix du design, et plus aucune synchro ne part. Elle ne se ferme pas (ni Échap, ni suppression dans la page) et revient si on quitte puis revient : l'état est recalculé à chaque ouverture, une panne réseau ne le lève pas. Inactive dans l'app web / l'APK et dans les paquets des magasins (ils se mettent à jour seuls).
+- **maj-extension.bat** : script sans droits administrateur qui télécharge le ZIP officiel (HTTPS) et remplace les fichiers du dossier de l'extension ; il est aussi dans le ZIP, à côté de `manifest.json`.
+- **Page de téléchargement** : captures du tutoriel d'installation (mode développeur, choix du dossier).
+
 ## 1.46.22 — nouveau look du site
 
 - **Site et pages de téléchargement** : fond blanc, titres serrés très gras avec mot clé souligné, boutons bleus dégradés, maquettes de téléphone inclinées, apparition douce au défilement (désactivée si « réduire les animations »). Mode sombre conservé. Aucun appel réseau ni police externe ajouté.

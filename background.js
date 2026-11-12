@@ -155,6 +155,17 @@ async function forceUpdate(latest) {
   } catch (e) { /* réessai à la prochaine vérification */ }
 }
 
+/* Verrou « mise à jour obligatoire » : tant que la version installée est plus ancienne que la dernière connue
+   (uca_latest_version, jamais effacée par un échec réseau), aucune synchro n'est lancée (voir aussi core/updategate.js). */
+let updateLocked = false;
+async function refreshUpdateLock() {
+  const d = await chrome.storage.local.get(["uca_store_build", "uca_latest_version"]);
+  updateLocked = !d.uca_store_build && !!d.uca_latest_version && compareVersions(chrome.runtime.getManifest().version, d.uca_latest_version) < 0;
+}
+refreshUpdateLock();
+chrome.storage.onChanged.addListener((c, area) => { if (area === "local" && (c.uca_latest_version || c.uca_store_build || c.uca_update_available)) refreshUpdateLock(); });
+const LOCK_MESSAGE = "Mise à jour obligatoire : mets l'extension à jour pour l'utiliser.";
+
 /* « Mettre à jour » : recharger ne sert que si les fichiers sur le disque sont déjà plus récents
    (git pull, nouveau dossier décompressé). manifest.json est relu sur le disque (fetch, pas
    getManifest() qui reste figé) : s'il est encore ancien, on ouvre la page d'aide qui explique
@@ -919,6 +930,7 @@ const PAGE_SYNC_COOLDOWN_MS = 30 * 1000;
 chrome.runtime.onMessage.addListener((msg, sender) => {
   if (!msg || msg.type !== "UCA_SYNC_REQUEST") return false;
   if (!ALLOWED_SYNC_MODES.has(msg.mode)) return false;
+  if (updateLocked) { broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: LOCK_MESSAGE }); return false; }
   if (syncInProgress) {
     broadcast({ type: "UCA_SYNC_RESULT", ok: false, error: "Synchronisation déjà en cours" });
     return false;
@@ -1041,6 +1053,7 @@ async function configureAutoSync() {
 async function runBackgroundSync() {
   const { uca_last_sync } = await chrome.storage.local.get("uca_last_sync");
   if (!uca_last_sync || syncInProgress) return; // jamais connecté : rien à resynchroniser
+  if (updateLocked) return;
   syncInProgress = true;
   try { await handleSync("background"); } catch (e) { /* réessai à la prochaine alarme */ } finally { syncInProgress = false; }
 }

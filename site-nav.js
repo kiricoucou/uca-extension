@@ -33,8 +33,9 @@
     back:    ['#0b7bc4', '', 'M15 5l-7 7 7 7']
   };
   function svg(k) {
-    var a = I[k] || I.home, tint = a[1] ? '<path d="' + a[1] + '" fill="' + a[0] + '" fill-opacity=".16" stroke="none"/>' : '';
-    return '<svg class="nv-i" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="' + a[0] + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + tint + '<path d="' + a[2] + '"/></svg>';
+    var a = I[k] || I.home, tint = a[1] ? '<path d="' + a[1] + '" style="fill:' + a[0] + ';fill-opacity:.16;stroke:none"/>' : '';
+    /* styles en ligne : une feuille de style de page (svg{stroke:currentColor}, ex. l'application) ne peut pas les écraser */
+    return '<svg class="nv-i" viewBox="0 0 24 24" width="22" height="22" style="fill:none;stroke:' + a[0] + ';stroke-width:2;stroke-linecap:round;stroke-linejoin:round" aria-hidden="true">' + tint + '<path d="' + a[2] + '" style="fill:none;stroke:' + a[0] + '"/></svg>';
   }
 
   /* ---------- liste des liens (une icône différente par bouton) ---------- */

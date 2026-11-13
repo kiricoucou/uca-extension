@@ -85,6 +85,7 @@ dl_pkg() {   # dl_pkg nom.zip dossier p0 p1
   /usr/bin/unzip -q -o "$DLDIR/$1" -d "$x" || return 1
   [ -f "$x/manifest.json" ] && grep -q 'UCA' "$x/manifest.json" || { warn "Paquet invalide."; return 1; }
   mkdir -p "$2" && cp -R "$x/." "$2/" || return 1
+  find "$2" \( -name desktop.ini -o -name Thumbs.db -o -name .DS_Store \) -type f -delete 2>/dev/null   # Chrome refuse ces fichiers dans un dossier d'extension
   bar "$4" "Installé dans $2"
 }
 DIR_C="$INST/chrome"; DIR_F="$INST/firefox"

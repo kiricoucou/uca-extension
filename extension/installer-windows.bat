@@ -197,6 +197,8 @@ function Expand-Pkg($zip, $dest) {
   if ((Get-Content $m -Raw -Encoding UTF8 | ConvertFrom-Json).name -notmatch 'UCA') { throw 'ZIP inattendu (nom sans UCA)' }
   New-Item -ItemType Directory -Path $dest -Force | Out-Null
   Copy-Item -Path (Join-Path $tmp '*') -Destination $dest -Recurse -Force
+  # Chrome refuse un dossier d'extension qui contient desktop.ini (ajoute par Windows) : on les retire
+  Get-ChildItem -Path $dest -Recurse -Force -Include 'desktop.ini','Thumbs.db','.DS_Store' -ErrorAction SilentlyContinue | ForEach-Object { try { $_.Attributes = 'Normal'; Remove-Item $_.FullName -Force } catch {} }
   Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
 }
 function Stop-Browsers($sel) {

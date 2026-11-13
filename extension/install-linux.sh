@@ -118,6 +118,7 @@ download_package() {   # download_package nom.zip dossier_destination  -> instal
   new="$(json_version "$x/manifest.json")"
   mkdir -p "$dest" || { warn "Impossible de créer $dest"; return 1; }
   cp -a "$x/." "$dest/" || { warn "Copie impossible vers $dest"; return 1; }
+  find "$dest" \( -name desktop.ini -o -name Thumbs.db -o -name .DS_Store \) -type f -delete 2>/dev/null   # Chrome refuse ces fichiers dans un dossier d'extension
   if [ -n "$old" ] && [ "$old" != "$new" ]; then say "OK : $old -> $new dans $dest"; else say "OK : version $new dans $dest"; fi
   INSTALLED_VERSION="$new"
   return 0

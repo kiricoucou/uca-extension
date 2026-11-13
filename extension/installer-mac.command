@@ -34,12 +34,12 @@ clear 2>/dev/null
 printf '%s%s My UCA : installation de l'"'"'extension%s\n   Emploi du temps, notes et absences UCA. Gratuit, non officiel.\n\n' "$BOLD" "$BLUE" "$RST"
 
 # ---------------------------------------------------------------- 1) dossier d'installation, 2) dossier de telechargement
-DEF_DIR="$HOME/Library/Application Support/MyUCA/extension"
+DEF_DIR="$HOME/MyUCA/extension"   # hors ~/Library : Chrome refuse ce dossier pour la mise à jour automatique
 DEF_DL="$HOME/Downloads"
 mkdir -p "$DEF_DIR" 2>/dev/null
 if [ "$YES" = "1" ]; then INST="$DEF_DIR"; DLDIR="$DEF_DL"
 else
-  INST="$(osa -e 'POSIX path of (choose folder with prompt "1/2 - Où installer l'"'"'extension ? (ce dossier doit rester en place)" default location (POSIX file "'"$HOME/Library/Application Support/MyUCA"'"))')"
+  INST="$(osa -e 'POSIX path of (choose folder with prompt "1/2 - Où installer l'"'"'extension ? (ce dossier doit rester en place)" default location (POSIX file "'"$HOME"'"))')"
   INST="${INST%/}"; [ -z "$INST" ] && INST="$DEF_DIR" || INST="$INST/extension"
   DLDIR="$(osa -e 'POSIX path of (choose folder with prompt "2/2 - Où télécharger les fichiers (ZIP) ?" default location (POSIX file "'"$DEF_DL"'"))')"
   DLDIR="${DLDIR%/}"; [ -z "$DLDIR" ] && DLDIR="$DEF_DL"

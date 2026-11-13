@@ -139,7 +139,7 @@ function New-DirRow($parent, $y, $labelText, $default) {
 # Page 1 : dossiers
 $p1 = New-Page
 $lblWelcome = New-Label $p1 $(if ($script:isAdmin) { 'Mode administrateur : installation automatique, sans restriction de dossier.' } else { 'Bienvenue ! Cet assistant installe l''extension sans droits administrateur.' }) 24 14 590 24
-$tbInstall = New-DirRow $p1 52  '1. Ou installer l''extension (ce dossier doit rester en place) :' $(if ($script:isAdmin) { "$env:SystemDrive\MyUCA\extension" } else { Join-Path $env:LOCALAPPDATA 'MyUCA\extension' })
+$tbInstall = New-DirRow $p1 52  '1. Ou installer l''extension (ce dossier doit rester en place) :' $(if ($script:isAdmin) { "$env:SystemDrive\MyUCA\extension" } else { Join-Path $env:USERPROFILE 'MyUCA\extension' })
 $tbDl      = New-DirRow $p1 126 '2. Ou telecharger les fichiers (ZIP) :' (Join-Path $env:USERPROFILE 'Downloads')
 New-Label $p1 '3. La derniere version est recuperee automatiquement sur le site.' 24 206 | Out-Null
 $lblVer = New-Label $p1 'Version disponible : verification...' 24 232

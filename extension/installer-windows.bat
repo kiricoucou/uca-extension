@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions
 chcp 65001 >nul
-title Installateur My UCA
+title Installateur My UCA (cmd)
 rem ----------------------------------------------------------------------------------------------
 rem  Installateur graphique de l'extension My UCA pour Windows (Chrome, Edge, Brave, Vivaldi, Firefox).
 rem  - Double-clique ce fichier : une fenetre s'ouvre (dossier, navigateurs, barre de progression).
@@ -11,7 +11,7 @@ rem  - Tes donnees (Odin, notes...) ne sont jamais touchees : elles vivent dans 
 rem ----------------------------------------------------------------------------------------------
 set "SELFBAT=%~f0"
 if not defined MYUCA_URL set "MYUCA_URL=https://kiricoucou.github.io/uca-extension"
-powershell -NoProfile -ExecutionPolicy Bypass -STA -Command "$s=[IO.File]::ReadAllText($env:SELFBAT,[Text.Encoding]::UTF8); $i=$s.IndexOf([string][char]10+'#PS-START'); Invoke-Expression $s.Substring($i)"
+powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "$s=[IO.File]::ReadAllText($env:SELFBAT,[Text.Encoding]::UTF8); $i=$s.IndexOf([string][char]10+'#PS-START'); Invoke-Expression $s.Substring($i)"
 exit /b %ERRORLEVEL%
 
 #PS-START
@@ -237,6 +237,7 @@ function Run-Install {
     if ($needChromium) { $cfg = $(if ($env:MYUCA_CFGDIR) { $env:MYUCA_CFGDIR } else { Join-Path $env:LOCALAPPDATA 'MyUCA' }); New-Item -ItemType Directory -Path $cfg -Force | Out-Null; Set-Content -Path (Join-Path $cfg 'dossier-extension.txt') -Value $dirC -Encoding ASCII }
 
     Prog 74 'Fermeture des navigateurs'
+    if ($env:MYUCA_PAUSE_PAGE3) { Start-Sleep -Milliseconds ([int]$env:MYUCA_PAUSE_PAGE3) }
     Stop-Browsers $sel
 
     $thanks = "$Base/merci.html?v=$($script:latest)"

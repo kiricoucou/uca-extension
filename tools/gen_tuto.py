@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from PIL import Image, ImageFilter  # noqa: E402
-from tuto_lib import ROOT, Chrome, annotate, click_screen, move_mouse, ps, sendkeys, set_expect, wincap  # noqa: E402
+from tuto_lib import ROOT, Chrome, annotate, click_screen, launch_on_desktop, move_mouse, ps, sendkeys, set_expect, wincap  # noqa: E402
 
 SITE = "https://kiricoucou.github.io/uca-extension/"
 BASE = Path(r"C:\MyUCA")
@@ -34,12 +34,16 @@ def log(*a):
     print(*a, flush=True)
 
 
-def uia(name, title="", pid=0, typ="", all_=False):
-    a = ["-File", str(ROOT / "tools" / "uia.ps1"), "-Name", name]
+def uia(name="", title="", pid=0, pids="", typ="", all_=False):
+    a = ["-File", str(ROOT / "tools" / "uia.ps1")]
+    if name:
+        a += ["-Name", name]
     if title:
         a += ["-Title", title]
     if pid:
         a += ["-ProcessId", str(pid)]
+    if pids:
+        a += ["-Pids", str(pids)]
     if typ:
         a += ["-Type", typ]
     if all_:
@@ -57,8 +61,8 @@ def close_explorer():
 
 
 def open_explorer(path, select=None):
-    args = ["explorer.exe", f"/select,{select}"] if select else ["explorer.exe", str(path)]
-    subprocess.Popen(args)
+    cmd = f'explorer.exe /select,"{select}"' if select else f'explorer.exe "{path}"'
+    launch_on_desktop(cmd)
     time.sleep(2.5)
 
 
@@ -182,7 +186,7 @@ def flow_zip():
             if (DL / "uca-extension-chrome.zip").exists() and not list(DL.glob("*.crdownload")):
                 break
         time.sleep(1)
-        dlb = uia("Téléchargements|Downloads", pid=c.pid, typ="Button")
+        dlb = uia("Téléchargements|Downloads", pids=c.pids_str(), typ="Button")
         if dlb:
             click_screen(dlb[0] + dlb[2] // 2, dlb[1] + dlb[3] // 2); time.sleep(1.5)
         raw = RAW / "z03.png"; c.shot(raw)
@@ -205,16 +209,28 @@ def flow_zip():
 
         # 6 : fenêtre d'extraction, chemin choisi
         click_screen(ex[0] + ex[2] // 2, ex[1] + ex[3] // 2); time.sleep(2.5)
-        sendkeys("^a" + str(EXT))
+        set_expect("^Extraire les dossiers")
+        sendkeys("{HOME}+{END}" + str(EXT))
         time.sleep(0.8)
         raw = RAW / "z06.png"; full(raw, title="^Extraire les dossiers")
-        ed = uia("MyUCA", title="^Extraire les dossiers")
+        ed = uia("MyUCA|extension", title="^Extraire les dossiers")
         dr = rect_of(title="^Extraire les dossiers")
         finish(raw, "zip-06", ([box(ed, 8), num(ed, 3)] if ed else []), crop=(max(0, dr[0] - 30), max(0, dr[1] - 30), min(2560 - max(0, dr[0] - 30), dr[2] + 60), min(1516 - max(0, dr[1] - 30), dr[3] + 60)))
         step(6, "Choisis où extraire", "Dans la fenêtre « Extraire les dossiers compressés », tape (ou choisis avec « Parcourir ») le dossier où l'extension doit vivre, par exemple C:\\MyUCA\\extension. Garde « Afficher les dossiers extraits » coché.", "Ce dossier devra rester en place : Chrome le lit à chaque démarrage. Choisis un endroit où tu ne le supprimeras pas.", "zip-06")
-        sendkeys("{ENTER}"); time.sleep(4)
+        ext_btn = uia("^Extraire$", title="^Extraire les dossiers", typ="Button")
+        if ext_btn:
+            click_screen(ext_btn[0] + ext_btn[2] // 2, ext_btn[1] + ext_btn[3] // 2)
+        else:
+            sendkeys("{ENTER}")
+        time.sleep(3)
+        if not (EXT / "manifest.json").exists():
+            import zipfile
+            with zipfile.ZipFile(DL / "uca-extension-chrome.zip", "r") as zf:
+                zf.extractall(EXT)
 
         # 7 : le dossier extrait
+        open_explorer(EXT, select=str(EXT / "manifest.json"))
+        time.sleep(1.5)
         raw = RAW / "z07.png"; full(raw, title="extension")
         mf = uia("manifest.json", title="extension", typ="ListItem")
         finish(raw, "zip-07", [box(mf, 4), num(mf, 4)] if mf else [], blur=EXPLORER_NAV)
@@ -222,6 +238,7 @@ def flow_zip():
         close_explorer()
 
         # 8 : chrome://extensions
+        c.foreground()
         c.page.goto("chrome://extensions"); c.page.wait_for_timeout(2000)
         clean_ext(c.page)
         raw = RAW / "z08.png"; c.shot(raw)
@@ -233,23 +250,27 @@ def flow_zip():
             js = "() => { const m = document.querySelector('extensions-manager'); const t = m.shadowRoot.querySelector('extensions-toolbar'); const e = " + js_path + "; if (!e) return null; const r = e.getBoundingClientRect(); const d = devicePixelRatio; return [(screenX + r.left) * d, (screenY + (outerHeight - innerHeight) + r.top) * d, r.width * d, r.height * d]; }"
             v = c.page.evaluate(js)
             return tuple(round(x) for x in v) if v else None
+        c.foreground()
         dev = shadow_box("t.shadowRoot.querySelector('#devMode')")
-        click_screen(dev[0] + dev[2] // 2, dev[1] + dev[3] // 2); time.sleep(1.2)
+        if dev:
+            click_screen(dev[0] + dev[2] // 2, dev[1] + dev[3] // 2); time.sleep(1.2)
         clean_ext(c.page)
         raw = RAW / "z09.png"; c.shot(raw)
         dev = shadow_box("t.shadowRoot.querySelector('#devMode')")
-        finish(raw, "zip-09", [box(dev, 8), num(dev, 1)])
+        finish(raw, "zip-09", [box(dev, 8), num(dev, 1)] if dev else [])
         step(9, "Active le « Mode développeur »", "En haut à droite de la page, clique sur l'interrupteur « Mode développeur » : il devient bleu.", "Sans ce mode, Chrome refuse de charger une extension qui ne vient pas du Chrome Web Store.", "zip-09")
 
         # 10 : les trois nouveaux boutons
         lu = shadow_box("t.shadowRoot.querySelector('#loadUnpacked')")
         clean_ext(c.page)
         raw = RAW / "z10.png"; c.shot(raw)
-        finish(raw, "zip-10", [box(lu, 8), num(lu, 2)])
+        finish(raw, "zip-10", [box(lu, 8), num(lu, 2)] if lu else [])
         step(10, "Repère « Charger l'extension non empaquetée »", "Une barre apparaît sous le titre avec trois boutons. Celui qu'il te faut est le premier : « Charger l'extension non empaquetée ».", "« Non empaquetée » veut dire : un simple dossier, celui que tu viens d'extraire.", "zip-10")
 
         # 11 : la fenêtre de choix du dossier
-        click_screen(lu[0] + lu[2] // 2, lu[1] + lu[3] // 2); time.sleep(3)
+        c.foreground()
+        if lu:
+            click_screen(lu[0] + lu[2] // 2, lu[1] + lu[3] // 2); time.sleep(3)
         title_re = "Sélectionner|dossier|extension|Choisir"
         raw = RAW / "z11.png"; full(raw, title=title_re)
         dr = rect_of(title=title_re)
@@ -257,6 +278,7 @@ def flow_zip():
         step(11, "Choisis le dossier de l'extension", "Une fenêtre de l'Explorateur s'ouvre. Va jusqu'au dossier extrait (celui qui contient manifest.json), par exemple C:\\MyUCA\\extension.", "C'est ce dossier que Chrome va lire : il doit contenir directement le fichier manifest.json.", "zip-11")
 
         # 12 : le chemin saisi, avant validation
+        set_expect(title_re)
         sendkeys(str(EXT)); time.sleep(1)
         raw = RAW / "z12.png"; full(raw, title=title_re)
         dr = rect_of(title=title_re)
@@ -266,21 +288,26 @@ def flow_zip():
         confirm_folder(title_re); time.sleep(3)
 
         # 13 : la page d'accueil de l'extension s'ouvre toute seule
-        tabs = [p for p in c.ctx.pages]
-        welcome = next((p for p in tabs if "choose.html" in p.url), None)
+        welcome = None
+        for _ in range(12):
+            tabs = [p for p in c.ctx.pages]
+            welcome = next((p for p in tabs if "choose.html" in p.url), None)
+            if welcome:
+                break
+            time.sleep(0.5)
         if welcome:
             welcome.bring_to_front(); welcome.wait_for_timeout(1800)
+            c.page = welcome
         raw = RAW / "z13.png"; c.shot(raw)
         finish(raw, "zip-13", [])
         step(13, "La page de bienvenue s'ouvre toute seule", "Dès que l'extension est chargée, Chrome ouvre un nouvel onglet : c'est la page « Choisis ton design » de l'extension. Elle te prouve que l'installation a réussi.", "Tu choisis l'apparence de l'agenda (5 designs, mêmes fonctions) puis tu te connectes à Odin avec « Synchroniser ».", "zip-13")
 
         # 14 : la carte de l'extension dans chrome://extensions
-        ext_page = next((p for p in tabs if p.url.startswith("chrome://extensions")), c.page)
-        ext_page.bring_to_front(); ext_page.wait_for_timeout(800)
-        c.page = ext_page
-        find_card = """() => { const m = document.querySelector('extensions-manager'); const l = m.shadowRoot.querySelector('extensions-item-list'); return [...l.shadowRoot.querySelectorAll('extensions-item')].find(i => /UCA/i.test(i.shadowRoot.textContent)); }"""
-        c.page.evaluate("() => { const f = " + find_card + "; const it = f(); if (it) it.scrollIntoView({block: 'center'}); }")
+        c.page.goto("chrome://extensions"); c.page.wait_for_timeout(1800)
+        c.foreground()
         clean_ext(c.page)
+        find_card = """() => { const m = document.querySelector('extensions-manager'); const l = m ? m.shadowRoot.querySelector('extensions-item-list') : null; return l ? [...l.shadowRoot.querySelectorAll('extensions-item')].find(i => /UCA/i.test(i.shadowRoot.textContent)) : null; }"""
+        c.page.evaluate("() => { const f = " + find_card + "; const it = f(); if (it) it.scrollIntoView({block: 'center'}); }")
         time.sleep(1)
         card = c.page.evaluate("() => { const f = " + find_card + "; const it = f(); if (!it) return null; const r = it.getBoundingClientRect(), d = devicePixelRatio; return [(screenX + r.left) * d, (screenY + (outerHeight - innerHeight) + r.top) * d, r.width * d, r.height * d]; }")
         raw = RAW / "z14.png"; c.shot(raw)
@@ -289,17 +316,18 @@ def flow_zip():
         step(14, "L'extension apparaît dans la liste", "De retour sur chrome://extensions, une nouvelle carte « Emploi du temps UCA » est là, activée (interrupteur bleu).", "C'est la preuve qu'elle est installée. Tu peux la désactiver ou la supprimer ici à tout moment.", "zip-14")
 
         # 15 : le menu « puzzle »
-        ext_btn = uia("^Extensions$", pid=c.pid, typ="Button")
-        click_screen(ext_btn[0] + ext_btn[2] // 2, ext_btn[1] + ext_btn[3] // 2); time.sleep(1.5)
-        row = uia("Emploi du temps UCA", pid=c.pid, typ="Button")
+        ext_btn = uia("^Extensions$", typ="Button")
+        if ext_btn:
+            click_screen(ext_btn[0] + ext_btn[2] // 2, ext_btn[1] + ext_btn[3] // 2); time.sleep(1.8)
+        row = uia("Emploi du temps UCA")
         raw = RAW / "z15.png"; c.shot(raw)
         finish(raw, "zip-15", ([box(ext_btn, 8), num(ext_btn, 1)] if ext_btn else []) + ([box(row, 6), num(row, 2)] if row else []))
         step(15, "Retrouve l'extension dans le menu « puzzle »", "Clique sur l'icône « puzzle » à droite de la barre d'adresse : la liste de tes extensions s'affiche. « Emploi du temps UCA » y est, avec sa punaise pour l'épingler à la barre d'outils.", "Chrome épingle les nouvelles extensions tout seul. Si ce n'est pas le cas, clique sur la punaise pour garder l'icône visible en permanence.", "zip-15")
-        sendkeys("{ESC}"); time.sleep(0.8)
+        sendkeys("{ESC}"); time.sleep(1.2)
 
         # 16 : l'icône dans la barre d'outils
         raw = RAW / "z16.png"; c.shot(raw)
-        ico = uia("Emploi du temps UCA", pid=c.pid, typ="Button")
+        ico = uia("Session Odin|Emploi du temps UCA")
         finish(raw, "zip-16", [box(ico, 8), num(ico, 1)] if ico else [])
         step(16, "Ouvre ton agenda", "L'icône est dans la barre d'outils : clique dessus pour ouvrir l'extension, choisis ton design, puis « Synchroniser » pour te connecter à Odin avec ton compte UCA.", "Ton mot de passe est saisi sur la vraie page de connexion de l'UCA : l'extension ne le voit jamais.", "zip-16")
     finally:
@@ -339,14 +367,16 @@ def flow_inst():
             if (DL / "installer-windows.bat").exists() and not list(DL.glob("*.crdownload")):
                 break
         time.sleep(1.5)
-        dlb = uia("Téléchargements|Downloads", pid=c.pid, typ="Button")
+        dlb = uia("Téléchargements|Downloads", pids=c.pids_str(), typ="Button")
         if dlb:
             click_screen(dlb[0] + dlb[2] // 2, dlb[1] + dlb[3] // 2); time.sleep(1.5)
         raw = RAW / "i02.png"; c.shot(raw)
         finish(raw, "inst-02", [box(dlb, 8), num(dlb, 2)] if dlb else [])
         step(2, "Le fichier .bat se télécharge", "Chrome télécharge installer-windows.bat. S'il affiche un avertissement (« ce type de fichier peut endommager votre ordinateur »), clique sur « Conserver » : le script est public et lisible, tu peux l'ouvrir avec le Bloc-notes avant de le lancer.", "Chrome prévient pour tous les scripts. Ici, le code est ouvert sur GitHub et n'envoie rien : il ne fait que télécharger l'extension et copier des fichiers dans ton profil.", "inst-02")
-        if not (DL / "installer-windows.bat").exists():
-            raise RuntimeError("installer-windows.bat n'a pas été téléchargé")
+        local = (ROOT / "extension" / "installer-windows.bat").read_bytes()
+        if b"MYUCA_NOKILL" not in local or b"MYUCA_NOLAUNCH" not in local:
+            raise RuntimeError("installateur sans crochets de test : abandon (il fermerait tes navigateurs)")
+        (DL / "installer-windows.bat").write_bytes(local)
 
         # 3 : le fichier dans l'Explorateur
         open_explorer(DL, select=str(DL / "installer-windows.bat"))
@@ -356,12 +386,12 @@ def flow_inst():
         step(3, "Double-clique sur installer-windows.bat", "Ouvre ton dossier Téléchargements dans l'Explorateur et double-clique sur installer-windows.bat. Aucun droit administrateur n'est nécessaire.", "Windows lance l'assistant graphique : une fenêtre s'ouvre, pas besoin de taper de commande.", "inst-03")
 
         # 4 : lancement (avertissement Windows si présent) puis l'assistant
-        local = (ROOT / "extension" / "installer-windows.bat").read_bytes()
-        if b"MYUCA_NOKILL" not in local or b"MYUCA_NOLAUNCH" not in local:
-            raise RuntimeError("installateur sans crochets de test : abandon (il fermerait tes navigateurs)")
-        (DL / "installer-windows.bat").write_bytes(local)
-        env = dict(os.environ, MYUCA_NOLAUNCH="1", MYUCA_NOKILL="1", MYUCA_CFGDIR=str(BASE / "cfg-test"), MYUCA_URL=SITE.rstrip("/"))
-        subprocess.Popen(["cmd", "/c", "start", "", str(DL / "installer-windows.bat")], env=env)
+        os.environ["MYUCA_NOLAUNCH"] = "1"
+        os.environ["MYUCA_NOKILL"] = "1"
+        os.environ["MYUCA_CFGDIR"] = str(BASE / "cfg-test")
+        os.environ["MYUCA_URL"] = SITE.rstrip("/")
+        os.environ["MYUCA_PAUSE_PAGE3"] = "4000"
+        launch_on_desktop(f'cmd.exe /c start "" "{DL / "installer-windows.bat"}"')
         time.sleep(4)
         warn = None
         try:
@@ -391,26 +421,44 @@ def flow_inst():
             sx, sy = dr[2] / 656.0, dr[3] / 509.0
             return (round(dr[0] + x * sx), round(dr[1] + y * sy), round(w * sx), round(h * sy))
 
+        def dlg_btn(name, title):
+            dr = rect_of(title=title)
+            out = ps("-File", str(ROOT / "tools" / "uia.ps1"), "-Title", title, "-Name", name, "-Type", "Button", "-All", check=False)
+            if not out:
+                return None
+            for line in out.splitlines():
+                parts = line.split("|")
+                coords = tuple(int(v) for v in parts[0].split(","))
+                if coords[1] > dr[1] + dr[3] - 150:
+                    return coords
+            return None
+
         # 5 : assistant, page 1 (dossiers)
-        for (x, y) in ((270, 199), (270, 273)):
-            pass
         dr0 = rect_of(title="^Installateur My UCA")
         set_expect("^Installateur My UCA")
         time.sleep(0.6)
-        t1 = at(dr0, 32, 187, 480, 26); t2 = at(dr0, 32, 261, 480, 26)
-        click_screen(t1[0] + 40, t1[1] + t1[3] // 2); sendkeys("^a" + str(inst)); time.sleep(0.4)
-        click_screen(t2[0] + 40, t2[1] + t2[3] // 2); sendkeys("^a" + str(dl2)); time.sleep(0.6)
-        form_shot("i05", lambda dr: [box(at(dr, 32, 187, 480, 26), 6), num(at(dr, 32, 187, 480, 26), 1), box(at(dr, 32, 261, 480, 26), 6), num(at(dr, 32, 261, 480, 26), 2)])
+        t1 = uia("installer l'extension", title="^Installateur My UCA", typ="Edit") or at(dr0, 32, 187, 480, 26)
+        t2 = uia("telecharger les fichiers", title="^Installateur My UCA", typ="Edit") or at(dr0, 32, 261, 480, 26)
+        click_screen(t1[0] + 40, t1[1] + t1[3] // 2); sendkeys("{HOME}+{END}" + str(inst)); time.sleep(0.4)
+        click_screen(t2[0] + 40, t2[1] + t2[3] // 2); sendkeys("{HOME}+{END}" + str(dl2)); time.sleep(0.6)
+        form_shot("i05", lambda dr: [box(t1, 6), num(t1, 1), box(t2, 6), num(t2, 2)])
         step(len(steps) + 1, "Choisis où installer et où télécharger", "Un assistant s'ouvre. Indique (ou choisis avec « Parcourir ») le dossier d'installation de l'extension, puis le dossier où télécharger les fichiers. La dernière version est vérifiée automatiquement. Clique sur « Suivant ».", "Le dossier d'installation doit rester en place : Chrome le lit à chaque démarrage.", f"inst-{len(steps) + 1:02d}")
 
         # 6 : page 2 (navigateurs)
-        nxt = at(dr0, 510, 451, 115, 36)
+        nxt = dlg_btn("Suivant", "^Installateur My UCA") or at(dr0, 502, 420, 116, 36)
         click_screen(nxt[0] + nxt[2] // 2, nxt[1] + nxt[3] // 2); time.sleep(1.2)
-        form_shot("i06", lambda dr: [box(at(dr, 32, 155, 588, 130), 6), num(at(dr, 32, 155, 588, 130), 1), box(at(dr, 510, 451, 115, 36), 6), num(at(dr, 510, 451, 115, 36), 2)])
+        inst_btn = dlg_btn("Installer", "^Installateur My UCA") or at(dr0, 502, 420, 116, 36)
+        clb = uia("", title="^Installateur My UCA", typ="List") or at(dr0, 32, 155, 588, 130)
+        form_shot("i06", lambda dr: [box(clb, 6), num(clb, 1), box(inst_btn, 6), num(inst_btn, 2)])
         step(len(steps) + 1, "Choisis tes navigateurs", "L'assistant détecte les navigateurs installés (Chrome, Edge, Brave, Vivaldi, Firefox). Coche ceux où tu veux l'extension : un seul, deux ou tous. Clique sur « Installer ».", "Le même code s'adapte à ton choix : il prépare le bon paquet pour chaque navigateur.", f"inst-{len(steps) + 1:02d}")
 
-        # 7 : installation, demande de fermer les navigateurs
-        click_screen(nxt[0] + nxt[2] // 2, nxt[1] + nxt[3] // 2)
+        # 7 : installation en cours (barre de progression + journal partiel)
+        click_screen(inst_btn[0] + inst_btn[2] // 2, inst_btn[1] + inst_btn[3] // 2)
+        time.sleep(2.0)
+        form_shot("i06b", lambda dr: [box(at(dr, 24, 124, 588, 26), 6), num(at(dr, 24, 124, 588, 26), 1)])
+        step(len(steps) + 1, "Installation en cours", "L'assistant télécharge l'extension et extrait les fichiers dans le dossier choisi. La barre de progression et le journal t'informent de l'avancée.", "Tout se fait automatiquement, sans ligne de commande ni manipulation compliquée.", f"inst-{len(steps) + 1:02d}")
+
+        # 8 : installation, demande de fermer les navigateurs
         mb_re = "^My UCA$"
         found = False
         for _ in range(40):
@@ -426,10 +474,11 @@ def flow_inst():
             finish(raw, f"inst-{len(steps) + 1:02d}", [box(ok, 8), num(ok, 1)] if ok else [], crop=(max(0, dr[0] - 40), max(0, dr[1] - 40), min(2560, dr[2] + 80), min(1516, dr[3] + 80)))
             step(len(steps) + 1, "Ferme tes navigateurs", "Après le téléchargement (barre de progression), l'assistant te demande de fermer correctement les navigateurs choisis. Enregistre ton travail, ferme-les, puis clique sur « OK ». Ceux qui restent ouverts sont fermés de force.", "Un navigateur ouvert verrouille ses fichiers : le fermer évite toute erreur pendant l'installation.", f"inst-{len(steps) + 1:02d}")
             if ok:
+                set_expect(mb_re)
                 click_screen(ok[0] + ok[2] // 2, ok[1] + ok[3] // 2)
         time.sleep(3)
 
-        # 8 : étape manuelle expliquée (Chrome récent) ou fin
+        # 9 : étape manuelle expliquée (Chrome récent) ou fin
         found2 = False
         for _ in range(40):
             time.sleep(1)
@@ -444,15 +493,17 @@ def flow_inst():
             finish(raw, f"inst-{len(steps) + 1:02d}", [box(ok, 8), num(ok, 1)] if ok else [], crop=(max(0, dr[0] - 40), max(0, dr[1] - 40), min(2560, dr[2] + 80), min(1516, dr[3] + 80)))
             step(len(steps) + 1, "Lis la dernière étape", "Une fenêtre résume la dernière étape que Chrome impose : charger le dossier une fois (mode développeur). Le chemin du dossier est déjà copié dans le presse-papiers. Clique sur « OK ».", "Chrome 137 et plus interdit de charger automatiquement une extension hors magasin : c'est une règle de sécurité du navigateur, que l'installateur ne peut pas contourner.", f"inst-{len(steps) + 1:02d}")
             if ok:
+                set_expect("derniere etape|dernière étape")
                 click_screen(ok[0] + ok[2] // 2, ok[1] + ok[3] // 2)
         time.sleep(2)
 
-        # 9 : fin de l'assistant
+        # 10 : fin de l'assistant
         raw = RAW / "i09.png"; full(raw, title="^Installateur My UCA")
         dr = rect_of(title="^Installateur My UCA")
-        fin = at(dr, 510, 451, 115, 36)
-        finish(raw, f"inst-{len(steps) + 1:02d}", [box(at(dr, 32, 86, 588, 230), 6), num(at(dr, 32, 86, 588, 230), 1), box(fin, 6), num(fin, 2)], crop=(max(0, dr[0] - 40), max(0, dr[1] - 40), min(2560, dr[2] + 80), min(1516, dr[3] + 80)))
+        fin = dlg_btn("Fermer", "^Installateur My UCA") or at(dr, 502, 420, 116, 36)
+        finish(raw, f"inst-{len(steps) + 1:02d}", [box(at(dr, 24, 164, 588, 230), 6), num(at(dr, 24, 164, 588, 230), 1), box(fin, 6), num(fin, 2)], crop=(max(0, dr[0] - 40), max(0, dr[1] - 40), min(2560, dr[2] + 80), min(1516, dr[3] + 80)))
         step(len(steps) + 1, "L'installation est terminée", "Le journal indique chaque étape réussie : version trouvée, fichiers installés, navigateurs ouverts. Clique sur « Fermer ». L'installateur ouvre aussi, dans chaque navigateur, la page de l'extension et une page de remerciement.", "Tu sais ainsi que tout s'est bien passé, sans avoir à deviner.", f"inst-{len(steps) + 1:02d}")
+        set_expect("^Installateur My UCA")
         click_screen(fin[0] + fin[2] // 2, fin[1] + fin[3] // 2); time.sleep(1)
 
         # 10 : Chrome ouvert sur chrome://extensions (ce que fait l'installateur)
@@ -484,15 +535,22 @@ def flow_inst():
         confirm_folder(title_re); time.sleep(3)
 
         # 13 : bienvenue
-        welcome = next((p for p in c.ctx.pages if "choose.html" in p.url), None)
+        welcome = None
+        for _ in range(12):
+            tabs = [p for p in c.ctx.pages]
+            welcome = next((p for p in tabs if "choose.html" in p.url), None)
+            if welcome:
+                break
+            time.sleep(0.5)
         if welcome:
             welcome.bring_to_front(); welcome.wait_for_timeout(1800)
+            c.page = welcome
         raw = RAW / "i13.png"; c.shot(raw)
         finish(raw, f"inst-{len(steps) + 1:02d}", [])
         step(len(steps) + 1, "La page de bienvenue de l'extension", "L'extension s'ouvre sur « Choisis ton design » : c'est le premier lien de connexion. Choisis un design, puis « Synchroniser » pour te connecter à Odin.", "Cette page prouve que l'extension est bien chargée dans ce navigateur.", f"inst-{len(steps) + 1:02d}")
 
         # 14 : page de remerciement
-        c.page = c.ctx.new_page(); c.page.goto(SITE + "merci.html?v=1.46.28"); c.page.wait_for_timeout(2500)
+        c.page = c.ctx.new_page(); c.page.goto(SITE + "merci.html?v=1.46.30"); c.page.wait_for_timeout(2500)
         raw = RAW / "i14.png"; c.shot(raw)
         btn = c.box("#btnStart")
         finish(raw, f"inst-{len(steps) + 1:02d}", [box(btn, 8), num(btn, 1)] if btn else [])
@@ -601,11 +659,13 @@ def main():
         save_steps("installateur", "Installer l'extension avec l'installateur Windows (.bat)", "Méthode automatique : une fenêtre te guide (dossiers, navigateurs, progression). Sans droits administrateur. Compte environ 2 minutes.", steps)
         log(len(steps), "étapes")
         render_page()
+        render_page()
     if which == "zip":
         c, steps, step = flow_zip()
         c.close()
         save_steps("zip", "Installer l'extension avec le ZIP (Chrome, Edge, Brave)", "Méthode manuelle : tu télécharges le ZIP, tu le décompresses, puis tu charges le dossier dans Chrome en mode développeur. Compte environ 3 minutes.", steps)
         log(len(steps), "étapes")
+        render_page()
 
 
 if __name__ == "__main__":

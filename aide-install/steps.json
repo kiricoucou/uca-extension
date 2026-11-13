@@ -144,9 +144,9 @@
    },
    {
     "n": 6,
-    "title": "Ferme tes navigateurs",
-    "what": "Après le téléchargement (barre de progression), l'assistant te demande de fermer correctement les navigateurs choisis. Enregistre ton travail, ferme-les, puis clique sur « OK ». Ceux qui restent ouverts sont fermés de force.",
-    "why": "Un navigateur ouvert verrouille ses fichiers : le fermer évite toute erreur pendant l'installation.",
+    "title": "Installation en cours",
+    "what": "L'assistant télécharge l'extension et extrait les fichiers dans le dossier choisi. La barre de progression et le journal t'informent de l'avancée.",
+    "why": "Tout se fait automatiquement, sans ligne de commande ni manipulation compliquée.",
     "img": "aide-install/img/inst-06.webp"
    },
    {
@@ -190,6 +190,124 @@
     "what": "Dans un second onglet, l'installateur ouvre une page de remerciement : premiers pas, aide, tutoriel et, si tu veux, un don pour soutenir le projet.",
     "why": "Un coup d'œil aux premiers pas t'évite de chercher où cliquer.",
     "img": "aide-install/img/inst-12.webp"
+   }
+  ]
+ },
+ "zip": {
+  "title": "Installer l'extension avec le ZIP (Chrome, Edge, Brave)",
+  "intro": "Méthode manuelle : tu télécharges le ZIP, tu le décompresses, puis tu charges le dossier dans Chrome en mode développeur. Compte environ 3 minutes.",
+  "steps": [
+   {
+    "n": 1,
+    "title": "Ouvre le site",
+    "what": "Dans Chrome, ouvre kiricoucou.github.io/uca-extension. C'est la page d'accueil du projet.",
+    "why": "Tu télécharges l'extension depuis la source officielle du projet, jamais depuis un site tiers.",
+    "img": "aide-install/img/zip-01.webp"
+   },
+   {
+    "n": 2,
+    "title": "Clique sur « Télécharger le ZIP »",
+    "what": "Sur la page « Extension », le gros bouton bleu télécharge le fichier uca-extension-chrome.zip (environ 2,6 Mo).",
+    "why": "Le ZIP contient uniquement le code de l'extension : aucune donnée personnelle.",
+    "img": "aide-install/img/zip-02.webp"
+   },
+   {
+    "n": 3,
+    "title": "Le fichier se télécharge",
+    "what": "Chrome affiche l'icône de téléchargement en haut à droite : clique dessus pour voir la liste. Tu y vois uca-extension-chrome.zip avec sa taille (environ 2,6 Mo) et « OK » quand c'est terminé.",
+    "why": "Tu vérifies que le téléchargement est bien terminé avant de continuer.",
+    "img": "aide-install/img/zip-03.webp"
+   },
+   {
+    "n": 4,
+    "title": "Retrouve le ZIP dans ton dossier",
+    "what": "Ouvre l'Explorateur de fichiers, puis le dossier Téléchargements : tu y vois uca-extension-chrome.zip. Clique une fois dessus pour le sélectionner.",
+    "why": "Windows doit décompresser le fichier : Chrome ne peut pas charger une extension directement depuis un ZIP.",
+    "img": "aide-install/img/zip-04.webp"
+   },
+   {
+    "n": 5,
+    "title": "Clique sur « Extraire tout »",
+    "what": "Le ZIP étant sélectionné, le bouton « Extraire tout » apparaît dans la barre d'outils de l'Explorateur. Clique dessus.",
+    "why": "Cette commande décompresse le ZIP dans un vrai dossier.",
+    "img": "aide-install/img/zip-05.webp"
+   },
+   {
+    "n": 6,
+    "title": "Choisis où extraire",
+    "what": "Dans la fenêtre « Extraire les dossiers compressés », tape (ou choisis avec « Parcourir ») le dossier où l'extension doit vivre, par exemple C:\\MyUCA\\extension. Garde « Afficher les dossiers extraits » coché.",
+    "why": "Ce dossier devra rester en place : Chrome le lit à chaque démarrage. Choisis un endroit où tu ne le supprimeras pas.",
+    "img": "aide-install/img/zip-06.webp"
+   },
+   {
+    "n": 7,
+    "title": "Vérifie le dossier extrait",
+    "what": "Le dossier s'ouvre : tu dois voir directement un fichier manifest.json, avec les dossiers core, designs, icons… À ce niveau-là, c'est le bon dossier.",
+    "why": "Si tu ne vois qu'un seul sous-dossier au lieu de manifest.json, ouvre-le : il faudra choisir ce sous-dossier à l'étape 11.",
+    "img": "aide-install/img/zip-07.webp"
+   },
+   {
+    "n": 8,
+    "title": "Ouvre la page des extensions",
+    "what": "Dans Chrome, tape chrome://extensions dans la barre d'adresse (ou menu ⋮ > Extensions > Gérer les extensions).",
+    "why": "C'est la page où Chrome liste toutes les extensions et où on peut en charger une à la main.",
+    "img": "aide-install/img/zip-08.webp"
+   },
+   {
+    "n": 9,
+    "title": "Active le « Mode développeur »",
+    "what": "En haut à droite de la page, clique sur l'interrupteur « Mode développeur » : il devient bleu.",
+    "why": "Sans ce mode, Chrome refuse de charger une extension qui ne vient pas du Chrome Web Store.",
+    "img": "aide-install/img/zip-09.webp"
+   },
+   {
+    "n": 10,
+    "title": "Repère « Charger l'extension non empaquetée »",
+    "what": "Une barre apparaît sous le titre avec trois boutons. Celui qu'il te faut est le premier : « Charger l'extension non empaquetée ».",
+    "why": "« Non empaquetée » veut dire : un simple dossier, celui que tu viens d'extraire.",
+    "img": "aide-install/img/zip-10.webp"
+   },
+   {
+    "n": 11,
+    "title": "Choisis le dossier de l'extension",
+    "what": "Une fenêtre de l'Explorateur s'ouvre. Va jusqu'au dossier extrait (celui qui contient manifest.json), par exemple C:\\MyUCA\\extension.",
+    "why": "C'est ce dossier que Chrome va lire : il doit contenir directement le fichier manifest.json.",
+    "img": "aide-install/img/zip-11.webp"
+   },
+   {
+    "n": 12,
+    "title": "Valide avec « Sélectionner un dossier »",
+    "what": "Le chemin du dossier est saisi : clique sur « Sélectionner un dossier » (ou appuie sur Entrée).",
+    "why": "Chrome charge alors l'extension depuis ce dossier, sans rien installer ailleurs.",
+    "img": "aide-install/img/zip-12.webp"
+   },
+   {
+    "n": 13,
+    "title": "La page de bienvenue s'ouvre toute seule",
+    "what": "Dès que l'extension est chargée, Chrome ouvre un nouvel onglet : c'est la page « Choisis ton design » de l'extension. Elle te prouve que l'installation a réussi.",
+    "why": "Tu choisis l'apparence de l'agenda (5 designs, mêmes fonctions) puis tu te connectes à Odin avec « Synchroniser ».",
+    "img": "aide-install/img/zip-13.webp"
+   },
+   {
+    "n": 14,
+    "title": "L'extension apparaît dans la liste",
+    "what": "De retour sur chrome://extensions, une nouvelle carte « Emploi du temps UCA » est là, activée (interrupteur bleu).",
+    "why": "C'est la preuve qu'elle est installée. Tu peux la désactiver ou la supprimer ici à tout moment.",
+    "img": "aide-install/img/zip-14.webp"
+   },
+   {
+    "n": 15,
+    "title": "Retrouve l'extension dans le menu « puzzle »",
+    "what": "Clique sur l'icône « puzzle » à droite de la barre d'adresse : la liste de tes extensions s'affiche. « Emploi du temps UCA » y est, avec sa punaise pour l'épingler à la barre d'outils.",
+    "why": "Chrome épingle les nouvelles extensions tout seul. Si ce n'est pas le cas, clique sur la punaise pour garder l'icône visible en permanence.",
+    "img": "aide-install/img/zip-15.webp"
+   },
+   {
+    "n": 16,
+    "title": "Ouvre ton agenda",
+    "what": "L'icône est dans la barre d'outils : clique dessus pour ouvrir l'extension, choisis ton design, puis « Synchroniser » pour te connecter à Odin avec ton compte UCA.",
+    "why": "Ton mot de passe est saisi sur la vraie page de connexion de l'UCA : l'extension ne le voit jamais.",
+    "img": "aide-install/img/zip-16.webp"
    }
   ]
  }

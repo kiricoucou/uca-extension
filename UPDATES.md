@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.32 — mise à jour automatique vérifiée de bout en bout
+
+- **Mise à jour sans réinstaller, testée sur un Chrome vierge** : installation du ZIP en mode développeur, détection de la nouvelle version, bouton « Télécharger et appliquer la mise à jour », puis rechargement automatique. Aucun changement de code : seule la version change.
+
 ## 1.46.31 — dossier de l'extension propre (erreur « desktop.ini »)
 
 - **Plus d'erreur « Cannot load extension with file or directory name desktop.ini »** au chargement : l'installateur (Windows, Linux, macOS) et `maj-extension.bat` suppriment eux-mêmes `desktop.ini`, `Thumbs.db` et `.DS_Store` du dossier de l'extension ; le ZIP contient `nettoyer-dossier-extension.bat` (double-clic à côté de `manifest.json`) et la page de téléchargement conseille un dossier dédié (pas Documents ni Bureau).

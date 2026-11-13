@@ -32,6 +32,9 @@
 <main class="wrap news">
   <h1>Quoi de neuf</h1>
   <p class="lead">Les nouveautés de chaque version, de la plus récente à la plus ancienne. Page générée depuis <code>UPDATES.md</code>.</p>
+<section class="news-item" id="v1-46-32"><div class="news-meta"><span class="vbadge">v1.46.32</span><time datetime="2026-11-13T20:43:41+01:00">13 nov. 2026 à 20:43</time><span class="chip chip-ext">Extension</span></div><h2>Mise à jour automatique vérifiée de bout en bout</h2>
+<ul><li><strong>Mise à jour sans réinstaller, testée sur un Chrome vierge</strong> : installation du ZIP en mode développeur, détection de la nouvelle version, bouton « Télécharger et appliquer la mise à jour », puis rechargement automatique. Aucun changement de code : seule la version change.</li></ul>
+</section>
 <section class="news-item" id="v1-46-31"><div class="news-meta"><span class="vbadge">v1.46.31</span><time datetime="2026-11-13T09:53:34+01:00">13 nov. 2026 à 09:53</time><span class="chip chip-ext">Extension</span><span class="chip chip-site">Site</span></div><h2>Dossier de l'extension propre (erreur « desktop.ini »)</h2>
 <ul><li><strong>Plus d'erreur « Cannot load extension with file or directory name desktop.ini »</strong> au chargement : l'installateur (Windows, Linux, macOS) et <code>maj-extension.bat</code> suppriment eux-mêmes <code>desktop.ini</code>, <code>Thumbs.db</code> et <code>.DS_Store</code> du dossier de l'extension ; le ZIP contient <code>nettoyer-dossier-extension.bat</code> (double-clic à côté de <code>manifest.json</code>) et la page de téléchargement conseille un dossier dédié (pas Documents ni Bureau).</li></ul>
 </section>

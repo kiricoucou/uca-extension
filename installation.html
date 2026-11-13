@@ -4,226 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Aide à l'installation — Emploi du temps UCA</title>
-<meta name="description" content="Installer l'extension Emploi du temps UCA pas à pas, en images : avec le ZIP, avec l'installateur Windows, ou l'application sur téléphone.">
+<meta name="description" content="Le tutoriel d'installation en images est en préparation. En attendant, les instructions écrites sont sur la page de téléchargement.">
+<meta name="robots" content="noindex">
 <link rel="canonical" href="https://kiricoucou.github.io/uca-extension/installation.html">
 <link rel="icon" type="image/png" href="app/icons/icon-192.png">
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="site-theme.css">
-<style>
-.ins{max-width:1080px;margin:0 auto;padding:28px 16px 70px}
-.ins h1{font-size:clamp(28px,5vw,44px);margin:0 0 8px;letter-spacing:-.03em}
-.ins .lead{color:var(--text-dim);font-size:18px;max-width:720px;margin:0 0 22px}
-.tabs{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:0 0 26px}
-.tab{display:flex;flex-direction:column;gap:2px;text-align:left;padding:14px 16px;border-radius:16px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;cursor:pointer}
-.tab b{font-size:17px}.tab span{color:var(--text-dim);font-size:14px}.tab i{font-style:normal;color:var(--accent);font-weight:700;font-size:13px;margin-top:4px}
-.tab[aria-selected="true"]{border-color:var(--accent);background:var(--accent-tint)}
-.panel h2{font-size:26px;margin:0 0 6px}.intro{color:var(--text-dim);margin:0 0 22px;max-width:720px}
-.steps{display:grid;gap:22px}
-.st{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:18px;box-shadow:var(--shadow)}
-.st-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.st-head .n{flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font-weight:800}
-.st-head h3{margin:0;font-size:20px}
-.shot{display:block;position:relative;width:100%;padding:0;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface-2);cursor:zoom-in}
-.shot img{display:block;width:100%;height:auto}
-.shot .zoom{position:absolute;right:10px;bottom:10px;font-size:12px;font-weight:700;padding:5px 10px;border-radius:999px;background:rgba(9,9,11,.8);color:#fff}
-.st-txt p{margin:12px 0 0}.st-txt .why{color:var(--text-dim)}
-.lb{position:fixed;inset:0;z-index:3000;background:rgba(9,9,11,.88);display:flex;align-items:center;justify-content:center;padding:56px 14px 20px}.lb[hidden]{display:none}
-.lb figure{margin:0;max-width:min(1500px,100%);display:flex;flex-direction:column;align-items:center;gap:10px}
-.lb img{max-width:100%;max-height:calc(100vh - 120px);border-radius:12px;background:#fff}.lb figcaption{color:#e6e8ee;font-size:14px;text-align:center}
-.lb button{position:absolute;top:12px;right:12px;width:46px;height:46px;border-radius:50%;border:0;background:#fff;color:#16181d;font-size:22px;font-weight:700;cursor:pointer}
-.note{margin-top:26px;padding:16px 18px;border-radius:16px;background:var(--accent-tint);color:var(--text)}
-</style>
 </head>
 <body>
-<main class="ins">
-  <h1>Aide à l'installation</h1>
-  <p class="lead">Installe l'extension (ou l'application) pas à pas : chaque étape a sa capture d'écran réelle, avec l'endroit où cliquer entouré en rouge, ce que tu fais et à quoi ça sert.</p>
-  <div class="tabs" role="tablist" aria-label="Méthode d'installation"><button type="button" class="tab" role="tab" id="tab-zip" aria-controls="p-zip" aria-selected="true" data-tab="zip"><b>Le ZIP</b><span>Chrome · mode développeur</span><i>16 étapes</i></button><button type="button" class="tab" role="tab" id="tab-installateur" aria-controls="p-installateur" aria-selected="false" data-tab="installateur"><b>L'installateur</b><span>Windows · fenêtre guidée</span><i>12 étapes</i></button><button type="button" class="tab" role="tab" id="tab-pwa" aria-controls="p-pwa" aria-selected="false" data-tab="pwa"><b>Sur téléphone</b><span>Application web (PWA)</span><i>14 étapes</i></button></div>
-  <section class="panel" role="tabpanel" id="p-zip" aria-labelledby="tab-zip"><h2>Installer l'extension avec le ZIP (Chrome, Edge, Brave)</h2><p class="intro">Méthode manuelle : tu télécharges le ZIP, tu le décompresses, puis tu charges le dossier dans Chrome en mode développeur. Compte environ 3 minutes.</p><div class="steps"><article class="st" id="zip-1">
-  <div class="st-head"><span class="n">1</span><h3>Ouvre le site</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-01.webp" data-cap="Étape 1 : Ouvre le site"><img src="aide-install/img/zip-01.webp" alt="Capture d'écran, étape 1 : Ouvre le site" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Dans Chrome, ouvre kiricoucou.github.io/uca-extension. C'est la page d'accueil du projet.</p><p class="why"><b>À quoi ça sert.</b> Tu télécharges l'extension depuis la source officielle du projet, jamais depuis un site tiers.</p></div>
-</article><article class="st" id="zip-2">
-  <div class="st-head"><span class="n">2</span><h3>Clique sur « Télécharger le ZIP »</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-02.webp" data-cap="Étape 2 : Clique sur « Télécharger le ZIP »"><img src="aide-install/img/zip-02.webp" alt="Capture d'écran, étape 2 : Clique sur « Télécharger le ZIP »" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Sur la page « Extension », le gros bouton bleu télécharge le fichier uca-extension-chrome.zip (environ 2,6 Mo).</p><p class="why"><b>À quoi ça sert.</b> Le ZIP contient uniquement le code de l'extension : aucune donnée personnelle.</p></div>
-</article><article class="st" id="zip-3">
-  <div class="st-head"><span class="n">3</span><h3>Le fichier se télécharge</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-03.webp" data-cap="Étape 3 : Le fichier se télécharge"><img src="aide-install/img/zip-03.webp" alt="Capture d'écran, étape 3 : Le fichier se télécharge" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Chrome affiche l'icône de téléchargement en haut à droite : clique dessus pour voir la liste. Tu y vois uca-extension-chrome.zip avec sa taille (environ 2,6 Mo) et « OK » quand c'est terminé.</p><p class="why"><b>À quoi ça sert.</b> Tu vérifies que le téléchargement est bien terminé avant de continuer.</p></div>
-</article><article class="st" id="zip-4">
-  <div class="st-head"><span class="n">4</span><h3>Retrouve le ZIP dans ton dossier</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-04.webp" data-cap="Étape 4 : Retrouve le ZIP dans ton dossier"><img src="aide-install/img/zip-04.webp" alt="Capture d'écran, étape 4 : Retrouve le ZIP dans ton dossier" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Ouvre l'Explorateur de fichiers, puis le dossier Téléchargements : tu y vois uca-extension-chrome.zip. Clique une fois dessus pour le sélectionner.</p><p class="why"><b>À quoi ça sert.</b> Windows doit décompresser le fichier : Chrome ne peut pas charger une extension directement depuis un ZIP.</p></div>
-</article><article class="st" id="zip-5">
-  <div class="st-head"><span class="n">5</span><h3>Clique sur « Extraire tout »</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-05.webp" data-cap="Étape 5 : Clique sur « Extraire tout »"><img src="aide-install/img/zip-05.webp" alt="Capture d'écran, étape 5 : Clique sur « Extraire tout »" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Le ZIP étant sélectionné, le bouton « Extraire tout » apparaît dans la barre d'outils de l'Explorateur. Clique dessus.</p><p class="why"><b>À quoi ça sert.</b> Cette commande décompresse le ZIP dans un vrai dossier.</p></div>
-</article><article class="st" id="zip-6">
-  <div class="st-head"><span class="n">6</span><h3>Choisis où extraire</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-06.webp" data-cap="Étape 6 : Choisis où extraire"><img src="aide-install/img/zip-06.webp" alt="Capture d'écran, étape 6 : Choisis où extraire" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Dans la fenêtre « Extraire les dossiers compressés », tape (ou choisis avec « Parcourir ») le dossier où l'extension doit vivre, par exemple C:\MyUCA\extension. Garde « Afficher les dossiers extraits » coché.</p><p class="why"><b>À quoi ça sert.</b> Ce dossier devra rester en place : Chrome le lit à chaque démarrage. Choisis un endroit où tu ne le supprimeras pas.</p></div>
-</article><article class="st" id="zip-7">
-  <div class="st-head"><span class="n">7</span><h3>Vérifie le dossier extrait</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-07.webp" data-cap="Étape 7 : Vérifie le dossier extrait"><img src="aide-install/img/zip-07.webp" alt="Capture d'écran, étape 7 : Vérifie le dossier extrait" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Le dossier s'ouvre : tu dois voir directement un fichier manifest.json, avec les dossiers core, designs, icons… À ce niveau-là, c'est le bon dossier.</p><p class="why"><b>À quoi ça sert.</b> Si tu ne vois qu'un seul sous-dossier au lieu de manifest.json, ouvre-le : il faudra choisir ce sous-dossier à l'étape 11.</p></div>
-</article><article class="st" id="zip-8">
-  <div class="st-head"><span class="n">8</span><h3>Ouvre la page des extensions</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-08.webp" data-cap="Étape 8 : Ouvre la page des extensions"><img src="aide-install/img/zip-08.webp" alt="Capture d'écran, étape 8 : Ouvre la page des extensions" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Dans Chrome, tape chrome://extensions dans la barre d'adresse (ou menu ⋮ &gt; Extensions &gt; Gérer les extensions).</p><p class="why"><b>À quoi ça sert.</b> C'est la page où Chrome liste toutes les extensions et où on peut en charger une à la main.</p></div>
-</article><article class="st" id="zip-9">
-  <div class="st-head"><span class="n">9</span><h3>Active le « Mode développeur »</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-09.webp" data-cap="Étape 9 : Active le « Mode développeur »"><img src="aide-install/img/zip-09.webp" alt="Capture d'écran, étape 9 : Active le « Mode développeur »" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> En haut à droite de la page, clique sur l'interrupteur « Mode développeur » : il devient bleu.</p><p class="why"><b>À quoi ça sert.</b> Sans ce mode, Chrome refuse de charger une extension qui ne vient pas du Chrome Web Store.</p></div>
-</article><article class="st" id="zip-10">
-  <div class="st-head"><span class="n">10</span><h3>Repère « Charger l'extension non empaquetée »</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-10.webp" data-cap="Étape 10 : Repère « Charger l'extension non empaquetée »"><img src="aide-install/img/zip-10.webp" alt="Capture d'écran, étape 10 : Repère « Charger l'extension non empaquetée »" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Une barre apparaît sous le titre avec trois boutons. Celui qu'il te faut est le premier : « Charger l'extension non empaquetée ».</p><p class="why"><b>À quoi ça sert.</b> « Non empaquetée » veut dire : un simple dossier, celui que tu viens d'extraire.</p></div>
-</article><article class="st" id="zip-11">
-  <div class="st-head"><span class="n">11</span><h3>Choisis le dossier de l'extension</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-11.webp" data-cap="Étape 11 : Choisis le dossier de l'extension"><img src="aide-install/img/zip-11.webp" alt="Capture d'écran, étape 11 : Choisis le dossier de l'extension" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Une fenêtre de l'Explorateur s'ouvre. Va jusqu'au dossier extrait (celui qui contient manifest.json), par exemple C:\MyUCA\extension.</p><p class="why"><b>À quoi ça sert.</b> C'est ce dossier que Chrome va lire : il doit contenir directement le fichier manifest.json.</p></div>
-</article><article class="st" id="zip-12">
-  <div class="st-head"><span class="n">12</span><h3>Valide avec « Sélectionner un dossier »</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-12.webp" data-cap="Étape 12 : Valide avec « Sélectionner un dossier »"><img src="aide-install/img/zip-12.webp" alt="Capture d'écran, étape 12 : Valide avec « Sélectionner un dossier »" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Le chemin du dossier est saisi : clique sur « Sélectionner un dossier » (ou appuie sur Entrée).</p><p class="why"><b>À quoi ça sert.</b> Chrome charge alors l'extension depuis ce dossier, sans rien installer ailleurs.</p></div>
-</article><article class="st" id="zip-13">
-  <div class="st-head"><span class="n">13</span><h3>La page de bienvenue s'ouvre toute seule</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-13.webp" data-cap="Étape 13 : La page de bienvenue s'ouvre toute seule"><img src="aide-install/img/zip-13.webp" alt="Capture d'écran, étape 13 : La page de bienvenue s'ouvre toute seule" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Dès que l'extension est chargée, Chrome ouvre un nouvel onglet : c'est la page « Choisis ton design » de l'extension. Elle te prouve que l'installation a réussi.</p><p class="why"><b>À quoi ça sert.</b> Tu choisis l'apparence de l'agenda (5 designs, mêmes fonctions) puis tu te connectes à Odin avec « Synchroniser ».</p></div>
-</article><article class="st" id="zip-14">
-  <div class="st-head"><span class="n">14</span><h3>L'extension apparaît dans la liste</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-14.webp" data-cap="Étape 14 : L'extension apparaît dans la liste"><img src="aide-install/img/zip-14.webp" alt="Capture d'écran, étape 14 : L'extension apparaît dans la liste" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> De retour sur chrome://extensions, une nouvelle carte « Emploi du temps UCA » est là, activée (interrupteur bleu).</p><p class="why"><b>À quoi ça sert.</b> C'est la preuve qu'elle est installée. Tu peux la désactiver ou la supprimer ici à tout moment.</p></div>
-</article><article class="st" id="zip-15">
-  <div class="st-head"><span class="n">15</span><h3>Retrouve l'extension dans le menu « puzzle »</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-15.webp" data-cap="Étape 15 : Retrouve l'extension dans le menu « puzzle »"><img src="aide-install/img/zip-15.webp" alt="Capture d'écran, étape 15 : Retrouve l'extension dans le menu « puzzle »" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Clique sur l'icône « puzzle » à droite de la barre d'adresse : la liste de tes extensions s'affiche. « Emploi du temps UCA » y est, avec sa punaise pour l'épingler à la barre d'outils.</p><p class="why"><b>À quoi ça sert.</b> Chrome épingle les nouvelles extensions tout seul. Si ce n'est pas le cas, clique sur la punaise pour garder l'icône visible en permanence.</p></div>
-</article><article class="st" id="zip-16">
-  <div class="st-head"><span class="n">16</span><h3>Ouvre ton agenda</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/zip-16.webp" data-cap="Étape 16 : Ouvre ton agenda"><img src="aide-install/img/zip-16.webp" alt="Capture d'écran, étape 16 : Ouvre ton agenda" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> L'icône est dans la barre d'outils : clique dessus pour ouvrir l'extension, choisis ton design, puis « Synchroniser » pour te connecter à Odin avec ton compte UCA.</p><p class="why"><b>À quoi ça sert.</b> Ton mot de passe est saisi sur la vraie page de connexion de l'UCA : l'extension ne le voit jamais.</p></div>
-</article></div></section><section class="panel" role="tabpanel" id="p-installateur" aria-labelledby="tab-installateur" hidden><h2>Installer l'extension avec l'installateur Windows (.bat)</h2><p class="intro">Méthode automatique : une fenêtre te guide (dossiers, navigateurs, progression). Sans droits administrateur. Compte environ 2 minutes.</p><div class="steps"><article class="st" id="installateur-1">
-  <div class="st-head"><span class="n">1</span><h3>Trouve les installateurs</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-01.webp" data-cap="Étape 1 : Trouve les installateurs"><img src="aide-install/img/inst-01.webp" alt="Capture d'écran, étape 1 : Trouve les installateurs" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Sur la page « Extension » du site, descends jusqu'à « Installateurs automatiques » : un installateur existe pour Windows, macOS et Linux. Pour Windows, clique sur « Installateur Windows ».</p><p class="why"><b>À quoi ça sert.</b> L'installateur fait à ta place le téléchargement, la copie des fichiers et l'ouverture de la bonne page : tu ne manipules pas de ZIP.</p></div>
-</article><article class="st" id="installateur-2">
-  <div class="st-head"><span class="n">2</span><h3>Le fichier .bat se télécharge</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-02.webp" data-cap="Étape 2 : Le fichier .bat se télécharge"><img src="aide-install/img/inst-02.webp" alt="Capture d'écran, étape 2 : Le fichier .bat se télécharge" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Chrome télécharge installer-windows.bat. S'il affiche un avertissement (« ce type de fichier peut endommager votre ordinateur »), clique sur « Conserver » : le script est public et lisible, tu peux l'ouvrir avec le Bloc-notes avant de le lancer.</p><p class="why"><b>À quoi ça sert.</b> Chrome prévient pour tous les scripts. Ici, le code est ouvert sur GitHub et n'envoie rien : il ne fait que télécharger l'extension et copier des fichiers dans ton profil.</p></div>
-</article><article class="st" id="installateur-3">
-  <div class="st-head"><span class="n">3</span><h3>Double-clique sur installer-windows.bat</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-03.webp" data-cap="Étape 3 : Double-clique sur installer-windows.bat"><img src="aide-install/img/inst-03.webp" alt="Capture d'écran, étape 3 : Double-clique sur installer-windows.bat" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Ouvre ton dossier Téléchargements dans l'Explorateur et double-clique sur installer-windows.bat. Aucun droit administrateur n'est nécessaire.</p><p class="why"><b>À quoi ça sert.</b> Windows lance l'assistant graphique : une fenêtre s'ouvre, pas besoin de taper de commande.</p></div>
-</article><article class="st" id="installateur-4">
-  <div class="st-head"><span class="n">4</span><h3>Choisis où installer et où télécharger</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-04.webp" data-cap="Étape 4 : Choisis où installer et où télécharger"><img src="aide-install/img/inst-04.webp" alt="Capture d'écran, étape 4 : Choisis où installer et où télécharger" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Un assistant s'ouvre. Indique (ou choisis avec « Parcourir ») le dossier d'installation de l'extension, puis le dossier où télécharger les fichiers. La dernière version est vérifiée automatiquement. Clique sur « Suivant ».</p><p class="why"><b>À quoi ça sert.</b> Le dossier d'installation doit rester en place : Chrome le lit à chaque démarrage.</p></div>
-</article><article class="st" id="installateur-5">
-  <div class="st-head"><span class="n">5</span><h3>Choisis tes navigateurs</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-05.webp" data-cap="Étape 5 : Choisis tes navigateurs"><img src="aide-install/img/inst-05.webp" alt="Capture d'écran, étape 5 : Choisis tes navigateurs" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> L'assistant détecte les navigateurs installés (Chrome, Edge, Brave, Vivaldi, Firefox). Coche ceux où tu veux l'extension : un seul, deux ou tous. Clique sur « Installer ».</p><p class="why"><b>À quoi ça sert.</b> Le même code s'adapte à ton choix : il prépare le bon paquet pour chaque navigateur.</p></div>
-</article><article class="st" id="installateur-6">
-  <div class="st-head"><span class="n">6</span><h3>Installation en cours</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-06.webp" data-cap="Étape 6 : Installation en cours"><img src="aide-install/img/inst-06.webp" alt="Capture d'écran, étape 6 : Installation en cours" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> L'assistant télécharge l'extension et extrait les fichiers dans le dossier choisi. La barre de progression et le journal t'informent de l'avancée.</p><p class="why"><b>À quoi ça sert.</b> Tout se fait automatiquement, sans ligne de commande ni manipulation compliquée.</p></div>
-</article><article class="st" id="installateur-7">
-  <div class="st-head"><span class="n">7</span><h3>L'installation est terminée</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-07.webp" data-cap="Étape 7 : L'installation est terminée"><img src="aide-install/img/inst-07.webp" alt="Capture d'écran, étape 7 : L'installation est terminée" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Le journal indique chaque étape réussie : version trouvée, fichiers installés, navigateurs ouverts. Clique sur « Fermer ». L'installateur ouvre aussi, dans chaque navigateur, la page de l'extension et une page de remerciement.</p><p class="why"><b>À quoi ça sert.</b> Tu sais ainsi que tout s'est bien passé, sans avoir à deviner.</p></div>
-</article><article class="st" id="installateur-8">
-  <div class="st-head"><span class="n">8</span><h3>Chrome s'ouvre sur la page des extensions</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-08.webp" data-cap="Étape 8 : Chrome s'ouvre sur la page des extensions"><img src="aide-install/img/inst-08.webp" alt="Capture d'écran, étape 8 : Chrome s'ouvre sur la page des extensions" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> L'installateur ouvre chrome://extensions. Active « Mode développeur » en haut à droite.</p><p class="why"><b>À quoi ça sert.</b> C'est la seule étape manuelle : Chrome l'exige pour toute extension hors Chrome Web Store.</p></div>
-</article><article class="st" id="installateur-9">
-  <div class="st-head"><span class="n">9</span><h3>Clique sur « Charger l'extension non empaquetée »</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-09.webp" data-cap="Étape 9 : Clique sur « Charger l'extension non empaquetée »"><img src="aide-install/img/inst-09.webp" alt="Capture d'écran, étape 9 : Clique sur « Charger l'extension non empaquetée »" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Le bouton apparaît à gauche de la page. Dans la fenêtre qui s'ouvre, colle le chemin du dossier (Ctrl+V : l'installateur l'a copié pour toi) puis valide avec Entrée.</p><p class="why"><b>À quoi ça sert.</b> Chrome charge l'extension depuis le dossier installé par l'assistant.</p></div>
-</article><article class="st" id="installateur-10">
-  <div class="st-head"><span class="n">10</span><h3>Choisis le dossier installé</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-10.webp" data-cap="Étape 10 : Choisis le dossier installé"><img src="aide-install/img/inst-10.webp" alt="Capture d'écran, étape 10 : Choisis le dossier installé" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Le chemin du dossier d'installation (sous-dossier « chrome ») est saisi. Clique sur « Sélectionner un dossier ».</p><p class="why"><b>À quoi ça sert.</b> C'est le dossier que l'installateur vient de remplir avec la dernière version.</p></div>
-</article><article class="st" id="installateur-11">
-  <div class="st-head"><span class="n">11</span><h3>La page de bienvenue de l'extension</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-11.webp" data-cap="Étape 11 : La page de bienvenue de l'extension"><img src="aide-install/img/inst-11.webp" alt="Capture d'écran, étape 11 : La page de bienvenue de l'extension" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> L'extension s'ouvre sur « Choisis ton design » : c'est le premier lien de connexion. Choisis un design, puis « Synchroniser » pour te connecter à Odin.</p><p class="why"><b>À quoi ça sert.</b> Cette page prouve que l'extension est bien chargée dans ce navigateur.</p></div>
-</article><article class="st" id="installateur-12">
-  <div class="st-head"><span class="n">12</span><h3>La page de remerciement</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/inst-12.webp" data-cap="Étape 12 : La page de remerciement"><img src="aide-install/img/inst-12.webp" alt="Capture d'écran, étape 12 : La page de remerciement" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Dans un second onglet, l'installateur ouvre une page de remerciement : premiers pas, aide, tutoriel et, si tu veux, un don pour soutenir le projet.</p><p class="why"><b>À quoi ça sert.</b> Un coup d'œil aux premiers pas t'évite de chercher où cliquer.</p></div>
-</article></div></section><section class="panel" role="tabpanel" id="p-pwa" aria-labelledby="tab-pwa" hidden><h2>Installer l'application sur ton téléphone (PWA)</h2><p class="intro">L'application s'installe depuis le navigateur du téléphone, sans magasin d'applications. Les captures de l'application sont réelles ; les écrans propres à Android (menu du navigateur, écran d'accueil) sont des illustrations. Compte environ 2 minutes.</p><div class="steps"><article class="st" id="pwa-1">
-  <div class="st-head"><span class="n">1</span><h3>Ouvre le site sur ton téléphone</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-01.webp" data-cap="Étape 1 : Ouvre le site sur ton téléphone"><img src="aide-install/img/pwa-01.webp" alt="Capture d'écran, étape 1 : Ouvre le site sur ton téléphone" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Dans Chrome (Android) ou Safari (iPhone), ouvre kiricoucou.github.io/uca-extension. Le gros bouton bleu « Ouvrir l'agenda en ligne » mène à l'application.</p><p class="why"><b>À quoi ça sert.</b> L'application est une page web : rien à télécharger dans un magasin d'applications.</p></div>
-</article><article class="st" id="pwa-2">
-  <div class="st-head"><span class="n">2</span><h3>Appuie sur « Installer l'app »</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-02.webp" data-cap="Étape 2 : Appuie sur « Installer l'app »"><img src="aide-install/img/pwa-02.webp" alt="Capture d'écran, étape 2 : Appuie sur « Installer l'app »" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Sur la page d'accueil, appuie sur « Installer l'app » : un guide adapté à ton téléphone s'ouvre.</p><p class="why"><b>À quoi ça sert.</b> Il te montre les étapes exactes pour ton navigateur (Android ou iPhone).</p></div>
-</article><article class="st" id="pwa-3">
-  <div class="st-head"><span class="n">3</span><h3>Lis le guide d'installation</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-03.webp" data-cap="Étape 3 : Lis le guide d'installation"><img src="aide-install/img/pwa-03.webp" alt="Capture d'écran, étape 3 : Lis le guide d'installation" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Le guide explique comment ajouter l'application à l'écran d'accueil. Les étapes suivantes montrent le chemin sur Android avec Chrome ; sur iPhone, c'est le bouton Partager de Safari puis « Sur l'écran d'accueil ».</p><p class="why"><b>À quoi ça sert.</b> Une fois ajoutée, l'application s'ouvre en plein écran, comme une vraie application.</p></div>
-</article><article class="st" id="pwa-4">
-  <div class="st-head"><span class="n">4</span><h3>Ouvre le menu ⋮ puis « Installer l'application »</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-04.webp" data-cap="Étape 4 : Ouvre le menu ⋮ puis « Installer l'application »"><img src="aide-install/img/pwa-04.webp" alt="Capture d'écran, étape 4 : Ouvre le menu ⋮ puis « Installer l'application »" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Appuie sur les trois points ⋮ en haut à droite de Chrome, puis sur « Installer l'application » (parfois « Ajouter à l'écran d'accueil »). Image d'illustration : l'aspect exact dépend de ta version d'Android.</p><p class="why"><b>À quoi ça sert.</b> Cette commande transforme le site en application avec sa propre icône.</p></div>
-</article><article class="st" id="pwa-5">
-  <div class="st-head"><span class="n">5</span><h3>Confirme avec « Installer »</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-05.webp" data-cap="Étape 5 : Confirme avec « Installer »"><img src="aide-install/img/pwa-05.webp" alt="Capture d'écran, étape 5 : Confirme avec « Installer »" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Une fenêtre te demande de confirmer : appuie sur « Installer ». Image d'illustration.</p><p class="why"><b>À quoi ça sert.</b> L'application est ajoutée en quelques secondes, sans téléchargement lourd.</p></div>
-</article><article class="st" id="pwa-6">
-  <div class="st-head"><span class="n">6</span><h3>Retrouve l'icône My UCA</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-06.webp" data-cap="Étape 6 : Retrouve l'icône My UCA"><img src="aide-install/img/pwa-06.webp" alt="Capture d'écran, étape 6 : Retrouve l'icône My UCA" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> L'icône « My UCA » apparaît sur ton écran d'accueil (ou dans la liste de tes applications). Appuie dessus pour lancer l'application. Image d'illustration.</p><p class="why"><b>À quoi ça sert.</b> Un seul appui pour ouvrir ton emploi du temps, comme n'importe quelle application.</p></div>
-</article><article class="st" id="pwa-7">
-  <div class="st-head"><span class="n">7</span><h3>Au premier lancement : importe tes données</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-07.webp" data-cap="Étape 7 : Au premier lancement : importe tes données"><img src="aide-install/img/pwa-07.webp" alt="Capture d'écran, étape 7 : Au premier lancement : importe tes données" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> L'application s'ouvre sur l'écran d'import : elle est vide au départ, car le site ne lit jamais Odin à ta place. Tes données viennent de l'extension sur ordinateur.</p><p class="why"><b>À quoi ça sert.</b> Tes notes et ton emploi du temps restent uniquement sur ton téléphone : aucun serveur.</p></div>
-</article><article class="st" id="pwa-8">
-  <div class="st-head"><span class="n">8</span><h3>Choisis comment importer</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-08.webp" data-cap="Étape 8 : Choisis comment importer"><img src="aide-install/img/pwa-08.webp" alt="Capture d'écran, étape 8 : Choisis comment importer" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Trois moyens : scanner le QR animé affiché par l'extension, coller le lien chiffré, ou ouvrir le fichier d'export. Sur ordinateur, dans l'extension : bouton « Liens » puis « Envoyer vers le téléphone ».</p><p class="why"><b>À quoi ça sert.</b> Le QR animé fonctionne même hors connexion : rien n'est envoyé sur Internet.</p></div>
-</article><article class="st" id="pwa-9">
-  <div class="st-head"><span class="n">9</span><h3>Tes données arrivent</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-09.webp" data-cap="Étape 9 : Tes données arrivent"><img src="aide-install/img/pwa-09.webp" alt="Capture d'écran, étape 9 : Tes données arrivent" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Dès que l'import est fini, l'application s'ouvre sur l'Accueil : statut des services UCA, notifications, raccourcis. La barre du bas donne accès à Études, Agenda, Lieux et Compte. (Données de démonstration.)</p><p class="why"><b>À quoi ça sert.</b> Tu as maintenant ton emploi du temps et tes notes dans la poche, sans ouvrir l'ordinateur.</p></div>
-</article><article class="st" id="pwa-10">
-  <div class="st-head"><span class="n">10</span><h3>Ouvre l'agenda</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-10.webp" data-cap="Étape 10 : Ouvre l'agenda"><img src="aide-install/img/pwa-10.webp" alt="Capture d'écran, étape 10 : Ouvre l'agenda" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> L'onglet « Agenda » affiche ton emploi du temps : jour, 3 jours, semaine, mois. Appuie sur un cours pour voir la salle, l'enseignant et les horaires.</p><p class="why"><b>À quoi ça sert.</b> Tu sais où aller en un coup d'œil, avec les changements de salle et les annulations signalés.</p></div>
-</article><article class="st" id="pwa-11">
-  <div class="st-head"><span class="n">11</span><h3>Consulte tes études</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-11.webp" data-cap="Étape 11 : Consulte tes études"><img src="aide-install/img/pwa-11.webp" alt="Capture d'écran, étape 11 : Consulte tes études" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> L'onglet « Études » regroupe tes notes, tes absences et ta scolarité. Les notes récentes sont en couleur.</p><p class="why"><b>À quoi ça sert.</b> Tu suis ta moyenne sans te reconnecter à Odin.</p></div>
-</article><article class="st" id="pwa-12">
-  <div class="st-head"><span class="n">12</span><h3>Trouve les lieux du campus</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-12.webp" data-cap="Étape 12 : Trouve les lieux du campus"><img src="aide-install/img/pwa-12.webp" alt="Capture d'écran, étape 12 : Trouve les lieux du campus" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> L'onglet « Lieux » liste les restaurants U, bibliothèques et services, avec la carte du campus.</p><p class="why"><b>À quoi ça sert.</b> Pratique à la rentrée pour trouver une salle ou un resto.</p></div>
-</article><article class="st" id="pwa-13">
-  <div class="st-head"><span class="n">13</span><h3>Garde la main sur tes données</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-13.webp" data-cap="Étape 13 : Garde la main sur tes données"><img src="aide-install/img/pwa-13.webp" alt="Capture d'écran, étape 13 : Garde la main sur tes données" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> L'onglet « Compte » rappelle que tes données restent sur cet appareil. Tu peux les envoyer vers un autre appareil (QR animé), ouvrir les préférences ou tout effacer.</p><p class="why"><b>À quoi ça sert.</b> C'est ici que tu règles les notifications et que tu supprimes tes données si tu changes de téléphone.</p></div>
-</article><article class="st" id="pwa-14">
-  <div class="st-head"><span class="n">14</span><h3>Passe du clair au sombre</h3></div>
-  <button type="button" class="shot" data-full="aide-install/img/pwa-14.webp" data-cap="Étape 14 : Passe du clair au sombre"><img src="aide-install/img/pwa-14.webp" alt="Capture d'écran, étape 14 : Passe du clair au sombre" loading="lazy"><span class="zoom">Agrandir</span></button>
-  <div class="st-txt"><p><b>Ce que tu fais.</b> Le bouton menu en haut ouvre le menu du site : retour à l'accueil, aide, don, et le choix du thème clair, sombre ou automatique (soleil et lune).</p><p class="why"><b>À quoi ça sert.</b> Tu règles l'apparence selon ta préférence ou la luminosité.</p></div>
-</article></div></section>
-  <p class="note">Besoin d'aide ? Va sur la <a href="aide.html">page d'aide</a> ou la <a href="extension/">page de téléchargement</a>. Les captures sont de vraies fenêtres (Chrome, Explorateur de fichiers, assistant d'installation) ; les chemins affichés sont des exemples : tu peux choisir un autre dossier.</p>
+<main class="wrap" style="padding:48px 16px 80px;max-width:720px">
+  <h1 style="font-size:clamp(28px,5vw,42px);letter-spacing:-.03em;margin:0 0 10px">Aide à l'installation</h1>
+  <p style="color:var(--text-dim);font-size:18px;margin:0 0 24px">Le tutoriel en images (ZIP, installateur automatique, application Android, application web) est en cours de refonte. Il revient bientôt, avec des captures refaites une par une.</p>
+  <div class="btns">
+    <a class="btn primary" href="extension/">Télécharger l'extension</a>
+    <a class="btn" href="extension/#installateurs">Installateurs automatiques</a>
+    <a class="btn" href="telecharger/">Application Android</a>
+    <a class="btn" href="aide.html">Aide</a>
+  </div>
 </main>
-<div class="lb" id="lb" hidden><button type="button" id="lbx" aria-label="Fermer">✕</button><figure><img id="lbi" alt=""><figcaption id="lbc"></figcaption></figure></div>
-<script>
-(function () {
-  var tabs = document.querySelectorAll('.tab'), panels = document.querySelectorAll('.panel');
-  function show(k) { tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t.dataset.tab === k)); }); panels.forEach(function (p) { p.hidden = p.id !== 'p-' + k; }); try { history.replaceState(null, '', '#' + k); } catch (e) {} }
-  tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.dataset.tab); }); });
-  var h = (location.hash || '').replace('#', '').split('-')[0]; if (h && document.getElementById('p-' + h)) show(h);
-  var lb = document.getElementById('lb'), li = document.getElementById('lbi'), lc = document.getElementById('lbc');
-  document.querySelectorAll('.shot').forEach(function (b) { b.addEventListener('click', function () { li.src = b.dataset.full; li.alt = b.querySelector('img').alt; lc.textContent = b.dataset.cap; lb.hidden = false; document.body.style.overflow = 'hidden'; }); });
-  function close() { lb.hidden = true; li.removeAttribute('src'); document.body.style.overflow = ''; }
-  document.getElementById('lbx').addEventListener('click', close); lb.addEventListener('click', function (e) { if (e.target === lb) close(); });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !lb.hidden) close(); });
-})();
-</script>
 <script src="site-nav.js" defer></script>
 </body>
 </html>

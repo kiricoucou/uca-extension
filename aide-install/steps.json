@@ -1,0 +1,161 @@
+{
+ "installateur": {
+  "title": "Installer l'extension avec l'installateur Windows (.bat)",
+  "intro": "Méthode recommandée : une fenêtre te guide (dossiers, navigateurs, barre de progression) et prépare tout. Il ne reste que deux clics dans Chrome. Compte environ 3 minutes.",
+  "steps": [
+   {
+    "n": 1,
+    "title": "Trouve l'installateur Windows",
+    "what": "Sur la page de téléchargement de l'extension, descends jusqu'à « Installateurs automatiques » et clique sur « Installateur Windows ».",
+    "why": "L'installateur télécharge, copie et prépare tout à ta place : pas de ZIP à manipuler.",
+    "img": "aide-install/img/inst-01.webp"
+   },
+   {
+    "n": 2,
+    "title": "Le fichier .bat se télécharge",
+    "what": "Chrome télécharge installer-windows.bat (environ 22 Ko). Clique sur le fichier dans la liste des téléchargements pour l'ouvrir.",
+    "why": "Le script est public et lisible : tu peux l'ouvrir avec le Bloc-notes avant de le lancer.",
+    "img": "aide-install/img/inst-02.webp"
+   },
+   {
+    "n": 3,
+    "title": "Autorise l'exécution",
+    "what": "Windows affiche « Fichier ouvert - Avertissement de sécurité » parce que le fichier vient d'Internet. Vérifie le nom installer-windows.bat, puis clique sur « Exécuter ».",
+    "why": "C'est une protection normale de Windows pour tout fichier téléchargé et non signé numériquement.",
+    "img": "aide-install/img/inst-03.webp"
+   },
+   {
+    "n": 4,
+    "title": "Choisis où installer et où télécharger",
+    "what": "L'assistant s'ouvre. Garde les dossiers proposés ou change-les avec « Parcourir… » : dossier d'installation de l'extension, puis dossier où télécharger le ZIP. La version disponible est vérifiée toute seule. Clique sur « Suivant ».",
+    "why": "Le dossier d'installation doit rester en place : Chrome le lit à chaque démarrage.",
+    "img": "aide-install/img/inst-04.webp"
+   },
+   {
+    "n": 5,
+    "title": "Choisis tes navigateurs",
+    "what": "L'assistant liste les navigateurs détectés (ici Chrome, Brave et Firefox). Coche ceux où tu veux l'extension, un seul, deux ou tous, puis clique sur « Installer ».",
+    "why": "L'installateur prépare le bon paquet pour chaque navigateur choisi.",
+    "img": "aide-install/img/inst-05.webp"
+   },
+   {
+    "n": 6,
+    "title": "L'installation se fait toute seule",
+    "what": "Une barre de progression et un journal montrent chaque étape : version trouvée, téléchargement, copie des fichiers.",
+    "why": "Tu vois exactement ce qui se passe, sans taper la moindre commande.",
+    "img": "aide-install/img/inst-06.webp"
+   },
+   {
+    "n": 7,
+    "title": "Ferme tes navigateurs",
+    "what": "L'assistant te demande de fermer correctement les navigateurs choisis. Enregistre ton travail, ferme-les (ici Chrome, avec la croix en haut à droite), puis clique sur « OK ».",
+    "why": "Un navigateur ouvert verrouille ses fichiers : le fermer évite toute erreur. Ceux qui restent ouverts sont fermés de force.",
+    "img": "aide-install/img/inst-07.webp"
+   },
+   {
+    "n": 8,
+    "title": "Lis la dernière étape",
+    "what": "Quand la barre indique « Termine ! », une fenêtre explique la dernière étape manuelle et donne le chemin du dossier de l'extension. Chrome s'ouvre aussi sur la page « Merci d'avoir installé My UCA ». Clique sur « OK ».",
+    "why": "Chrome récent interdit de charger automatiquement une extension hors magasin : c'est une règle du navigateur, pas un oubli de l'installateur.",
+    "img": "aide-install/img/inst-08.webp"
+   },
+   {
+    "n": 9,
+    "title": "Ouvre la page des extensions",
+    "what": "Dans Chrome, clique sur les trois points ⋮, puis sur « Extensions » et « Gérer les extensions ».",
+    "why": "C'est la page où Chrome gère toutes les extensions.",
+    "img": "aide-install/img/inst-09.webp"
+   },
+   {
+    "n": 10,
+    "title": "Active le mode développeur",
+    "what": "En haut à droite, clique sur l'interrupteur « Mode développeur » : il devient bleu et trois boutons apparaissent.",
+    "why": "Sans ce mode, Chrome refuse de charger une extension qui ne vient pas du Chrome Web Store.",
+    "img": "aide-install/img/inst-10.webp"
+   },
+   {
+    "n": 11,
+    "title": "Clique sur « Charger l'extension non empaquetée »",
+    "what": "Le bouton est en haut à gauche de la liste. Clique dessus : une fenêtre de choix de dossier s'ouvre.",
+    "why": "« Non empaquetée » veut dire : un simple dossier, celui que l'installateur vient de remplir.",
+    "img": "aide-install/img/inst-11.webp"
+   },
+   {
+    "n": 12,
+    "title": "Choisis le dossier installé",
+    "what": "Colle le chemin affiché par l'installateur (Ctrl+V : il est déjà copié) ou va jusqu'au dossier AppData\\Local\\MyUCA\\extension\\chrome, puis clique sur « Sélectionner un dossier ». AppData est caché : si tu ne le vois pas, active Affichage > Afficher > Éléments masqués.",
+    "why": "C'est le dossier que Chrome va lire. Il doit contenir core, designs, icons et vendor.",
+    "img": "aide-install/img/inst-12.webp"
+   },
+   {
+    "n": 13,
+    "title": "Connecte-toi à Odin",
+    "what": "L'agenda de l'extension s'ouvre. Clique sur « Synchroniser » : la page de connexion de l'UCA s'ouvre. Saisis ton identifiant et ton mot de passe, puis clique sur « Se connecter ».",
+    "why": "Ton mot de passe est saisi sur la vraie page de l'UCA : l'extension ne le voit jamais.",
+    "img": "aide-install/img/inst-13.webp"
+   }
+  ]
+ },
+ "zip": {
+  "title": "Installer l'extension avec le ZIP (Chrome, Edge, Brave)",
+  "intro": "Méthode manuelle : tu télécharges le ZIP, tu l'extrais, puis tu charges le dossier dans Chrome en mode développeur. Compte environ 3 minutes.",
+  "steps": [
+   {
+    "n": 1,
+    "title": "Ouvre la page et clique sur « Télécharger le ZIP »",
+    "what": "Sur kiricoucou.github.io/uca-extension/extension/, clique sur le gros bouton bleu « Télécharger le ZIP » (Chrome, Edge, Brave ; environ 2,7 Mo).",
+    "why": "Le ZIP contient uniquement le code de l'extension : aucune donnée personnelle.",
+    "img": "aide-install/img/zip-01.webp"
+   },
+   {
+    "n": 2,
+    "title": "Le fichier arrive dans Téléchargements",
+    "what": "Chrome affiche le téléchargement en haut à droite : « uca-extension-chrome.zip », 2,7 Mo, « OK » quand c'est terminé.",
+    "why": "Tu vérifies que le fichier est complet avant de continuer.",
+    "img": "aide-install/img/zip-02.webp"
+   },
+   {
+    "n": 3,
+    "title": "Extrais le ZIP",
+    "what": "Dans l'Explorateur de fichiers, ouvre Téléchargements, fais un clic droit sur le ZIP puis « Extraire tout… ». Choisis le dossier de destination et garde « Afficher les dossiers extraits » coché, puis clique sur « Extraire ». Conseil : prends un dossier vide à toi (par exemple C:\\MyUCA\\extension) plutôt que Documents ou Bureau eux-mêmes, où Windows cache un fichier desktop.ini que Chrome refuse.",
+    "why": "Chrome ne peut pas charger une extension directement depuis un ZIP : il lui faut un dossier.",
+    "img": "aide-install/img/zip-03.webp"
+   },
+   {
+    "n": 4,
+    "title": "Attends la fin de l'extraction",
+    "what": "Une barre de progression indique la copie des fichiers (ici 233 éléments). Quand elle atteint 100 %, le dossier extrait s'ouvre tout seul.",
+    "why": "L'extension n'est utilisable qu'une fois tous ses fichiers copiés.",
+    "img": "aide-install/img/zip-04.webp"
+   },
+   {
+    "n": 5,
+    "title": "Ouvre la page des extensions de Chrome",
+    "what": "Dans Chrome, clique sur les trois points ⋮ en haut à droite, puis sur « Extensions » et « Gérer les extensions ». Tu peux aussi taper chrome://extensions dans la barre d'adresse.",
+    "why": "C'est la page où Chrome liste et gère toutes les extensions.",
+    "img": "aide-install/img/zip-05.webp"
+   },
+   {
+    "n": 6,
+    "title": "Active le mode développeur",
+    "what": "En haut à droite de la page « Extensions », clique sur l'interrupteur « Mode développeur » : il devient bleu.",
+    "why": "Chrome n'autorise le chargement d'un dossier d'extension que dans ce mode.",
+    "img": "aide-install/img/zip-06.webp"
+   },
+   {
+    "n": 7,
+    "title": "Charge l'extension non empaquetée",
+    "what": "Clique sur « Charger l'extension non empaquetée ». Dans la fenêtre qui s'ouvre, va dans le dossier extrait (celui qui contient core, designs, icons, vendor et manifest.json) puis clique sur « Sélectionner un dossier ».",
+    "why": "Chrome lit l'extension directement depuis ce dossier : ne le déplace pas et ne le supprime pas ensuite.",
+    "img": "aide-install/img/zip-07.webp"
+   },
+   {
+    "n": 8,
+    "title": "L'extension est installée : connecte-toi",
+    "what": "L'agenda de l'extension s'ouvre dans un nouvel onglet. Clique sur « Synchroniser » : la page de connexion de l'UCA (CAS) s'ouvre. Saisis ton identifiant et ton mot de passe sur cette page officielle.",
+    "why": "Ton mot de passe est saisi sur la vraie page de l'UCA : l'extension ne le voit jamais.",
+    "img": "aide-install/img/zip-08.webp"
+   }
+  ]
+ }
+}

@@ -74,7 +74,7 @@ BODY = """<body>
 
   <section class="reveal" id="installer">
     <h2>Ajouter l'extension en 2 minutes</h2>
-    <p class="sub">Elle n'est pas (encore) sur le Chrome Web Store : on la charge à la main, une seule fois.</p>
+    <p class="sub">Elle n'est pas (encore) sur le Chrome Web Store : on la charge à la main, une seule fois. <a href="../installation.html"><b>Voir le tutoriel en images, étape par étape →</b></a></p>
     <div class="steps">
       <div class="step"><h3>Télécharge et décompresse</h3>
         <ol class="sub-steps">

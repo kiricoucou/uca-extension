@@ -26,7 +26,7 @@ EXCLUDE_SUFFIXES = {".pyc"}
 # Réservés à l'app téléphone (APK, mise à jour à chaud, carte) : jamais dans l'extension.
 EXCLUDE_ROOT_FILES |= {"EdtUca.apk", "lieux-map.html", "version.json", "pages-files.txt", "ota-bundle.zip", "ota-bundle.sig"}
 EXCLUDE_PATHS = {"core/mobility.js"}
-EXCLUDE_DIR_PATHS = {"vendor/leaflet"}
+EXCLUDE_DIR_PATHS = {"vendor/leaflet", "images"}
 
 
 STORE_SITE = "https://kiricoucou.github.io/uca-extension/*"

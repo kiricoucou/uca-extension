@@ -567,7 +567,7 @@ def esc(s):
 
 def render_page():
     data = json.loads(STEPS.read_text(encoding="utf-8"))
-    order = [("zip", "Le ZIP", "Chrome · mode développeur"), ("installateur", "L'installateur", "Windows · fenêtre guidée"), ("pwa", "Sur téléphone", "Application web (PWA)")]
+    order = [("installateur", "L'installateur (recommandé)", "Windows · fenêtre guidée"), ("zip", "Le ZIP", "Chrome · mode développeur"), ("apk", "Android (APK)", "Application native"), ("pwa", "Sur téléphone", "Application web (PWA)")]
     tabs, panels = [], []
     for i, (k, short, sub) in enumerate(order):
         d = data.get(k)
@@ -621,10 +621,10 @@ def render_page():
 <body>
 <main class="ins">
   <h1>Aide à l'installation</h1>
-  <p class="lead">Installe l'extension (ou l'application) pas à pas : chaque étape a sa capture d'écran réelle, avec l'endroit où cliquer entouré en rouge, ce que tu fais et à quoi ça sert.</p>
+  <p class="lead">Installe l'extension pas à pas : chaque étape a sa capture d'écran réelle, avec une flèche ou un cercle rouge sur l'endroit où cliquer, ce que tu fais et à quoi ça sert. Clique sur une image pour l'agrandir.</p>
   <div class="tabs" role="tablist" aria-label="Méthode d'installation">{"".join(tabs)}</div>
   {"".join(panels)}
-  <p class="note">Besoin d'aide ? Va sur la <a href="aide.html">page d'aide</a> ou la <a href="extension/">page de téléchargement</a>. Les captures sont de vraies fenêtres (Chrome, Explorateur de fichiers, assistant d'installation) ; les chemins affichés sont des exemples : tu peux choisir un autre dossier.</p>
+  <p class="note">Besoin d'aide ? Va sur la <a href="aide.html">page d'aide</a> ou la <a href="extension/">page de téléchargement</a>. Les captures sont de vraies fenêtres (Chrome, Explorateur de fichiers, assistant d'installation) prises sous Windows 11 avec Chrome ; les chemins affichés sont des exemples : tu peux choisir un autre dossier. Pour l'application Android et l'application web, les tutoriels arrivent bientôt.</p>
 </main>
 <div class="lb" id="lb" hidden><button type="button" id="lbx" aria-label="Fermer">✕</button><figure><img id="lbi" alt=""><figcaption id="lbc"></figcaption></figure></div>
 <script>

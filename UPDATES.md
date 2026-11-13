@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.34 — mise à jour vérifiée sur Chrome, Edge et Firefox
+
+- **Mise à jour testée de bout en bout sur Chrome, Edge et Firefox** (profils vierges) : détection de la nouvelle version puis application sans réinstaller. Chrome et Edge : bouton « Télécharger et appliquer » ; Firefox : parcours en deux temps (maj-extension.bat puis rechargement).
+
 ## 1.46.33 — installateurs : dossier par défaut compatible avec la mise à jour automatique
 
 - **Dossier d'installation par défaut hors `AppData`, `~/Library` et `~/.local`** : Chrome refuse ces dossiers dans la boîte « Sélectionner un dossier », ce qui empêchait la mise à jour automatique en un clic. Les installateurs proposent maintenant `MyUCA` dans ton dossier personnel (Windows : `C:\Users\<toi>\MyUCA\extension`). Mise à jour automatique revérifiée de bout en bout sur un Chrome vierge.

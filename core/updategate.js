@@ -56,7 +56,11 @@
           });
       });
       var how = el("p", "margin:14px 0 6px;font-size:14px;color:" + dim + ";", "Première fois : choisis le dossier de l'extension (celui chargé dans chrome://extensions) et autorise l'écriture. La dernière version est téléchargée, appliquée, puis l'extension se recharge. Ensuite, les mises à jour suivantes se font avec ce même dossier. Firefox ou échec : remplace le dossier à la main puis « Recharger ».");
-      var link = el("a", "display:inline-block;margin:4px 0;color:" + accent + ";font-weight:600;", "Page de téléchargement (ZIP et script maj-extension.bat)");
+      // Firefox n'a pas de sélecteur de dossier : parcours en deux temps (script, puis un nouveau clic sur le bouton).
+      if (typeof window.showDirectoryPicker !== "function") {
+        how.textContent = "Firefox : télécharge et lance maj-extension.bat (lien ci-dessous) en lui donnant le dossier de l'extension. Il remplace les fichiers, puis reviens ici et clique de nouveau sur le bouton : l'extension se recharge toute seule.";
+      }
+      var link = el("a","display:inline-block;margin:4px 0;color:" + accent + ";font-weight:600;", "Page de téléchargement (ZIP et script maj-extension.bat)");
       link.href = "https://kiricoucou.github.io/uca-extension/extension/#maj"; link.target = "_blank"; link.rel = "noopener";
       var again = el("button", "display:block;margin:10px auto 0;font:inherit;border:0;background:none;color:" + accent + ";text-decoration:underline;cursor:pointer;padding:8px;min-height:36px;", "Vérifier à nouveau");
       again.type = "button";

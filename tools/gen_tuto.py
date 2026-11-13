@@ -567,13 +567,13 @@ def esc(s):
 
 def render_page():
     data = json.loads(STEPS.read_text(encoding="utf-8"))
-    order = [("installateur", "L'installateur (recommandé)", "Windows · fenêtre guidée"), ("zip", "Le ZIP", "Chrome · mode développeur"), ("apk", "Android (APK)", "Application native"), ("pwa", "Sur téléphone", "Application web (PWA)")]
+    order = [("installateur", "Installateur automatique", "Windows · fenêtre guidée"), ("zip", "Le ZIP", "Chrome · mode développeur"), ("apk", "Android (APK)", "Application native"), ("pwa", "Sur téléphone", "Application web (PWA)")]
     tabs, panels = [], []
     for i, (k, short, sub) in enumerate(order):
         d = data.get(k)
         if not d:
             continue
-        tabs.append(f'<button type="button" class="tab" role="tab" id="tab-{k}" aria-controls="p-{k}" aria-selected="{"true" if not tabs else "false"}" data-tab="{k}"><b>{esc(short)}</b><span>{esc(sub)}</span><i>{len(d["steps"])} étapes</i></button>')
+        tabs.append(f'<button type="button" class="tab" role="tab" id="tab-{k}" aria-controls="p-{k}" aria-selected="{"true" if not tabs else "false"}" data-tab="{k}"><b>{esc(short)}</b><span>{esc(sub)}</span>{'<i>Recommandé</i>' if k == 'installateur' else ''}</button>')
         cards = []
         for s in d["steps"]:
             cards.append(f"""<article class="st" id="{k}-{s['n']}">

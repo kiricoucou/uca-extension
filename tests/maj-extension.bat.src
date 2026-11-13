@@ -48,9 +48,19 @@ echo.
 echo Dossier : %DEST%
 echo Telechargement de la derniere version...
 set "MYUCA_DEST=%DEST%"
+rem Dossier Firefox (manifest avec "browser_specific_settings") : on telecharge le paquet Firefox, pas celui de Chrome.
+set "ISFF="
+findstr /c:"browser_specific_settings" "%DEST%\manifest.json" >nul 2>&1 && set "ISFF=1"
+if defined ISFF set "MYUCA_URL=https://kiricoucou.github.io/uca-extension/extension/uca-extension-firefox.zip"
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=[IO.File]::ReadAllText($env:SELFBAT); $i=$s.IndexOf([string][char]10+'#PS-START'); Invoke-Expression $s.Substring($i)"
 set "RC=%ERRORLEVEL%"
 if not "%RC%"=="0" goto :fail
+if defined ISFF (
+  echo.
+  echo Pour appliquer la mise a jour : dans Firefox, ouvre about:debugging#/runtime/this-firefox
+  echo et clique sur "Recharger" sur la carte de l'extension ^(ou clique sur le bouton de mise a jour de l'extension^).
+  goto :end
+)
 echo.
 echo Pour appliquer la mise a jour : dans chrome://extensions, clique sur "Recharger" (fleche ronde)
 echo sur la carte de l'extension. Elle se recharge aussi toute seule a la prochaine verification.

@@ -139,12 +139,18 @@ async function run({ interactive, onProgress, pick, getPackage } = {}) {
   if (!supported(!!interactive)) throw new Error("Ce navigateur ne permet pas la mise à jour automatique (Firefox) : suis les étapes manuelles.");
   const step = (t) => { if (onProgress) onProgress(0, 1, t); };
   let dir = await saved();
+  // L'autorisation d'écriture expire (redémarrage du navigateur, rechargement de l'extension) : il faut la redemander
+  // AVANT de lire le dossier, sinon la lecture échoue et on oublierait à tort le dossier choisi (nouvelle boîte de sélection).
+  if (dir) {
+    let granted = false;
+    try { granted = await permission(dir, interactive); } catch (e) { await forget(); dir = null; }
+    if (dir && !granted) {
+      if (!interactive) return null;   // pas d'autorisation en mode silencieux : on garde le dossier pour la prochaine fois
+      dir = null;
+    }
+  }
   if (dir) {
     try { await checkFolder(dir); } catch (e) { await forget(); dir = null; }
-  }
-  if (dir && !(await permission(dir, interactive))) {
-    if (!interactive) return null;   // pas d'autorisation en mode silencieux
-    dir = null;
   }
   if (!dir) {
     if (!interactive) return null;

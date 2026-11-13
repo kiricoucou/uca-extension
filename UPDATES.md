@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.36 — mise à jour : le dossier choisi est mémorisé, Firefox pris en charge par maj-extension.bat
+
+- **Chrome / Edge : le dossier de l'extension choisi une fois n'est plus oublié.** Quand Chrome retire l'autorisation d'écriture (rechargement de l'extension, redémarrage), un clic sur « Télécharger et appliquer » redemande seulement l'autorisation au lieu de rouvrir la boîte « Sélectionner un dossier ». **Firefox :** `maj-extension.bat` reconnaît un dossier Firefox, télécharge le paquet Firefox et indique `about:debugging` pour recharger.
+
 ## 1.46.35 — Firefox : vérification des mises à jour réparée
 
 - **Firefox : l'extension se croyait « paquet de magasin » et ne vérifiait jamais les mises à jour** (le navigateur répond « ok » pour un fichier absent). La détection exige maintenant le contenu du fichier `store-build.txt` : les installations Firefox hors magasin voient enfin le verrou « Mise à jour obligatoire » et le bouton.

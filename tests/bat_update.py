@@ -57,6 +57,15 @@ def main():
         check("2e lancement : déjà à jour", r2.returncode == 0 and "Deja a jour" in r2.stdout, r2.stdout[-300:])
         r3 = run(ext / "maj-extension.bat", tmp, "/force")
         check("/force réinstalle", r3.returncode == 0 and "OK :" in r3.stdout, r3.stdout[-300:])
+        # dossier Firefox : le script doit télécharger le paquet Firefox (manifeste différent), pas celui de Chrome
+        extff = tmp / "ext firefox"; extff.mkdir()
+        mf = json.loads((ROOT / "manifest.firefox.json").read_text(encoding="utf-8")); mf["version"] = "1.0.0"
+        (extff / "manifest.json").write_text(json.dumps(mf), encoding="utf-8")
+        (tmp / "maj.bat").write_bytes(src)
+        rf = run(tmp / "maj.bat", tmp, str(extff))
+        newf = json.loads((extff / "manifest.json").read_text(encoding="utf-8"))
+        check("dossier Firefox : mis à jour avec le paquet Firefox (pas celui de Chrome)", rf.returncode == 0 and newf["version"] != "1.0.0" and "browser_specific_settings" in newf and "scripts" in newf.get("background", {}), f"rc={rf.returncode} out={rf.stdout[-300:]!r} err={rf.stderr[-200:]!r} v={newf.get('version')}")
+        check("dossier Firefox : le message indique about:debugging", "about:debugging" in rf.stdout, rf.stdout[-300:])
         r4 = run(ext / "maj-extension.bat", tmp, str(tmp / "n-existe-pas"))
         check("mauvais dossier : échec propre, rien cassé", r4.returncode != 0 and (ext / "manifest.json").exists(), r4.stdout[-300:])
     finally:

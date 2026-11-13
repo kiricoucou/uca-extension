@@ -100,6 +100,7 @@ try {
   } else {
     robocopy $x $dest /E /XF 'maj-extension.bat' /NFL /NDL /NJH /NJS /NP | Out-Null
     if ($LASTEXITCODE -ge 8) { throw "copie impossible (robocopy $LASTEXITCODE) : ferme les fichiers ouverts puis reessaie" }
+    Get-ChildItem -Path $dest -Recurse -Force -Include 'desktop.ini','Thumbs.db','.DS_Store' -ErrorAction SilentlyContinue | ForEach-Object { try { $_.Attributes = 'Normal'; Remove-Item $_.FullName -Force } catch {} }
     Write-Host ("OK : " + $old.version + " -> " + $new.version)
   }
   Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue

@@ -81,6 +81,7 @@ BODY = """<body>
           <li>Clique sur <b>« Télécharger le ZIP »</b> (en haut de cette page). Le fichier <code>uca-extension-chrome.zip</code> arrive dans ton dossier <b>Téléchargements</b>.</li>
           <li>Ouvre ce dossier, fais un <b>clic droit</b> sur le fichier → <b>« Extraire tout… »</b> → <b>« Extraire »</b> (Mac : double-clic).</li>
           <li>Tu obtiens un dossier, par exemple <code>uca-extension-chrome</code>, qui contient directement <code>manifest.json</code>. <b>Ne le supprime pas et ne le déplace plus</b> : Chrome le lit depuis cet endroit tant que l'extension est installée.</li>
+          <li>Choisis un dossier qui t'appartient, comme <code>C:\\MyUCA\\extension</code>, <b>pas Documents ni Bureau eux-mêmes</b> : Windows y cache un fichier <code>desktop.ini</code> que Chrome refuse. Si Chrome affiche malgré tout « desktop.ini … illegal », double-clique <code>nettoyer-dossier-extension.bat</code>, déjà présent dans ce dossier à côté de <code>manifest.json</code>.</li>
         </ol></div>
       <div class="step"><h3>Active le mode développeur</h3>
         <ol class="sub-steps">
@@ -178,6 +179,7 @@ def main():
     import zipfile
     with zipfile.ZipFile(OUT / ZIP, "a", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("maj-extension.bat", bat.encode("utf-8"))
+        zf.writestr("nettoyer-dossier-extension.bat", (OUT / "nettoyer-dossier-extension.bat").read_bytes())
     mo = lambda f: f"{f.stat().st_size / 1048576:.1f}".replace(".", ",") + " Mo"
     z, a = OUT / ZIP, ROOT / "EdtUca.apk"
     sizes = {"zip": mo(z), "apk": mo(a), "both": f"{(z.stat().st_size + a.stat().st_size) / 1048576:.1f}".replace(".", ",") + " Mo"}

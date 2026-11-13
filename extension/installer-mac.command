@@ -151,4 +151,14 @@ if [ -n "$GUIDED" ]; then
   MSG="Dernière étape manuelle (règle du navigateur, impossible à contourner sans droits admin) :\n\nChrome / Firefox standard : page chrome://extensions > Mode développeur > Charger l'extension non empaquetée > Cmd+Maj+G, colle le chemin (déjà copié) : $DIR_C\nFirefox : about:debugging > Charger un module temporaire > $DIR_F/manifest.json.\n\nEdge, Brave, Vivaldi : l'extension est chargée pour cette session ; pour la garder à chaque lancement, fais l'étape ci-dessus une fois."
   [ "$YES" != "1" ] && osa -e 'display dialog "'"$MSG"'" buttons {"OK"} default button "OK" with title "My UCA : dernière étape"' >/dev/null
 fi
+# Où l'extension a été installée : chemin copiable / ouvrable, remarque sur les dossiers cachés (Library est masqué sur Mac)
+OPEN_PATH="$INST"; [ "$NEED_C" = "1" ] && OPEN_PATH="$DIR_C"
+printf '\nDossier de l'"'"'extension : %s\n(Dossier introuvable ? Library est masqué : dans le Finder, Cmd+Maj+. affiche les éléments masqués ; ou menu Aller > Aller au dossier, puis colle le chemin.)\n' "$OPEN_PATH"
+if [ "$YES" != "1" ]; then
+  CHOICE="$(osa -e 'button returned of (display dialog "Dossier de l'"'"'extension :\n'"$OPEN_PATH"'\n\nIntrouvable ? Library est masqué : dans le Finder, Cmd+Maj+. affiche les éléments masqués." buttons {"Fermer", "Copier le chemin", "Ouvrir le dossier"} default button "Ouvrir le dossier" with title "My UCA")')"
+  case "$CHOICE" in
+    "Ouvrir le dossier") [ "$NO_OPEN" != "1" ] && open -R "$OPEN_PATH" 2>/dev/null || open "$OPEN_PATH" 2>/dev/null ;;
+    "Copier le chemin") printf '%s' "$OPEN_PATH" | pbcopy 2>/dev/null ;;
+  esac
+fi
 exit 0

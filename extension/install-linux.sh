@@ -184,6 +184,8 @@ install_chrome() {
   say "Le dossier choisi sera celui que le navigateur lit : ne le supprime pas et ne le déplace pas ensuite."
   local dir; dir="$(choose_dir "Dossier d'installation de l'extension" "${UCA_DIR:-$DEFAULT_DIR/chrome}")"
   download_package "$ZIP_CHROME" "$dir" || return 1
+  RESULT_PATHS="${RESULT_PATHS:-}$dir
+"
   local bin="" b
   for b in google-chrome google-chrome-stable chromium chromium-browser brave-browser microsoft-edge microsoft-edge-stable vivaldi; do
     command -v "$b" >/dev/null 2>&1 && { bin="$b"; break; }
@@ -281,6 +283,8 @@ install_firefox() {
   local dir="${UCA_DIR:-$DEFAULT_DIR}/firefox"
   [ "$YES" != "1" ] && dir="$(choose_dir "Dossier de l'extension Firefox" "$dir")"
   download_package "$ZIP_FIREFOX" "$dir" || return 1
+  RESULT_PATHS="${RESULT_PATHS:-}$dir
+"
 
   if [ "$permanent" = "1" ]; then
     if firefox_running; then
@@ -341,6 +345,16 @@ case "$CHOICE" in
 esac
 
 prog 100 "Terminé"; prog_end
+# Où l'extension a été installée : chemin affiché, copiable, ouvrable dans le gestionnaire de fichiers
+if [ -n "${RESULT_PATHS:-}" ]; then
+  step "Dossier de l'extension"
+  printf '%s' "$RESULT_PATHS" | while IFS= read -r p; do [ -n "$p" ] && say "  $p"; done
+  say "Dossier introuvable ? Il peut être masqué (~/.local/share est caché) : dans le gestionnaire de fichiers, Ctrl+H affiche les éléments masqués."
+  FIRST_PATH="$(printf '%s' "$RESULT_PATHS" | head -n1)"
+  [ -n "$FIRST_PATH" ] && copy_clip "$FIRST_PATH" && say "(le chemin du premier dossier est copié dans le presse-papiers)"
+  if command -v xdg-open >/dev/null 2>&1 && [ "$NO_OPEN" != "1" ] && [ "$YES" != "1" ] && [ -n "$FIRST_PATH" ] && ask_yes_no "Ouvrir ce dossier dans ton gestionnaire de fichiers ?" o; then xdg-open "$FIRST_PATH" >/dev/null 2>&1 & fi
+fi
+
 step "Terminé"
 [ "$FAIL" = "0" ] && say "Tout s'est bien passé. L'extension est prête : ouvre-la depuis la barre d'outils du navigateur." || say "Certaines étapes ont échoué : lis les messages ci-dessus, rien n'a été cassé."
 exit "$FAIL"

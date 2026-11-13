@@ -5,7 +5,9 @@ title Installateur My UCA (cmd)
 rem ----------------------------------------------------------------------------------------------
 rem  Installateur graphique de l'extension My UCA pour Windows (Chrome, Edge, Brave, Vivaldi, Firefox).
 rem  - Double-clique ce fichier : une fenetre s'ouvre (dossier, navigateurs, barre de progression).
-rem  - Aucun droit administrateur : tout est ecrit dans ton profil.
+rem  - Fonctionne SANS droits administrateur (tout est ecrit dans ton profil).
+rem  - Lance en ADMINISTRATEUR (clic droit > Executer en tant qu'administrateur) : installation automatique,
+rem    fermeture automatique des navigateurs, Firefox Developer/Nightly/ESR installe pour tous les profils.
 rem  - Telecharge la derniere version sur https://kiricoucou.github.io/uca-extension/ (HTTPS), rien d'autre.
 rem  - Tes donnees (Odin, notes...) ne sont jamais touchees : elles vivent dans le navigateur.
 rem ----------------------------------------------------------------------------------------------
@@ -22,6 +24,10 @@ Add-Type -AssemblyName System.Drawing
 [System.Windows.Forms.Application]::EnableVisualStyles()
 
 $Base = $env:MYUCA_URL.TrimEnd('/')
+# Mode administrateur : detecte le lancement avec des droits eleves (MYUCA_FAKEADMIN=1 : crochet de test, ne change aucun droit reel).
+$script:isAdmin = $false
+try { $script:isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator) } catch {}
+if ($env:MYUCA_FAKEADMIN -eq '1') { $script:isAdmin = $true }
 # Crochets de test (MYUCA_AUTO=1 : sans fenetre ni dialogue ; MYUCA_NOLAUNCH=1 : ne lance aucun navigateur ; MYUCA_FFPROFILE / MYUCA_FFEDITION).
 $MB = New-Object PSObject
 $MB | Add-Member -MemberType ScriptMethod -Name Show -Value { param($a, $b, $c, $d) if ($env:MYUCA_AUTO -eq '1') { return }; if ($b) { [System.Windows.Forms.MessageBox]::Show($a, $b, $c, $d) } else { [System.Windows.Forms.MessageBox]::Show($a) } }
@@ -109,7 +115,11 @@ $title.AutoSize = $true; $title.Location = New-Object System.Drawing.Point(22, 1
 $sub = New-Object System.Windows.Forms.Label
 $sub.Text = 'Emploi du temps, notes et absences UCA. Gratuit, non officiel.'; $sub.ForeColor = [System.Drawing.Color]::FromArgb(220,238,252)
 $sub.AutoSize = $true; $sub.Location = New-Object System.Drawing.Point(24, 48)
-$head.Controls.AddRange(@($title, $sub))
+$lblAdmin = New-Object System.Windows.Forms.Label
+$lblAdmin.Text = $(if ($script:isAdmin) { '  Mode administrateur  ' } else { '  Droits standard  ' })
+$lblAdmin.AutoSize = $true; $lblAdmin.Location = New-Object System.Drawing.Point(466, 52); $lblAdmin.Font = New-Object System.Drawing.Font('Segoe UI Semibold', 9)
+if ($script:isAdmin) { $lblAdmin.BackColor = [System.Drawing.Color]::FromArgb(255,236,179); $lblAdmin.ForeColor = [System.Drawing.Color]::FromArgb(110,70,0) } else { $lblAdmin.BackColor = [System.Drawing.Color]::FromArgb(0,88,140); $lblAdmin.ForeColor = [System.Drawing.Color]::FromArgb(220,238,252) }
+$head.Controls.AddRange(@($title, $sub, $lblAdmin))
 $form.Controls.Add($head)
 
 function New-Page { $p = New-Object System.Windows.Forms.Panel; $p.Location = New-Object System.Drawing.Point(0, 78); $p.Size = New-Object System.Drawing.Size(640, 330); $p.Visible = $false; $form.Controls.Add($p); return $p }
@@ -128,12 +138,22 @@ function New-DirRow($parent, $y, $labelText, $default) {
 
 # Page 1 : dossiers
 $p1 = New-Page
-New-Label $p1 'Bienvenue ! Cet assistant installe l''extension sans droits administrateur.' 24 14 | Out-Null
-$tbInstall = New-DirRow $p1 52  '1. Ou installer l''extension (ce dossier doit rester en place) :' (Join-Path $env:LOCALAPPDATA 'MyUCA\extension')
+$lblWelcome = New-Label $p1 $(if ($script:isAdmin) { 'Mode administrateur : installation automatique, sans restriction de dossier.' } else { 'Bienvenue ! Cet assistant installe l''extension sans droits administrateur.' }) 24 14 590 24
+$tbInstall = New-DirRow $p1 52  '1. Ou installer l''extension (ce dossier doit rester en place) :' $(if ($script:isAdmin) { "$env:SystemDrive\MyUCA\extension" } else { Join-Path $env:LOCALAPPDATA 'MyUCA\extension' })
 $tbDl      = New-DirRow $p1 126 '2. Ou telecharger les fichiers (ZIP) :' (Join-Path $env:USERPROFILE 'Downloads')
 New-Label $p1 '3. La derniere version est recuperee automatiquement sur le site.' 24 206 | Out-Null
 $lblVer = New-Label $p1 'Version disponible : verification...' 24 232
 $lblVer.ForeColor = $Blue
+$lblAuto = New-Label $p1 '' 24 262 590 44
+$lblAuto.ForeColor = [System.Drawing.Color]::FromArgb(110,70,0)
+$btnNow = New-Object System.Windows.Forms.Button
+$btnNow.Text = 'Installer maintenant'; $btnNow.Location = New-Object System.Drawing.Point(24, 296); $btnNow.Size = New-Object System.Drawing.Size(200, 30); $btnNow.Visible = $script:isAdmin
+$p1.Controls.Add($btnNow)
+$btnAdmin = New-Object System.Windows.Forms.Button
+$btnAdmin.Text = 'Relancer en administrateur'; $btnAdmin.Location = New-Object System.Drawing.Point(24, 270); $btnAdmin.Size = New-Object System.Drawing.Size(240, 32); $btnAdmin.Visible = (-not $script:isAdmin)
+$p1.Controls.Add($btnAdmin)
+$lblAdminHint = New-Label $p1 'Optionnel : en administrateur, tout s''installe tout seul (navigateurs fermes automatiquement).' 24 304 590 22
+$lblAdminHint.ForeColor = [System.Drawing.Color]::FromArgb(90,98,110); $lblAdminHint.Visible = (-not $script:isAdmin)
 
 # Page 2 : navigateurs
 $p2 = New-Page
@@ -143,7 +163,7 @@ $clb.Location = New-Object System.Drawing.Point(24, 46); $clb.Size = New-Object 
 $p2.Controls.Add($clb)
 $note = New-Object System.Windows.Forms.Label
 $note.Location = New-Object System.Drawing.Point(24, 186); $note.Size = New-Object System.Drawing.Size(588, 130)
-$note.Text = "Ferme tes navigateurs choisis : l'assistant te le demandera a l'etape suivante (sans droits administrateur, il ne peut pas les fermer a ta place sans ton accord).`r`nChrome recent (v137+) refuse le chargement automatique : il sera ouvert sur la page des extensions et le dossier sera copie, il te restera 2 clics (mode developpeur, Charger l'extension non empaquetee)."
+$note.Text = $(if ($script:isAdmin) { "Mode administrateur : les navigateurs choisis seront fermes automatiquement (d'abord proprement, puis de force) et Firefox Developer Edition / Nightly / ESR est installe pour tous les profils.`r`nChrome recent (v137+) refuse le chargement automatique, meme en administrateur : il sera ouvert sur la page des extensions et le dossier sera copie, il te restera 2 clics (mode developpeur, Charger l'extension non empaquetee)." } else { "Ferme tes navigateurs choisis : l'assistant te le demandera a l'etape suivante (sans droits administrateur, il ne peut pas les fermer a ta place sans ton accord).`r`nChrome recent (v137+) refuse le chargement automatique : il sera ouvert sur la page des extensions et le dossier sera copie, il te restera 2 clics (mode developpeur, Charger l'extension non empaquetee)." })
 $p2.Controls.Add($note)
 
 # Page 3 : progression
@@ -155,6 +175,17 @@ $p3.Controls.Add($bar)
 $log = New-Object System.Windows.Forms.TextBox
 $log.Location = New-Object System.Drawing.Point(24, 86); $log.Size = New-Object System.Drawing.Size(588, 230); $log.Multiline = $true; $log.ReadOnly = $true; $log.ScrollBars = 'Vertical'; $log.BackColor = [System.Drawing.Color]::FromArgb(244,249,254)
 $p3.Controls.Add($log)
+$lblPath = New-Label $p3 'Dossier de l''extension (a garder tel quel) :' 24 204 590 22 $true
+$cbPath = New-Object System.Windows.Forms.ComboBox
+$cbPath.DropDownStyle = 'DropDownList'; $cbPath.Location = New-Object System.Drawing.Point(24, 230); $cbPath.Size = New-Object System.Drawing.Size(330, 26)
+$btnCopy = New-Object System.Windows.Forms.Button
+$btnCopy.Text = 'Copier le chemin'; $btnCopy.Location = New-Object System.Drawing.Point(360, 228); $btnCopy.Size = New-Object System.Drawing.Size(124, 30)
+$btnOpen = New-Object System.Windows.Forms.Button
+$btnOpen.Text = 'Ouvrir le dossier'; $btnOpen.Location = New-Object System.Drawing.Point(490, 228); $btnOpen.Size = New-Object System.Drawing.Size(124, 30)
+$lblHidden = New-Label $p3 'Tu ne vois pas ce dossier ? Il peut etre dans un dossier cache (AppData). Dans l''Explorateur de fichiers : Affichage > Afficher > Elements masques (Windows 10 : onglet Affichage > case Elements masques).' 24 264 590 56
+$lblHidden.ForeColor = [System.Drawing.Color]::FromArgb(90,98,110)
+foreach ($c in @($lblPath, $cbPath, $btnCopy, $btnOpen, $lblHidden)) { $c.Visible = $false }
+$p3.Controls.AddRange(@($cbPath, $btnCopy, $btnOpen))
 
 $btnNext = New-Object System.Windows.Forms.Button
 $btnNext.Text = 'Suivant'; $btnNext.Location = New-Object System.Drawing.Point(502, 420); $btnNext.Size = New-Object System.Drawing.Size(116, 36)
@@ -167,6 +198,8 @@ $btnCancel.Add_Click({ $form.Close() })
 $form.Controls.AddRange(@($btnNext, $btnBack, $btnCancel))
 
 function Say($t) { $log.AppendText($t + "`r`n"); [System.Windows.Forms.Application]::DoEvents() }
+$btnCopy.Add_Click({ if ($cbPath.SelectedItem) { try { Set-Clipboard -Value ([string]$cbPath.SelectedItem); $btnCopy.Text = 'Copie !' } catch { $btnCopy.Text = 'Echec' } } })
+$btnOpen.Add_Click({ if ($cbPath.SelectedItem) { Launch 'explorer.exe' ('"' + [string]$cbPath.SelectedItem + '"') } })
 function Prog($v, $txt) { $bar.Value = [Math]::Max(0, [Math]::Min(100, [int]$v)); if ($txt) { $lblStep.Text = $txt }; [System.Windows.Forms.Application]::DoEvents() }
 
 $script:browsers = @(Find-Browsers)
@@ -206,6 +239,15 @@ function Stop-Browsers($sel) {
   $names = $sel | ForEach-Object { $_.proc } | Select-Object -Unique
   $running = { Get-Process -Name $names -ErrorAction SilentlyContinue }
   if (-not (& $running)) { return }
+  if ($script:isAdmin) {
+    # Administrateur : aucune demande, fermeture propre puis forcee (y compris les sessions des autres utilisateurs)
+    Say 'Mode administrateur : fermeture automatique des navigateurs choisis...'
+    foreach ($pr in @(& $running)) { try { [void]$pr.CloseMainWindow() } catch {} }
+    for ($i = 0; $i -lt 10 -and (& $running); $i++) { Start-Sleep -Milliseconds 500; [System.Windows.Forms.Application]::DoEvents() }
+    if ($env:MYUCA_NOKILL -eq '1') { Say 'Navigateurs laisses ouverts (mode test).'; return }
+    if (& $running) { Say 'Fermeture forcee des navigateurs restants...'; & $running | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
+    return
+  }
   $list = ($sel | Where-Object { Get-Process -Name $_.proc -ErrorAction SilentlyContinue } | ForEach-Object { $_.name }) -join ', '
   [void]$MB.Show("Ferme correctement : $list`r`n(enregistre ton travail, puis ferme toutes les fenetres).`r`nClique sur OK une fois fait : s'il en reste d'ouverts, ils seront fermes de force.", 'My UCA', 'OK', 'Information')
   for ($i = 0; $i -lt 20 -and (& $running); $i++) { Start-Sleep -Milliseconds 500; [System.Windows.Forms.Application]::DoEvents() }
@@ -263,7 +305,8 @@ function Run-Install {
       } else {
         $edition = Get-FirefoxEdition $b.path
         $prof = Get-FirefoxProfile
-        if ($edition -ne 'release' -and $prof) {
+        if ($edition -ne 'release' -and ($prof -or $script:isAdmin)) {
+          if ($prof) {
           $uj = Join-Path $prof 'user.js'
           if (Test-Path $uj) { Copy-Item $uj ($uj + '.uca-sauvegarde-' + (Get-Date -Format 'yyyyMMdd-HHmmss')) }
           $cur = if (Test-Path $uj) { Get-Content $uj -Raw } else { '' }
@@ -272,6 +315,17 @@ function Run-Install {
           $ed = Join-Path $prof 'extensions'; New-Item -ItemType Directory -Path $ed -Force | Out-Null
           Copy-Item $zf (Join-Path $ed 'uca-connecteur@site-emploi-du-temps.local.xpi') -Force
           Say 'Firefox : extension installee dans ton profil (permanente).'
+          }
+          if ($script:isAdmin) {
+            try {
+              $ffDir = $(if ($env:MYUCA_FFDIR) { $env:MYUCA_FFDIR } else { Split-Path $b.path })
+              $dx = Join-Path $ffDir 'distribution\extensions'; New-Item -ItemType Directory -Path $dx -Force | Out-Null
+              Copy-Item $zf (Join-Path $dx 'uca-connecteur@site-emploi-du-temps.local.xpi') -Force
+              $dp = Join-Path $ffDir 'defaults\pref'; New-Item -ItemType Directory -Path $dp -Force | Out-Null
+              Set-Content -Path (Join-Path $dp 'uca-prefs.js') -Value @('pref("xpinstall.signatures.required", false);', 'pref("extensions.autoDisableScopes", 0);') -Encoding ASCII
+              Say ('Firefox : extension installee pour TOUS les profils (' + $dx + ').')
+            } catch { Say ('Firefox : installation pour tous les profils impossible (' + $_.Exception.Message + ').') }
+          }
           Launch $b.path $thanks
         } else {
           Say 'Firefox (version standard) : refuse les extensions non signees de facon permanente, chargement temporaire guide.'
@@ -282,6 +336,14 @@ function Run-Install {
     }
     Prog 100 'Termine !'
     Say ''
+    $paths = @(); if ($needChromium) { $paths += $dirC }; if ($needFirefox) { $paths += $dirF }
+    foreach ($pp in $paths) { Say ('Dossier de l''extension : ' + $pp) }
+    $cbPath.Items.Clear(); foreach ($pp in $paths) { [void]$cbPath.Items.Add($pp) }
+    if ($cbPath.Items.Count -gt 0) {
+      $cbPath.SelectedIndex = 0; $btnCopy.Text = 'Copier le chemin'
+      $log.Size = New-Object System.Drawing.Size(588, 108)
+      foreach ($c in @($lblPath, $cbPath, $btnCopy, $btnOpen, $lblHidden)) { $c.Visible = $true }
+    }
     Say 'Installation terminee. La page de connexion de l''extension et la page de remerciement s''ouvrent dans tes navigateurs.'
     $guided = @($manual | Where-Object { $_.id -eq 'chrome' -or $_.kind -eq 'firefox' })
     if ($guided.Count -gt 0) {
@@ -289,6 +351,7 @@ function Run-Install {
       $msg = 'Il reste une etape manuelle (regle du navigateur, pas de contournement possible sans admin) :' + "`r`n`r`n"
       if ($guided | Where-Object { $_.id -eq 'chrome' }) { $msg += "Chrome : page chrome://extensions > active Mode developpeur > Charger l'extension non empaquetee > colle le chemin (Ctrl+V, deja copie) : $dirC`r`n`r`n" }
       if ($guided | Where-Object { $_.kind -eq 'firefox' }) { $msg += "Firefox : page about:debugging > Charger un module complementaire temporaire > choisis $dirF\manifest.json (a refaire a chaque demarrage ; Firefox Developer Edition l'installe de facon permanente).`r`n" }
+      $msg += "`r`nDossier cache ? Dans l'Explorateur : Affichage > Afficher > Elements masques."
       [void]$MB.Show($msg, 'My UCA : derniere etape', 'OK', 'Information')
     }
     $btnNext.Text = 'Fermer'; $btnNext.Enabled = $true; $script:done = $true
@@ -307,8 +370,29 @@ function Show-Page($n) {
   $btnBack.Visible = ($n -eq 2 -or $n -eq 3)
   $btnNext.Text = $(if ($n -eq 2) { 'Installer' } else { 'Suivant' })
 }
+function Start-AutoInstall {
+  $timer.Stop()
+  if ($script:browsers.Count -eq 0) { $lblAuto.Text = 'Aucun navigateur compatible detecte.'; return }
+  if (-not $script:latest) { $lblAuto.Text = 'Impossible de joindre le site : verifie ta connexion.'; return }
+  for ($i = 0; $i -lt $clb.Items.Count; $i++) { $clb.SetItemChecked($i, $true) }
+  Show-Page 3; Run-Install
+}
+$script:countdown = 10
+$timer = New-Object System.Windows.Forms.Timer; $timer.Interval = 1000
+$timer.Add_Tick({
+  if ($script:page -ne 1 -or $script:done) { $timer.Stop(); return }
+  if (-not $script:latest) { return }
+  $script:countdown--
+  if ($script:countdown -le 0) { Start-AutoInstall } else { $lblAuto.Text = "Mode administrateur : installation automatique dans $($script:countdown) s (tous les navigateurs detectes, fermes automatiquement). Clique sur Suivant pour personnaliser." }
+})
+$btnNow.Add_Click({ Start-AutoInstall })
+$btnAdmin.Add_Click({
+  try { Start-Process -FilePath $env:SELFBAT -Verb RunAs; $form.Close() } catch { $lblAuto.Text = 'Relance en administrateur annulee ou impossible.' }
+})
+foreach ($tb in @($tbInstall, $tbDl)) { $tb.Add_TextChanged({ if ($timer.Enabled) { $timer.Stop(); $lblAuto.Text = 'Installation automatique annulee : personnalise puis clique sur Suivant.' } }) }
 $btnBack.Add_Click({ Show-Page ($script:page - 1) })
 $btnNext.Add_Click({
+  if ($timer.Enabled) { $timer.Stop(); $lblAuto.Text = '' }
   if ($script:done) { $form.Close(); return }
   if ($script:page -eq 1) {
     if (-not $tbInstall.Text.Trim() -or -not $tbDl.Text.Trim()) { [void]$MB.Show('Choisis les deux dossiers.'); return }
@@ -327,6 +411,7 @@ $form.Add_Shown({
     $m = Invoke-RestMethod -Uri ("$Base/manifest.json?t=" + [DateTime]::UtcNow.Ticks) -TimeoutSec 20
     $script:latest = $m.version; $lblVer.Text = 'Version disponible : ' + $m.version
   } catch { $lblVer.Text = 'Impossible de joindre le site (connexion ?).'; $lblVer.ForeColor = [System.Drawing.Color]::FromArgb(165,14,14) }
+  if ($script:isAdmin -and $env:MYUCA_AUTO -ne '1' -and $script:latest) { $lblAuto.Text = 'Mode administrateur : installation automatique dans 10 s (tous les navigateurs detectes, fermes automatiquement). Clique sur Suivant pour personnaliser.'; $timer.Start() }
 })
 Show-Page 1
 if ($env:MYUCA_SELFTEST -eq '1') { Write-Host 'selftest ok'; exit 0 }

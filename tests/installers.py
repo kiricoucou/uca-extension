@@ -47,7 +47,7 @@ def test_windows(tmp):
     ps.write_bytes(b"\xef\xbb\xbf" + s[s.index("\n#PS-START"):].encode("utf-8"))
     ff = tmp / "ff"; ff.mkdir()
     env = dict(os.environ, MYUCA_URL=URL, MYUCA_AUTO="1", MYUCA_NOLAUNCH="1", MYUCA_INSTALL=str(tmp / "inst"), MYUCA_DL=str(tmp / "dl"),
-               MYUCA_BROWSERS="chrome,edge,brave,vivaldi,firefox", MYUCA_FFPROFILE=str(ff), MYUCA_FFEDITION="aurora", MYUCA_CFGDIR=str(tmp / "cfg"))
+               MYUCA_BROWSERS="chrome,edge,brave,vivaldi,firefox", MYUCA_FFPROFILE=str(ff), MYUCA_FFEDITION="aurora", MYUCA_CFGDIR=str(tmp / "cfg"), MYUCA_FFDIR=str(tmp / "ffglobal-std"))
     r = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-STA", "-File", str(ps)], env=env, capture_output=True, text=True, timeout=180)
     check("windows : installateur (mode automatique) termine sans erreur", r.returncode == 0 and "AUTO OK" in r.stdout, (r.stdout + r.stderr)[-400:])
     check("windows : paquet Chrome installé", (tmp / "inst" / "chrome" / "manifest.json").exists())
@@ -56,6 +56,18 @@ def test_windows(tmp):
     check("windows : version installée = version publiée", f'"version": "{version()}"' in (tmp / "inst" / "chrome" / "manifest.json").read_text(encoding="utf-8"))
     check("windows : .xpi + user.js dans le profil Firefox", (ff / "extensions").exists() and "signatures.required" in (ff / "user.js").read_text(encoding="utf-8"))
     check("windows : dossier mémorisé pour maj-extension.bat", (tmp / "cfg" / "dossier-extension.txt").exists())
+    check("windows : sans droits administrateur, aucune écriture dans le dossier global de Firefox", not (tmp / "ffglobal-std").exists())
+    check("windows : le journal indique le dossier de l'extension", "Dossier de l'extension : " in r.stdout, r.stdout[-300:])
+
+    # mode administrateur (simulé : MYUCA_FAKEADMIN=1) : Firefox installé pour tous les profils, dossiers visibles par défaut
+    ffa = tmp / "ffa"; ffa.mkdir()
+    env2 = dict(env, MYUCA_FAKEADMIN="1", MYUCA_BROWSERS="firefox", MYUCA_FFPROFILE=str(ffa), MYUCA_FFDIR=str(tmp / "ffglobal"), MYUCA_INSTALL=str(tmp / "inst-admin"), MYUCA_DL=str(tmp / "dl-admin"))
+    r2 = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-STA", "-File", str(ps)], env=env2, capture_output=True, text=True, timeout=180)
+    check("windows (administrateur simulé) : installation sans erreur", r2.returncode == 0 and "AUTO OK" in r2.stdout, (r2.stdout + r2.stderr)[-400:])
+    glob = tmp / "ffglobal"
+    check("windows (administrateur) : .xpi dans distribution\\extensions (tous les profils)", any((glob / "distribution" / "extensions").glob("*.xpi")))
+    check("windows (administrateur) : préférences Firefox globales écrites", "xpinstall.signatures.required" in ((glob / "defaults" / "pref" / "uca-prefs.js").read_text(encoding="ascii") if (glob / "defaults" / "pref" / "uca-prefs.js").exists() else ""))
+    check("windows (administrateur) : le journal le dit", "TOUS les profils" in r2.stdout, r2.stdout[-300:])
 
 
 def test_linux(tmp):
@@ -71,6 +83,7 @@ def test_linux(tmp):
     check("linux : installateur termine sans erreur", r.returncode == 0, (r.stdout + r.stderr)[-300:])
     check("linux : extension Chrome installée", (tmp / "lext" / "manifest.json").exists())
     check("linux : extension Firefox installée (.xpi permanent)", any((home / ".mozilla/firefox/abc.default/extensions").glob("*.xpi")))
+    check("linux : dossier de l'extension affiché avec la remarque sur les fichiers cachés", "Dossier de l'extension" in r.stdout and "Ctrl+H" in r.stdout, r.stdout[-400:])
 
 
 def test_mac(tmp):

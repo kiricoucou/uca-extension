@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.35 — Firefox : vérification des mises à jour réparée
+
+- **Firefox : l'extension se croyait « paquet de magasin » et ne vérifiait jamais les mises à jour** (le navigateur répond « ok » pour un fichier absent). La détection exige maintenant le contenu du fichier `store-build.txt` : les installations Firefox hors magasin voient enfin le verrou « Mise à jour obligatoire » et le bouton.
+
 ## 1.46.34 — mise à jour vérifiée sur Chrome, Edge et Firefox
 
 - **Mise à jour testée de bout en bout sur Chrome, Edge et Firefox** (profils vierges) : détection de la nouvelle version puis application sans réinstaller. Chrome et Edge : bouton « Télécharger et appliquer » ; Firefox : parcours en deux temps (maj-extension.bat puis rechargement).

@@ -105,7 +105,8 @@ async function fetchLatestVersion() {
 let storeBuild = null;
 async function isStoreBuild() {
   if (storeBuild === null) {
-    try { storeBuild = (await fetch(chrome.runtime.getURL("store-build.txt"))).ok; } catch (e) { storeBuild = false; }
+    // Firefox répond « ok » (fichier vide) pour une ressource absente de l'extension : on exige aussi le texte du fichier.
+    try { const r = await fetch(chrome.runtime.getURL("store-build.txt")); storeBuild = r.ok && /magasins/.test(await r.text()); } catch (e) { storeBuild = false; }
   }
   return storeBuild;
 }

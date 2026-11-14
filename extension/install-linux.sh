@@ -18,7 +18,7 @@ BASE_URL="${UCA_BASE_URL:-https://kiricoucou.github.io/uca-extension/extension}"
 ZIP_CHROME="uca-extension-chrome.zip"
 ZIP_FIREFOX="uca-extension-firefox.zip"
 GECKO_ID="uca-connecteur@site-emploi-du-temps.local"
-DEFAULT_DIR="$HOME/MyUCA"   # pas dans un dossier caché ni dans ~/.local, ~/.config : Chrome refuse ces dossiers pour la mise à jour automatique
+DEFAULT_DIR="$HOME/Desktop"; [ -d "$HOME/Bureau" ] && [ ! -d "$HOME/Desktop" ] && DEFAULT_DIR="$HOME/Bureau"; [ -d "$DEFAULT_DIR" ] || DEFAULT_DIR="$HOME"   # Bureau : pas un dossier caché ni protégé (Chrome refuse ~/.local, ~/.config pour la mise à jour automatique)
 YES="${UCA_YES:-0}"
 NO_OPEN="${UCA_NO_OPEN:-0}"
 TMP=""
@@ -182,7 +182,7 @@ chrome_ext_id() {   # chrome_ext_id /chemin/absolu  -> identifiant que Chrome / 
 install_chrome() {
   step "Chrome / Chromium / Brave / Edge"
   say "Le dossier choisi sera celui que le navigateur lit : ne le supprime pas et ne le déplace pas ensuite."
-  local dir; dir="$(choose_dir "Dossier d'installation de l'extension" "${UCA_DIR:-$DEFAULT_DIR/chrome}")"
+  local dir; dir="$(choose_dir "Dossier d'installation de l'extension" "${UCA_DIR:-$DEFAULT_DIR/extension_uca_chrome}")"
   download_package "$ZIP_CHROME" "$dir" || return 1
   RESULT_PATHS="${RESULT_PATHS:-}$dir
 "
@@ -280,7 +280,7 @@ install_firefox() {
 
   ask_yes_no "Installer l'extension sur Firefox (profil : $(basename "$profile")) ?" o || { say "Firefox : ignoré à ta demande."; return 0; }
 
-  local dir="${UCA_DIR:-$DEFAULT_DIR}/firefox"
+  local dir; if [ -n "${UCA_DIR:-}" ]; then dir="$UCA_DIR/firefox"; else dir="$DEFAULT_DIR/extension_uca_firefox"; fi
   [ "$YES" != "1" ] && dir="$(choose_dir "Dossier de l'extension Firefox" "$dir")"
   download_package "$ZIP_FIREFOX" "$dir" || return 1
   RESULT_PATHS="${RESULT_PATHS:-}$dir

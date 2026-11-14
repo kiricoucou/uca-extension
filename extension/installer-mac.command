@@ -34,13 +34,13 @@ clear 2>/dev/null
 printf '%s%s My UCA : installation de l'"'"'extension%s\n   Emploi du temps, notes et absences UCA. Gratuit, non officiel.\n\n' "$BOLD" "$BLUE" "$RST"
 
 # ---------------------------------------------------------------- 1) dossier d'installation, 2) dossier de telechargement
-DEF_DIR="$HOME/MyUCA/extension"   # hors ~/Library : Chrome refuse ce dossier pour la mise à jour automatique
+DEF_DIR="$HOME/Desktop"   # Bureau : hors ~/Library, que Chrome refuse pour la mise à jour automatique ; les sous-dossiers extension_uca_<navigateur> y sont créés
 DEF_DL="$HOME/Downloads"
 mkdir -p "$DEF_DIR" 2>/dev/null
 if [ "$YES" = "1" ]; then INST="$DEF_DIR"; DLDIR="$DEF_DL"
 else
   INST="$(osa -e 'POSIX path of (choose folder with prompt "1/2 - Où installer l'"'"'extension ? (ce dossier doit rester en place)" default location (POSIX file "'"$HOME"'"))')"
-  INST="${INST%/}"; [ -z "$INST" ] && INST="$DEF_DIR" || INST="$INST/extension"
+  INST="${INST%/}"; [ -z "$INST" ] && INST="$DEF_DIR"
   DLDIR="$(osa -e 'POSIX path of (choose folder with prompt "2/2 - Où télécharger les fichiers (ZIP) ?" default location (POSIX file "'"$DEF_DL"'"))')"
   DLDIR="${DLDIR%/}"; [ -z "$DLDIR" ] && DLDIR="$DEF_DL"
 fi
@@ -88,7 +88,7 @@ dl_pkg() {   # dl_pkg nom.zip dossier p0 p1
   find "$2" \( -name desktop.ini -o -name Thumbs.db -o -name .DS_Store \) -type f -delete 2>/dev/null   # Chrome refuse ces fichiers dans un dossier d'extension
   bar "$4" "Installé dans $2"
 }
-DIR_C="$INST/chrome"; DIR_F="$INST/firefox"
+DIR_C="$INST/extension_uca_chrome"; DIR_F="$INST/extension_uca_firefox"
 bar 5 "Préparation"
 [ "$NEED_C" = "1" ] && { dl_pkg uca-extension-chrome.zip "$DIR_C" 8 40 || exit 1; }
 [ "$NEED_F" = "1" ] && { dl_pkg uca-extension-firefox.zip "$DIR_F" 45 70 || exit 1; }

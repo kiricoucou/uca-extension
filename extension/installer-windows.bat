@@ -139,7 +139,7 @@ function New-DirRow($parent, $y, $labelText, $default) {
 # Page 1 : dossiers
 $p1 = New-Page
 $lblWelcome = New-Label $p1 $(if ($script:isAdmin) { 'Mode administrateur : installation automatique, sans restriction de dossier.' } else { 'Bienvenue ! Cet assistant installe l''extension sans droits administrateur.' }) 24 14 590 24
-$tbInstall = New-DirRow $p1 52  '1. Ou installer l''extension (ce dossier doit rester en place) :' $(if ($script:isAdmin) { "$env:SystemDrive\MyUCA\extension" } else { Join-Path $env:USERPROFILE 'MyUCA\extension' })
+$tbInstall = New-DirRow $p1 52  '1. Ou installer l''extension (un sous-dossier extension_uca_<navigateur> y sera cree, il doit rester en place) :' $([Environment]::GetFolderPath('Desktop'))
 $tbDl      = New-DirRow $p1 126 '2. Ou telecharger les fichiers (ZIP) :' (Join-Path $env:USERPROFILE 'Downloads')
 New-Label $p1 '3. La derniere version est recuperee automatiquement sur le site.' 24 206 | Out-Null
 $lblVer = New-Label $p1 'Version disponible : verification...' 24 232
@@ -274,7 +274,7 @@ function Run-Install {
     Prog 3 'Recherche de la derniere version...'
     Say ('Derniere version : ' + $script:latest)
     $zc = Join-Path $dlDir 'uca-extension-chrome.zip'; $zf = Join-Path $dlDir 'uca-extension-firefox.zip'
-    $dirC = Join-Path $instDir 'chrome'; $dirF = Join-Path $instDir 'firefox'
+    $dirC = Join-Path $instDir 'extension_uca_chrome'; $dirF = Join-Path $instDir 'extension_uca_firefox'
     if ($needChromium) { Prog 8 'Telechargement (Chrome, Edge, Brave...)'; Say 'Telechargement du paquet Chrome / Edge / Brave...'; Get-File "$Base/extension/uca-extension-chrome.zip?t=$stamp" $zc 8 40; Prog 42 'Installation des fichiers'; Expand-Pkg $zc $dirC; Say ('Fichiers installes dans ' + $dirC) }
     if ($needFirefox)  { Prog 44 'Telechargement (Firefox)'; Say 'Telechargement du paquet Firefox...'; Get-File "$Base/extension/uca-extension-firefox.zip?t=$stamp" $zf 44 70; Prog 72 'Installation des fichiers'; Expand-Pkg $zf $dirF; Say ('Fichiers installes dans ' + $dirF) }
     # dossier memorise pour maj-extension.bat

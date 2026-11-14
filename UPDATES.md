@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.39 — Dossier d'installation par défaut sur le Bureau
+
+- Les installateurs (Windows, Mac, Linux) et les guides placent l'extension dans Bureau/extension_uca_chrome (et extension_uca_firefox) : un dossier que Chrome et Edge acceptent pour la mise à jour en un clic (AppData, ~/Library et ~/.local sont refusés).
+
 ## 1.46.38 — verrou de mise à jour adapté à Firefox
 
 - **Firefox : le verrou « Mise à jour obligatoire » explique le bon parcours** (lancer `maj-extension.bat` sur le dossier de l'extension, puis recliquer sur le bouton) au lieu de parler de `chrome://extensions` et du choix d'un dossier.

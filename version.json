@@ -14,9 +14,18 @@
     "APK : si tu annules l'installateur Android après le téléchargement, un bouton « Relancer la demande d'installation » apparaît (sans retélécharger).",
     "Téléchargement de l'APK plus sûr (fichier temporaire, renommé seulement quand il est complet)."
   ],
-  "ota_version": "1.4.22",
+  "ota_version": "1.4.23",
   "ota_base_version_code": 19,
   "history": [
+    {
+      "version": "1.46.40",
+      "app": "1.4.23",
+      "title": "« Aujourd'hui » le week-end et notes à barème en violet/rose",
+      "items": [
+        "Vues 5 et 6 jours : un samedi ou un dimanche, « Aujourd'hui » (bouton, menu et touche T) affiche la semaine suivante au lieu de la semaine qui vient de finir ; même chose à l'ouverture…",
+        "Notes à barème (sur 12, sur 25…) : le chiffre de la note est violet tant que le barème n'est pas confirmé, rose ensuite, dans le tableau comme dans la liste sous le graphique (le rouge…"
+      ]
+    },
     {
       "version": "1.46.30",
       "app": "1.4.22",
@@ -89,14 +98,6 @@
         "Notes : la fenêtre de détail d'une évaluation passait derrière la liste des notes et se chevauchait avec elle ; elle s'ouvre maintenant au premier plan. Version web seule (mise à jour…",
         "Site : nouvelle page « Télécharger l'extension » (extension/) avec le ZIP Chrome/Edge à charger en mode développeur ; le ZIP ne contient que le code, aucune donnée personnelle…",
         "Pages de téléchargement : choix « ZIP de l'extension », « APK » ou « les deux d'un coup », avec le poids en Mo affiché sur chaque bouton."
-      ]
-    },
-    {
-      "version": "1.46.16",
-      "app": "1.4.15",
-      "title": "barème sans doublon",
-      "items": [
-        "Barème des évaluations : l'intitulé affichait « (sur 22.0) (sur 22) » quand Odin sépare « sur » et le nombre par une espace insécable ; le barème d'origine est maintenant retiré dans…"
       ]
     }
   ]

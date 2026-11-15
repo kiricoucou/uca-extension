@@ -55,6 +55,11 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.40 — app Android 1.4.23 : « Aujourd'hui » le week-end et notes à barème en violet/rose
+
+- Vues 5 et 6 jours : un samedi ou un dimanche, « Aujourd'hui » (bouton, menu et touche T) affiche la semaine suivante au lieu de la semaine qui vient de finir ; même chose à l'ouverture et en passant à ces vues. La vue Semaine ne change pas.
+- Notes à barème (sur 12, sur 25…) : le chiffre de la note est violet tant que le barème n'est pas confirmé, rose ensuite, dans le tableau comme dans la liste sous le graphique (le rouge de l'ancienneté l'emportait). La barre garde la couleur de la note.
+
 ## 1.46.39 — Dossier d'installation par défaut sur le Bureau
 
 - Les installateurs (Windows, Mac, Linux) et les guides placent l'extension dans Bureau/extension_uca_chrome (et extension_uca_firefox) : un dossier que Chrome et Edge acceptent pour la mise à jour en un clic (AppData, ~/Library et ~/.local sont refusés).

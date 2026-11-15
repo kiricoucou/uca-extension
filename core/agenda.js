@@ -52,6 +52,13 @@ function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMont
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
 function startOfWeek(d) { const r = new Date(d); const day = (r.getDay() + 6) % 7; r.setDate(r.getDate() - day); return r; }
 function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+/* « Aujourd'hui » : dans les vues 5 et 6 jours, un samedi ou un dimanche affiche la semaine suivante (la semaine en cours est
+   terminée, ce qui reste à voir est devant). Les autres vues (semaine, jour, mois…) gardent la date du jour. */
+function todayDate(view) {
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  const v = view || currentView, wd = d.getDay();
+  return (v === "5day" || v === "6day") && (wd === 0 || wd === 6) ? addDays(startOfWeek(d), 7) : d;
+}
 function monthShort(d) { return d.toLocaleDateString("fr-FR", { month: "short" }).replace(".", ""); }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function eventKey(ev) { return ev.date + "_" + pad(ev.startH) + ":" + pad(ev.startM) + "_" + ev.title; }
@@ -148,7 +155,14 @@ function navigate(dir) {
   else refDate = addDays(refDate, 7 * dir);
   render();
 }
-function switchView(v) { if (availableViews().includes(v)) currentView = v; render(); }
+function switchView(v) {
+  if (availableViews().includes(v)) {
+    currentView = v;
+    // Passage en 5 ou 6 jours un week-end, alors qu'on regarde la date du jour : on montre la semaine suivante.
+    if ((v === "5day" || v === "6day") && sameDay(refDate, new Date())) refDate = todayDate(v);
+  }
+  render();
+}
 
 /* ============================= Aller à un cours ============================= */
 function closeAllSheets() {
@@ -686,7 +700,7 @@ function buildMobileMenu() {
     const icon = viewIcons[v] || "📅";
     m.appendChild(menuButton("mi" + (v === currentView ? " active" : ""), escapeHtml(withIcon(icon, T("view_" + v))), () => switchView(v)));
   });
-  m.appendChild(menuButton("mi", escapeHtml(withIcon("📍", T("today"))), () => { refDate = new Date(); refDate.setHours(0, 0, 0, 0); render(); }));
+  m.appendChild(menuButton("mi", escapeHtml(withIcon("📍", T("today"))), () => { refDate = todayDate(); render(); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   const avg = generalAverage();
   m.appendChild(menuButton("mi", "🎓 Notes & Moyennes" + (avg != null ? ` — moyenne ${fmtNote(avg)}` : ""), () => openToolPanel("notesPanel", true)));
@@ -875,6 +889,8 @@ function loadFromStorage() {
       if (settings.startView !== "auto" && availableViews().includes(settings.startView)) currentView = settings.startView;
       else if (isMobileUI()) currentView = "list";
       else if (eventsOnDate(refDate).length === 0 && availableViews().includes("5day")) currentView = "5day";
+      // Ouverture en 5 ou 6 jours un week-end : la semaine suivante, pas celle qui vient de finir.
+      if (currentView === "5day" || currentView === "6day") refDate = todayDate(currentView);
     }
     renderSyncInfo(data.uca_last_sync, data.uca_app_imported_at);
     renderNextInfo();
@@ -1137,8 +1153,8 @@ function setScale(key, value) {
 .sc-flip{padding:0 6px!important;margin-left:4px;height:22px!important;min-height:0!important;line-height:18px;vertical-align:baseline;border-radius:8px!important}
 .sc-ask button{height:auto!important;min-height:30px!important}
 .sc-ask .sc-q{font-weight:700;color:var(--danger,#d93025)}
-.note-val.sc-note-ask{color:var(--sc-ask,#a78bfa)!important;font-weight:800}
-.note-val.sc-note-done{color:var(--sc-done,#f472b6)!important;font-weight:800}
+.note-val.sc-note-ask,.notes-table td.note.note-val.sc-note-ask,.np-mat .sc-note-ask{color:var(--sc-ask,#a78bfa)!important;font-weight:800}
+.note-val.sc-note-done,.notes-table td.note.note-val.sc-note-done,.np-mat .sc-note-done{color:var(--sc-done,#f472b6)!important;font-weight:800}
 .notes-avg .na-lbl,.notes-avg .na-val{white-space:nowrap}`;
   document.head.appendChild(st);
 })();
@@ -1585,6 +1601,8 @@ function overviewChart() {
       left.appendChild(track);
       if (e.moy != null) { const ct = npEl("div", ""); ct.style.cssText = `height:5px;border-radius:3px;margin-top:3px;width:${Math.max(2, Math.min(100, e.moy / 20 * 100))}%;background:currentColor;opacity:.3;`; ct.title = `Moyenne de la classe : ${fmtNote(e.moy)}`; left.appendChild(ct); }
       const val = npEl("div", "", fmtNote(e.note)); val.style.cssText = `text-align:right;font-weight:700;color:${gradeColor(e.note)};`;
+      // Note à barème (sur 12, sur 25…) : le chiffre est violet tant que le barème n'est pas confirmé, rose ensuite ; la barre garde la couleur de la note.
+      if (sc) { val.classList.add(e.choice == null ? "sc-note-ask" : "sc-note-done"); val.title = e.choice == null ? "Barème à confirmer" : "Barème choisi (⇄ pour le changer)"; }
       row.append(left, val); box.appendChild(row);
     });
     wrap.appendChild(box);
@@ -2006,7 +2024,7 @@ document.addEventListener("keydown", (e) => {
   const k = e.key.toLowerCase();
   if (k === "arrowleft") navigate(-1);
   else if (k === "arrowright") navigate(1);
-  else if (k === "t") { refDate = new Date(); refDate.setHours(0, 0, 0, 0); render(); }
+  else if (k === "t") { refDate = todayDate(); render(); }
   else if (k === "f" && $("filterBtn")) { e.preventDefault(); $("filterBtn").click(); }
   else if (k === "m" && availableViews().includes("month")) switchView("month");
   else if (k === "s" && availableViews().includes("week")) switchView("week");
@@ -2020,7 +2038,7 @@ document.addEventListener("keydown", (e) => {
 $("viewTabs").addEventListener("click", (e) => { const btn = e.target.closest("button[data-view]"); if (!btn) return; switchView(btn.dataset.view); });
 $("prevBtn").addEventListener("click", () => navigate(-1));
 $("nextBtn").addEventListener("click", () => navigate(1));
-$("todayBtn").addEventListener("click", () => { refDate = new Date(); refDate.setHours(0, 0, 0, 0); render(); });
+$("todayBtn").addEventListener("click", () => { refDate = todayDate(); render(); });
 
 // Vue mois : un cran de molette = un mois (la grille de 42 cases ne défile pas).
 let monthWheelLock = false;

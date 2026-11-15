@@ -59,6 +59,7 @@
   const { uca_design } = await new Promise((r) => chrome.storage.local.get("uca_design", r));
   // ?force=1 : demandé depuis l'app (menu « Installer l'app ») : le guide s'affiche même si un design est déjà choisi.
   const force = new URLSearchParams(location.search).get("force") === "1";
+  if (standalone) { try { localStorage.setItem("uca_pwa_installed", "1"); } catch (e) { /* ignore */ } }
   if (standalone || (uca_design && !force)) { localStorage.setItem("uca_install_seen", "1"); location.replace("index.html"); return; }
   const ua = navigator.userAgent;
   const iosOther = /crios|fxios|edgios|opios/i.test(ua);
@@ -70,6 +71,7 @@
     try { alreadyInstalled = (await navigator.getInstalledRelatedApps()).length > 0; } catch (e) { /* ignore */ }
   }
   if (alreadyInstalled) {
+    try { localStorage.setItem("uca_pwa_installed", "1"); } catch (e) { /* ignore */ }
     const btn = document.getElementById("installBtn");
     btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12a7.5 7.5 0 0 1-13.4 4.6M4.5 12a7.5 7.5 0 0 1 13.4-4.6"/><path d="M18.4 3.2v4.4H14M5.6 20.8v-4.4H10"/></svg>Vérifier les mises à jour';
     const hint = document.getElementById("installHint");
@@ -92,12 +94,12 @@
   }
   let deferred = null;
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; });
-  window.addEventListener("appinstalled", () => { localStorage.setItem("uca_install_seen", "1"); });
+  window.addEventListener("appinstalled", () => { localStorage.setItem("uca_install_seen", "1"); try { localStorage.setItem("uca_pwa_installed", "1"); } catch (e) { /* ignore */ } });
   document.getElementById("installBtn").addEventListener("click", async () => {
     if (!deferred) { document.getElementById("installHint").classList.remove("hidden"); return; }
     deferred.prompt();
     const choice = await deferred.userChoice;
-    if (choice.outcome === "accepted") localStorage.setItem("uca_install_seen", "1");
+    if (choice.outcome === "accepted") { localStorage.setItem("uca_install_seen", "1"); try { localStorage.setItem("uca_pwa_installed", "1"); } catch (e) { /* ignore */ } }
     deferred = null;
   });
   document.getElementById("continueBtn").addEventListener("click", () => { localStorage.setItem("uca_install_seen", "1"); location.href = "index.html"; });

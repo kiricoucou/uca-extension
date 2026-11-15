@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.41 — page d'accueil : boutons d'installation
+
+- Accueil du site : « Comment l'installer » (extension) ouvre la page installation.html et « Installer l'app » ouvre install.html ; si l'app est déjà installée sur l'appareil, une fenêtre demande d'ouvrir l'app installée ou de revoir la page d'installation.
+
 ## 1.46.40 — app Android 1.4.23 : « Aujourd'hui » le week-end et notes à barème en violet/rose
 
 - Vues 5 et 6 jours : un samedi ou un dimanche, « Aujourd'hui » (bouton, menu et touche T) affiche la semaine suivante au lieu de la semaine qui vient de finir ; même chose à l'ouverture et en passant à ces vues. La vue Semaine ne change pas.

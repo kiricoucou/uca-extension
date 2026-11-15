@@ -4,6 +4,8 @@
    ni lire Odin (sécurité des navigateurs) : les données arrivent par « Importer mes données » depuis l'extension ou l'app Android. */
 (function () {
 "use strict";
+// Repère « l'app est installée sur cet appareil » : lu par la page d'accueil du site pour proposer d'ouvrir l'app au lieu du guide d'installation.
+try { if (matchMedia("(display-mode: standalone)").matches || navigator.standalone === true) localStorage.setItem("uca_pwa_installed", "1"); } catch (e) { /* stockage indisponible */ }
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const store = chrome.storage.local;

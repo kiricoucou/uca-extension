@@ -289,3 +289,12 @@ body{background:var(--bg);}
 .card:nth-child(4n) .ico{background:#dfeaee;color:#17323c;}
 
 .news-meta .with{font-size:12px;font-style:italic;color:var(--text-dim);}
+
+/* Fenêtre « l'app est déjà installée » (page d'accueil) : ouvrir l'app ou revoir la page d'installation. */
+dialog.choice{border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);color:var(--text);padding:22px;max-width:min(440px,calc(100vw - 32px));box-shadow:0 18px 50px rgba(0,0,0,.28);}
+dialog.choice::backdrop{background:rgba(10,14,22,.5);}
+dialog.choice h2{margin:0 0 6px;font-size:20px;letter-spacing:-.01em;}
+dialog.choice p{margin:0 0 16px;color:var(--text-dim);font-size:15px;}
+dialog.choice .choice-btns{display:grid;gap:8px;}
+dialog.choice .btn{width:100%;}
+dialog.choice .choice-close{margin-top:8px;background:none;border:0;color:var(--text-dim);font:inherit;font-size:14px;cursor:pointer;padding:8px;min-height:36px;text-decoration:underline;}

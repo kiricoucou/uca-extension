@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.44 — page app-download : titres accessibles
+
+- Page app-download.html : la hiérarchie des titres ne saute plus de niveau (h1 puis h2), pour les lecteurs d'écran.
+
 ## 1.46.43 — app Android 1.4.25 : 25 widgets, nouvelle page d'installation de l'app
 
 - App Android : 25 widgets pour l'écran d'accueil (prochain cours, journée, 3 jours, charge de la semaine, devoirs, examens, moyenne, graphique des notes, absences, connexion…). Toucher un widget ouvre l'écran utile ; « Connexion » et « Synchronisation » portent un bouton. Les mêmes widgets existent dans l'app web : écran « Mes widgets » (ajout, retrait, ordre).

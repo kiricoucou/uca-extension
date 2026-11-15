@@ -1,22 +1,31 @@
 {
   "app_name": "My UCA",
-  "version": "1.4.22",
-  "version_code": 19,
-  "bundle_version": "1.4.22",
+  "version": "1.4.24",
+  "version_code": 20,
+  "bundle_version": "1.4.24",
   "commit_sha": "main",
   "branch": "main",
-  "published_at": "2026-11-12T20:58:41Z",
+  "published_at": "2026-11-15T17:19:34Z",
   "min_apk_version_code": 16,
   "raw_base_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/",
   "apk_download_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/EdtUca.apk",
   "github_repo_url": "https://github.com/kiricoucou/uca-extension",
   "changelog": [
-    "APK : si tu annules l'installateur Android après le téléchargement, un bouton « Relancer la demande d'installation » apparaît (sans retélécharger).",
-    "Téléchargement de l'APK plus sûr (fichier temporaire, renommé seulement quand il est complet)."
+    "Connexion gardée : quitter l'app, même longtemps, ne te déconnecte pas. Un contrôle silencieux toutes les 30 minutes garde la session Odin vivante (réglage « Garder ma session active en arrière-plan »).",
+    "Aucun mot de passe n'est enregistré : si tu as coché « navigateur de confiance » à la double authentification, ce choix est respecté et la session n'est jamais effacée par une fermeture ou une mise à jour."
   ],
-  "ota_version": "1.4.23",
-  "ota_base_version_code": 19,
+  "ota_version": "1.4.24",
+  "ota_base_version_code": 20,
   "history": [
+    {
+      "version": "1.46.42",
+      "app": "1.4.24",
+      "title": "session gardée en arrière-plan, aide à l'installation guidée",
+      "items": [
+        "App Android : la connexion à Odin est gardée. Quitter l'app ne déconnecte pas ; un contrôle silencieux toutes les 30 minutes garde la session vivante (interrupteur dans les réglages,…",
+        "Aide à l'installation : pour l'installateur automatique, un menu choisit le système (Windows, macOS, Linux) et une fiche à droite propose le bon fichier ; pour le ZIP, le bouton «…"
+      ]
+    },
     {
       "version": "1.46.40",
       "app": "1.4.23",
@@ -88,16 +97,6 @@
         "Extension : le code de déchiffrement est affiché sous « Générer le lien » (un clic le copie) et un bouton « Mises à jour » force la vérification ; les trois boutons sont sur la même…",
         "À faire et examens : la date (jour, numéro, mois) s'affiche en plus de l'horaire pour les examens et les devoirs.",
         "Mise à jour forcée : dès qu'une nouvelle version est détectée, l'extension se recharge si le dossier est déjà à jour, sinon ouvre une fois par version la page de téléchargement qui lance…"
-      ]
-    },
-    {
-      "version": "1.46.19",
-      "app": "1.4.16",
-      "title": "détail de note au premier plan",
-      "items": [
-        "Notes : la fenêtre de détail d'une évaluation passait derrière la liste des notes et se chevauchait avec elle ; elle s'ouvre maintenant au premier plan. Version web seule (mise à jour…",
-        "Site : nouvelle page « Télécharger l'extension » (extension/) avec le ZIP Chrome/Edge à charger en mode développeur ; le ZIP ne contient que le code, aucune donnée personnelle…",
-        "Pages de téléchargement : choix « ZIP de l'extension », « APK » ou « les deux d'un coup », avec le poids en Mo affiché sur chaque bouton."
       ]
     }
   ]

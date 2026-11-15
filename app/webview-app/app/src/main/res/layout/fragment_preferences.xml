@@ -32,6 +32,12 @@
                 </LinearLayout>
 
                 <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingVertical="8dp">
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Garder ma session active en arrière-plan" android:textColor="@color/text" android:textSize="13.5sp" />
+                    <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switchKeepAlive" android:layout_width="wrap_content" android:layout_height="wrap_content" />
+                </LinearLayout>
+                <TextView android:id="@+id/txtKeepAlive" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_dim" android:textSize="12sp" android:paddingBottom="6dp" />
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:gravity="center_vertical" android:paddingVertical="8dp">
                     <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="Ajouter l'emploi du temps au calendrier du téléphone" android:textColor="@color/text" android:textSize="13.5sp" />
                     <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switchSyncTel" android:layout_width="wrap_content" android:layout_height="wrap_content" />
                 </LinearLayout>

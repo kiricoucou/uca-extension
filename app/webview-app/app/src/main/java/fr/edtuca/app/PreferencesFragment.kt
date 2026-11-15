@@ -83,6 +83,12 @@ class PreferencesFragment : Fragment() {
             }
         }
 
+        // Maintien de la session : l'app ne demande pas de se reconnecter à chaque ouverture ; un contrôle silencieux toutes les 30 min
+        // garde la session CAS/Odin vivante tant que l'UCA l'accepte (aucun mot de passe n'est enregistré).
+        val txtKeep = root.findViewById<TextView>(R.id.txtKeepAlive)
+        fun keepText() { txtKeep?.text = SessionKeeper.statusText(ctx) }
+        bindSwitch(root, R.id.switchKeepAlive, PrefsStore.keepAlive(ctx)) { v -> PrefsStore.setKeepAlive(ctx, v); keepText() }
+        keepText()
         bindSwitch(root, R.id.switchMail, PrefsStore.notifMail(ctx)) { v -> PrefsStore.setNotifMail(ctx, v) }
         bindSwitch(root, R.id.switchCoursLigne, PrefsStore.notifCoursLigne(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_COURS_LIGNE, v) }
         bindSwitch(root, R.id.switchBiblio, PrefsStore.notifBiblio(ctx)) { v -> PrefsStore.setBool(ctx, PrefsStore.K_NOTIF_BIBLIO, v) }

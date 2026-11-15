@@ -156,6 +156,14 @@ object PrefsStore {
     fun sessionExpired(context: Context): Boolean = prefs(context).getBoolean("session_expired", false)
     fun setSessionExpired(context: Context, value: Boolean) { prefs(context).edit().putBoolean("session_expired", value).apply() }
 
+    /** Maintien de la session : contrôle silencieux toutes les 30 min (WorkManager), avec les cookies que la WebView garde déjà.
+     *  Aucun mot de passe n'est stocké ; la durée réelle reste décidée par le CAS de l'UCA et par la confiance 2FA choisie à la connexion. */
+    fun keepAlive(context: Context): Boolean = prefs(context).getBoolean("session_keepalive", true)
+    fun setKeepAlive(context: Context, v: Boolean) { prefs(context).edit().putBoolean("session_keepalive", v).apply() }
+    /** Dernier contrôle de session réussi (millisecondes), 0 = jamais. */
+    fun lastSessionOk(context: Context): Long = prefs(context).getLong("session_last_ok", 0L)
+    fun setLastSessionOk(context: Context, t: Long) { prefs(context).edit().putLong("session_last_ok", t).apply() }
+
     /** Durée de conservation des notifications non gardées, en jours (0 = illimité). */
     fun notifKeepDays(context: Context): Int = prefs(context).getInt("notif_keep_days", 30)
     fun setNotifKeepDays(context: Context, days: Int) { prefs(context).edit().putInt("notif_keep_days", days).apply() }

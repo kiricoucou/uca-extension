@@ -30,6 +30,7 @@ class UpdateWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, params)
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(NAME, ExistingPeriodicWorkPolicy.KEEP, req)
+            SessionKeeper.schedule(context)
         }
     }
 }

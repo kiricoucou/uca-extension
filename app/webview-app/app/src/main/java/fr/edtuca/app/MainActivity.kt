@@ -470,6 +470,7 @@ class MainActivity : AppCompatActivity() {
         lastSessionCheck = now
         UcaSync.checkSession(applicationContext) { expired ->
             SessionDiag.log(applicationContext, "contrôle de session à la reprise : " + when (expired) { true -> "formulaire de connexion affiché"; false -> "session valable"; null -> "indéterminé (réseau lent ou coupé)" })
+            if (expired == false) PrefsStore.setLastSessionOk(applicationContext, System.currentTimeMillis())
             if (expired == false && !isFinishing && !isDestroyed) clearSessionExpired()
             if (expired != true || isFinishing || isDestroyed) return@checkSession
             // Un seul contrôle négatif ne suffit pas : on revérifie avant de verrouiller l'app.

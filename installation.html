@@ -32,14 +32,76 @@
 .lb img{max-width:100%;max-height:calc(100vh - 120px);border-radius:12px;background:#fff}.lb figcaption{color:#e6e8ee;font-size:14px;text-align:center}
 .lb button{position:absolute;top:12px;right:12px;width:46px;height:46px;border-radius:50%;border:0;background:#fff;color:#16181d;font-size:22px;font-weight:700;cursor:pointer}
 .note{margin-top:26px;padding:16px 18px;border-radius:16px;background:var(--accent-tint);color:var(--text)}
+
+/* Assistant d'installation : ZIP avec fenêtre de téléchargement, installateur avec menu « système d'exploitation ». */
+.helper{margin:0 0 26px}
+.dl-card{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:18px 20px;border-radius:18px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow)}
+.dl-ico{width:46px;height:46px;border-radius:14px;background:var(--accent-tint);color:var(--accent);display:grid;place-items:center;flex:none}
+.dl-ico svg{width:26px;height:26px}
+.dl-body{flex:1 1 240px;min-width:0}.dl-body h3{margin:0 0 2px;font-size:19px}.dl-body p{margin:0;color:var(--text-dim);font-size:15px}
+.btn-dl{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:0 22px;border-radius:14px;border:0;background:var(--accent);color:var(--on-accent);font:inherit;font-weight:700;text-decoration:none;cursor:pointer;transition:transform .12s,box-shadow .12s}
+.btn-dl:hover{box-shadow:var(--shadow)}.btn-dl:active{transform:scale(.98)}.btn-dl svg{width:20px;height:20px}
+.btn-dl:focus-visible,.sel-btn:focus-visible,.sel-list li:focus-visible,.dlg-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.os-pick{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.os-left{padding:18px 20px;border-radius:18px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow)}
+.os-q{margin:0 0 4px;font-size:19px;font-weight:700}.os-hint{margin:0 0 14px;color:var(--text-dim);font-size:15px}
+.sel{position:relative}
+.sel-btn{width:100%;display:flex;align-items:center;gap:12px;min-height:50px;padding:0 14px;border-radius:14px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:inherit;font-weight:600;text-align:left;cursor:pointer}
+.sel-btn:hover,.sel[data-open="true"] .sel-btn{border-color:var(--accent)}
+.sel-btn .caret{margin-left:auto;width:18px;height:18px;transition:transform .15s;color:var(--text-dim)}
+.sel[data-open="true"] .caret{transform:rotate(180deg)}
+.sel-btn .ph{color:var(--text-dim);font-weight:500}
+.os-ico{width:30px;height:30px;border-radius:9px;background:var(--accent-tint);color:var(--accent);display:grid;place-items:center;flex:none}.os-ico svg{width:18px;height:18px}
+.sel-list{position:absolute;z-index:30;left:0;right:0;top:calc(100% + 6px);margin:0;padding:6px;list-style:none;border-radius:14px;border:1px solid var(--border);background:var(--surface);box-shadow:0 14px 36px rgba(0,0,0,.22)}
+.sel-list[hidden]{display:none}
+.sel-list li{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;cursor:pointer;font-weight:600}
+.sel-list li small{display:block;color:var(--text-dim);font-weight:500;font-size:13px}
+.sel-list li[aria-selected="true"]{background:var(--accent-tint)}
+.sel-list li:hover,.sel-list li.act{background:var(--surface-2)}
+.sel-list li .det{margin-left:auto;font-size:12px;font-weight:700;color:var(--accent)}
+.os-card{padding:20px;border-radius:18px;border:1px solid var(--accent);background:var(--surface);box-shadow:var(--shadow);animation:osIn .22s ease-out}
+.os-card[hidden]{display:none}
+.os-card .os-head{display:flex;align-items:center;gap:14px;margin:0 0 10px}
+.os-card .os-ico{width:46px;height:46px;border-radius:14px}.os-card .os-ico svg{width:26px;height:26px}
+.os-card h3{margin:0;font-size:20px}.os-card p{margin:0 0 12px;color:var(--text-dim);font-size:15px}
+.os-card .meta{font-size:13px;color:var(--text-dim);margin:0 0 14px}
+.os-card .next{display:inline-block;margin-top:12px;font-size:14px;font-weight:600}
+.os-empty[hidden]{display:none}
+.os-empty{padding:20px;border-radius:18px;border:1px dashed var(--border);color:var(--text-dim);font-size:15px;display:flex;align-items:center;min-height:100%}
+@keyframes osIn{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}
+@media(max-width:760px){.os-pick{grid-template-columns:1fr}.os-empty{display:none}}
+dialog.dlg{border:1px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text);padding:24px;width:min(440px,calc(100vw - 32px));box-shadow:0 20px 60px rgba(0,0,0,.35)}
+dialog.dlg::backdrop{background:rgba(10,14,22,.55)}
+dialog.dlg h3{margin:0 0 6px;font-size:21px}dialog.dlg p{margin:0 0 16px;color:var(--text-dim);font-size:15px}
+.dlg .bar{height:12px;border-radius:99px;background:var(--surface-2);overflow:hidden;margin:6px 0 8px}
+.dlg .bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--accent);transition:width .15s linear}
+.dlg .bar.ind i{width:40%;animation:ind 1.1s ease-in-out infinite alternate}
+@keyframes ind{from{margin-left:0}to{margin-left:60%}}
+.dlg .pct{display:flex;justify-content:space-between;font-size:14px;color:var(--text-dim);font-variant-numeric:tabular-nums;margin:0 0 16px}.dlg .pct b{color:var(--text);font-size:18px}
+.dlg .acts{display:grid;gap:8px}
+.dlg-btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:0 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-weight:600;cursor:pointer;text-decoration:none}
+.dlg-btn.primary{background:var(--accent);color:var(--on-accent);border-color:transparent}
+.dlg [hidden]{display:none}
+@media(prefers-reduced-motion:reduce){.os-card,.dlg .bar i,.dlg .bar.ind i,.sel-btn .caret{animation:none;transition:none}}
 </style>
 </head>
 <body>
 <main class="ins">
   <h1>Aide à l'installation</h1>
   <p class="lead">Installe l'extension pas à pas : chaque étape a sa capture d'écran réelle, avec une flèche ou un cercle rouge sur l'endroit où cliquer, ce que tu fais et à quoi ça sert. Clique sur une image pour l'agrandir.</p>
-  <div class="tabs" role="tablist" aria-label="Méthode d'installation"><button type="button" class="tab" role="tab" id="tab-installateur" aria-controls="p-installateur" aria-selected="true" data-tab="installateur"><b>Installateur automatique</b><span>Windows · fenêtre guidée</span><i>Recommandé</i></button><button type="button" class="tab" role="tab" id="tab-zip" aria-controls="p-zip" aria-selected="false" data-tab="zip"><b>Le ZIP</b><span>Chrome · mode développeur</span></button></div>
-  <section class="panel" role="tabpanel" id="p-installateur" aria-labelledby="tab-installateur"><h2>Installer l'extension avec l'installateur Windows (.bat)</h2><p class="intro">Méthode recommandée : une fenêtre te guide (dossiers, navigateurs, barre de progression) et prépare tout. Il ne reste que deux clics dans Chrome. Compte environ 3 minutes.</p><div class="steps"><article class="st" id="installateur-1">
+  <div class="tabs" role="tablist" aria-label="Méthode d'installation"><button type="button" class="tab" role="tab" id="tab-installateur" aria-controls="p-installateur" aria-selected="true" data-tab="installateur"><b>Installateur automatique</b><span>Windows, macOS, Linux · fenêtre guidée</span><i>Recommandé</i></button><button type="button" class="tab" role="tab" id="tab-zip" aria-controls="p-zip" aria-selected="false" data-tab="zip"><b>Le ZIP</b><span>Chrome · mode développeur</span></button></div>
+  <section class="panel" role="tabpanel" id="p-installateur" aria-labelledby="tab-installateur"><h2>Installer l'extension avec l'installateur automatique (Windows, macOS, Linux)</h2><p class="intro">Méthode recommandée : une fenêtre te guide (dossiers, navigateurs, barre de progression) et prépare tout. Il ne reste que deux clics dans Chrome. Compte environ 3 minutes.</p><div class="helper" id="osHelper"><div class="os-pick">
+    <div class="os-left">
+      <p class="os-q" id="osQ">Sur quel système d'exploitation es-tu ?</p>
+      <p class="os-hint">Choisis ton système : le bon installateur s'affiche à droite.</p>
+      <div class="sel" id="osSel" data-open="false">
+        <button type="button" class="sel-btn" id="osBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="osList" aria-labelledby="osQ osBtn"><span class="ph" id="osLabel">Choisis ton système</span><svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <ul class="sel-list" id="osList" role="listbox" tabindex="-1" aria-labelledby="osQ" hidden></ul>
+      </div>
+    </div>
+    <div class="os-empty" id="osEmpty">L'installateur adapté à ton système s'affichera ici.</div>
+    <aside class="os-card" id="osCard" aria-live="polite" hidden></aside>
+  </div></div><div class="steps"><article class="st" id="installateur-1">
   <div class="st-head"><span class="n">1</span><h3>Trouve l'installateur Windows</h3></div>
   <button type="button" class="shot" data-full="aide-install/img/inst-01.webp" data-cap="Étape 1 : Trouve l'installateur Windows"><img src="aide-install/img/inst-01.webp" alt="Capture d'écran, étape 1 : Trouve l'installateur Windows" loading="lazy"><span class="zoom">Agrandir</span></button>
   <div class="st-txt"><p><b>Ce que tu fais.</b> Sur la page de téléchargement de l'extension, descends jusqu'à « Installateurs automatiques » et clique sur « Installateur Windows ».</p><p class="why"><b>À quoi ça sert.</b> L'installateur télécharge, copie et prépare tout à ta place : pas de ZIP à manipuler.</p></div>
@@ -91,7 +153,11 @@
   <div class="st-head"><span class="n">13</span><h3>Connecte-toi à Odin</h3></div>
   <button type="button" class="shot" data-full="aide-install/img/inst-13.webp" data-cap="Étape 13 : Connecte-toi à Odin"><img src="aide-install/img/inst-13.webp" alt="Capture d'écran, étape 13 : Connecte-toi à Odin" loading="lazy"><span class="zoom">Agrandir</span></button>
   <div class="st-txt"><p><b>Ce que tu fais.</b> L'agenda de l'extension s'ouvre. Clique sur « Synchroniser » : la page de connexion de l'UCA s'ouvre. Saisis ton identifiant et ton mot de passe, puis clique sur « Se connecter ».</p><p class="why"><b>À quoi ça sert.</b> Ton mot de passe est saisi sur la vraie page de l'UCA : l'extension ne le voit jamais.</p></div>
-</article></div></section><section class="panel" role="tabpanel" id="p-zip" aria-labelledby="tab-zip" hidden><h2>Installer l'extension avec le ZIP (Chrome, Edge, Brave)</h2><p class="intro">Méthode manuelle : tu télécharges le ZIP, tu l'extrais, puis tu charges le dossier dans Chrome en mode développeur. Compte environ 3 minutes.</p><div class="steps"><article class="st" id="zip-1">
+</article></div></section><section class="panel" role="tabpanel" id="p-zip" aria-labelledby="tab-zip" hidden><h2>Installer l'extension avec le ZIP (Chrome, Edge, Brave)</h2><p class="intro">Méthode manuelle : tu télécharges le ZIP, tu l'extrais, puis tu charges le dossier dans Chrome en mode développeur. Compte environ 3 minutes.</p><div class="helper" id="zipHelper"><div class="dl-card">
+    <span class="dl-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5z"/><path d="M4 7.5 12 12l8-4.5M12 12v9"/></svg></span>
+    <div class="dl-body"><h3>Veuillez installer le ZIP</h3><p>Télécharge d'abord le fichier (environ 2,7 Mo). Une fenêtre suit le téléchargement et te demande si c'est bien arrivé.</p></div>
+    <button type="button" class="btn-dl" id="zipBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>Installer le ZIP</button>
+  </div></div><div class="steps"><article class="st" id="zip-1">
   <div class="st-head"><span class="n">1</span><h3>Ouvre la page et clique sur « Télécharger le ZIP »</h3></div>
   <button type="button" class="shot" data-full="aide-install/img/zip-01.webp" data-cap="Étape 1 : Ouvre la page et clique sur « Télécharger le ZIP »"><img src="aide-install/img/zip-01.webp" alt="Capture d'écran, étape 1 : Ouvre la page et clique sur « Télécharger le ZIP »" loading="lazy"><span class="zoom">Agrandir</span></button>
   <div class="st-txt"><p><b>Ce que tu fais.</b> Sur kiricoucou.github.io/uca-extension/extension/, clique sur le gros bouton bleu « Télécharger le ZIP » (Chrome, Edge, Brave ; environ 2,7 Mo).</p><p class="why"><b>À quoi ça sert.</b> Le ZIP contient uniquement le code de l'extension : aucune donnée personnelle.</p></div>
@@ -127,6 +193,128 @@
   <p class="note">Besoin d'aide ? Va sur la <a href="aide.html">page d'aide</a> ou la <a href="extension/">page de téléchargement</a>. Les captures sont de vraies fenêtres (Chrome, Explorateur de fichiers, assistant d'installation) prises sous Windows 11 avec Chrome ; les chemins affichés sont des exemples : tu peux choisir un autre dossier. Pour l'application Android et l'application web, les tutoriels arrivent bientôt.</p>
 </main>
 <div class="lb" id="lb" hidden><button type="button" id="lbx" aria-label="Fermer">✕</button><figure><img id="lbi" alt=""><figcaption id="lbc"></figcaption></figure></div>
+<dialog class="dlg" id="zipDlg" aria-labelledby="zipT">
+  <div id="zipProg">
+    <h3 id="zipT">Téléchargement en cours…</h3>
+    <p>Ne ferme pas cette page : le fichier <b>uca-extension-chrome.zip</b> arrive.</p>
+    <div class="bar" id="zipBar" role="progressbar" aria-label="Téléchargement du ZIP" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="zipFill"></i></div>
+    <div class="pct"><b id="zipPct">0 %</b><span id="zipSize"></span></div>
+    <div class="acts"><button type="button" class="dlg-btn" id="zipCancel">Annuler</button></div>
+  </div>
+  <div id="zipAsk" hidden>
+    <h3>Vous avez bien téléchargé le ZIP ?</h3>
+    <p>Le fichier <b>uca-extension-chrome.zip</b> doit être dans ton dossier Téléchargements (ou en bas de la fenêtre de ton navigateur).</p>
+    <div class="acts"><button type="button" class="dlg-btn primary" id="zipYes">Oui, passer à l'étape suivante</button><button type="button" class="dlg-btn" id="zipNo">Non, le télécharger à nouveau</button></div>
+  </div>
+  <div id="zipErr" hidden>
+    <h3>Le téléchargement n'a pas abouti</h3>
+    <p>Vérifie ta connexion puis réessaie. Tu peux aussi prendre le fichier directement.</p>
+    <div class="acts"><button type="button" class="dlg-btn primary" id="zipRetry">Réessayer</button><a class="dlg-btn" href="extension/uca-extension-chrome.zip" download>Lien direct du ZIP</a><button type="button" class="dlg-btn" id="zipClose">Fermer</button></div>
+  </div>
+</dialog>
+<script>
+(function () {
+  /* ---------- ZIP : téléchargement suivi, puis « Vous avez bien téléchargé le ZIP ? » ---------- */
+  var ZIP_URL = 'extension/uca-extension-chrome.zip', ZIP_NAME = 'uca-extension-chrome.zip';
+  var dlg = document.getElementById('zipDlg'), zb = document.getElementById('zipBtn');
+  if (dlg && zb) {
+    var parts = { prog: document.getElementById('zipProg'), ask: document.getElementById('zipAsk'), err: document.getElementById('zipErr') };
+    var fill = document.getElementById('zipFill'), bar = document.getElementById('zipBar'), pct = document.getElementById('zipPct'), size = document.getElementById('zipSize');
+    var ctrl = null;
+    function view(k) { Object.keys(parts).forEach(function (n) { parts[n].hidden = n !== k; }); }
+    function mb(n) { return (n / 1048576).toFixed(1).replace('.', ',') + ' Mo'; }
+    function save(blob) {
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = ZIP_NAME; a.rel = 'noopener';
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(a.href); }, 20000);
+    }
+    function start() {
+      view('prog'); fill.style.width = '0'; pct.textContent = '0 %'; size.textContent = ''; bar.classList.remove('ind'); bar.setAttribute('aria-valuenow', '0');
+      if (!dlg.open) dlg.showModal();
+      if (!window.fetch || !window.ReadableStream) { var a = document.createElement('a'); a.href = ZIP_URL; a.download = ZIP_NAME; document.body.appendChild(a); a.click(); a.remove(); view('ask'); return; }
+      ctrl = new AbortController();
+      fetch(ZIP_URL, { signal: ctrl.signal, cache: 'no-cache' }).then(function (r) {
+        if (!r.ok || !r.body) throw new Error('HTTP ' + r.status);
+        var total = parseInt(r.headers.get('content-length'), 10) || 0, got = 0, chunks = [], rd = r.body.getReader();
+        if (!total) { bar.classList.add('ind'); pct.textContent = '…'; }
+        function pump() {
+          return rd.read().then(function (x) {
+            if (x.done) return;
+            chunks.push(x.value); got += x.value.length;
+            if (total) { var p = Math.min(100, Math.round(got * 100 / total)); fill.style.width = p + '%'; pct.textContent = p + ' %'; bar.setAttribute('aria-valuenow', String(p)); size.textContent = mb(got) + ' / ' + mb(total); }
+            else size.textContent = mb(got);
+            return pump();
+          });
+        }
+        return pump().then(function () { fill.style.width = '100%'; pct.textContent = '100 %'; bar.setAttribute('aria-valuenow', '100'); bar.classList.remove('ind'); save(new Blob(chunks, { type: 'application/zip' })); view('ask'); });
+      }).catch(function (e) { if (e && e.name === 'AbortError') return; view('err'); });
+    }
+    zb.addEventListener('click', start);
+    document.getElementById('zipCancel').addEventListener('click', function () { if (ctrl) ctrl.abort(); dlg.close(); });
+    document.getElementById('zipRetry').addEventListener('click', start);
+    document.getElementById('zipNo').addEventListener('click', start);
+    document.getElementById('zipClose').addEventListener('click', function () { dlg.close(); });
+    document.getElementById('zipYes').addEventListener('click', function () {
+      dlg.close(); var t = document.getElementById('zip-3'); if (t) { t.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); try { history.replaceState(null, '', '#zip-3'); } catch (e) {} }
+    });
+    dlg.addEventListener('close', function () { if (ctrl) { ctrl.abort(); ctrl = null; } });
+  }
+
+  /* ---------- Installateur automatique : menu « système d'exploitation » + fiche à droite ---------- */
+  var list = document.getElementById('osList'), btn = document.getElementById('osBtn'), sel = document.getElementById('osSel'), label = document.getElementById('osLabel');
+  if (list && btn) {
+    var ICON = {
+      windows: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.6 10.5 4.5v6.9H3zM11.6 4.4 21 3v8.4h-9.4zM3 12.6h7.5v6.9L3 18.4zM11.6 12.6H21V21l-9.4-1.3z"/></svg>',
+      mac: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
+      linux: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7.5 9 3 3-3 3M13 15h4"/></svg>'
+    };
+    var OS = [
+      { id: 'windows', name: 'Windows', sub: 'Windows 10 et 11', title: 'Installateur Windows', file: 'installer-windows.bat', size: '31 Ko',
+        desc: 'Une fenêtre te guide : choix des dossiers et des navigateurs (Chrome, Edge, Brave, Firefox), barre de progression, puis il prépare tout. Aucun droit administrateur nécessaire.',
+        btn: 'Télécharger l\'installateur Windows', next: ['#installateur-3', 'Ensuite : étape 3, autoriser l\'exécution'] },
+      { id: 'mac', name: 'macOS', sub: 'Mac, Apple silicon ou Intel', title: 'Installateur macOS', file: 'installer-mac.command', size: '11 Ko',
+        desc: 'Script à double-cliquer (la première fois : clic droit puis Ouvrir). Il te laisse choisir les dossiers dans Finder, détecte tes navigateurs et installe l\'extension. Les captures plus bas montrent Windows : les étapes sont les mêmes.',
+        btn: 'Télécharger l\'installateur macOS', next: null },
+      { id: 'linux', name: 'Linux', sub: 'Ubuntu, Debian, Fedora…', title: 'Installateur Linux', file: 'install-linux.sh', size: '21 Ko',
+        desc: 'Script shell : rends-le exécutable puis lance-le (chmod +x install-linux.sh, puis ./install-linux.sh). Il détecte tes navigateurs et installe l\'extension. Les captures plus bas montrent Windows : les étapes sont les mêmes.',
+        btn: 'Télécharger l\'installateur Linux', next: null }
+    ];
+    var ua = navigator.userAgent || '', detected = /Windows/i.test(ua) ? 'windows' : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? 'mac' : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? 'linux' : '';
+    var card = document.getElementById('osCard'), empty = document.getElementById('osEmpty'), current = null, act = -1;
+    OS.forEach(function (o, i) {
+      var li = document.createElement('li'); li.id = 'os-' + o.id; li.setAttribute('role', 'option'); li.setAttribute('aria-selected', 'false'); li.dataset.os = o.id; li.tabIndex = -1;
+      li.innerHTML = '<span class="os-ico">' + ICON[o.id] + '</span><span>' + o.name + '<small>' + o.sub + '</small></span>' + (o.id === detected ? '<span class="det">Détecté</span>' : '');
+      li.addEventListener('click', function () { choose(i); close(true); });
+      list.appendChild(li);
+    });
+    function items() { return list.querySelectorAll('li'); }
+    function setAct(i) { act = i; items().forEach(function (li, k) { li.classList.toggle('act', k === i); }); if (i >= 0) list.setAttribute('aria-activedescendant', items()[i].id); }
+    function open() { list.hidden = false; sel.dataset.open = 'true'; btn.setAttribute('aria-expanded', 'true'); setAct(current != null ? current : Math.max(0, OS.findIndex(function (o) { return o.id === detected; }))); list.focus(); }
+    function close(focusBtn) { list.hidden = true; sel.dataset.open = 'false'; btn.setAttribute('aria-expanded', 'false'); if (focusBtn) btn.focus(); }
+    function choose(i) {
+      current = i; var o = OS[i];
+      items().forEach(function (li, k) { li.setAttribute('aria-selected', String(k === i)); });
+      label.className = ''; label.innerHTML = '<span style="display:inline-flex;align-items:center;gap:12px"><span class="os-ico">' + ICON[o.id] + '</span>' + o.name + '</span>';
+      empty.hidden = true; card.hidden = false;
+      card.innerHTML = '<div class="os-head"><span class="os-ico">' + ICON[o.id] + '</span><h3>' + o.title + '</h3></div><p>' + o.desc + '</p><p class="meta">Fichier : ' + o.file + ' · ' + o.size + ' · le navigateur peut afficher un avertissement : garde le fichier.</p>'
+        + '<a class="btn-dl" id="osDl" href="extension/' + o.file + '" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>' + o.btn + '</a>'
+        + (o.next ? '<br><a class="next" href="' + o.next[0] + '">' + o.next[1] + ' ↓</a>' : '');
+    }
+    btn.addEventListener('click', function () { if (list.hidden) open(); else close(true); });
+    btn.addEventListener('keydown', function (e) { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (list.hidden) open(); } });
+    list.addEventListener('keydown', function (e) {
+      var n = OS.length;
+      if (e.key === 'ArrowDown') { e.preventDefault(); setAct((act + 1) % n); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setAct((act - 1 + n) % n); }
+      else if (e.key === 'Home') { e.preventDefault(); setAct(0); }
+      else if (e.key === 'End') { e.preventDefault(); setAct(n - 1); }
+      else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (act >= 0) { choose(act); close(true); } }
+      else if (e.key === 'Escape') { e.preventDefault(); close(true); }
+      else if (e.key === 'Tab') close(false);
+    });
+    document.addEventListener('click', function (e) { if (!list.hidden && !sel.contains(e.target)) close(false); });
+  }
+})();
+</script>
 <script>
 (function () {
   var tabs = document.querySelectorAll('.tab'), panels = document.querySelectorAll('.panel');

@@ -37,6 +37,8 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
         val nativeSyncExecutor: java.util.concurrent.ExecutorService =
             java.util.concurrent.Executors.newSingleThreadExecutor()
         @Volatile var lastSyncedHash: Int = 0
+        /** Panneau à ouvrir au prochain affichage de l'agenda (demandé en touchant un widget) : notes, absences, tasks. */
+        @Volatile var pendingOpen: String? = null
     }
 
     private lateinit var webView: WebView
@@ -110,7 +112,9 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
         }
 
         val demo = PrefsStore.qaDemo(requireContext())
-        webView.loadUrl("https://$ASSET_HOST/assets/legacy-site/index.html" + if (demo) "?demo=1" else "")
+        val open = pendingOpen?.takeIf { it in WidgetRenderer.PANELS }; pendingOpen = null
+        val query = listOfNotNull(if (demo) "demo=1" else null, open?.let { "open=$it" }).joinToString("&").let { if (it.isEmpty()) "" else "?$it" }
+        webView.loadUrl("https://$ASSET_HOST/assets/legacy-site/index.html" + query)
 
         // Au lancement de l'écran : resync silencieuse (comme trySilentResync
         // côté extension), sans ouvrir de fenêtre de connexion.
@@ -296,6 +300,15 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
             val groups = listOfNotNull(td, tp)
             if (groups.isNotEmpty()) PrefsStore.setStudentProfile(ctx, group = groups.joinToString(" · "))
         } catch (_: Exception) { }
+    }
+
+    /** Résumé des données pour les widgets : gardé tel quel (JSON) puis tous les widgets posés sont redessinés. */
+    override fun onWidgetData(json: String) {
+        if (!isAdded) return
+        val ctx = requireContext().applicationContext
+        nativeSyncExecutor.execute {
+            try { WidgetDataStore.save(ctx, json); WidgetRenderer.updateAll(ctx) } catch (e: Exception) { /* un widget en retard n'est pas grave */ }
+        }
     }
 
     override fun onEventsUpdated(json: String) {

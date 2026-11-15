@@ -11,4 +11,56 @@
         <item>ISIMA — Groupe 1</item>
         <item>ISIMA — Groupe 2</item>
     </string-array>
+
+    <!-- Widgets de l'écran d'accueil : nom et description dans le sélecteur de widgets d'Android -->
+    <string name="w_next">Prochain cours</string>
+    <string name="w_next_desc">Le cours en cours ou le suivant, avec l\'heure et la salle.</string>
+    <string name="w_day">Ma journée</string>
+    <string name="w_day_desc">Tous les cours d\'aujourd\'hui, le cours en cours est surligné.</string>
+    <string name="w_days3">3 jours</string>
+    <string name="w_days3_desc">Aujourd\'hui, demain et après-demain.</string>
+    <string name="w_week">Charge de la semaine</string>
+    <string name="w_week_desc">Heures de cours par jour, du lundi au dimanche.</string>
+    <string name="w_now">Cours en cours</string>
+    <string name="w_now_desc">Progression du cours actuel et temps restant.</string>
+    <string name="w_room">Salle du prochain cours</string>
+    <string name="w_room_desc">La salle en gros : on ne la cherche plus.</string>
+    <string name="w_endday">Fin de journée</string>
+    <string name="w_endday_desc">Heure de la dernière fin de cours et temps restant.</string>
+    <string name="w_break">Prochaine pause</string>
+    <string name="w_break_desc">Quand commence la pause, ou jusqu\'à quand elle dure.</string>
+    <string name="w_freeday">Prochain jour libre</string>
+    <string name="w_freeday_desc">Le prochain jour de semaine sans cours.</string>
+    <string name="w_date">Aujourd\'hui</string>
+    <string name="w_date_desc">La date en grand et le numéro de semaine.</string>
+    <string name="w_tasks">Devoirs à faire</string>
+    <string name="w_tasks_desc">Les devoirs non faits, du plus urgent au moins urgent.</string>
+    <string name="w_late">Devoirs en retard</string>
+    <string name="w_late_desc">Le nombre de devoirs dont la date est passée.</string>
+    <string name="w_nexttask">Prochain devoir</string>
+    <string name="w_nexttask_desc">Le devoir le plus proche avec sa date limite.</string>
+    <string name="w_exams">Examens à venir</string>
+    <string name="w_exams_desc">Les prochains examens avec le compte à rebours.</string>
+    <string name="w_countdown">Compte à rebours examen</string>
+    <string name="w_countdown_desc">Le nombre de jours avant le prochain examen.</string>
+    <string name="w_avg">Moyenne générale</string>
+    <string name="w_avg_desc">Ta moyenne sur 20 et sa tendance.</string>
+    <string name="w_trend">Évolution de la moyenne</string>
+    <string name="w_trend_desc">La courbe de ta moyenne au fil des notes.</string>
+    <string name="w_notes">Notes par matière</string>
+    <string name="w_notes_desc">Un graphique en barres : ta note dans chaque matière.</string>
+    <string name="w_recent">Dernières notes</string>
+    <string name="w_recent_desc">Les notes les plus récentes.</string>
+    <string name="w_best">Meilleure matière</string>
+    <string name="w_best_desc">La matière où ta note est la plus haute.</string>
+    <string name="w_worst">Matière à surveiller</string>
+    <string name="w_worst_desc">La matière où ta note est la plus basse.</string>
+    <string name="w_absences">Absences</string>
+    <string name="w_absences_desc">Le total d\'absences, justifiées ou non.</string>
+    <string name="w_status">Connexion</string>
+    <string name="w_status_desc">L\'état de ta connexion avec un bouton pour te reconnecter ou synchroniser.</string>
+    <string name="w_sync">Dernière synchronisation</string>
+    <string name="w_sync_desc">Quand tes données ont été mises à jour, avec un bouton pour resynchroniser.</string>
+    <string name="w_shortcuts">Raccourcis</string>
+    <string name="w_shortcuts_desc">Quatre boutons : agenda, notes, absences, devoirs.</string>
 </resources>

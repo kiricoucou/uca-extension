@@ -48,6 +48,7 @@
 
         <receiver
             android:name=".AgendaWidgetProvider"
+            android:label="@string/w_next"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
@@ -55,6 +56,272 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_edt_info" />
+        </receiver>
+
+        <!-- Widgets de l'écran d'accueil (voir UcaWidgets.kt et WidgetRenderer.kt) -->
+        <receiver
+            android:name=".WDayWidget"
+            android:label="@string/w_day"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_day_info" />
+        </receiver>
+        <receiver
+            android:name=".WDays3Widget"
+            android:label="@string/w_days3"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_days3_info" />
+        </receiver>
+        <receiver
+            android:name=".WWeekWidget"
+            android:label="@string/w_week"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_week_info" />
+        </receiver>
+        <receiver
+            android:name=".WNowWidget"
+            android:label="@string/w_now"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_now_info" />
+        </receiver>
+        <receiver
+            android:name=".WRoomWidget"
+            android:label="@string/w_room"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_room_info" />
+        </receiver>
+        <receiver
+            android:name=".WEnddayWidget"
+            android:label="@string/w_endday"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_endday_info" />
+        </receiver>
+        <receiver
+            android:name=".WBreakWidget"
+            android:label="@string/w_break"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_break_info" />
+        </receiver>
+        <receiver
+            android:name=".WFreedayWidget"
+            android:label="@string/w_freeday"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_freeday_info" />
+        </receiver>
+        <receiver
+            android:name=".WDateWidget"
+            android:label="@string/w_date"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_date_info" />
+        </receiver>
+        <receiver
+            android:name=".WTasksWidget"
+            android:label="@string/w_tasks"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_tasks_info" />
+        </receiver>
+        <receiver
+            android:name=".WLateWidget"
+            android:label="@string/w_late"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_late_info" />
+        </receiver>
+        <receiver
+            android:name=".WNexttaskWidget"
+            android:label="@string/w_nexttask"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_nexttask_info" />
+        </receiver>
+        <receiver
+            android:name=".WExamsWidget"
+            android:label="@string/w_exams"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_exams_info" />
+        </receiver>
+        <receiver
+            android:name=".WCountdownWidget"
+            android:label="@string/w_countdown"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_countdown_info" />
+        </receiver>
+        <receiver
+            android:name=".WAvgWidget"
+            android:label="@string/w_avg"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_avg_info" />
+        </receiver>
+        <receiver
+            android:name=".WTrendWidget"
+            android:label="@string/w_trend"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_trend_info" />
+        </receiver>
+        <receiver
+            android:name=".WNotesWidget"
+            android:label="@string/w_notes"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_notes_info" />
+        </receiver>
+        <receiver
+            android:name=".WRecentWidget"
+            android:label="@string/w_recent"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_recent_info" />
+        </receiver>
+        <receiver
+            android:name=".WBestWidget"
+            android:label="@string/w_best"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_best_info" />
+        </receiver>
+        <receiver
+            android:name=".WWorstWidget"
+            android:label="@string/w_worst"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_worst_info" />
+        </receiver>
+        <receiver
+            android:name=".WAbsencesWidget"
+            android:label="@string/w_absences"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_absences_info" />
+        </receiver>
+        <receiver
+            android:name=".WStatusWidget"
+            android:label="@string/w_status"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_status_info" />
+        </receiver>
+        <receiver
+            android:name=".WSyncWidget"
+            android:label="@string/w_sync"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_sync_info" />
+        </receiver>
+        <receiver
+            android:name=".WShortcutsWidget"
+            android:label="@string/w_shortcuts"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_shortcuts_info" />
         </receiver>
 
         <!-- Fournisseur de fichiers pour l'installation autonome de l'APK mis à jour depuis GitHub -->

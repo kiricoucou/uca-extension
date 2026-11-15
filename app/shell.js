@@ -24,6 +24,7 @@ const ICON = {
   link: '<svg viewBox="0 0 24 24"><path d="M10 14a5 5 0 007 0l3-3a5 5 0 00-7-7l-1 1M14 10a5 5 0 00-7 0l-3 3a5 5 0 007 7l1-1"/></svg>',
   dl: '<svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>',
   person: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/></svg>',
+  widget: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>',
   chev: '<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
 };
 const ODIN = "https://odin.iut.uca.fr/etudiants/";
@@ -104,6 +105,39 @@ function notifications() {
 }
 function refreshBell() { $("bellDot").hidden = !notifications().some((n) => !n.read); }
 
+/* ------------------------------ widgets (écran « Mes widgets ») ------------------------------ */
+const WKEY = "uca_widgets_v1";
+let widgetEdit = false, widgetTimer = 0;
+function widgetIds() { const l = lsJson(WKEY, null); return Array.isArray(l) ? l.filter((id) => window.UCA_WIDGETS && UCA_WIDGETS.byId(id)) : UCA_WIDGETS.DEFAULTS.slice(); }
+function widgetsGridHtml() {
+  const vm = UCA_WIDGETS.derive(UCA_WIDGETS.snapshot(data), Date.now()), ids = widgetIds();
+  if (!ids.length) return `<div class="empty"><div class="big">🧩</div><b>Aucun widget</b><p class="small">Touche « Ajouter un widget » pour composer ton écran.</p></div>`;
+  return ids.map((id, i) => {
+    const w = UCA_WIDGETS.byId(id);
+    return `<section class="uw ${w.size}" data-wid="${esc(id)}" aria-label="${esc(w.name)}"><div class="uw-tools">`
+      + `<button type="button" data-act="wUp" data-id="${esc(id)}" aria-label="Monter ${esc(w.name)}"${i === 0 ? " disabled" : ""}>↑</button>`
+      + `<button type="button" data-act="wDown" data-id="${esc(id)}" aria-label="Descendre ${esc(w.name)}"${i === ids.length - 1 ? " disabled" : ""}>↓</button>`
+      + `<button type="button" data-act="wDel" data-id="${esc(id)}" aria-label="Retirer ${esc(w.name)}">✕</button></div>${UCA_WIDGETS.render(id, vm)}</section>`;
+  }).join("");
+}
+function widgetsScreen() {
+  if (!$("uwCss")) { const st = document.createElement("style"); st.id = "uwCss"; st.textContent = UCA_WIDGETS.CSS; document.head.appendChild(st); }
+  const n = widgetIds().length;
+  return `<p class="small muted" style="margin:0 0 10px">${n} widget${n > 1 ? "s" : ""} · mis à jour tout seuls à partir de tes données (aucun envoi). Sur l'app Android, les mêmes widgets se posent sur l'écran d'accueil du téléphone.</p>
+    <div class="btn-row" style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px"><button class="btn" type="button" data-act="wAdd">+ Ajouter un widget</button><button class="btn secondary" type="button" data-act="wEdit" aria-pressed="${widgetEdit}">${widgetEdit ? "Terminer" : "Modifier l'ordre"}</button>${widgetEdit ? '<button class="btn secondary" type="button" data-act="wReset">Remettre ceux par défaut</button>' : ""}</div>
+    <div class="uw-grid${widgetEdit ? " uw-edit" : ""}" id="uwGrid">${widgetsGridHtml()}</div>`;
+}
+function widgetsAfter() {
+  clearInterval(widgetTimer);
+  widgetTimer = setInterval(() => { const g = $("uwGrid"); if (!g || current() !== "widgets") { clearInterval(widgetTimer); return; } g.innerHTML = widgetsGridHtml(); }, 30000);
+}
+function widgetSheet() {
+  const have = new Set(widgetIds()), rest = UCA_WIDGETS.CATALOG.filter((w) => !have.has(w.id));
+  $("sheet").innerHTML = `<h2>Ajouter un widget</h2><div class="uw-add">${rest.length ? rest.map((w) => `<div class="uw-pick"><span class="ic">${w.icon}</span><div><b>${esc(w.name)}</b><span>${esc(w.desc)}</span></div><button class="btn" type="button" data-act="wPick" data-id="${esc(w.id)}">Ajouter</button></div>`).join("") : '<p class="small muted">Tous les widgets sont déjà sur ton écran.</p>'}</div><button class="btn secondary" type="button" data-act="closeSheet" style="margin-top:12px">Fermer</button>`;
+  $("sheet").hidden = false; $("sheetBackdrop").hidden = false;
+}
+function widgetMove(id, d) { const l = widgetIds(), i = l.indexOf(id), j = i + d; if (i < 0 || j < 0 || j >= l.length) return; [l[i], l[j]] = [l[j], l[i]]; lsSet(WKEY, l); }
+
 /* ------------------------------ écrans ------------------------------ */
 const SCREENS = {
   home: { title: "Accueil", render() {
@@ -118,6 +152,7 @@ const SCREENS = {
       </div><div>
       <div class="section-title">Raccourcis</div>
       <div class="rows">
+        ${row("widget", "Mes widgets", "Journée, devoirs, notes, absences… sur un écran", { go: "widgets" })}
         ${row("mail", "Messagerie Zimbra UCA", "Ouvre ta boîte de réception", { href: MAIL })}
         ${row("book", "Bibliothèques universitaires", "Compte lecteur, catalogue, horaires", { go: "livres" })}
         ${row("food", "Restaurants U et lieux", "Carte des campus et itinéraires", { go: "tab:lieux" })}
@@ -135,6 +170,7 @@ const SCREENS = {
       </div><div>
       <div class="section-title">Raccourcis</div>
       <div class="rows">
+        ${row("widget", "Mes widgets", "25 widgets : cours, devoirs, notes, absences", { go: "widgets" })}
         ${row("work", "Stage et emploi", "Offres de stage, alternance, premier emploi", { go: "stage" })}
         ${row("school", "Scolarité", "Certificat, relevés, inscriptions, contacts", { go: "scolarite" })}
         ${row("bell", "Notifications", "Changements d'emploi du temps, nouvelles notes", { go: "notifications" })}
@@ -266,6 +302,8 @@ const SCREENS = {
       <div class="rows">${LIEUX.map((l, i) => /^BU /.test(l[0]) ? `<button class="row" type="button" data-lieu="${i}"><span class="ic">${ICON.book}</span><span class="tx"><b>${esc(l[0])}</b><span>${esc(l[4])}</span></span><span class="chev">${ICON.chev}</span></button>` : "").join("")}</div>`;
   } },
 
+  widgets: { title: "Mes widgets", sub: true, render() { return widgetsScreen(); }, after() { widgetsAfter(); } },
+
   transport: { title: "Transports", sub: true, render() { return '<iframe class="lieu-map" style="height:calc(100dvh - 160px)" src="../transport.html" title="Transports"></iframe>'; } },
 };
 
@@ -300,6 +338,7 @@ window.addEventListener("popstate", () => { if (stack.length) { stack.pop(); sho
 
 function go(target) {
   if (!target) return;
+  if (target === "import") { location.href = "import.html"; return; }
   if (target.startsWith("tab:")) return goTab(target.slice(4));
   if (target.startsWith("agenda:")) { show.agendaParams = "?open=" + target.slice(7); return goTab("agenda"); }
   open(target);
@@ -403,6 +442,13 @@ async function onAction(act, el) {
   if (act === "mapsOk") { localStorage.setItem("uca_maps_consent", "1"); show(); }
   else if (act === "mapsNo") { localStorage.setItem("uca_maps_consent", "0"); el.closest(".card").remove(); }
   else if (act === "closeSheet") closeSheet();
+  else if (act === "wAdd") widgetSheet();
+  else if (act === "wPick") { const l = widgetIds(); if (!l.includes(el.dataset.id)) l.push(el.dataset.id); lsSet(WKEY, l); closeSheet(); toast("Widget ajouté"); show(); }
+  else if (act === "wEdit") { widgetEdit = !widgetEdit; show(); }
+  else if (act === "wReset") { lsSet(WKEY, UCA_WIDGETS.DEFAULTS.slice()); show(); }
+  else if (act === "wUp") { widgetMove(el.dataset.id, -1); show(); }
+  else if (act === "wDown") { widgetMove(el.dataset.id, 1); show(); }
+  else if (act === "wDel") { lsSet(WKEY, widgetIds().filter((x) => x !== el.dataset.id)); show(); }
   else if (act === "photo") $("photoInput").click();
   else if (act === "readAll") { localStorage.setItem("uca_notif_read", JSON.stringify(notifications().map((n) => n.id))); toast("Toutes les notifications sont marquées comme lues"); show(); }
   else if (act === "askNotif") { await Notification.requestPermission(); show(); }
@@ -471,7 +517,7 @@ document.addEventListener("keydown", (e) => {
 });
 
 async function load() {
-  const keys = ["uca_events", "uca_edt_changes", "uca_notes_seen", "uca_my_groups", "uca_profile", "uca_last_sync", "uca_app_imported_at", "uca_session_expired", "uca_design"];
+  const keys = ["uca_events", "uca_edt_changes", "uca_notes_seen", "uca_my_groups", "uca_profile", "uca_last_sync", "uca_app_imported_at", "uca_session_expired", "uca_design", "uca_releve_notes", "uca_scales", "uca_tasks", "uca_absences", "uca_notes_history"];
   data = await store.get(keys);
   data.settings = await UCA_getSettings();
   const stale = data.uca_last_sync && Date.now() - data.uca_last_sync > 3 * 86400000;

@@ -88,6 +88,7 @@ object SessionKeeper {
 class SessionWorker(ctx: Context, params: WorkerParameters) : Worker(ctx, params) {
     override fun doWork(): Result {
         try { SessionKeeper.touchBlocking(applicationContext) } catch (_: Exception) { /* jamais de plantage en arrière-plan */ }
+        try { WidgetRenderer.updateAll(applicationContext) } catch (_: Exception) { /* idem */ }   // les widgets suivent le temps qui passe
         return Result.success()
     }
 }

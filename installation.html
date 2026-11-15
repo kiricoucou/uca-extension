@@ -320,7 +320,12 @@ dialog.dlg h3{margin:0 0 6px;font-size:21px}dialog.dlg p{margin:0 0 16px;color:v
   var tabs = document.querySelectorAll('.tab'), panels = document.querySelectorAll('.panel');
   function show(k) { tabs.forEach(function (t) { t.setAttribute('aria-selected', String(t.dataset.tab === k)); }); panels.forEach(function (p) { p.hidden = p.id !== 'p-' + k; }); try { history.replaceState(null, '', '#' + k); } catch (e) {} }
   tabs.forEach(function (t) { t.addEventListener('click', function () { show(t.dataset.tab); }); });
-  var h = (location.hash || '').replace('#', '').split('-')[0]; if (h && document.getElementById('p-' + h)) show(h);
+  var full = (location.hash || '').replace('#', ''), h = full.split('-')[0];
+  if (h && document.getElementById('p-' + h)) {
+    show(h);
+    // Lien vers une étape précise (ex. #zip-3) : on revient sur l'étape, le panneau étant maintenant affiché.
+    if (full !== h && document.getElementById(full)) { try { history.replaceState(null, '', '#' + full); } catch (e) {} setTimeout(function () { document.getElementById(full).scrollIntoView({ block: 'start' }); }, 60); }
+  }
   var lb = document.getElementById('lb'), li = document.getElementById('lbi'), lc = document.getElementById('lbc');
   document.querySelectorAll('.shot').forEach(function (b) { b.addEventListener('click', function () { li.src = b.dataset.full; li.alt = b.querySelector('img').alt; lc.textContent = b.dataset.cap; lb.hidden = false; document.body.style.overflow = 'hidden'; }); });
   function close() { lb.hidden = true; li.removeAttribute('src'); document.body.style.overflow = ''; }

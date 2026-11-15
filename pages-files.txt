@@ -2,6 +2,7 @@ index.html
 404.html
 aide.html
 install.html
+app-download.html
 confidentialite.html
 nouveautes.html
 transport.html

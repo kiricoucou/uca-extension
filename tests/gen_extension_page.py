@@ -74,29 +74,43 @@ BODY = """<body>
 
   <section class="reveal" id="installer">
     <h2>Ajouter l'extension en 2 minutes</h2>
-    <p class="sub">Elle n'est pas (encore) sur le Chrome Web Store : on la charge à la main, une seule fois. <a href="../installation.html"><b>Voir le tutoriel en images, étape par étape →</b></a></p>
+    <p class="sub">Elle n'est pas (encore) sur le Chrome Web Store : on la charge à la main, une seule fois. Trois étapes courtes.</p>
+    <a class="tuto-cta" href="../installation.html">
+      <span class="tc-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2.5"/><path d="m10 9 5 3-5 3z" fill="currentColor"/><path d="M8 21h8"/></svg></span>
+      <span class="tc-txt"><b>Voir le tutoriel en images, étape par étape</b><span>Chaque étape en vraie capture d'écran, avec une flèche sur l'endroit où cliquer.</span></span>
+      <span class="tuto-big">Ouvrir le tutoriel <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+    </a>
     <div class="steps">
       <div class="step"><h3>Télécharge et décompresse</h3>
+        <div class="st-body">
         <ol class="sub-steps">
-          <li>Clique sur <b>« Télécharger le ZIP »</b> (en haut de cette page). Le fichier <code>uca-extension-chrome.zip</code> arrive dans ton dossier <b>Téléchargements</b>.</li>
-          <li>Ouvre ce dossier, fais un <b>clic droit</b> sur le fichier → <b>« Extraire tout… »</b> → <b>« Extraire »</b> (Mac : double-clic).</li>
-          <li>Tu obtiens un dossier, par exemple <code>uca-extension-chrome</code>, qui contient directement <code>manifest.json</code>. <b>Ne le supprime pas et ne le déplace plus</b> : Chrome le lit depuis cet endroit tant que l'extension est installée.</li>
-          <li>Choisis un dossier qui t'appartient, comme <code>Bureau\\extension_uca_chrome</code> (un sous-dossier de ton Bureau), <b>pas Documents ni Bureau eux-mêmes</b> : Windows y cache un fichier <code>desktop.ini</code> que Chrome refuse. Si Chrome affiche malgré tout « desktop.ini … illegal », double-clique <code>nettoyer-dossier-extension.bat</code>, déjà présent dans ce dossier à côté de <code>manifest.json</code>.</li>
-        </ol></div>
-      <div class="step"><h3>Active le mode développeur</h3>
-        <ol class="sub-steps">
-          <li>Ouvre un nouvel onglet, tape <code>chrome://extensions</code> (Edge : <code>edge://extensions</code>) puis <b>Entrée</b>.</li>
-          <li>En haut à droite, active l'interrupteur <b>« Mode développeur »</b>.</li>
-          <li>Une barre de trois boutons apparaît : <b>« Charger l'extension non empaquetée »</b>, « Empaqueter l'extension » et « Mettre à jour ». Tu vas utiliser le premier.</li>
+          <li>Clique sur <b>« Télécharger le ZIP »</b>, en haut de cette page.</li>
+          <li>Dans Téléchargements, clic droit sur le fichier, puis <b>« Extraire tout… »</b> (Mac : double-clic).</li>
+          <li>Garde le dossier obtenu : <b>ne le supprime pas et ne le déplace plus</b>, Chrome le relit à chaque démarrage.</li>
         </ol>
+        <details class="more"><summary>Plus de précisions</summary>
+          <p>Le dossier contient directement <code>manifest.json</code>. Choisis un dossier qui t'appartient, comme <code>Bureau\\extension_uca_chrome</code> (un sous-dossier de ton Bureau), <b>pas Documents ni Bureau eux-mêmes</b> : Windows y cache un fichier <code>desktop.ini</code> que Chrome refuse.</p>
+          <p>Si Chrome affiche malgré tout « desktop.ini … illegal », double-clique <code>nettoyer-dossier-extension.bat</code>, déjà présent à côté de <code>manifest.json</code>.</p>
+        </details></div>
+        <div class="st-art" aria-hidden="true"><svg viewBox="0 0 320 150" fill="none"><rect x="14" y="30" width="96" height="92" rx="14" fill="currentColor" opacity=".12"/><rect x="28" y="44" width="68" height="64" rx="8" stroke="currentColor" stroke-width="3"/><path d="M62 44v64" stroke="currentColor" stroke-width="3" stroke-dasharray="6 6"/><text x="62" y="134" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor">.zip</text><path d="M126 76h64" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="m178 62 14 14-14 14" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><path d="M214 56h30l10 12h46a8 8 0 0 1 8 8v46a8 8 0 0 1-8 8h-86a8 8 0 0 1-8-8V64a8 8 0 0 1 8-8z" fill="currentColor" opacity=".16" stroke="currentColor" stroke-width="3"/><text x="262" y="112" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor">dossier</text></svg></div></div>
+      <div class="step"><h3>Active le mode développeur</h3>
+        <div class="st-body">
+        <ol class="sub-steps">
+          <li>Dans un nouvel onglet, ouvre <code>chrome://extensions</code> (Edge : <code>edge://extensions</code>).</li>
+          <li>En haut à droite, active <b>« Mode développeur »</b>.</li>
+          <li>Trois boutons apparaissent : tu vas utiliser <b>« Charger l'extension non empaquetée »</b>.</li>
+        </ol></div>
         <button type="button" class="shot-link" data-full="tuto/etape-2-mode-developpeur.webp" data-cap="Étape 2 : « Mode développeur » activé en haut à droite, avec les trois boutons juste dessous"><img src="tuto/etape-2-mode-developpeur.webp" width="1024" height="610" loading="lazy" alt="Page chrome://extensions avec « Mode développeur » activé en haut à droite et le bouton « Charger l'extension non empaquetée »"><span class="zoom">🔍 Agrandir</span></button></div>
       <div class="step"><h3>Charge le dossier</h3>
+        <div class="st-body">
         <ol class="sub-steps">
           <li>Clique sur <b>« Charger l'extension non empaquetée »</b>.</li>
-          <li>Dans la fenêtre <b>« Sélectionner le répertoire de l'extension »</b>, ouvre <b>Téléchargements</b> et sélectionne le <b>dossier</b> décompressé (pas le fichier .zip).</li>
-          <li>Clique sur <b>« Sélectionner un dossier »</b>. L'extension « Emploi du temps UCA » apparaît dans la liste.</li>
-          <li>Clique sur l'icône puzzle de la barre d'outils, puis sur l'épingle à côté de l'extension pour l'avoir toujours sous la main.</li>
+          <li>Choisis le <b>dossier</b> décompressé (pas le fichier .zip), puis <b>« Sélectionner un dossier »</b>.</li>
+          <li>« Emploi du temps UCA » apparaît dans la liste : c'est installé.</li>
         </ol>
+        <details class="more"><summary>Plus de précisions</summary>
+          <p>Clique ensuite sur l'icône puzzle de la barre d'outils, puis sur l'épingle à côté de l'extension pour l'avoir toujours sous la main.</p>
+        </details></div>
         <button type="button" class="shot-link" data-full="tuto/etape-3-choisir-le-dossier.webp" data-cap="Étape 3 : le dossier décompressé est sélectionné, clique sur « Sélectionner un dossier »"><img src="tuto/etape-3-choisir-le-dossier.webp" width="1024" height="572" loading="lazy" alt="Fenêtre « Sélectionner le répertoire de l'extension » avec le dossier décompressé sélectionné"><span class="zoom">🔍 Agrandir</span></button></div>
     </div>
     <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Capture agrandie" hidden>
@@ -154,7 +168,7 @@ def main():
     head = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="Télécharge l\'extension Chrome / Edge My UCA en ZIP et ajoute-la en mode développeur : emploi du temps, notes et absences de l\'UCA. Gratuit, sans pub, sans données personnelles.">', head)
     head = head.replace('content="My UCA pour Android"', 'content="Extension My UCA pour Chrome (ZIP)"')
     head = head.replace("Emploi du temps, notes, lieux : l'app étudiante non officielle de l'UCA.", "Emploi du temps, notes, absences : l'extension étudiante non officielle de l'UCA.")
-    head = head.replace("</style>", "code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size:.92em}.shot-link{display:block;margin-top:14px}.shot-link img{display:block;width:100%;height:auto;border-radius:12px;box-shadow:0 0 0 1px var(--border),0 12px 28px -16px rgba(9,9,11,.4);transition:transform .25s}.shot-link:hover img{transform:scale(1.02)}.step{overflow:hidden}\n</style>")
+    head = head.replace("</style>", "code{background:rgba(127,127,127,.2);padding:1px 6px;border-radius:6px;font-size:.92em}.shot-link{display:block;margin-top:14px}.shot-link img{display:block;width:100%;height:auto;border-radius:12px;box-shadow:0 0 0 1px var(--border),0 12px 28px -16px rgba(9,9,11,.4);transition:transform .25s}.shot-link:hover img{transform:scale(1.02)}.step{overflow:hidden}#installer .steps{grid-template-columns:1fr;gap:18px}#installer .step{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);column-gap:34px;row-gap:6px;align-items:start;padding:26px 30px 26px 78px}#installer .step::before{top:26px;left:26px;width:38px;height:38px;font-size:18px}#installer .step h3{grid-column:1/-1;font-size:21px;margin:2px 0 4px}#installer .step .st-body{grid-column:1;min-width:0}#installer .step .shot-link,#installer .step .st-art{grid-column:2;grid-row:2;margin-top:0;min-width:0}#installer .sub-steps{font-size:16px;line-height:1.55;padding-left:22px}#installer .sub-steps li{margin:9px 0}.st-art{display:grid;place-items:center;color:var(--accent);border-radius:16px;background:rgba(127,127,127,.07);padding:18px;box-shadow:0 0 0 1px var(--border)}.st-art svg{width:100%;max-width:340px;height:auto}.more{margin-top:10px;font-size:14.5px;color:var(--dim)}.more summary{cursor:pointer;color:var(--accent);font-weight:700;padding:6px 0;width:fit-content}.more p{margin:6px 0}@media(max-width:820px){#installer .step{grid-template-columns:1fr;padding:22px 20px 22px 66px}#installer .step .shot-link,#installer .step .st-art{grid-column:1;grid-row:auto;margin-top:8px}}.tuto-cta{display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin:8px 0 24px;padding:24px 28px;border-radius:26px;text-decoration:none;color:var(--text);background:linear-gradient(120deg,rgba(5,104,166,.16),rgba(5,104,166,.04) 60%,transparent),var(--surface);box-shadow:0 0 0 1.5px var(--accent) inset,0 18px 40px -22px rgba(5,104,166,.55);position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s}.tuto-cta:hover{transform:translateY(-3px);box-shadow:0 0 0 2px var(--accent) inset,0 26px 50px -22px rgba(5,104,166,.7)}.tuto-cta:focus-visible{outline:3px solid var(--accent);outline-offset:3px}.tc-ico{width:70px;height:70px;border-radius:22px;background:var(--accent);color:var(--on);display:grid;place-items:center;flex:none;animation:tcFloat 3.2s ease-in-out infinite}.tc-ico svg{width:36px;height:36px}.tc-txt{display:grid;gap:3px;flex:1 1 260px;min-width:0}.tc-txt b{font-size:clamp(20px,2.6vw,26px);line-height:1.2;letter-spacing:-.01em}.tc-txt span{color:var(--dim);font-size:15.5px}.tuto-big{display:inline-flex;align-items:center;gap:12px;min-height:60px;padding:0 30px;border-radius:18px;background:var(--accent);color:var(--on);font-weight:800;font-size:18px;position:relative;overflow:hidden;animation:tcPulse 2.6s ease-out infinite}.tuto-big::after{content:'';position:absolute;top:0;bottom:0;width:60px;left:-80px;background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-20deg);animation:tcShine 3.4s ease-in-out infinite}.tuto-big svg{width:22px;height:22px;transition:transform .2s;animation:tcNudge 1.6s ease-in-out infinite}.tuto-cta:hover .tuto-big svg{transform:translateX(5px)}@keyframes tcFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-6px) rotate(2deg)}}@keyframes tcPulse{0%{box-shadow:0 0 0 0 rgba(5,104,166,.5)}70%,100%{box-shadow:0 0 0 18px rgba(5,104,166,0)}}@keyframes tcShine{0%,55%{left:-80px}100%{left:130%}}@keyframes tcNudge{0%,100%{margin-left:0}50%{margin-left:6px}}@media(prefers-reduced-motion:reduce){.tc-ico,.tuto-big,.tuto-big::after,.tuto-big svg{animation:none}.tuto-cta{transition:none}}@media(max-width:620px){.tuto-big{width:100%;justify-content:center}}\n</style>")
     tail = s[s.index("<script>"):]
     tail = tail.replace('fetch("../version.json"', 'fetch("../manifest.json"')
     maj_js = """  var m = document.getElementById('maj');

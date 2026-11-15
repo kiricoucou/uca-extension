@@ -1,22 +1,32 @@
 {
   "app_name": "My UCA",
-  "version": "1.4.24",
-  "version_code": 20,
-  "bundle_version": "1.4.24",
+  "version": "1.4.25",
+  "version_code": 21,
+  "bundle_version": "1.4.25",
   "commit_sha": "main",
   "branch": "main",
-  "published_at": "2026-11-15T17:19:34Z",
+  "published_at": "2026-11-15T21:20:07Z",
   "min_apk_version_code": 16,
   "raw_base_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/",
   "apk_download_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/EdtUca.apk",
   "github_repo_url": "https://github.com/kiricoucou/uca-extension",
   "changelog": [
-    "Connexion gardée : quitter l'app, même longtemps, ne te déconnecte pas. Un contrôle silencieux toutes les 30 minutes garde la session Odin vivante (réglage « Garder ma session active en arrière-plan »).",
-    "Aucun mot de passe n'est enregistré : si tu as coché « navigateur de confiance » à la double authentification, ce choix est respecté et la session n'est jamais effacée par une fermeture ou une mise à jour."
+    "25 widgets pour l'écran d'accueil : prochain cours, ma journée, 3 jours, devoirs, examens, moyenne, notes par matière, absences, connexion et plus encore (appui long sur l'écran d'accueil, puis Widgets, My UCA).",
+    "Toucher un widget ouvre l'écran utile (agenda, notes, absences ou devoirs). Les widgets « Connexion » et « Synchronisation » ont un vrai bouton pour te reconnecter ou resynchroniser."
   ],
-  "ota_version": "1.4.24",
-  "ota_base_version_code": 20,
+  "ota_version": "1.4.25",
+  "ota_base_version_code": 21,
   "history": [
+    {
+      "version": "1.46.43",
+      "app": "1.4.25",
+      "title": "25 widgets, nouvelle page d'installation de l'app",
+      "items": [
+        "App Android : 25 widgets pour l'écran d'accueil (prochain cours, journée, 3 jours, charge de la semaine, devoirs, examens, moyenne, graphique des notes, absences, connexion…). Toucher un…",
+        "Nouvelle page app-download.html (Installer l'app) : choix de l'appareil puis du système, installateur automatique ou ZIP avec tutoriel en images, APK avec confirmation et PWA « non…",
+        "Page de téléchargement de l'extension : bouton « Voir le tutoriel en images » plus visible et animé, étapes plus larges avec moins de texte."
+      ]
+    },
     {
       "version": "1.46.42",
       "app": "1.4.24",
@@ -86,17 +96,6 @@
       "title": "compétences (UE)",
       "items": [
         "Notes > 👁 Voir mes compétences : la moyenne de chaque UE (« UE RT 1.1 - Assister l'administrateur du réseau ») calculée depuis les matières, en barres à la hauteur de la moyenne, avec un…"
-      ]
-    },
-    {
-      "version": "1.46.20",
-      "app": "1.4.17",
-      "title": "légende des notes, mises à jour forcées",
-      "items": [
-        "Notes : légende des couleurs sous le graphique (vert 14 et plus, jaune 10 à 14, orange sous 10, gris moyenne de la classe). Dans le tableau, la note dont le barème peut changer (sur 20…",
-        "Extension : le code de déchiffrement est affiché sous « Générer le lien » (un clic le copie) et un bouton « Mises à jour » force la vérification ; les trois boutons sont sur la même…",
-        "À faire et examens : la date (jour, numéro, mois) s'affiche en plus de l'horaire pour les examens et les devoirs.",
-        "Mise à jour forcée : dès qu'une nouvelle version est détectée, l'extension se recharge si le dossier est déjà à jour, sinon ouvre une fois par version la page de téléchargement qui lance…"
       ]
     }
   ]

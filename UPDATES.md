@@ -55,6 +55,12 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.43 — app Android 1.4.25 : 25 widgets, nouvelle page d'installation de l'app
+
+- App Android : 25 widgets pour l'écran d'accueil (prochain cours, journée, 3 jours, charge de la semaine, devoirs, examens, moyenne, graphique des notes, absences, connexion…). Toucher un widget ouvre l'écran utile ; « Connexion » et « Synchronisation » portent un bouton. Les mêmes widgets existent dans l'app web : écran « Mes widgets » (ajout, retrait, ordre).
+- Nouvelle page app-download.html (Installer l'app) : choix de l'appareil puis du système, installateur automatique ou ZIP avec tutoriel en images, APK avec confirmation et PWA « non recommandée » sur Android, App Store indisponible et PWA guidée sur iPhone.
+- Page de téléchargement de l'extension : bouton « Voir le tutoriel en images » plus visible et animé, étapes plus larges avec moins de texte.
+
 ## 1.46.42 — app Android 1.4.24 : session gardée en arrière-plan, aide à l'installation guidée
 
 - App Android : la connexion à Odin est gardée. Quitter l'app ne déconnecte pas ; un contrôle silencieux toutes les 30 minutes garde la session vivante (interrupteur dans les réglages, état du dernier contrôle affiché). Aucun mot de passe ni code 2FA n'est enregistré ; le choix « navigateur de confiance » de la double authentification est respecté et seule « Se déconnecter » efface les cookies.

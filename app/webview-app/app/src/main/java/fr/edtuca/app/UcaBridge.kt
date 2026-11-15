@@ -12,6 +12,7 @@ interface UcaSyncRequestListener {
     fun onEventsUpdated(json: String)
     fun onDesignChanged(id: String)
     fun handleClassRequest()
+    fun onWidgetData(json: String)
 }
 
 class UcaBridge(private val host: Activity, private val listener: UcaSyncRequestListener) {
@@ -29,6 +30,12 @@ class UcaBridge(private val host: Activity, private val listener: UcaSyncRequest
     @JavascriptInterface
     fun onDesignChanged(id: String) {
         host.runOnUiThread { listener.onDesignChanged(id) }
+    }
+
+    /** Résumé des données pour les widgets de l'écran d'accueil (core/widgets.js, snapshot). */
+    @JavascriptInterface
+    fun onWidgetData(json: String) {
+        host.runOnUiThread { listener.onWidgetData(json) }
     }
 
     @JavascriptInterface

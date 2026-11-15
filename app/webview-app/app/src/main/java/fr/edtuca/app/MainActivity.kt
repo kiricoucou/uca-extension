@@ -90,6 +90,27 @@ class MainActivity : AppCompatActivity() {
 
         // Vérification automatique des mises à jour GitHub dès le lancement
         checkGithubUpdate()
+        // Un widget de l'écran d'accueil a lancé l'app : ouvrir l'écran demandé.
+        if (savedInstanceState == null) handleWidgetIntent(intent)
+    }
+
+    /** Un widget de l'écran d'accueil a été touché : ouvrir l'écran demandé, se reconnecter ou resynchroniser. */
+    private fun handleWidgetIntent(i: android.content.Intent?) {
+        if (i == null || isAppBlockedForUpdate) return
+        val open = i.getStringExtra(WidgetRenderer.EXTRA_OPEN)
+        val action = i.getStringExtra(WidgetRenderer.EXTRA_ACTION)
+        if (open == null && action == null) return
+        i.removeExtra(WidgetRenderer.EXTRA_OPEN); i.removeExtra(WidgetRenderer.EXTRA_ACTION)   // pas rejoué si l'écran est recréé
+        if (!PrefsStore.isLoggedIn(this)) return   // l'écran de connexion est déjà affiché
+        if (action == "login") { startLogin(); return }
+        if (open != null && open in WidgetRenderer.PANELS) AgendaFragment.pendingOpen = open
+        enterApp()   // l'agenda se rouvre, et resynchronise tout seul au lancement (action « sync » comprise)
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleWidgetIntent(intent)
     }
 
     override fun onResume() {
@@ -507,6 +528,7 @@ class MainActivity : AppCompatActivity() {
             PhoneCalendarSync.clear(appCtx)
             CourseReminderScheduler.cancelAll(appCtx)
             WidgetEventsStore.clear(appCtx)
+            WidgetDataStore.clear(appCtx)
             AgendaWidgetProvider.requestUpdate(appCtx)
             androidx.core.app.NotificationManagerCompat.from(appCtx).cancelAll()
         }

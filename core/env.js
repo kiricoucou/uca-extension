@@ -27,6 +27,24 @@ function readAll() { try { return migrateDesign(JSON.parse(mem.getItem(STORE) ||
 function writeAll(all) { mem.setItem(STORE, JSON.stringify(all)); }
 function clone(v) { return v === undefined ? undefined : JSON.parse(JSON.stringify(v)); }
 function notify(changes) { if (Object.keys(changes).length) setTimeout(() => listeners.forEach((fn) => fn(changes, "local")), 0); }
+/* App Android : résumé des données pour les widgets de l'écran d'accueil (core/widgets.js, WidgetModel.kt côté natif).
+   Envoyé après chaque changement utile (cours, notes, devoirs, absences, dernière synchro, session), 1 seconde après le dernier. */
+const WIDGET_KEYS = ["uca_events", "uca_releve_notes", "uca_scales", "uca_tasks", "uca_absences", "uca_notes_history", "uca_last_sync", "uca_session_expired"];
+let widgetTimer = 0;
+function loadScriptOnce(src) { return new Promise((res) => { const s = document.createElement("script"); s.src = ROOT + src; s.onload = () => res(true); s.onerror = () => res(false); document.head.appendChild(s); }); }
+async function ensureWidgetCode() {
+  if (!window.UCA_GRADES) await loadScriptOnce("core/grades.js");
+  if (!window.UCA_WIDGETS) await loadScriptOnce("core/widgets.js");
+  return !!(window.UCA_WIDGETS && window.UCA_GRADES);
+}
+function pushWidgets(keys) {
+  if (!(window.AndroidUCA && typeof window.AndroidUCA.onWidgetData === "function")) return;
+  if (keys && !keys.some((k) => WIDGET_KEYS.includes(k))) return;
+  clearTimeout(widgetTimer);
+  widgetTimer = setTimeout(async () => {
+    try { if (await ensureWidgetCode()) window.AndroidUCA.onWidgetData(JSON.stringify(window.UCA_WIDGETS.snapshot(readAll()))); } catch (e) { /* un widget en retard n'est pas grave */ }
+  }, 1000);
+}
 function done(result, cb) { const p = Promise.resolve(result); if (cb) p.then(cb); return p; }
 const local = {
   get(keys, cb) {
@@ -40,16 +58,18 @@ const local = {
   set(obj, cb) {
     const all = readAll(), changes = {};
     Object.keys(obj).forEach((k) => { changes[k] = { oldValue: all[k], newValue: clone(obj[k]) }; all[k] = clone(obj[k]); });
-    writeAll(all); notify(changes);
+    writeAll(all); notify(changes); pushWidgets(Object.keys(changes));
     return done(undefined, cb);
   },
   remove(keys, cb) {
     const all = readAll(), changes = {};
     (Array.isArray(keys) ? keys : [keys]).forEach((k) => { if (k in all) { changes[k] = { oldValue: all[k] }; delete all[k]; } });
-    writeAll(all); notify(changes);
+    writeAll(all); notify(changes); pushWidgets(Object.keys(changes));
     return done(undefined, cb);
   },
 };
+// Premier envoi au démarrage : les widgets se remplissent même sans nouvelle synchro.
+setTimeout(() => pushWidgets(null), 2500);
 window.addEventListener("storage", (e) => {
   if (e.key !== STORE) return;
   const before = JSON.parse(e.oldValue || "{}"), after = JSON.parse(e.newValue || "{}"), changes = {};

@@ -1,4 +1,4 @@
-"""Page d'accueil du site : « Comment l'installer » (extension) -> installation.html ; « Installer l'app » -> install.html,
+"""Page d'accueil du site : « Comment l'installer » (extension) -> installation.html ; « Installer l'app » -> app-download.html,
 avec une fenêtre de choix (ouvrir l'app installée / voir la page d'installation) quand l'app est déjà installée.
 Détection simulée : getInstalledRelatedApps (API du navigateur) puis repère uca_pwa_installed.
 
@@ -37,11 +37,11 @@ def main():
             href = pg.evaluate("() => [...document.querySelectorAll('article.card a.btn')].find(a => a.textContent.trim() === \"Comment l'installer\").getAttribute('href')")
             check("« Comment l'installer » -> installation.html", href == "installation.html", href)
             check("installation.html existe et s'ouvre", pg.request.get(base + "installation.html").status == 200)
-            check("« Installer l'app » -> install.html", pg.get_attribute(APP_BTN, "href") == "install.html")
+            check("« Installer l'app » -> app-download.html", pg.get_attribute(APP_BTN, "href") == "app-download.html")
 
             # 2) App non installée : le lien mène directement au guide
             pg.click(APP_BTN); pg.wait_for_timeout(1200)
-            check("app non installée : le clic ouvre la page d'installation (pas de fenêtre)", "install.html" in pg.url, pg.url)
+            check("app non installée : le clic ouvre la page d'installation (pas de fenêtre)", "app-download.html" in pg.url, pg.url)
             ctx.close()
 
             # 3) App installée (repère local)
@@ -51,13 +51,13 @@ def main():
             check("app installée (repère) : la fenêtre de choix s'ouvre", pg.evaluate("() => document.getElementById('installChoice').open"))
             check("la fenêtre reste sur l'accueil", pg.url.endswith("index.html"), pg.url)
             check("choix « Ouvrir l'app installée » -> app/index.html", pg.get_attribute("#installChoiceOpen", "href").startswith("app/index.html"))
-            check("choix « Voir la page d'installation » -> install.html", pg.get_attribute("#installChoiceGuide", "href") == "install.html")
+            check("choix « Voir la page d'installation » -> app-download.html", pg.get_attribute("#installChoiceGuide", "href") == "app-download.html")
             pg.keyboard.press("Escape"); pg.wait_for_timeout(200)
             check("Échap ferme la fenêtre", not pg.evaluate("() => document.getElementById('installChoice').open"))
             pg.click(APP_BTN); pg.wait_for_timeout(200); pg.click("#installChoiceClose"); pg.wait_for_timeout(200)
             check("« Annuler » ferme la fenêtre", not pg.evaluate("() => document.getElementById('installChoice').open"))
             pg.click(APP_BTN); pg.wait_for_timeout(200); pg.click("#installChoiceGuide"); pg.wait_for_timeout(1200)
-            check("« Voir la page d'installation » ouvre le guide", "install.html" in pg.url, pg.url)
+            check("« Voir la page d'installation » ouvre le guide", "app-download.html" in pg.url, pg.url)
             ctx.close()
 
             # 4) App installée (API du navigateur), sans repère local
@@ -76,7 +76,7 @@ def main():
             ctx.add_init_script("navigator.getInstalledRelatedApps = () => Promise.reject(new Error('non'));")
             pg = ctx.new_page(); pg.goto(base + "index.html"); pg.wait_for_timeout(400)
             pg.click(APP_BTN); pg.wait_for_timeout(1200)
-            check("détection impossible : le guide s'ouvre directement", "install.html" in pg.url, pg.url)
+            check("détection impossible : le guide s'ouvre directement", "app-download.html" in pg.url, pg.url)
             ctx.close()
             b.close()
     finally:

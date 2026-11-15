@@ -24,6 +24,12 @@ object WidgetEventsStore {
         context.getSharedPreferences(FILE, Context.MODE_PRIVATE).edit().remove(KEY_JSON).apply()
     }
 
+    /** Tous les cours en cache (vide si rien). Sert de repli aux widgets tant que la page n'a pas envoyé son résumé. */
+    fun allEvents(context: Context): List<UcaEvent> {
+        val json = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getString(KEY_JSON, null) ?: return emptyList()
+        return try { UcaEvent.parseList(json) } catch (e: Exception) { emptyList() }
+    }
+
     /** Cours en cours ou à venir le plus proche, ou null si rien en cache / rien à venir. */
     fun nextEvent(context: Context): UcaEvent? {
         val json = context.getSharedPreferences(FILE, Context.MODE_PRIVATE).getString(KEY_JSON, null)

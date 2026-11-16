@@ -71,6 +71,15 @@ def main():
             check("la fenêtre tient dans l'écran du téléphone", box[0] >= 0 and box[1] <= box[2], str(box))
             ctx.close()
 
+            # 4b) Android : « Ouvrir l'app installée » passe par une adresse intent: (lance la PWA, pas un onglet)
+            ctx = b.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, user_agent="Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/157 Mobile Safari/537.36")
+            ctx.add_init_script("navigator.getInstalledRelatedApps = () => Promise.resolve([{ platform: 'webapp', url: 'x' }]);")
+            pg = ctx.new_page(); pg.on("pageerror", lambda e: errors.append(str(e)))
+            pg.goto(base + "index.html"); pg.wait_for_timeout(400)
+            h = pg.get_attribute("#installChoiceOpen", "href")
+            check("Android : le lien « Ouvrir l'app installée » est une adresse intent: avec repli sur le navigateur", h.startswith("intent://") and "app/shell.html" in h and "S.browser_fallback_url=" in h and h.endswith(";end"), h)
+            ctx.close()
+
             # 5) API qui échoue : on retombe sur le guide
             ctx = b.new_context(viewport={"width": 1200, "height": 900})
             ctx.add_init_script("navigator.getInstalledRelatedApps = () => Promise.reject(new Error('non'));")

@@ -107,6 +107,35 @@ def main():
             check("PWA : le bouton mène au guide d'installation de l'app web", "app/install.html" in pg.url, pg.url)
             ctx.close()
 
+            # ---------- Android : PWA, vraie fenêtre d'installation puis ouverture de l'app installée ----------
+            ctx = b.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, user_agent="Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/157 Mobile Safari/537.36")
+            ctx.add_init_script("window.__prompted = 0; window.__ev = null;")
+            pg = ctx.new_page(); pg.on("pageerror", lambda e: errors.append(str(e)))
+            pg.goto(base); pg.wait_for_timeout(500)
+            check("page installable : manifeste lié", pg.locator("link[rel=manifest]").count() == 1 and pg.locator("link[rel=manifest]").get_attribute("href") == "app.webmanifest")
+            check("page installable : service worker enregistré", pg.evaluate("() => navigator.serviceWorker.getRegistration().then(r => !!r)"))
+            pg.tap("#devBtn"); pg.tap("#devList-phone"); pg.wait_for_timeout(250); pg.tap("#osBtn"); pg.tap("#osList-android"); pg.wait_for_timeout(400)
+            check("avant installation : le bouton dit « Installer via le web »", "Installer via le web" in pg.inner_text("#pwaGo") and pg.get_attribute("#pwaGo", "data-mode") == "install")
+            pg.evaluate("""() => { const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = () => { window.__prompted++; return Promise.resolve(); }; e.userChoice = Promise.resolve({ outcome: 'accepted' }); window.dispatchEvent(e); }""")
+            pg.tap("#pwaGo"); pg.wait_for_timeout(500)
+            check("le navigateur propose l'installation : le bouton lance la VRAIE fenêtre (prompt), sans changer de page", pg.evaluate("() => window.__prompted") == 1 and pg.url.endswith("app-download.html"), pg.url)
+            check("installation acceptée : le bouton devient « Ouvrir l'app installée »", "Ouvrir l'app installée" in pg.inner_text("#pwaGo") and pg.get_attribute("#pwaGo", "data-mode") == "open")
+            pg.evaluate("() => { window.__lastOpen = null; }")
+            try:
+                pg.tap("#pwaGo"); pg.wait_for_timeout(300)
+            except Exception:
+                pass
+            last = pg.evaluate("() => window.__lastOpen")
+            check("« Ouvrir l'app installée » sur Android : adresse intent: avec repli, vers l'app", bool(last) and last.startswith("intent://kiricoucou") is False and last.startswith("intent://127.0.0.1") and "app/shell.html" in last and "S.browser_fallback_url=" in last and last.endswith(";end"), str(last))
+            ctx.close()
+            ctx = b.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True, user_agent="Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/157 Mobile Safari/537.36")
+            ctx.add_init_script("navigator.getInstalledRelatedApps = () => Promise.resolve([{ platform: 'webapp', url: 'x' }]);")
+            pg = ctx.new_page(); pg.on("pageerror", lambda e: errors.append(str(e)))
+            pg.goto(base); pg.wait_for_timeout(400)
+            pg.tap("#devBtn"); pg.tap("#devList-phone"); pg.wait_for_timeout(250); pg.tap("#osBtn"); pg.tap("#osList-android"); pg.wait_for_timeout(600)
+            check("app déjà installée (détectée par le navigateur) : le bouton dit directement « Ouvrir l'app installée »", "Ouvrir l'app installée" in pg.inner_text("#pwaGo"))
+            ctx.close()
+
             # ---------- téléphone : iOS ----------
             ctx = b.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True); pg = ctx.new_page(); pg.on("pageerror", lambda e: errors.append(str(e)))
             pg.goto(base); pg.wait_for_timeout(400)

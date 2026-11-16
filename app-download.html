@@ -7,6 +7,7 @@
 <meta name="description" content="Installer l'app Emploi du temps UCA : choisis ordinateur ou téléphone, puis ton système (Windows, macOS, Linux, Android, iPhone) pour obtenir le bon fichier.">
 <link rel="canonical" href="https://kiricoucou.github.io/uca-extension/app-download.html">
 <link rel="icon" type="image/png" href="app/icons/icon-192.png">
+<link rel="manifest" href="app.webmanifest">
 <link rel="stylesheet" href="site.css">
 <link rel="stylesheet" href="site-theme.css">
 <style>
@@ -309,8 +310,13 @@ dialog.dlg h2{margin:0 0 6px;font-size:21px}dialog.dlg p{margin:0 0 16px;color:v
       + '<p>Sur Android, l\'APK est la meilleure option. Cette installation reste <b>disponible en cas de besoin</b>, même si l\'APK ne fonctionne pas chez toi : l\'app s\'ouvre dans le navigateur, plein écran, avec ses données sur le téléphone.</p>'
       + '<div class="btns"><button type="button" class="btn-line" id="pwaGo">' + IC.web + 'Installer via le web</button></div>');
     $('apkGo').addEventListener('click', function () { startDownload(APK); });
+    pwaInstalled().then(function (yes) { setPwaButton(yes && !deferred); });
     $('pwaGo').addEventListener('click', function () {
-      if (deferred) { deferred.prompt(); deferred.userChoice.finally(function () { deferred = null; }); } else location.href = 'app/install.html?force=1';
+      if ($('pwaGo').dataset.mode === 'open') { var to = isAndroid ? androidIntent(APP_URL) : APP_URL; window.__lastOpen = to; location.href = to; return; }
+      if (deferred) {
+        var d = deferred; deferred = null; d.prompt();
+        d.userChoice.then(function (c) { if (c && c.outcome === 'accepted') { try { localStorage.setItem('uca_pwa_installed', '1'); } catch (x) { /* ignore */ } setPwaButton(true); } });
+      } else location.href = 'app/install.html?force=1';   // le navigateur n'a pas (encore) proposé l'installation : guide pas à pas
     });
   }
   function showIos() {
@@ -330,6 +336,24 @@ dialog.dlg h2{margin:0 0 6px;font-size:21px}dialog.dlg p{margin:0 0 16px;color:v
 
   var deferred = null;
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; });
+  window.addEventListener('appinstalled', function () { try { localStorage.setItem('uca_pwa_installed', '1'); } catch (x) { /* ignore */ } var b = $('pwaGo'); if (b) setPwaButton(true); });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function () { /* l'installation reste possible par le menu du navigateur */ });
+  /* Android : adresse « intent: » qui demande à Android d'ouvrir l'app installée (la PWA) plutôt qu'un onglet du navigateur ;
+     si rien ne peut la prendre en charge, le navigateur ouvre l'adresse normale (S.browser_fallback_url). */
+  function androidIntent(path) {
+    var u = new URL(path, location.href);
+    return 'intent://' + u.host + u.pathname + u.search + '#Intent;scheme=https;action=android.intent.action.VIEW;category=android.intent.category.BROWSABLE;S.browser_fallback_url=' + encodeURIComponent(u.href) + ';end';
+  }
+  var APP_URL = 'app/shell.html?source=pwa';
+  function pwaInstalled() {
+    var viaApi = ('getInstalledRelatedApps' in navigator) ? navigator.getInstalledRelatedApps().then(function (r) { return r.length > 0; }, function () { return false; }) : Promise.resolve(false);
+    return viaApi.then(function (ok) { if (ok) return true; try { return localStorage.getItem('uca_pwa_installed') === '1'; } catch (x) { return false; } });
+  }
+  function setPwaButton(installed) {
+    var b = $('pwaGo'); if (!b) return;
+    b.dataset.mode = installed ? 'open' : 'install';
+    b.innerHTML = IC.web + (installed ? 'Ouvrir l\'app installée' : 'Installer via le web');
+  }
 
   /* ---------- enchaînement des deux menus ---------- */
   var dev = null;

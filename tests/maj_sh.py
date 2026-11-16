@@ -122,6 +122,14 @@ def main():
         newf = json.loads((extf / "manifest.json").read_text(encoding="utf-8"))
         check("Firefox : extension temporaire retrouvée, paquet Firefox appliqué, consigne about:debugging", rf.returncode == 0 and newf["version"] != "1.0.0" and "browser_specific_settings" in newf and "about:debugging" in rf.stdout, f"rc={rf.returncode} {rf.stdout[-300:]!r}")
 
+        # ---- dossier pointé = parent, puis voisin (le manifest.json est dans un sous-dossier)
+        par = home / "uca-extension"; sub = par / "extension_uca_firefox"; make_ext(sub); (par / "autre-dossier").mkdir(parents=True)
+        rp = run(bash, script, home, args=(mp(par),), env_extra={"UCA_YES": "1"})
+        check("dossier donné = parent : manifest.json cherché dans les sous-dossiers", rp.returncode == 0 and vers(sub) != "1.0.0" and "sous-dossier" in (rp.stdout + rp.stderr), f"rc={rp.returncode} {rp.stdout[-300:]!r} {rp.stderr[-200:]!r}")
+        make_ext(sub)
+        rv = run(bash, script, home, args=(mp(par / "autre-dossier"),), env_extra={"UCA_YES": "1"})
+        check("dossier donné = voisin : l'extension est retrouvée à côté", rv.returncode == 0 and vers(sub) != "1.0.0" and "à côté" in (rv.stdout + rv.stderr), f"rc={rv.returncode} {rv.stdout[-300:]!r} {rv.stderr[-200:]!r}")
+
         # ---- erreurs propres
         rbad = run(bash, script, home, args=(mp(tmp / "n-existe-pas"),), env_extra={"UCA_YES": "1"})
         check("mauvais dossier donné : échec propre (code 2), rien cassé", rbad.returncode == 2 and vers(ext) == "1.0.0", f"rc={rbad.returncode}")

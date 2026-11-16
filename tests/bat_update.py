@@ -99,6 +99,15 @@ def main():
         check("aucune extension trouvée (mode sans fenêtre) : échec propre", rnone.returncode == 2 and "introuvable" in rnone.stdout, f"rc={rnone.returncode} {rnone.stdout[-200:]!r}")
         src_ok = src.decode("utf-8")
         check("le script propose « Ouvrir le dossier » et « Valider »", "Ouvrir le dossier" in src_ok and "'Valider'" in src_ok and "Autre dossier" in src_ok)
+        # dossier pointé = parent (le manifest.json est dans un sous-dossier), puis dossier voisin
+        par = tmp / "uca-extension"; sub = par / "extension_uca_firefox"; sub.mkdir(parents=True)
+        mm = dict(m); (sub / "manifest.json").write_text(json.dumps(mm), encoding="utf-8")
+        (par / "core").mkdir(); (par / "autre-dossier").mkdir()
+        rp = run(ext / "maj-extension.bat", tmp, str(par))
+        check("dossier choisi = parent : le manifest.json est cherché dans les sous-dossiers", rp.returncode == 0 and json.loads((sub / "manifest.json").read_text(encoding="utf-8"))["version"] != "1.0.0" and "sous-dossier" in rp.stdout, f"rc={rp.returncode} {rp.stdout[-300:]!r}")
+        (sub / "manifest.json").write_text(json.dumps(mm), encoding="utf-8")
+        rv = run(ext / "maj-extension.bat", tmp, str(par / "autre-dossier"))
+        check("dossier choisi = voisin du bon : l'extension est retrouvée à côté", rv.returncode == 0 and json.loads((sub / "manifest.json").read_text(encoding="utf-8"))["version"] != "1.0.0" and "cote" in rv.stdout, f"rc={rv.returncode} {rv.stdout[-300:]!r}")
         r4 = run(ext / "maj-extension.bat", tmp, str(tmp / "n-existe-pas"))
         check("mauvais dossier : échec propre, rien cassé", r4.returncode != 0 and (ext / "manifest.json").exists(), r4.stdout[-300:])
     finally:

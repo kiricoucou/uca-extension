@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.51 — mise à jour : sous-dossiers, script, bouton Appliquer
+
+- Mise à jour par script (.bat, .sh, .command) : si le dossier choisi est le mauvais, le script cherche le manifest.json dans les sous-dossiers, puis dans les dossiers voisins et au-dessus. Quand l'extension détecte une mise à jour, la page de téléchargement ne télécharge plus le ZIP mais le script de ton système (Windows, macOS ou Linux). Écran « Mise à jour obligatoire » : nouveau bouton « Appliquer la mise à jour » qui recharge l'extension pour qu'elle relise ses fichiers (Firefox garde sinon l'ancienne version).
+
 ## 1.46.50 — bouton Ouvrir l'agenda sur la page de remerciement
 
 - Page de remerciement (merci.html) : nouveau bouton « Ouvrir l'agenda de l'extension » (visible quand l'extension est détectée), pour ouvrir l'agenda même si l'icône n'est pas épinglée dans la barre du navigateur.

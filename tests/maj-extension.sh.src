@@ -105,6 +105,30 @@ open_dir() {
   else say "Dossier : $1"; fi
 }
 
+# Dossier sans manifest.json : on cherche l'extension dedans (sous-dossiers), puis a cote (dossiers freres), puis au-dessus.
+search_below() {   # $1 = racine, $2 = profondeur max -> imprime le premier dossier trouvé
+  local root="$1" max="$2" d
+  while IFS= read -r d; do
+    [ -z "$d" ] && continue
+    if is_ext_dir "$d"; then printf '%s' "$d"; return 0; fi
+  done < <(find "$root" -mindepth 1 -maxdepth "$max" -type d \( -name .git -o -name node_modules \) -prune -o -type d -print 2>/dev/null | awk '{ n = gsub("/", "/"); print n "\t" $0 }' | sort -n | cut -f2-)
+  return 1
+}
+resolve_dir() {   # imprime le dossier de l'extension le plus proche de $1 (ou $1 s'il n'y a rien)
+  local d="${1%/}" r parent up
+  [ -d "$d" ] || { printf '%s' "$1"; return 0; }
+  if is_ext_dir "$d"; then printf '%s' "$d"; return 0; fi
+  if r="$(search_below "$d" 4)"; then warn "Le manifest.json était dans un sous-dossier : $r" >&2; printf '%s' "$r"; return 0; fi
+  parent="$(dirname "$d")"
+  for up in 1 2; do
+    [ "$parent" = "/" ] || [ "$parent" = "." ] && break
+    if is_ext_dir "$parent"; then warn "Le manifest.json était dans le dossier du dessus : $parent" >&2; printf '%s' "$parent"; return 0; fi
+    if r="$(search_below "$parent" 3)"; then warn "Extension trouvée à côté : $r" >&2; printf '%s' "$r"; return 0; fi
+    parent="$(dirname "$parent")"
+  done
+  printf '%s' "$1"
+}
+
 pick_dir() {   # demande un dossier, vérifie que c'est bien l'extension -> CHOSEN
   local p=""
   case "$GUI" in
@@ -116,6 +140,7 @@ pick_dir() {   # demande un dossier, vérifie que c'est bien l'extension -> CHOS
   p="${p%$'\r'}"   # saisie terminée par un retour chariot (Windows)
   [ -z "$p" ] && return 1
   p="${p%/}"
+  p="$(resolve_dir "$p")"
   if is_ext_dir "$p"; then CHOSEN="$p"; return 0; fi
   warn "Ce dossier ne contient pas l'extension My UCA (pas de manifest.json) : $p"
   return 1
@@ -194,7 +219,7 @@ end() {   # ferme proprement quand le script a été lancé par double-clic (mac
 say ""; say "Recherche de l'extension My UCA..."
 DEST=""
 if [ -n "$ARGDEST" ]; then
-  add_cand "$ARGDEST" "dossier indiqué"
+  add_cand "$(resolve_dir "$ARGDEST")" "dossier indiqué"
   [ "${#CPATH[@]}" -eq 0 ] && { say ""; say "Dossier de l'extension introuvable (pas de manifest.json) : $ARGDEST"; say "  bash maj-extension.sh /chemin/vers/le/dossier"; end; exit 2; }
   DEST="${CPATH[0]}"
 else

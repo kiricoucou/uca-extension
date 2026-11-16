@@ -173,7 +173,13 @@ def main():
     tail = tail.replace('fetch("../version.json"', 'fetch("../manifest.json"')
     maj_js = """  var m = document.getElementById('maj');
   if (location.hash === '#maj' && m) { m.open = true; m.scrollIntoView(); }
-  if (/[?&]auto=1/.test(location.search)) setTimeout(function () { var z = document.querySelector('#choix a[data-dl=zip]'); if (z) z.click(); }, 700);
+  if (/[?&]auto=1/.test(location.search)) setTimeout(function () {
+    /* Mise à jour demandée par l'extension : on télécharge seulement le script de mise à jour de ton système (pas le ZIP). */
+    var ua = navigator.userAgent || '';
+    var f = /Windows/i.test(ua) ? 'maj-extension.bat' : (/Mac/i.test(ua) && !/iPhone|iPad/i.test(ua)) ? 'maj-extension.command' : 'maj-extension.sh';
+    var a = document.createElement('a'); a.href = f; a.download = f; a.style.display = 'none'; document.body.appendChild(a); a.click(); a.remove();
+    if (m) { var n = document.createElement('p'); n.setAttribute('role', 'status'); n.style.cssText = 'margin:0 0 12px;padding:10px 12px;border-radius:12px;background:rgba(127,127,127,.15);font-weight:600'; n.textContent = f + ' est téléchargé : ouvre-le, vérifie le dossier proposé puis clique sur « Valider ». L’extension sera mise à jour toute seule.'; m.insertBefore(n, m.children[1] || null); }
+  }, 700);
 """
     maj_js += LB_JS
     tail = tail.replace("})();\n</script>", maj_js + "})();\n</script>", 1)

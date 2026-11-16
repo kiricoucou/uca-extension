@@ -91,6 +91,39 @@ function Get-ExtInfo([string]$dir) {
   } catch { }
   return $null
 }
+# Si le dossier donne n'a pas de manifest.json, on cherche l'extension dedans (sous-dossiers), puis a cote (dossiers freres), puis au-dessus.
+function Search-Below([string]$root, [int]$maxDepth) {
+  $level = @($root)
+  for ($i = 0; $i -lt $maxDepth; $i++) {
+    $next = @()
+    foreach ($d in $level) {
+      foreach ($c in (Get-ChildItem -LiteralPath $d -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notmatch '^(\.git|node_modules|\$RECYCLE\.BIN)$' })) {
+        if (Get-ExtInfo $c.FullName) { return $c.FullName }
+        $next += $c.FullName
+      }
+    }
+    $level = $next
+    if ($level.Count -eq 0) { break }
+  }
+  return $null
+}
+function Resolve-ExtDir([string]$dir) {
+  if (-not $dir) { return $dir }
+  $d = $dir.Trim().Trim('"')
+  if ($d.Length -gt 3) { $d = $d.TrimEnd('\') }
+  if (-not (Test-Path -LiteralPath $d -PathType Container)) { return $dir }
+  if (Get-ExtInfo $d) { return $d }
+  $r = Search-Below $d 4
+  if ($r) { Write-Host ("Le manifest.json etait dans un sous-dossier : " + $r); return $r }
+  $parent = Split-Path $d -Parent
+  for ($up = 0; $up -lt 2 -and $parent; $up++) {
+    if (Get-ExtInfo $parent) { Write-Host ("Le manifest.json etait dans le dossier du dessus : " + $parent); return $parent }
+    $r = Search-Below $parent 3
+    if ($r) { Write-Host ("Extension trouvee a cote : " + $r); return $r }
+    $parent = Split-Path $parent -Parent
+  }
+  return $dir
+}
 function Add-Cand([string]$dir, [string]$origin) {
   if (-not $dir) { return }
   $d = $dir.Trim().Trim('"')
@@ -131,7 +164,7 @@ function Pick-Folder {
   Add-Type -AssemblyName System.Windows.Forms
   $d = New-Object System.Windows.Forms.FolderBrowserDialog
   $d.Description = "Choisis le dossier de l'extension (celui qui contient manifest.json)"
-  if ($d.ShowDialog() -eq 'OK') { return $d.SelectedPath }
+  if ($d.ShowDialog() -eq 'OK') { return (Resolve-ExtDir $d.SelectedPath) }
   return $null
 }
 function Show-Confirm {
@@ -175,7 +208,7 @@ try {
   $dest = $null
   if ($env:MYUCA_ARGDEST) {
     # dossier donné explicitement : pas de recherche ni de confirmation
-    Add-Cand $env:MYUCA_ARGDEST 'dossier indiqué'
+    Add-Cand (Resolve-ExtDir $env:MYUCA_ARGDEST) 'dossier indiqué'
     if ($cands.Count -eq 0) { exit 2 }
     $dest = $cands[0].Path
   } else {

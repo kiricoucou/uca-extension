@@ -35,6 +35,13 @@
       var v = el("p", "margin:0 0 18px;font-weight:700;"); v.id = "ucaGateVersions";
       var btn = el("button", "font:inherit;font-weight:700;border:0;border-radius:12px;padding:13px 22px;min-height:46px;background:" + accent + ";color:" + (dark ? "#0b1d3a" : "#fff") + ";cursor:pointer;width:100%;", "Télécharger et appliquer la mise à jour");
       btn.type = "button";
+      // Recharge l'extension : relit les fichiers du disque (utile quand ils sont déjà à jour mais que le navigateur, Firefox surtout, garde l'ancienne version).
+      var apply = el("button", "font:inherit;font-weight:700;border-radius:12px;padding:12px 22px;min-height:46px;margin-top:10px;background:transparent;color:" + accent + ";border:2px solid " + accent + ";cursor:pointer;width:100%;", "Appliquer la mise à jour");
+      apply.type = "button"; apply.id = "ucaGateApply";
+      apply.addEventListener("click", function () {
+        apply.disabled = true; status.style.color = dim; status.textContent = "Rechargement de l'extension : elle relit ses fichiers…";
+        setTimeout(function () { chrome.runtime.reload(); }, 300);
+      });
       var status = el("p", "min-height:22px;margin:12px 0 0;font-size:14px;font-weight:600;"); status.id = "ucaGateStatus"; status.setAttribute("role", "status");
       var busy = false;
       btn.addEventListener("click", function () {
@@ -58,14 +65,14 @@
       var how = el("p", "margin:14px 0 6px;font-size:14px;color:" + dim + ";", "Première fois : choisis le dossier de l'extension (celui chargé dans chrome://extensions) et autorise l'écriture. La dernière version est téléchargée, appliquée, puis l'extension se recharge. Ensuite, les mises à jour suivantes se font avec ce même dossier. Firefox ou échec : remplace le dossier à la main puis « Recharger ».");
       // Firefox n'a pas de sélecteur de dossier : parcours en deux temps (script, puis un nouveau clic sur le bouton).
       if (typeof window.showDirectoryPicker !== "function") {
-        how.textContent = "Firefox : télécharge et lance maj-extension.bat (lien ci-dessous) en lui donnant le dossier de l'extension. Il remplace les fichiers, puis reviens ici et clique de nouveau sur le bouton : l'extension se recharge toute seule.";
+        how.textContent = "Firefox : télécharge et lance maj-extension.bat (lien ci-dessous) en lui donnant le dossier de l'extension. Il remplace les fichiers, puis reviens ici et clique sur « Appliquer la mise à jour » : l'extension se recharge et relit ses fichiers (la version change).";
       }
       var link = el("a","display:inline-block;margin:4px 0;color:" + accent + ";font-weight:600;", "Page de téléchargement (ZIP et script maj-extension.bat)");
       link.href = "https://kiricoucou.github.io/uca-extension/extension/#maj"; link.target = "_blank"; link.rel = "noopener";
       var again = el("button", "display:block;margin:10px auto 0;font:inherit;border:0;background:none;color:" + accent + ";text-decoration:underline;cursor:pointer;padding:8px;min-height:36px;", "Vérifier à nouveau");
       again.type = "button";
       again.addEventListener("click", function () { again.textContent = "Vérification…"; chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" }); setTimeout(function () { again.textContent = "Vérifier à nouveau"; evaluate(); }, 3500); });
-      box.append(h, p, v, btn, status, how, link, again);
+      box.append(h, p, v, btn, apply, status, how, link, again);
       g.appendChild(box);
       // Ni Échap ni Tab ne permettent de sortir de la fenêtre.
       g.addEventListener("keydown", function (e) {

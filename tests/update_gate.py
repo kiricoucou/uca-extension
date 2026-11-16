@@ -51,6 +51,7 @@ def main():
                 check(f"{path} : fenêtre de mise à jour plein écran", gate_visible(page))
                 check(f"{path} : le reste de la page est inerte", page.evaluate("() => [...document.body.children].filter(c => c.id !== 'ucaUpdateGate' && c.tagName !== 'SCRIPT').every(c => c.inert)"))
                 page.keyboard.press("Escape"); page.wait_for_timeout(200)
+                check(f"{path} : bouton « Appliquer la mise à jour » présent et cliquable", page.evaluate("() => { const b = document.getElementById('ucaGateApply'); return !!b && !b.disabled && b.textContent.trim() === 'Appliquer la mise à jour'; }"))
                 check(f"{path} : Échap ne la ferme pas", gate_visible(page))
                 page.evaluate("() => document.getElementById('ucaUpdateGate').remove()"); page.wait_for_timeout(400)
                 check(f"{path} : supprimée du DOM, elle revient", gate_visible(page))

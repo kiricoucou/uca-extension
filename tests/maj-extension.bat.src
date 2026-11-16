@@ -210,7 +210,7 @@ function Show-Confirm {
   $s.Location = New-Object System.Drawing.Point(20, 52); $s.Size = New-Object System.Drawing.Size(600, 56)
   $list = New-Object System.Windows.Forms.ListBox
   $list.Location = New-Object System.Drawing.Point(20, 116); $list.Size = New-Object System.Drawing.Size(600, 110); $list.HorizontalScrollBar = $true
-  foreach ($c in $cands) { [void]$list.Items.Add($c.Path + '   (' + $(if ($c.Browsers.Count) { $c.Browsers -join ', ' } else { $c.Origin }) + ', version ' + $c.Version + ')') }
+  foreach ($c in $cands) { [void]$list.Items.Add($(if ($c.Browsers.Count) { ($c.Browsers -join ', ') } else { $c.Origin }) + ' : ' + $c.Path + '   (version ' + $c.Version + ')') }
   $list.SelectedIndex = 0
   $bo = New-Object System.Windows.Forms.Button; $bo.Text = 'Ouvrir le dossier'; $bo.Location = New-Object System.Drawing.Point(20, 246); $bo.Size = New-Object System.Drawing.Size(150, 38)
   $bu = New-Object System.Windows.Forms.Button; $bu.Text = 'Autre dossier…'; $bu.Location = New-Object System.Drawing.Point(180, 246); $bu.Size = New-Object System.Drawing.Size(130, 38)

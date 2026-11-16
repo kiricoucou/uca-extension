@@ -106,6 +106,37 @@ summary{cursor:pointer;font-weight:700;padding:12px 0}details p{margin:0 0 14px;
     </div>
   </div>
 
+  <h2 id="commande">Tout en une commande</h2>
+  <p class="sub">Quand l'extension détecte une nouvelle version, l'écran « Mise à jour obligatoire » propose « Appliquer la mise à jour » : il télécharge le script de ton système et affiche la commande complète à copier dans un terminal. Tu peux aussi l'écrire toi-même.</p>
+  <div class="two">
+    <div class="card-x">
+      <h3>La commande</h3>
+      <span class="cmd-box">Windows :
+maj-extension.bat /browser firefox /os windows /version 1.46.54 /yes
+
+macOS / Linux :
+bash maj-extension.sh --browser firefox --os linux --version 1.46.54 --yes</span>
+      <p style="margin:0">Colle-la dans un terminal (Invite de commandes, Terminal). Pas de fenêtre de confirmation : il retrouve le dossier, met à jour, puis rouvre ton navigateur sur la nouvelle version de l'extension.</p>
+    </div>
+    <div class="card-x">
+      <h3>Les arguments</h3>
+      <ol>
+        <li><b>/browser</b> (<code>--browser</code>) : chrome, edge, brave, vivaldi, chromium ou firefox. Le script ne regarde que ce navigateur, puis l'ouvre à la fin.</li>
+        <li><b>/os</b> (<code>--os</code>) : windows, macos ou linux (indicatif).</li>
+        <li><b>/version</b> (<code>--version</code>) : la version attendue. Le script vérifie qu'il l'a bien obtenue.</li>
+        <li><b>/yes</b> (<code>--yes</code>) : aucune fenêtre ni question.</li>
+        <li><b>un dossier</b> (facultatif) : le chemin de l'extension, s'il n'est pas retrouvé tout seul. L'extension ne connaît pas son propre chemin sur le disque, c'est pourquoi le script le cherche lui-même.</li>
+      </ol>
+    </div>
+  </div>
+
+  <h2 id="plusieurs">Plusieurs navigateurs, plusieurs dossiers</h2>
+  <p class="sub">Si tu pointes le mauvais dossier, le script cherche le <code>manifest.json</code> dans les sous-dossiers, dans les dossiers voisins, puis au-dessus. Sans argument <code>/browser</code>, il met aussi à jour les dossiers rangés côte à côte, nommés d'après leur navigateur.</p>
+  <div class="two">
+    <div class="card-x"><h3>Un dossier par navigateur</h3><p>L'installateur Windows crée <code>extension_uca_chrome</code>, <code>extension_uca_edge</code>, <code>extension_uca_brave</code>, <code>extension_uca_vivaldi</code> et <code>extension_uca_firefox</code> selon les navigateurs que tu coches. Chaque navigateur charge son dossier.</p></div>
+    <div class="card-x"><h3>Le script écrit le nom de chaque navigateur</h3><p>Il lit les profils de Chrome, Edge, Brave, Vivaldi et Firefox, plus le nom des dossiers, et indique par exemple « Dossier : …\extension_uca_edge (Edge) ». À la fin, il propose d'ouvrir la page des extensions de chaque navigateur concerné.</p></div>
+  </div>
+
   <h2>Et la mise à jour automatique ?</h2>
   <p class="sub">Avec Chrome ou Edge, l'extension peut aussi se mettre à jour toute seule, sans aucun script.</p>
   <div class="two">
@@ -140,7 +171,7 @@ summary{cursor:pointer;font-weight:700;padding:12px 0}details p{margin:0 0 14px;
   </div>
 
   <h2>Questions fréquentes</h2>
-  <details><summary>Le script ne retrouve pas mon extension</summary><p>Il te demande alors de choisir le dossier (celui qui contient <code>manifest.json</code>, chargé dans <code>chrome://extensions</code>). Tu peux aussi le lui donner : <code>maj-extension.bat "C:\chemin\dossier"</code> ou <code>bash maj-extension.sh /chemin/du/dossier</code>.</p></details>
+  <details><summary>Le script ne retrouve pas mon extension</summary><p>Il cherche d'abord dans les sous-dossiers et les dossiers voisins du dossier choisi. S'il ne trouve rien, il te demande alors de choisir le dossier (celui qui contient <code>manifest.json</code>, chargé dans <code>chrome://extensions</code>). Tu peux aussi le lui donner : <code>maj-extension.bat "C:\chemin\dossier"</code> ou <code>bash maj-extension.sh /chemin/du/dossier</code>.</p></details>
   <details><summary>macOS refuse d'ouvrir le fichier .command</summary><p>La première fois, fais un clic droit sur le fichier puis « Ouvrir ». Si le fichier n'est pas exécutable, ouvre le Terminal et tape <code>bash ~/Downloads/maj-extension.command</code>.</p></details>
   <details><summary>Que dois-je faire après la mise à jour ?</summary><p>Dans <code>chrome://extensions</code>, clique sur « Recharger » (flèche ronde) sur la carte de l'extension. Sinon, elle se recharge toute seule à la prochaine vérification, au plus tard dans quelques minutes.</p></details>
   <details><summary>Puis-je forcer la réinstallation ?</summary><p>Oui : <code>maj-extension.bat /force</code> ou <code>bash maj-extension.sh --force</code> réinstalle la dernière version même si tu l'as déjà.</p></details>

@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.52 — installateurs ouvrent l'agenda, note devoirs
+
+- Installateurs (Windows, macOS, Linux) : l'agenda de l'extension s'ouvre automatiquement dans chaque navigateur où elle a été installée (Chrome, Edge, Firefox…), via la page de remerciement. Devoirs : une ligne précise que les devoirs ajoutés à la main restent en local et ne sont pas synchronisés avec les autres appareils.
+
 ## 1.46.51 — mise à jour : sous-dossiers, script, bouton Appliquer
 
 - Mise à jour par script (.bat, .sh, .command) : si le dossier choisi est le mauvais, le script cherche le manifest.json dans les sous-dossiers, puis dans les dossiers voisins et au-dessus. Quand l'extension détecte une mise à jour, la page de téléchargement ne télécharge plus le ZIP mais le script de ton système (Windows, macOS ou Linux). Écran « Mise à jour obligatoire » : nouveau bouton « Appliquer la mise à jour » qui recharge l'extension pour qu'elle relise ses fichiers (Firefox garde sinon l'ancienne version).

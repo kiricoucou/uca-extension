@@ -284,7 +284,7 @@ function Run-Install {
     if ($env:MYUCA_PAUSE_PAGE3) { Start-Sleep -Milliseconds ([int]$env:MYUCA_PAUSE_PAGE3) }
     Stop-Browsers $sel
 
-    $thanks = "$Base/merci.html?v=$($script:latest)"
+    $thanks = "$Base/merci.html?v=$($script:latest)&open=1"
     $manual = @()
     $step = 0
     foreach ($b in $sel) {

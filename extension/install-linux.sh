@@ -128,7 +128,7 @@ open_url() {   # open_url binaire url [url2...]  (la page de remerciement s'ouvr
   [ "$NO_OPEN" = "1" ] && return 0
   nohup "$1" "${@:2}" >/dev/null 2>&1 &
 }
-THANKS_URL="${BASE_URL%/extension}/merci.html"
+THANKS_URL="${BASE_URL%/extension}/merci.html?open=1"
 
 # Barre de progression : fenêtre zenity si disponible, sinon barre dans le terminal.
 PROG_FD=""

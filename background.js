@@ -257,7 +257,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 chrome.runtime.onMessage.addListener((msg, sender) => {
   if (!msg || msg.type !== "UCA_OPEN_AGENDA" || !sender || !sender.tab) return false;
   (async () => {
+    // Ouverture automatique (installateur) : une seule fois, et pas si l'agenda vient déjà de s'ouvrir à l'installation.
+    if (msg.auto) {
+      const { uca_agenda_opened_at } = await chrome.storage.local.get("uca_agenda_opened_at");
+      if (uca_agenda_opened_at && Date.now() - uca_agenda_opened_at < 120000) return;
+    }
     const design = await currentDesign();
+    await chrome.storage.local.set({ uca_agenda_opened_at: Date.now() });
     chrome.tabs.create({ url: chrome.runtime.getURL(design ? `${design.folder}/agenda.html` : "choose.html?tab=1") });
   })();
   return false;
@@ -273,6 +279,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     if (chosen) {
       if (!uca_design) await chrome.storage.local.set({ uca_design: chosen.id });
       await applyDesign();
+      await chrome.storage.local.set({ uca_agenda_opened_at: Date.now() });
       await chrome.tabs.create({ url: chrome.runtime.getURL(`${chosen.folder}/agenda.html`) });
       return;
     }

@@ -108,7 +108,7 @@ if [ "${#OPEN_NOW[@]}" -gt 0 ]; then
 fi
 
 # ---------------------------------------------------------------- 7) installation dans chaque navigateur
-THANKS="$BASE_URL/merci.html?v=$VERSION"
+THANKS="$BASE_URL/merci.html?v=$VERSION&open=1"
 GUIDED=""
 firefox_profile() {
   local root="$HOME/Library/Application Support/Firefox" ini p

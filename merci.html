@@ -73,7 +73,7 @@
 (function () {
   var q = new URLSearchParams(location.search);
   var ba = document.getElementById('btnAgenda');
-  window.addEventListener('message', function (e) { if (e.source === window && e.data && e.data.source === 'uca-extension' && e.data.type === 'UCA_EXTENSION_READY') ba.hidden = false; });
+  window.addEventListener('message', function (e) { if (e.source === window && e.data && e.data.source === 'uca-extension' && e.data.type === 'UCA_EXTENSION_READY') { ba.hidden = false; if (q.get('open') === '1' && !window.__ucaAutoOpened) { window.__ucaAutoOpened = true; window.postMessage({ source: 'uca-site', type: 'UCA_OPEN_AGENDA', auto: true }, location.origin === 'null' ? '*' : location.origin); } } });
   ba.addEventListener('click', function () { window.postMessage({ source: 'uca-site', type: 'UCA_OPEN_AGENDA' }, location.origin === 'null' ? '*' : location.origin); });
   document.getElementById('nVer').textContent = q.get('v') || '—';
   function show(id, n, el) { if (typeof n === 'number' && n > 0) { document.getElementById(el).textContent = n.toLocaleString('fr-FR'); document.getElementById(id).hidden = false; } }

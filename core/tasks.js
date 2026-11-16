@@ -76,6 +76,7 @@ const STYLE = `
 .uca-tasks li:hover{background:var(--accent-light,rgba(127,127,127,.12));}
 .uca-tasks .tk-main{flex:1;min-width:0;}
 .uca-tasks .tk-name{font-weight:600;overflow-wrap:anywhere;}
+.uca-tasks .tk-note{font-size:12.5px;line-height:1.4;color:var(--text-dim);margin:8px 0 0;}
 .uca-tasks .tk-meta{font-size:12.5px;color:var(--text-dim);margin-top:1px;}
 .uca-tasks .tk-due.late{color:var(--danger,#b3261e);font-weight:700;}
 .uca-tasks .tk-due.today,.uca-tasks .tk-due.soon{color:#b06000;font-weight:700;}
@@ -130,6 +131,7 @@ function buildPanel(panel, ctx) {
     ctx.save(sanitize(tasks.concat({ id: newId(), title: t, subject: subj.value, due: date.value, done: false, created: Date.now() })));
   });
   panel.appendChild(form);
+  panel.appendChild(el("p", "tk-note", "Les devoirs ajoutés à la main restent en local sur cet appareil : ils ne sont pas synchronisés avec les autres appareils connectés à ton compte."));
 
   const dateLabel = (ms) => new Date(ms).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
   const now = Date.now();

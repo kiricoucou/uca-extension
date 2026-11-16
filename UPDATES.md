@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.49 — barre de navigation de la page 404
+
+- Page 404 : la barre de navigation (Accueil + menu) s'affiche de nouveau en haut de la page, sur toute la largeur, au lieu d'être au milieu à gauche.
+
 ## 1.46.48 — page mise-a-jour : style
 
 - Page mise-a-jour.html : icônes à côté des titres d'étapes et titres plus grands (hiérarchie plus nette).

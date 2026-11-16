@@ -73,6 +73,7 @@ exit /b 0
 
 #PS-START
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'   # sans barre de progression : le telechargement est bien plus rapide dans PowerShell 5
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $auto = ($env:MYUCA_NOPAUSE -eq '1' -or $env:MYUCA_AUTO -eq '1')
 $GECKO = 'uca-connecteur@site-emploi-du-temps.local'

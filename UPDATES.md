@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.56 — script de mise à jour plus rapide
+
+- Script de mise à jour Windows : plus de barre de progression PowerShell (téléchargement bien plus rapide). Vérifié en vrai sur Windows avec les trois dossiers Chrome, Edge et Firefox.
+
 ## 1.46.55 — documentation de la commande de mise à jour
 
 - Page mise-a-jour.html : nouvelles sections « Tout en une commande » (arguments /browser, /os, /version, /yes), « Plusieurs navigateurs, plusieurs dossiers » et FAQ complétée. La liste de confirmation du script Windows affiche le nom du navigateur avant le chemin (visible même quand le chemin est long).

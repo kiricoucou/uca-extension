@@ -46,7 +46,8 @@
   </div>
 
   <div class="btns" style="justify-content:center">
-    <a class="btn primary" id="btnStart" href="aide.html#debuter">Bienvenue : premiers pas</a>
+    <button type="button" class="btn primary" id="btnAgenda" hidden>Ouvrir l'agenda de l'extension</button>
+    <a class="btn" id="btnStart" href="aide.html#debuter">Bienvenue : premiers pas</a>
     <a class="btn" href="aide.html">Aide</a>
     <a class="btn" href="extension/#installer">Tutoriel en images</a>
     <a class="btn" href="nouveautes.html">Nouveautés</a>
@@ -71,6 +72,9 @@
 <script>
 (function () {
   var q = new URLSearchParams(location.search);
+  var ba = document.getElementById('btnAgenda');
+  window.addEventListener('message', function (e) { if (e.source === window && e.data && e.data.source === 'uca-extension' && e.data.type === 'UCA_EXTENSION_READY') ba.hidden = false; });
+  ba.addEventListener('click', function () { window.postMessage({ source: 'uca-site', type: 'UCA_OPEN_AGENDA' }, location.origin === 'null' ? '*' : location.origin); });
   document.getElementById('nVer').textContent = q.get('v') || '—';
   function show(id, n, el) { if (typeof n === 'number' && n > 0) { document.getElementById(el).textContent = n.toLocaleString('fr-FR'); document.getElementById(id).hidden = false; } }
   fetch('stats.json?t=' + Date.now()).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }).then(function (s) {

@@ -253,6 +253,15 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     .catch((err) => sendResponse({ ok: false, error: String((err && err.message) || err) }));
   return true;
 });
+/* Bouton « Ouvrir l'agenda » des pages du site (merci.html) : ouvre l'agenda du design choisi (ou le sélecteur). */
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  if (!msg || msg.type !== "UCA_OPEN_AGENDA" || !sender || !sender.tab) return false;
+  (async () => {
+    const design = await currentDesign();
+    chrome.tabs.create({ url: chrome.runtime.getURL(design ? `${design.folder}/agenda.html` : "choose.html?tab=1") });
+  })();
+  return false;
+});
 /* Première installation : le design par défaut (Studio) est appliqué et l'onglet de l'agenda s'ouvre tout de suite (calendrier des cours,
    avec le bouton pour se connecter à Odin). Changer de design reste à un clic (bouton « Design »). Si le registre ne contient pas
    Studio, on retombe sur le sélecteur. */

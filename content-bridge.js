@@ -15,6 +15,7 @@
     if (data.type === "UCA_SYNC_REQUEST" && ALLOWED_MODES.has(data.mode)) {
       chrome.runtime.sendMessage({ type: "UCA_SYNC_REQUEST", mode: data.mode });
     }
+    if (data.type === "UCA_OPEN_AGENDA") chrome.runtime.sendMessage({ type: "UCA_OPEN_AGENDA" });
   });
 
   chrome.runtime.onMessage.addListener((msg) => {

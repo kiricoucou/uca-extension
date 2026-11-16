@@ -38,9 +38,42 @@
       // Recharge l'extension : relit les fichiers du disque (utile quand ils sont déjà à jour mais que le navigateur, Firefox surtout, garde l'ancienne version).
       var apply = el("button", "font:inherit;font-weight:700;border-radius:12px;padding:12px 22px;min-height:46px;margin-top:10px;background:transparent;color:" + accent + ";border:2px solid " + accent + ";cursor:pointer;width:100%;", "Appliquer la mise à jour");
       apply.type = "button"; apply.id = "ucaGateApply";
+      var cmdBox = el("div", "display:none;margin-top:12px;text-align:left;");
+      function fromUA() {
+        var ua = navigator.userAgent || "";
+        var os = /Windows/i.test(ua) ? "windows" : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "macos" : "linux";
+        var br = /Firefox\//.test(ua) ? "firefox" : /Edg\//.test(ua) ? "edge" : /Vivaldi/i.test(ua) ? "vivaldi" : (navigator.brave ? "brave" : "chrome");
+        return { os: os, browser: br };
+      }
+      // Télécharge le script de mise à jour du système et propose la commande complète (navigateur, OS, nouvelle version) à coller dans un terminal.
       apply.addEventListener("click", function () {
-        apply.disabled = true; status.style.color = dim; status.textContent = "Rechargement de l'extension : elle relit ses fichiers…";
-        setTimeout(function () { chrome.runtime.reload(); }, 300);
+        var info = fromUA(), file = info.os === "windows" ? "maj-extension.bat" : info.os === "macos" ? "maj-extension.command" : "maj-extension.sh";
+        chrome.storage.local.get("uca_latest_version", function (d) {
+          var ver = (d && d.uca_latest_version) || "";
+          var cmd = info.os === "windows"
+            ? "\"%USERPROFILE%\\Downloads\\" + file + "\" /browser " + info.browser + " /os windows /version " + ver + " /yes"
+            : "bash ~/Downloads/" + file + " --browser " + info.browser + " --os " + info.os + " --version " + ver + " --yes";
+          cmdBox.textContent = "";
+          cmdBox.style.display = "block";
+          cmdBox.appendChild(el("p", "margin:0 0 6px;font-size:14px;color:" + dim + ";", "Script téléchargé (" + file + "). Ouvre un terminal, colle cette commande : il retrouve le dossier, met à jour, puis rouvre " + info.browser + " sur la nouvelle version."));
+          var code = el("code", "display:block;padding:10px 12px;border-radius:10px;background:" + (dark ? "#171b23" : "#e8edf6") + ";font:12.5px/1.5 ui-monospace,Consolas,monospace;word-break:break-all;user-select:all;", cmd);
+          var copy = el("button", "font:inherit;font-weight:600;margin-top:8px;border:1px solid " + accent + ";background:transparent;color:" + accent + ";border-radius:10px;padding:8px 14px;min-height:40px;cursor:pointer;", "Copier la commande"); copy.type = "button";
+          copy.addEventListener("click", function () { try { navigator.clipboard.writeText(cmd).then(function () { copy.textContent = "Copiée"; }, function () { copy.textContent = "Sélectionne et copie à la main"; }); } catch (e) { copy.textContent = "Sélectionne et copie à la main"; } });
+          var reload = el("button", "font:inherit;margin:8px 0 0 8px;border:0;background:none;color:" + accent + ";text-decoration:underline;cursor:pointer;padding:8px;min-height:40px;", "C'est fait : recharger l'extension"); reload.type = "button";
+          reload.addEventListener("click", function () { chrome.runtime.reload(); });
+          cmdBox.append(code, copy, reload);
+        });
+        status.style.color = dim; status.textContent = "Téléchargement de " + file + "…";
+        fetch("https://kiricoucou.github.io/uca-extension/extension/" + file, { cache: "no-store" })
+          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.blob(); })
+          .then(function (b) {
+            var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = file; document.body.appendChild(a); a.click(); a.remove();
+            status.textContent = file + " téléchargé dans tes Téléchargements.";
+          })
+          .catch(function () {
+            status.textContent = "Téléchargement automatique impossible : ouvre la page de mise à jour.";
+            window.open("https://kiricoucou.github.io/uca-extension/mise-a-jour.html", "_blank", "noopener");
+          });
       });
       var status = el("p", "min-height:22px;margin:12px 0 0;font-size:14px;font-weight:600;"); status.id = "ucaGateStatus"; status.setAttribute("role", "status");
       var busy = false;
@@ -72,7 +105,7 @@
       var again = el("button", "display:block;margin:10px auto 0;font:inherit;border:0;background:none;color:" + accent + ";text-decoration:underline;cursor:pointer;padding:8px;min-height:36px;", "Vérifier à nouveau");
       again.type = "button";
       again.addEventListener("click", function () { again.textContent = "Vérification…"; chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" }); setTimeout(function () { again.textContent = "Vérifier à nouveau"; evaluate(); }, 3500); });
-      box.append(h, p, v, btn, apply, status, how, link, again);
+      box.append(h, p, v, btn, apply, status, cmdBox, how, link, again);
       g.appendChild(box);
       // Ni Échap ni Tab ne permettent de sortir de la fenêtre.
       g.addEventListener("keydown", function (e) {

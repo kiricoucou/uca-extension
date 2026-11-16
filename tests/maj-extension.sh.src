@@ -9,6 +9,9 @@
 #  - Aucun droit administrateur (pas de sudo) : tout se passe dans ton dossier personnel et dans celui de l'extension.
 #  - Il télécharge le ZIP officiel sur https://kiricoucou.github.io/uca-extension/ (HTTPS), rien d'autre.
 #  - Il ne touche pas à tes données : elles sont dans le navigateur, pas dans ce dossier.
+#  Commande complète (celle que l'extension te propose) :
+#    bash maj-extension.sh --browser firefox --os linux --version 1.2.3 --yes [/chemin/du/dossier]
+#    --browser : chrome | edge | brave | vivaldi | chromium | firefox (limite la recherche à ce navigateur, puis l'ouvre sur la nouvelle version)
 #  Usage : bash maj-extension.sh  |  bash maj-extension.sh /chemin/du/dossier  |  --force (réinstalle même à jour)  |  --yes (sans fenêtre)
 # (pas de « set -u » : bash 3.2 de macOS refuse les tableaux vides)
 
@@ -24,13 +27,18 @@ SELFDIR="$(cd "$(dirname "$SELF")" 2>/dev/null && pwd)"
 if [ "$OS" = "Darwin" ]; then CFGDIR="$HOME/Library/Application Support/MyUCA"; else CFGDIR="${XDG_CONFIG_HOME:-$HOME/.config}/MyUCA"; fi
 CFG="$CFGDIR/dossier-extension.txt"
 
-for a in "$@"; do
-  case "$a" in
+BROWSER=""; WANT_VER=""; ARG_OS=""
+while [ $# -gt 0 ]; do
+  case "$1" in
     --force|-f|/force) FORCE=1 ;;
     --yes|-y) YES=1 ;;
-    --help|-h) sed -n '2,13p' "$SELF" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    *) ARGDEST="$a" ;;
+    --browser) BROWSER="$(printf '%s' "${2:-}" | tr 'A-Z' 'a-z')"; shift ;;
+    --version) WANT_VER="${2:-}"; shift ;;
+    --os) ARG_OS="${2:-}"; shift ;;
+    --help|-h) sed -n '2,15p' "$SELF" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) ARGDEST="$1" ;;
   esac
+  shift
 done
 
 say()  { printf '%s\n' "$*"; }
@@ -146,6 +154,34 @@ pick_dir() {   # demande un dossier, vérifie que c'est bien l'extension -> CHOS
   return 1
 }
 
+limit_to_browser() {   # --browser donné : on ne garde que les dossiers trouvés dans ce navigateur (s'il y en a)
+  [ -z "$BROWSER" ] && return 0
+  local label i np=() no=()
+  case "$BROWSER" in chrome) label="Chrome" ;; edge) label="Edge" ;; brave) label="Brave" ;; vivaldi) label="Vivaldi" ;; chromium) label="Chromium" ;; firefox) label="Firefox" ;; *) return 0 ;; esac
+  for i in "${!CPATH[@]}"; do case "${CORIGIN[$i]}" in "$label"*) np+=("${CPATH[$i]}"); no+=("${CORIGIN[$i]}") ;; esac; done
+  [ "${#np[@]}" -eq 0 ] && return 0
+  CPATH=("${np[@]}"); CORIGIN=("${no[@]}")
+}
+
+open_in_browser() {   # ouvre le navigateur demandé sur la page qui lance l'agenda de l'extension
+  [ "${UCA_NOLAUNCH:-0}" = "1" ] && return 0
+  [ -z "$BROWSER" ] && return 0
+  local url="https://kiricoucou.github.io/uca-extension/merci.html?v=${NEW:-$WANT_VER}&open=1" app="" cmd="" c
+  if [ "$OS" = "Darwin" ]; then
+    case "$BROWSER" in chrome) app="Google Chrome" ;; edge) app="Microsoft Edge" ;; brave) app="Brave Browser" ;; vivaldi) app="Vivaldi" ;; chromium) app="Chromium" ;; firefox) app="Firefox" ;; esac
+    [ -n "$app" ] && open -a "$app" "$url" 2>/dev/null && say "$app s'ouvre sur la nouvelle version de l'extension."
+    return 0
+  fi
+  case "$BROWSER" in
+    chrome) cmd="google-chrome google-chrome-stable chromium chromium-browser" ;; edge) cmd="microsoft-edge microsoft-edge-stable" ;;
+    brave) cmd="brave-browser brave" ;; vivaldi) cmd="vivaldi vivaldi-stable" ;; chromium) cmd="chromium chromium-browser" ;; firefox) cmd="firefox" ;;
+  esac
+  for c in $cmd; do
+    if have "$c"; then nohup "$c" "$url" >/dev/null 2>&1 & say "$c s'ouvre sur la nouvelle version de l'extension."; return 0; fi
+  done
+  say "Navigateur « $BROWSER » introuvable : ouvre-le toi-même, l'extension est à jour."
+}
+
 describe() { printf '%s\n(%s, version %s)' "${CPATH[$1]}" "${CORIGIN[$1]}" "$(manifest_version "${CPATH[$1]}")"; }
 
 choose_index() {   # plusieurs dossiers trouvés : lequel ? -> IDX
@@ -226,6 +262,7 @@ else
   [ -f "$CFG" ] && add_cand "$(head -n1 "$CFG")" "dossier utilisé la dernière fois"
   add_cand "$SELFDIR" "dossier de ce script"
   find_in_browsers
+  limit_to_browser
   if [ "${#CPATH[@]}" -eq 0 ]; then
     say "Je n'ai pas retrouvé l'extension automatiquement."
     [ "$YES" = "1" ] && { say "Dossier de l'extension introuvable : relance avec le chemin du dossier en argument."; exit 2; }
@@ -267,6 +304,7 @@ else
   find "$DEST" \( -name desktop.ini -o -name Thumbs.db -o -name .DS_Store \) -type f -delete 2>/dev/null
   say "OK : $OLD -> $NEW"
 fi
+if [ -n "$WANT_VER" ] && [ "$(manifest_version "$DEST")" != "$WANT_VER" ]; then say "Remarque : la version attendue était $WANT_VER, le dossier contient maintenant $(manifest_version "$DEST")."; fi
 say ""
 if [ "$IS_FF" = "1" ]; then
   say "Pour appliquer la mise à jour : dans Firefox, ouvre about:debugging#/runtime/this-firefox"
@@ -275,5 +313,6 @@ else
   say "Pour appliquer la mise à jour : dans chrome://extensions (edge://extensions, brave://extensions), clique sur « Recharger »"
   say "(flèche ronde) sur la carte de l'extension. Elle se recharge aussi toute seule à la prochaine vérification."
 fi
+open_in_browser
 end
 exit 0

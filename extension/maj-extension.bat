@@ -10,6 +10,9 @@ rem  3. Il cherche une version plus recente et, s'il y en a une, met l'extension
 rem  - Aucun droit administrateur : tout se passe dans ton profil et dans le dossier de l'extension.
 rem  - Telecharge le ZIP officiel sur https://kiricoucou.github.io/uca-extension/ (HTTPS), rien d'autre.
 rem  - Ne touche pas a tes donnees : elles sont dans le navigateur, pas dans ce dossier.
+rem  Commande complete (celle que l'extension propose) :
+rem    maj-extension.bat /browser firefox /os windows /version 1.2.3 /yes "C:\chemin\dossier"
+rem    /browser : chrome | edge | brave | vivaldi | chromium | firefox (limite la recherche a ce navigateur, puis l'ouvre sur la nouvelle version)
 rem  Usage : double-clic  |  maj-extension.bat "C:\chemin\dossier"  |  maj-extension.bat /force (reinstalle meme a jour)
 rem ----------------------------------------------------------------------------------------------
 set "SELFBAT=%~f0"
@@ -22,7 +25,12 @@ set "MYUCA_CFG=%LOCALAPPDATA%\MyUCA\dossier-extension.txt"
 
 :args
 if "%~1"=="" goto :argsdone
-if /i "%~1"=="/force" (set "MYUCA_FORCE=1") else (set "MYUCA_ARGDEST=%~1")
+if /i "%~1"=="/force" (set "MYUCA_FORCE=1" & shift & goto :args)
+if /i "%~1"=="/yes" (set "MYUCA_AUTO=1" & set "MYUCA_NOPAUSE=1" & shift & goto :args)
+if /i "%~1"=="/browser" (set "MYUCA_BROWSER=%~2" & shift & shift & goto :args)
+if /i "%~1"=="/version" (set "MYUCA_VERSION=%~2" & shift & shift & goto :args)
+if /i "%~1"=="/os" (shift & shift & goto :args)
+set "MYUCA_ARGDEST=%~1"
 shift
 goto :args
 :argsdone
@@ -160,6 +168,24 @@ function Find-InBrowsers {
     }
   }
 }
+function Browser-Label { switch ($env:MYUCA_BROWSER) { 'chrome' { 'Chrome' } 'edge' { 'Edge' } 'brave' { 'Brave' } 'vivaldi' { 'Vivaldi' } 'chromium' { 'Chromium' } 'firefox' { 'Firefox' } default { '' } } }
+function Limit-ToBrowser {
+  $l = Browser-Label
+  if (-not $l) { return }
+  $keep = @($cands | Where-Object { $_.Origin -like ($l + '*') })
+  if ($keep.Count -gt 0) { $cands.Clear(); foreach ($k in $keep) { [void]$cands.Add($k) } }
+}
+function Open-InBrowser([string]$ver) {
+  if ($env:MYUCA_NOLAUNCH -eq '1') { return }
+  $l = Browser-Label
+  if (-not $l) { return }
+  $exe = switch ($env:MYUCA_BROWSER) { 'chrome' { 'chrome.exe' } 'edge' { 'msedge.exe' } 'brave' { 'brave.exe' } 'vivaldi' { 'vivaldi.exe' } 'chromium' { 'chrome.exe' } 'firefox' { 'firefox.exe' } }
+  $path = $null
+  $rels = switch ($env:MYUCA_BROWSER) { 'chrome' { @('Google\Chrome\Application\chrome.exe') } 'chromium' { @('Chromium\Application\chrome.exe') } 'edge' { @('Microsoft\Edge\Application\msedge.exe') } 'brave' { @('BraveSoftware\Brave-Browser\Application\brave.exe') } 'vivaldi' { @('Vivaldi\Application\vivaldi.exe') } 'firefox' { @('Mozilla Firefox\firefox.exe') } }
+  foreach ($base in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:LOCALAPPDATA)) { foreach ($rel in $rels) { if ($base) { $c = Join-Path $base $rel; if (Test-Path -LiteralPath $c) { $path = $c; break } } }; if ($path) { break } }
+  $url = 'https://kiricoucou.github.io/uca-extension/merci.html?v=' + $ver + '&open=1'
+  try { if (-not $path) { throw 'introuvable' }; Start-Process -FilePath $path -ArgumentList $url; Write-Host ($l + " s'ouvre sur la nouvelle version de l'extension.") } catch { Write-Host ("Ouvre " + $l + " toi-meme : l'extension est a jour.") }
+}
 function Pick-Folder {
   Add-Type -AssemblyName System.Windows.Forms
   $d = New-Object System.Windows.Forms.FolderBrowserDialog
@@ -215,6 +241,7 @@ try {
     if ($env:MYUCA_CFG -and (Test-Path -LiteralPath $env:MYUCA_CFG)) { Add-Cand ((Get-Content -LiteralPath $env:MYUCA_CFG -Raw).Trim()) 'dossier utilisé la dernière fois' }
     Add-Cand $env:MYUCA_SELFDIR 'dossier de ce script'
     Find-InBrowsers
+    Limit-ToBrowser
     if ($cands.Count -eq 0) {
       Write-Host "Je n'ai pas retrouve l'extension automatiquement."
       if ($auto) { exit 2 }
@@ -262,6 +289,9 @@ try {
     Write-Host ("OK : " + $old.version + " -> " + $new.version)
   }
   Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+  $now = (Get-ExtInfo $dest).version
+  if ($env:MYUCA_VERSION -and $now -ne $env:MYUCA_VERSION) { Write-Host ("Remarque : la version attendue etait " + $env:MYUCA_VERSION + ", le dossier contient maintenant " + $now + ".") }
+  Open-InBrowser $now
   if ($isFirefox) { exit 10 }
   exit 0
 } catch {

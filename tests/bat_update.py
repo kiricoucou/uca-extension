@@ -108,6 +108,9 @@ def main():
         (sub / "manifest.json").write_text(json.dumps(mm), encoding="utf-8")
         rv = run(ext / "maj-extension.bat", tmp, str(par / "autre-dossier"))
         check("dossier choisi = voisin du bon : l'extension est retrouvée à côté", rv.returncode == 0 and json.loads((sub / "manifest.json").read_text(encoding="utf-8"))["version"] != "1.0.0" and "cote" in rv.stdout, f"rc={rv.returncode} {rv.stdout[-300:]!r}")
+        # commande complète : /browser, /os, /version, /yes + dossier
+        rr = run(ext / "maj-extension.bat", tmp, "/browser", "chrome", "/os", "windows", "/version", "99.0.0", "/yes", str(sub))
+        check("commande complète : /browser /os /version /yes + dossier acceptés", rr.returncode in (0, 10) and "Remarque : la version attendue etait 99.0.0" in rr.stdout, f"rc={rr.returncode} {rr.stdout[-300:]!r}")
         r4 = run(ext / "maj-extension.bat", tmp, str(tmp / "n-existe-pas"))
         check("mauvais dossier : échec propre, rien cassé", r4.returncode != 0 and (ext / "manifest.json").exists(), r4.stdout[-300:])
     finally:

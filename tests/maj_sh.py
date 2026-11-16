@@ -130,6 +130,19 @@ def main():
         rv = run(bash, script, home, args=(mp(par / "autre-dossier"),), env_extra={"UCA_YES": "1"})
         check("dossier donné = voisin : l'extension est retrouvée à côté", rv.returncode == 0 and vers(sub) != "1.0.0" and "à côté" in (rv.stdout + rv.stderr), f"rc={rv.returncode} {rv.stdout[-300:]!r} {rv.stderr[-200:]!r}")
 
+        # ---- commande complète de l'extension : navigateur, OS, version, --yes
+        h2 = tmp / "h deux"; e_c = h2 / "c" / "uca"; make_ext(e_c); e_f = h2 / "f" / "uca"; make_ext(e_f, firefox=True)
+        pc = h2 / ".config" / "google-chrome" / "Default"; pc.mkdir(parents=True)
+        (pc / "Secure Preferences").write_text(json.dumps({"extensions": {"settings": {"a": {"location": 4, "path": mp(e_c)}}}}), encoding="utf-8")
+        pf = h2 / ".mozilla" / "firefox" / "x.default"; pf.mkdir(parents=True)
+        (pf / "extensions.json").write_text(json.dumps({"addons": [{"id": "uca-connecteur@site-emploi-du-temps.local", "path": mp(e_f)}]}), encoding="utf-8")
+        rb = run(bash, script, h2, args=("--browser", "firefox", "--os", "linux", "--version", "99.0.0", "--yes"), env_extra={"UCA_NOLAUNCH": "1"})
+        check("commande complète : --browser firefox met à jour le dossier Firefox, pas celui de Chrome", rb.returncode == 0 and vers(e_f) != "1.0.0" and vers(e_c) == "1.0.0", f"rc={rb.returncode} {rb.stdout[-300:]!r}")
+        check("commande complète : sans fenêtre (--yes) et version attendue vérifiée", "Remarque : la version attendue était 99.0.0" in rb.stdout, rb.stdout[-300:])
+        make_ext(e_f, firefox=True)
+        rc2 = run(bash, script, h2, args=("--browser", "chrome", "--yes"), env_extra={"UCA_NOLAUNCH": "1"})
+        check("commande complète : --browser chrome met à jour le dossier Chrome", rc2.returncode == 0 and vers(e_c) != "1.0.0" and vers(e_f) == "1.0.0", f"rc={rc2.returncode} {rc2.stdout[-300:]!r}")
+
         # ---- erreurs propres
         rbad = run(bash, script, home, args=(mp(tmp / "n-existe-pas"),), env_extra={"UCA_YES": "1"})
         check("mauvais dossier donné : échec propre (code 2), rien cassé", rbad.returncode == 2 and vers(ext) == "1.0.0", f"rc={rbad.returncode}")

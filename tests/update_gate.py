@@ -50,6 +50,10 @@ def main():
                 page.goto(f"{base}/{path}"); page.wait_for_timeout(1200)
                 check(f"{path} : fenêtre de mise à jour plein écran", gate_visible(page))
                 check(f"{path} : le reste de la page est inerte", page.evaluate("() => [...document.body.children].filter(c => c.id !== 'ucaUpdateGate' && c.tagName !== 'SCRIPT').every(c => c.inert)"))
+                if path == "settings.html":
+                    page.click("#ucaGateApply"); page.wait_for_timeout(1500)
+                    txt = page.inner_text("#ucaUpdateGate")
+                    check("« Appliquer la mise à jour » : commande complète (navigateur, OS, version) à coller dans un terminal", "maj-extension" in txt and ("--browser" in txt or "/browser" in txt) and "99.0.0" in txt and "Copier la commande" in txt, txt[-300:])
                 page.keyboard.press("Escape"); page.wait_for_timeout(200)
                 check(f"{path} : bouton « Appliquer la mise à jour » présent et cliquable", page.evaluate("() => { const b = document.getElementById('ucaGateApply'); return !!b && !b.disabled && b.textContent.trim() === 'Appliquer la mise à jour'; }"))
                 check(f"{path} : Échap ne la ferme pas", gate_visible(page))

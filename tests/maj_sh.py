@@ -111,7 +111,7 @@ def main():
         (profm / "Preferences").write_text(json.dumps({"extensions": {"settings": {"x": {"location": 4, "path": mp(extm)}}}}), encoding="utf-8")
         scriptc = tmp / "scripts" / "maj-extension.command"; scriptc.write_bytes(cmd)
         rm = run(bash, scriptc, homem, env_extra={"UCA_YES": "1", "UCA_FAKE_OS": "Darwin"})
-        check("macOS : l'extension est retrouvée dans Brave (profil 2) et mise à jour", rm.returncode == 0 and vers(extm) != "1.0.0" and "Brave, profil Profile 2" in rm.stdout, f"rc={rm.returncode} {rm.stdout[-300:]!r}")
+        check("macOS : l'extension est retrouvée dans Brave (profil 2) et mise à jour", rm.returncode == 0 and vers(extm) != "1.0.0" and "(Brave)" in rm.stdout, f"rc={rm.returncode} {rm.stdout[-300:]!r}")
         check("macOS : dossier mémorisé (~/Library/Application Support/MyUCA)", (homem / "Library" / "Application Support" / "MyUCA" / "dossier-extension.txt").exists())
 
         # ---- Firefox : extension temporaire dans extensions.json
@@ -142,6 +142,19 @@ def main():
         make_ext(e_f, firefox=True)
         rc2 = run(bash, script, h2, args=("--browser", "chrome", "--yes"), env_extra={"UCA_NOLAUNCH": "1"})
         check("commande complète : --browser chrome met à jour le dossier Chrome", rc2.returncode == 0 and vers(e_c) != "1.0.0" and vers(e_f) == "1.0.0", f"rc={rc2.returncode} {rc2.stdout[-300:]!r}")
+
+        # ---- dossiers rangés côte à côte : extension_uca_chrome / _edge / _firefox, tous mis à jour, navigateurs nommés
+        h3 = tmp / "h trois"; base = h3 / "uca-extension"
+        d_c = base / "extension_uca_chrome"; d_e = base / "extension_uca_edge"; d_f = base / "extension_uca_firefox"
+        make_ext(d_c); make_ext(d_e); make_ext(d_f, firefox=True)
+        pe = h3 / ".config" / "microsoft-edge" / "Default"; pe.mkdir(parents=True)
+        (pe / "Preferences").write_text(json.dumps({"extensions": {"settings": {"a": {"location": 4, "path": mp(d_e)}}}}), encoding="utf-8")
+        pch = h3 / ".config" / "google-chrome" / "Default"; pch.mkdir(parents=True)
+        (pch / "Preferences").write_text(json.dumps({"extensions": {"settings": {"a": {"location": 4, "path": mp(d_c)}}}}), encoding="utf-8")
+        r3 = run(bash, script, h3, env_extra={"UCA_YES": "1", "UCA_NOLAUNCH": "1"})
+        check("trois dossiers côte à côte (Chrome, Edge, Firefox) : tous mis à jour", r3.returncode == 0 and vers(d_c) != "1.0.0" and vers(d_e) != "1.0.0" and vers(d_f) != "1.0.0", f"rc={r3.returncode} {vers(d_c)} {vers(d_e)} {vers(d_f)} {r3.stdout[-400:]!r}")
+        check("les navigateurs sont nommés (Edge et Firefox reconnus, pas seulement Chrome)", "(Edge)" in r3.stdout and "(Firefox)" in r3.stdout and "(Chrome)" in r3.stdout, r3.stdout[-500:])
+        check("la consigne cite Firefox et Chrome / Edge", "about:debugging" in r3.stdout and "edge://extensions" in r3.stdout)
 
         # ---- erreurs propres
         rbad = run(bash, script, home, args=(mp(tmp / "n-existe-pas"),), env_extra={"UCA_YES": "1"})

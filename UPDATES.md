@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.54 — mise à jour : tous les navigateurs détectés
+
+- Scripts de mise à jour (.bat, .sh, .command) : ils détectent les navigateurs (Chrome, Edge, Brave, Vivaldi, Firefox) et mettent à jour tous les dossiers rangés côte à côte (extension_uca_chrome, _edge, _firefox), en écrivant le nom de chaque navigateur. L'installateur Windows crée désormais un dossier par navigateur (extension_uca_edge, extension_uca_brave…). La page mise-a-jour.html explique comment recharger l'extension dans Chrome, Edge, Brave, Firefox et les autres navigateurs.
+
 ## 1.46.53 — commande de mise à jour complète
 
 - Écran « Mise à jour obligatoire » : « Appliquer la mise à jour » télécharge le script de ton système (.bat, .command ou .sh) et affiche la commande complète à copier dans un terminal, avec le navigateur, l'OS et la nouvelle version. Les scripts acceptent --browser / --os / --version / --yes (Windows : /browser /os /version /yes), ne regardent que le navigateur demandé, vérifient la version obtenue puis rouvrent ce navigateur sur la nouvelle version de l'extension.

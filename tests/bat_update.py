@@ -111,6 +111,22 @@ def main():
         # commande complète : /browser, /os, /version, /yes + dossier
         rr = run(ext / "maj-extension.bat", tmp, "/browser", "chrome", "/os", "windows", "/version", "99.0.0", "/yes", str(sub))
         check("commande complète : /browser /os /version /yes + dossier acceptés", rr.returncode in (0, 10) and "Remarque : la version attendue etait 99.0.0" in rr.stdout, f"rc={rr.returncode} {rr.stdout[-300:]!r}")
+        # dossiers rangés côte à côte : extension_uca_chrome / _edge / _firefox, tous mis à jour
+        base3 = tmp / "trois" / "uca-extension"
+        e_c = base3 / "extension_uca_chrome"; e_e = base3 / "extension_uca_edge"; e_f = base3 / "extension_uca_firefox"
+        for dd, ffx in ((e_c, False), (e_e, False), (e_f, True)):
+            dd.mkdir(parents=True)
+            mj = json.loads((ROOT / ("manifest.firefox.json" if ffx else "manifest.json")).read_text(encoding="utf-8")); mj["version"] = "1.0.0"
+            (dd / "manifest.json").write_text(json.dumps(mj), encoding="utf-8")
+        (tmp / "appdata" / "MyUCA").mkdir(parents=True, exist_ok=True)
+        r3 = run(ext / "maj-extension.bat", tmp, str(e_c), "/yes")
+        r3 = subprocess.run(["cmd", "/c", str(ext / "maj-extension.bat"), "/yes"], cwd=tmp, env=dict(os.environ, MYUCA_NOLAUNCH="1", MYUCA_NOPAUSE="1", LOCALAPPDATA=str(tmp / "appdata3")), capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=180)
+        (tmp / "appdata3" / "MyUCA").mkdir(parents=True, exist_ok=True)
+        (tmp / "appdata3" / "MyUCA" / "dossier-extension.txt").write_text(str(e_c), encoding="ascii")
+        r3 = subprocess.run(["cmd", "/c", str(ext / "maj-extension.bat"), "/yes"], cwd=tmp, env=dict(os.environ, MYUCA_NOLAUNCH="1", MYUCA_NOPAUSE="1", LOCALAPPDATA=str(tmp / "appdata3")), capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=180)
+        vv = [json.loads((d / "manifest.json").read_text(encoding="utf-8"))["version"] for d in (e_c, e_e, e_f)]
+        check("trois dossiers côte à côte (Chrome, Edge, Firefox) : tous mis à jour", all(v != "1.0.0" for v in vv), f"{vv} {r3.stdout[-500:]!r}")
+        check("les navigateurs sont nommés (Edge et Firefox reconnus)", "(Edge)" in r3.stdout and "(Firefox)" in r3.stdout, r3.stdout[-500:])
         r4 = run(ext / "maj-extension.bat", tmp, str(tmp / "n-existe-pas"))
         check("mauvais dossier : échec propre, rien cassé", r4.returncode != 0 and (ext / "manifest.json").exists(), r4.stdout[-300:])
     finally:

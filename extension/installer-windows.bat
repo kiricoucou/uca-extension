@@ -275,10 +275,12 @@ function Run-Install {
     Say ('Derniere version : ' + $script:latest)
     $zc = Join-Path $dlDir 'uca-extension-chrome.zip'; $zf = Join-Path $dlDir 'uca-extension-firefox.zip'
     $dirC = Join-Path $instDir 'extension_uca_chrome'; $dirF = Join-Path $instDir 'extension_uca_firefox'
-    if ($needChromium) { Prog 8 'Telechargement (Chrome, Edge, Brave...)'; Say 'Telechargement du paquet Chrome / Edge / Brave...'; Get-File "$Base/extension/uca-extension-chrome.zip?t=$stamp" $zc 8 40; Prog 42 'Installation des fichiers'; Expand-Pkg $zc $dirC; Say ('Fichiers installes dans ' + $dirC) }
+    # un dossier par navigateur : extension_uca_chrome, extension_uca_edge, extension_uca_brave, extension_uca_vivaldi, extension_uca_firefox
+    $dirOf = { param($b) if ($b.id -eq 'chrome') { $dirC } elseif ($b.id -eq 'firefox') { $dirF } else { Join-Path $instDir ('extension_uca_' + $b.id) } }
+    if ($needChromium) { Prog 8 'Telechargement (Chrome, Edge, Brave...)'; Say 'Telechargement du paquet Chrome / Edge / Brave...'; Get-File "$Base/extension/uca-extension-chrome.zip?t=$stamp" $zc 8 40; Prog 42 'Installation des fichiers'; foreach ($cb in @($sel | Where-Object { $_.kind -eq 'chromium' })) { $dd = & $dirOf $cb; Expand-Pkg $zc $dd; Say ($cb.name + ' : fichiers installes dans ' + $dd) } }
     if ($needFirefox)  { Prog 44 'Telechargement (Firefox)'; Say 'Telechargement du paquet Firefox...'; Get-File "$Base/extension/uca-extension-firefox.zip?t=$stamp" $zf 44 70; Prog 72 'Installation des fichiers'; Expand-Pkg $zf $dirF; Say ('Fichiers installes dans ' + $dirF) }
     # dossier memorise pour maj-extension.bat
-    if ($needChromium) { $cfg = $(if ($env:MYUCA_CFGDIR) { $env:MYUCA_CFGDIR } else { Join-Path $env:LOCALAPPDATA 'MyUCA' }); New-Item -ItemType Directory -Path $cfg -Force | Out-Null; Set-Content -Path (Join-Path $cfg 'dossier-extension.txt') -Value $dirC -Encoding ASCII }
+    if ($needChromium) { $cfg = $(if ($env:MYUCA_CFGDIR) { $env:MYUCA_CFGDIR } else { Join-Path $env:LOCALAPPDATA 'MyUCA' }); New-Item -ItemType Directory -Path $cfg -Force | Out-Null; Set-Content -Path (Join-Path $cfg 'dossier-extension.txt') -Value (& $dirOf (@($sel | Where-Object { $_.kind -eq 'chromium' })[0])) -Encoding ASCII }
 
     Prog 74 'Fermeture des navigateurs'
     if ($env:MYUCA_PAUSE_PAGE3) { Start-Sleep -Milliseconds ([int]$env:MYUCA_PAUSE_PAGE3) }
@@ -296,7 +298,8 @@ function Run-Install {
           Launch $b.path @('chrome://extensions', $thanks)
           $manual += $b
         } else {
-          $argLoad = "--disable-features=DisableLoadExtensionCommandLineSwitch --load-extension=`"$dirC`""
+          $dirB = & $dirOf $b
+          $argLoad = "--disable-features=DisableLoadExtensionCommandLineSwitch --load-extension=`"$dirB`""
           Launch $b.path ($argLoad + " `"$thanks`"")
           $lnk = $(if ($env:MYUCA_NOLAUNCH -eq '1') { $null } else { New-Shortcut ($b.name + ' (My UCA)') $b.path $argLoad })
           Say ($b.name + ' : extension chargee. ' + $(if ($lnk) { 'Raccourci cree sur le Bureau pour la retrouver a chaque lancement.' } else { '' }))
@@ -336,7 +339,7 @@ function Run-Install {
     }
     Prog 100 'Termine !'
     Say ''
-    $paths = @(); if ($needChromium) { $paths += $dirC }; if ($needFirefox) { $paths += $dirF }
+    $paths = @(); foreach ($cb in @($sel | Where-Object { $_.kind -eq 'chromium' })) { $paths += (& $dirOf $cb) }; if ($needFirefox) { $paths += $dirF }
     foreach ($pp in $paths) { Say ('Dossier de l''extension : ' + $pp) }
     $cbPath.Items.Clear(); foreach ($pp in $paths) { [void]$cbPath.Items.Add($pp) }
     if ($cbPath.Items.Count -gt 0) {

@@ -55,7 +55,7 @@
 @keyframes okp{0%,55%{outline:2px solid transparent;outline-offset:2px}70%{outline:2px solid var(--accent);outline-offset:4px}100%{outline:2px solid transparent;outline-offset:2px}}
 @keyframes opp{0%,15%{border-color:var(--border)}30%,45%{border-color:var(--accent)}60%,100%{border-color:var(--border)}}
 .two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.safe{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.safe{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.br .card-x ol{margin:0;padding-left:20px;font-size:14.5px}.br .card-x code{word-break:break-all}
 .safe .card-x{padding:18px}.safe h3{font-size:20px}.safe p{margin:0;font-size:14.5px}
 details{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:4px 16px;margin:10px 0}
 summary{cursor:pointer;font-weight:700;padding:12px 0}details p{margin:0 0 14px;color:var(--text-dim)}
@@ -121,6 +121,17 @@ summary{cursor:pointer;font-weight:700;padding:12px 0}details p{margin:0 0 14px;
     </div>
   </div>
 
+  <h2 id="recharger">Recharger l'extension, navigateur par navigateur</h2>
+  <p class="sub">Une fois le script terminé, le navigateur doit relire les fichiers. Chaque navigateur a sa page des extensions : copie l'adresse dans la barre d'adresse.</p>
+  <div class="safe br">
+    <div class="card-x"><h3>Chrome</h3><ol><li>Ouvre <code>chrome://extensions</code>.</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur la flèche ronde (<b>Recharger</b>).</li></ol></div>
+    <div class="card-x"><h3>Edge</h3><ol><li>Ouvre <code>edge://extensions</code>.</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur <b>Recharger</b>.</li></ol></div>
+    <div class="card-x"><h3>Brave</h3><ol><li>Ouvre <code>brave://extensions</code>.</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur la flèche ronde (<b>Recharger</b>).</li></ol></div>
+    <div class="card-x"><h3>Firefox</h3><ol><li>Ouvre <code>about:debugging#/runtime/this-firefox</code>.</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur <b>Recharger</b>. Firefox standard oublie une extension chargée à la main au redémarrage : refais alors « Charger un module complémentaire temporaire » et choisis son <code>manifest.json</code>.</li></ol></div>
+    <div class="card-x"><h3>Vivaldi, Opera, Chromium</h3><ol><li>Ouvre <code>vivaldi://extensions</code>, <code>opera://extensions</code> ou <code>chrome://extensions</code> (Chromium).</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur <b>Recharger</b>.</li></ol></div>
+    <div class="card-x"><h3>Plusieurs navigateurs</h3><p>Si tu l'as installée dans Chrome, Edge et Firefox avec l'installateur, chaque navigateur a son dossier (<code>extension_uca_chrome</code>, <code>extension_uca_edge</code>, <code>extension_uca_firefox</code>). Le script les met tous à jour d'un coup et écrit le nom de chaque navigateur. Recharge ensuite l'extension dans chacun.</p></div>
+  </div>
+
   <h2>Ce que le script ne fait pas</h2>
   <div class="safe">
     <div class="card-x"><h3>Aucun droit spécial</h3><p>Pas de mot de passe administrateur, pas de <code>sudo</code> : il écrit seulement dans ton dossier personnel et dans celui de l'extension.</p></div>
@@ -144,17 +155,17 @@ summary{cursor:pointer;font-weight:700;padding:12px 0}details p{margin:0 0 14px;
     { id: "windows", name: "Windows", ico: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.6 10.5 4.5v6.9H3zM11.6 4.4 21 3v8.4h-9.4zM3 12.6h7.5v6.9L3 18.4zM11.6 12.6H21V21l-9.4-1.3z"/></svg>',
       file: "maj-extension.bat", size: "9 Ko", title: "Script Windows (.bat)",
       desc: "Une fenêtre te montre le dossier retrouvé, avec « Ouvrir le dossier » et « Valider ». Il cherche Chrome, Edge, Brave, Vivaldi et Firefox.",
-      steps: ["Télécharge le fichier (le navigateur peut avertir à propos d'un .bat : garde-le).", "Double-clique dessus, n'importe où : plus besoin de le mettre dans le dossier de l'extension.", "Vérifie le dossier proposé, clique sur <b>Valider</b>.", "Dans <code>chrome://extensions</code>, clique sur « Recharger »."],
+      steps: ["Télécharge le fichier (le navigateur peut avertir à propos d'un .bat : garde-le).", "Double-clique dessus, n'importe où : plus besoin de le mettre dans le dossier de l'extension.", "Vérifie le dossier proposé, clique sur <b>Valider</b>.", "Recharge l'extension dans ton navigateur (<a href='#recharger'>voir comment, navigateur par navigateur</a>)."],
       cmd: 'maj-extension.bat            (double-clic)\nmaj-extension.bat /force     (réinstaller même à jour)', need: "Windows 10 ou 11, PowerShell (déjà installé). Aucun droit administrateur." },
     { id: "mac", name: "macOS", ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>',
       file: "maj-extension.command", size: "13 Ko", title: "Script macOS (.command)",
       desc: "Une fenêtre du Mac te montre le dossier retrouvé, avec « Ouvrir le dossier » (Finder) et « Valider ». Il lit les profils de Chrome, Edge, Brave, Vivaldi et Firefox.",
-      steps: ["Télécharge le fichier.", "Double-clique dessus (la première fois : clic droit puis <b>Ouvrir</b>).", "Vérifie le dossier proposé, clique sur <b>Valider</b>.", "Dans <code>chrome://extensions</code>, clique sur « Recharger »."],
+      steps: ["Télécharge le fichier.", "Double-clique dessus (la première fois : clic droit puis <b>Ouvrir</b>).", "Vérifie le dossier proposé, clique sur <b>Valider</b>.", "Recharge l'extension dans ton navigateur (<a href='#recharger'>voir comment, navigateur par navigateur</a>)."],
       cmd: 'bash ~/Downloads/maj-extension.command\nbash ~/Downloads/maj-extension.command --force', need: "macOS 10.15 ou plus récent. curl et unzip sont déjà installés. Aucun mot de passe demandé." },
     { id: "linux", name: "Linux", ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7.500 9 3 3-3 3M13 15h4"/></svg>',
       file: "maj-extension.sh", size: "13 Ko", title: "Script Linux (.sh)",
       desc: "Une fenêtre (zenity ou kdialog) ou des choix au clavier dans le terminal te montrent le dossier retrouvé : « Ouvrir le dossier », « Valider ».",
-      steps: ["Télécharge le fichier.", "Ouvre un terminal dans le dossier du téléchargement et tape la commande ci-dessous.", "Vérifie le dossier proposé : <b>V</b> pour valider, <b>O</b> pour l'ouvrir (ou les boutons de la fenêtre).", "Dans <code>chrome://extensions</code>, clique sur « Recharger »."],
+      steps: ["Télécharge le fichier.", "Ouvre un terminal dans le dossier du téléchargement et tape la commande ci-dessous.", "Vérifie le dossier proposé : <b>V</b> pour valider, <b>O</b> pour l'ouvrir (ou les boutons de la fenêtre).", "Recharge l'extension dans ton navigateur (<a href='#recharger'>voir comment, navigateur par navigateur</a>)."],
       cmd: 'bash maj-extension.sh\nbash maj-extension.sh --force', need: "Chrome, Chromium, Brave, Edge, Vivaldi ou Firefox (aussi en snap ou Flatpak). curl ou wget et unzip." }
   ];
   var tabs = document.getElementById("tabs"), panels = document.getElementById("panels");

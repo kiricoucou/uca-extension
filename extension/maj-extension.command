@@ -50,13 +50,32 @@ manifest_version() { sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*
 is_ext_dir() { [ -f "$1/manifest.json" ] && grep -q '"name"[[:space:]]*:[[:space:]]*"[^"]*UCA' "$1/manifest.json" 2>/dev/null; }
 is_firefox_dir() { grep -q 'browser_specific_settings' "$1/manifest.json" 2>/dev/null; }
 
-CPATH=(); CORIGIN=()
+CPATH=(); CORIGIN=(); CBROWS=()
+browser_of() { local n="${1%%,*}"; case "$n" in Chrome|Edge|Brave|Vivaldi|Chromium|Firefox) printf '%s' "$n" ;; esac; }
+leaf_browser() {   # extension_uca_chrome / _edge / _firefox ... -> nom du navigateur
+  local leaf; leaf="$(basename "$1" | tr 'A-Z' 'a-z')"
+  case "$leaf" in extension_uca_chrome) printf Chrome ;; extension_uca_edge) printf Edge ;; extension_uca_brave) printf Brave ;; extension_uca_vivaldi) printf Vivaldi ;; extension_uca_chromium) printf Chromium ;; extension_uca_firefox) printf Firefox ;; esac
+}
+names_for() {   # $1 dossier  $2 = 1 si Firefox -> « Chrome, Edge »
+  local i out="" lb
+  for i in "${!CPATH[@]}"; do [ "${CPATH[$i]}" = "$1" ] && out="${CBROWS[$i]}"; done
+  lb="$(leaf_browser "$1")"
+  case ", $out," in *", $lb,"*) ;; *) [ -n "$lb" ] && out="${out:+$out, }$lb" ;; esac
+  if [ -z "$out" ]; then if [ "$2" = "1" ]; then out="Firefox"; else out="Chrome / Edge / Brave"; fi; fi
+  printf '%s' "$out"
+}
 add_cand() {
   local p="${1%/}" o="$2" i
   [ -z "$p" ] && return
   [ "${#p}" -gt 1 ] || return
-  for i in "${!CPATH[@]}"; do [ "${CPATH[$i]}" = "$p" ] && return; done
-  is_ext_dir "$p" && { CPATH+=("$p"); CORIGIN+=("$o"); }
+  local bn; bn="$(browser_of "$o")"
+  for i in "${!CPATH[@]}"; do
+    if [ "${CPATH[$i]}" = "$p" ]; then
+      case ", ${CBROWS[$i]}," in *", $bn,"*) ;; *) [ -n "$bn" ] && CBROWS[$i]="${CBROWS[$i]:+${CBROWS[$i]}, }$bn" ;; esac
+      return
+    fi
+  done
+  is_ext_dir "$p" && { CPATH+=("$p"); CORIGIN+=("$o"); CBROWS+=("$bn"); }
 }
 
 find_in_browsers() {
@@ -156,11 +175,11 @@ pick_dir() {   # demande un dossier, vérifie que c'est bien l'extension -> CHOS
 
 limit_to_browser() {   # --browser donné : on ne garde que les dossiers trouvés dans ce navigateur (s'il y en a)
   [ -z "$BROWSER" ] && return 0
-  local label i np=() no=()
+  local label i np=() no=() nb=()
   case "$BROWSER" in chrome) label="Chrome" ;; edge) label="Edge" ;; brave) label="Brave" ;; vivaldi) label="Vivaldi" ;; chromium) label="Chromium" ;; firefox) label="Firefox" ;; *) return 0 ;; esac
-  for i in "${!CPATH[@]}"; do case "${CORIGIN[$i]}" in "$label"*) np+=("${CPATH[$i]}"); no+=("${CORIGIN[$i]}") ;; esac; done
+  for i in "${!CPATH[@]}"; do case "${CORIGIN[$i]}, ${CBROWS[$i]}" in "$label"*|*"$label"*) np+=("${CPATH[$i]}"); no+=("${CORIGIN[$i]}"); nb+=("${CBROWS[$i]}") ;; esac; done
   [ "${#np[@]}" -eq 0 ] && return 0
-  CPATH=("${np[@]}"); CORIGIN=("${no[@]}")
+  CPATH=("${np[@]}"); CORIGIN=("${no[@]}"); CBROWS=("${nb[@]}")
 }
 
 open_in_browser() {   # ouvre le navigateur demandé sur la page qui lance l'agenda de l'extension
@@ -182,7 +201,7 @@ open_in_browser() {   # ouvre le navigateur demandé sur la page qui lance l'age
   say "Navigateur « $BROWSER » introuvable : ouvre-le toi-même, l'extension est à jour."
 }
 
-describe() { printf '%s\n(%s, version %s)' "${CPATH[$1]}" "${CORIGIN[$1]}" "$(manifest_version "${CPATH[$1]}")"; }
+describe() { printf '%s\n(%s, version %s)' "${CPATH[$1]}" "${CBROWS[$1]:-${CORIGIN[$1]}}" "$(manifest_version "${CPATH[$1]}")"; }
 
 choose_index() {   # plusieurs dossiers trouvés : lequel ? -> IDX
   IDX=0
@@ -269,7 +288,7 @@ else
     pick_dir || { say "Annulé : rien n'a été modifié."; end; exit 3; }
     DEST="$CHOSEN"
   elif [ "$YES" = "1" ]; then
-    DEST="${CPATH[0]}"; say "Dossier détecté : $DEST  (${CORIGIN[0]})"
+    DEST="${CPATH[0]}"; say "Dossier détecté : $DEST  ($(names_for "$DEST" "$(is_firefox_dir "$DEST" && echo 1 || echo 0)"))"
   else
     confirm; rc=$?
     [ "$rc" -ne 0 ] && { say ""; say "Annulé : rien n'a été modifié."; end; exit 3; }
@@ -279,39 +298,68 @@ fi
 mkdir -p "$CFGDIR" 2>/dev/null && printf '%s\n' "$DEST" > "$CFG"
 
 # ---------------------------------------------------------------- 2) y a-t-il une nouvelle version ? 3) mise à jour
-IS_FF=0; is_firefox_dir "$DEST" && IS_FF=1
-URL="$URL_CHROME"; [ "$IS_FF" = "1" ] && URL="$URL_FF"
-say ""; say "Dossier : $DEST"; say "Recherche de la dernière version..."
 TMP="$(mktemp -d 2>/dev/null || { mkdir -p "/tmp/myuca.$$" && echo "/tmp/myuca.$$"; })"
-Q=""; case "$URL" in https://*) Q="?t=$(date +%s)" ;; esac
-if have curl; then curl -fsSL --max-time 90 "$URL$Q" -o "$TMP/ext.zip" || { say "Erreur : téléchargement impossible (connexion ?). Rien n'a été modifié."; end; exit 1; }
-elif have wget; then wget -q -O "$TMP/ext.zip" "$URL$Q" || { say "Erreur : téléchargement impossible (connexion ?). Rien n'a été modifié."; end; exit 1; }
-else say "Erreur : ni curl ni wget n'est installé."; end; exit 1; fi
-mkdir -p "$TMP/x"
-if have unzip; then unzip -q -o "$TMP/ext.zip" -d "$TMP/x" || { say "Erreur : ZIP illisible."; end; exit 1; }
-elif have python3; then python3 -c 'import sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])' "$TMP/ext.zip" "$TMP/x" || { say "Erreur : ZIP illisible."; end; exit 1; }
-else say "Erreur : « unzip » n'est pas installé (sudo apt install unzip)."; end; exit 1; fi
-[ -f "$TMP/x/manifest.json" ] || { say "Erreur : ZIP invalide (pas de manifest.json)."; end; exit 1; }
-is_ext_dir "$TMP/x" || { say "Erreur : ZIP inattendu (le nom ne contient pas « UCA »)."; end; exit 1; }
-OLD="$(manifest_version "$DEST")"; NEW="$(manifest_version "$TMP/x")"
 vnum() { printf '%s' "$1" | awk -F. '{ printf "%d%06d%06d%06d", 0, $1, $2, $3 }'; }
-say "Version installee : $OLD   Derniere version : $NEW"
-if [ "$(vnum "$NEW")" -le "$(vnum "$OLD")" ] && [ "$FORCE" != "1" ]; then
-  say "Déjà à jour (utilise --force pour réinstaller quand même)."
-else
-  rm -f "$TMP"/x/maj-extension.*   # le script en cours n'est jamais écrasé
-  cp -R "$TMP/x/." "$DEST/" || { say "Erreur : copie impossible. Ferme les fichiers ouverts puis réessaie. L'ancienne version est toujours en place."; end; exit 1; }
-  find "$DEST" \( -name desktop.ini -o -name Thumbs.db -o -name .DS_Store \) -type f -delete 2>/dev/null
-  say "OK : $OLD -> $NEW"
+fetch_pkg() {   # $1 = 1 pour Firefox -> PKGDIR = dossier du paquet décompressé (téléchargé une seule fois par type)
+  local ff="$1" url="$URL_CHROME" sub="xc" q=""
+  [ "$ff" = "1" ] && { url="$URL_FF"; sub="xf"; }
+  if [ -f "$TMP/$sub/manifest.json" ]; then PKGDIR="$TMP/$sub"; return 0; fi
+  say "Recherche de la dernière version ($([ "$ff" = "1" ] && echo Firefox || echo 'Chrome / Edge / Brave'))..."
+  case "$url" in https://*) q="?t=$(date +%s)" ;; esac
+  if have curl; then curl -fsSL --max-time 90 "$url$q" -o "$TMP/$sub.zip" || { say "Erreur : téléchargement impossible (connexion ?). Rien n'a été modifié."; return 1; }
+  elif have wget; then wget -q -O "$TMP/$sub.zip" "$url$q" || { say "Erreur : téléchargement impossible (connexion ?). Rien n'a été modifié."; return 1; }
+  else say "Erreur : ni curl ni wget n'est installé."; return 1; fi
+  mkdir -p "$TMP/$sub"
+  if have unzip; then unzip -q -o "$TMP/$sub.zip" -d "$TMP/$sub" || { say "Erreur : ZIP illisible."; return 1; }
+  elif have python3; then python3 -c 'import sys,zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])' "$TMP/$sub.zip" "$TMP/$sub" || { say "Erreur : ZIP illisible."; return 1; }
+  else say "Erreur : « unzip » n'est pas installé (sudo apt install unzip)."; return 1; fi
+  [ -f "$TMP/$sub/manifest.json" ] || { say "Erreur : ZIP invalide (pas de manifest.json)."; return 1; }
+  is_ext_dir "$TMP/$sub" || { say "Erreur : ZIP inattendu (le nom ne contient pas « UCA »)."; return 1; }
+  PKGDIR="$TMP/$sub"
+}
+
+# cibles : le dossier choisi + les dossiers des autres navigateurs rangés à côté (extension_uca_chrome / _edge / _firefox...)
+TARGETS=("$DEST")
+if [ -z "$ARGDEST" ] && [ -z "$BROWSER" ]; then
+  par="$(dirname "$DEST")"
+  for sd in "$par"/*/; do
+    sd="${sd%/}"
+    [ "$sd" = "$DEST" ] && continue
+    if [ -n "$(leaf_browser "$sd")" ] && is_ext_dir "$sd"; then TARGETS+=("$sd"); say "Autre navigateur détecté : $sd"; fi
+  done
+  d_ff=0; is_firefox_dir "$DEST" && d_ff=1
+  have_other=0; for t in "${TARGETS[@]}"; do f2=0; is_firefox_dir "$t" && f2=1; [ "$f2" != "$d_ff" ] && have_other=1; done
+  if [ "$have_other" = "0" ]; then
+    for i in "${!CPATH[@]}"; do f2=0; is_firefox_dir "${CPATH[$i]}" && f2=1; [ "$f2" != "$d_ff" ] && { TARGETS+=("${CPATH[$i]}"); say "Autre navigateur détecté : ${CPATH[$i]}"; break; }; done
+  fi
 fi
-if [ -n "$WANT_VER" ] && [ "$(manifest_version "$DEST")" != "$WANT_VER" ]; then say "Remarque : la version attendue était $WANT_VER, le dossier contient maintenant $(manifest_version "$DEST")."; fi
+ANY_FF=0; CH_NAMES=""; FIRSTVER=""; NEW=""
+for T in "${TARGETS[@]}"; do
+  ff=0; is_firefox_dir "$T" && ff=1
+  fetch_pkg "$ff" || { end; exit 1; }
+  names="$(names_for "$T" "$ff")"
+  OLD="$(manifest_version "$T")"; NEW="$(manifest_version "$PKGDIR")"
+  say ""; say "Dossier : $T  ($names)"
+  say "Version installee : $OLD   Derniere version : $NEW"
+  if [ "$(vnum "$NEW")" -le "$(vnum "$OLD")" ] && [ "$FORCE" != "1" ]; then
+    say "Déjà à jour (utilise --force pour réinstaller quand même)."
+  else
+    rm -f "$PKGDIR"/maj-extension.*   # le script en cours n'est jamais écrasé
+    cp -R "$PKGDIR/." "$T/" || { say "Erreur : copie impossible. Ferme les fichiers ouverts puis réessaie. L'ancienne version est toujours en place."; end; exit 1; }
+    find "$T" \( -name desktop.ini -o -name Thumbs.db -o -name .DS_Store \) -type f -delete 2>/dev/null
+    say "OK : $OLD -> $NEW"
+  fi
+  if [ "$ff" = "1" ]; then ANY_FF=1; else CH_NAMES="${CH_NAMES:+$CH_NAMES, }$names"; fi
+  [ -z "$FIRSTVER" ] && FIRSTVER="$(manifest_version "$T")"
+done
+if [ -n "$WANT_VER" ] && [ "$FIRSTVER" != "$WANT_VER" ]; then say "Remarque : la version attendue était $WANT_VER, le dossier contient maintenant $FIRSTVER."; fi
 say ""
-if [ "$IS_FF" = "1" ]; then
-  say "Pour appliquer la mise à jour : dans Firefox, ouvre about:debugging#/runtime/this-firefox"
-  say "et clique sur « Recharger » sur la carte de l'extension."
-else
+if [ -n "$CH_NAMES" ]; then
   say "Pour appliquer la mise à jour : dans chrome://extensions (edge://extensions, brave://extensions), clique sur « Recharger »"
   say "(flèche ronde) sur la carte de l'extension. Elle se recharge aussi toute seule à la prochaine vérification."
+fi
+if [ "$ANY_FF" = "1" ]; then
+  say "Firefox : ouvre about:debugging#/runtime/this-firefox et clique sur « Recharger » sur la carte de l'extension."
 fi
 open_in_browser
 end

@@ -52,7 +52,7 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
       <div class="hero-copy">
       <img class="logo" src="app/icons/icon-192.png" alt="">
       <h1>Ton emploi du temps de l'IUT, <span class="hl">lisible partout.</span></h1>
-      <p class="lead">Cours, notes, moyenne et absences d'Odin, dans un agenda clair sur ordinateur et téléphone. Avec alertes quand un cours change de salle ou d'horaire, et quand une note tombe.</p>
+      <p class="lead">Cours, notes et absences d'Odin dans un agenda clair. Une alerte si un cours change ou si une note tombe.</p>
       <div class="btns">
         <a class="btn primary" href="app/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Ouvrir l'agenda en ligne</a>
         <a class="btn" href="app-download.html" data-install-app><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>Installer l'app</a>
@@ -89,28 +89,38 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
 
   <section class="block">
     <div class="wrap">
-      <h2>Quatre façons de l'utiliser</h2>
-      <p class="sub">Mêmes fonctionnalités et mêmes designs partout. Ce qui change : comment les données arrivent.</p>
-      <div class="cards">
+      <h2>Que veux-tu faire ?</h2>
+      <p class="sub">Une carte, une page. Choisis.</p>
+      <div class="cards todo-cards">
         <article class="card">
-          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4.5a2 2 0 1 1 4 0V6h3a1 1 0 0 1 1 1v3h-1.5a2 2 0 1 0 0 4H18v3a1 1 0 0 1-1 1h-3v-1.5a2 2 0 1 0-4 0V18H7a1 1 0 0 1-1-1v-3h1.5a2 2 0 1 0 0-4H6V7a1 1 0 0 1 1-1h3z"/></svg></span>Extension</h3>
-          <p>Sur ordinateur (Chrome, Edge, Brave, Firefox). La seule qui se connecte directement à Odin : synchro en un clic, synchro automatique, rappels et notifications.</p>
-          <a class="btn" href="installation.html">Comment l'installer</a>
+          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>Voir mon emploi du temps</h3>
+          <p>Dans le navigateur, sans rien installer.</p>
+          <div class="cbtns"><a class="btn" href="app/index.html">Ouvrir l'agenda</a></div>
         </article>
         <article class="card">
-          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>App</h3>
-          <p>Installée sur téléphone (Android, iPhone) ou ordinateur, en plein écran et hors ligne. Reçoit les données de l'extension par lien chiffré, QR code ou fichier.</p>
-          <a class="btn" href="app-download.html" data-install-app>Installer l'app</a>
+          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span>Sur mon téléphone</h3>
+          <p>Android ou iPhone : un bouton, c'est installé.</p>
+          <div class="cbtns"><a class="btn" href="appli.html">Télécharger l'appli</a><a class="btn ghost-btn" href="app-download.html" data-install-app>Sur ordi ou tablette</a></div>
         </article>
         <article class="card">
-          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>Agenda en ligne</h3>
-          <p>La même app, dans un simple onglet, sans rien installer. Pratique sur un ordinateur de l'IUT ou pour essayer.</p>
-          <a class="btn" href="app/index.html">Ouvrir l'agenda</a>
+          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 4.5a2 2 0 1 1 4 0V6h3a1 1 0 0 1 1 1v3h-1.5a2 2 0 1 0 0 4H18v3a1 1 0 0 1-1 1h-3v-1.5a2 2 0 1 0-4 0V18H7a1 1 0 0 1-1-1v-3h1.5a2 2 0 1 0 0-4H6V7a1 1 0 0 1 1-1h3z"/></svg></span>Sur mon ordinateur</h3>
+          <p>L'extension se connecte à Odin et synchronise tout.</p>
+          <div class="cbtns"><a class="btn" href="installation.html">Comment l'installer</a></div>
         </article>
         <article class="card">
-          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span>Aide</h3>
-          <p>Ces pages : présentation, comparatif, aide complète et liens d'installation. Ne contient aucune donnée personnelle.</p>
-          <a class="btn" href="aide.html">Lire l'aide</a>
+          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-14 5.3M4 12a8 8 0 0 1 14-5.3"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></span>Mettre à jour</h3>
+          <p>Le pilote automatique s'en charge.</p>
+          <div class="cbtns"><a class="btn" href="mise-a-jour.html">Lancer le pilote</a></div>
+        </article>
+        <article class="card">
+          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.5a2.5 2.5 0 1 1 4 2c-.9.6-1.6 1-1.6 2.2M12 17h.01"/></svg></span>Une question ?</h3>
+          <p>Tape un mot-clé, la réponse s'affiche.</p>
+          <div class="cbtns"><a class="btn" href="aide.html">Lire l'aide</a></div>
+        </article>
+        <article class="card">
+          <h3><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14a1 1 0 0 1 1 1v11H4V5a1 1 0 0 1 1-1z"/><path d="M4 11h16M7 20v-2M17 20v-2"/></svg></span>Bus et salles</h3>
+          <p>Horaires en direct et carte du campus.</p>
+          <div class="cbtns"><a class="btn" href="transport.html">Voir les transports</a></div>
         </article>
       </div>
     </div>
@@ -222,9 +232,9 @@ if (/^#[ed]=/.test(location.hash)) location.replace("app/import.html" + location
       <p class="sub">Les dernières versions. <a href="nouveautes.html">Tout l'historique</a>.</p>
       <div class="cards">
         <!--news:start-->
+        <article class="card news-card"><div class="news-meta"><span class="vbadge">v1.46.57</span><time datetime="2026-11-16T22:03:21+01:00">16 nov. 2026 à 22:03</time><span class="chip chip-site">Site</span></div><h3>site plus clair : menu décrit, recherche, page appli, pilote automatique</h3><ul class="news-list"><li>Site : menu hamburger avec toutes les pages et une courte description sous chacune ; recherche globale dans l'en-tête (bouton Rechercher ou touche /) ; nouvelle page « Télécharger l'appli » (appli.html : Android APK ou iPhone, QR code pour envoyer le lien) ; page « Pilote automatique » refaite (assistant en 2 questions : ordinateur et navigateur, bouton unique, rechargement adapté, « Ça ne marche pas ? » en un clic) ; accueil « Que veux-tu faire ? » en 6 cartes ; introductions des pages raccourcies.</li></ul><a class="more" href="nouveautes.html#v1-46-57">Tout le détail de la 1.46.57 →</a></article>
         <article class="card news-card"><div class="news-meta"><span class="vbadge">v1.46.56</span><time datetime="2026-11-16T18:50:23+01:00">16 nov. 2026 à 18:50</time><span class="chip chip-ext">Extension</span></div><h3>script de mise à jour plus rapide</h3><ul class="news-list"><li>Script de mise à jour Windows : plus de barre de progression PowerShell (téléchargement bien plus rapide). Vérifié en vrai sur Windows avec les trois dossiers Chrome, Edge et Firefox.</li></ul><a class="more" href="nouveautes.html#v1-46-56">Tout le détail de la 1.46.56 →</a></article>
         <article class="card news-card"><div class="news-meta"><span class="vbadge">v1.46.55</span><time datetime="2026-11-16T16:40:37+01:00">16 nov. 2026 à 16:40</time><span class="chip chip-ext">Extension</span></div><h3>documentation de la commande de mise à jour</h3><ul class="news-list"><li>Page mise-a-jour.html : nouvelles sections « Tout en une commande » (arguments /browser, /os, /version, /yes), « Plusieurs navigateurs, plusieurs dossiers » et FAQ complétée. La liste de confirmation du script Windows affiche le nom du navigateur avant le chemin (visible même quand le chemin est long).</li></ul><a class="more" href="nouveautes.html#v1-46-55">Tout le détail de la 1.46.55 →</a></article>
-        <article class="card news-card"><div class="news-meta"><span class="vbadge">v1.46.54</span><time datetime="2026-11-16T11:57:37+01:00">16 nov. 2026 à 11:57</time><span class="chip chip-ext">Extension</span></div><h3>mise à jour : tous les navigateurs détectés</h3><ul class="news-list"><li>Scripts de mise à jour (.bat, .sh, .command) : ils détectent les navigateurs (Chrome, Edge, Brave, Vivaldi, Firefox) et mettent à jour tous les dossiers rangés côte à côte (extension_uca_chrome, _edge, _firefox), en écrivant le nom de chaque navigateur. L'installateur Windows crée désormais un dossier par navigateur (extension_uca_edge, extension_uca_brave…). La page mise-a-jour.html explique comment recharger l'extension dans Chrome, Edge, Brave, Firefox et les autres navigateurs.</li></ul><a class="more" href="nouveautes.html#v1-46-54">Tout le détail de la 1.46.54 →</a></article>
         <!--news:end-->
       </div>
     </div>

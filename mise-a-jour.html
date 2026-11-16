@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mettre à jour l'extension — Emploi du temps UCA</title>
-<meta name="description" content="Mettre à jour l'extension Emploi du temps UCA avec le script de ton système (.bat, .command, .sh) : il retrouve le dossier tout seul, tu vérifies, tu valides, il met à jour.">
+<title>Pilote automatique — Emploi du temps UCA</title>
+<meta name="description" content="Le pilote automatique met l'extension Emploi du temps UCA à jour tout seul : télécharge, double-clique, valide. Windows, macOS, Linux.">
 <link rel="canonical" href="https://kiricoucou.github.io/uca-extension/mise-a-jour.html">
 <link rel="icon" type="image/png" href="app/icons/icon-192.png">
 <link rel="stylesheet" href="site.css">
@@ -20,7 +20,7 @@
 .flow li:nth-child(2){animation-delay:2s}.flow li:nth-child(3){animation-delay:4s}.flow li:nth-child(4){animation-delay:6s}
 .flow .n{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:800;display:grid;place-items:center;font-size:15px}
 .flow .ic{color:var(--accent);display:grid;place-items:center}.flow .ic svg{width:26px;height:26px}
-.flow h3{margin:0;font-size:21px;line-height:1.2;letter-spacing:-.01em}.flow p{grid-column:1/-1;margin:0;color:var(--text-dim);font-size:15px}
+.flow .ft{font-weight:800;margin:0;font-size:21px;line-height:1.2;letter-spacing:-.01em}.flow p{grid-column:1/-1;margin:0;color:var(--text-dim);font-size:15px}
 @keyframes fl{0%,22%{border-color:var(--accent);transform:translateY(-3px)}28%,100%{border-color:var(--border);transform:none}}
 .os-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
 .os-tab{display:inline-flex;align-items:center;gap:10px;min-height:50px;padding:0 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-weight:700;cursor:pointer}
@@ -44,7 +44,7 @@
 .win .bar{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-2);font-size:13px;font-weight:700}
 .win .bar i{width:10px;height:10px;border-radius:50%;background:#ef6b6b;box-shadow:16px 0 0 #ffbd2e,32px 0 0 #28c840;margin-right:36px}
 .win .body{padding:16px}
-.win h4{margin:0 0 4px;font-size:16px}
+.win .wt{font-weight:700;margin:0 0 4px;font-size:16px}
 .win p{margin:0 0 10px;font-size:13.5px;color:var(--text-dim)}
 .win .path{padding:9px 11px;border-radius:9px;border:1px solid var(--border);background:var(--bg);font:12.5px ui-monospace,Consolas,monospace;overflow-x:auto;white-space:nowrap}
 .win .path small{display:block;color:var(--text-dim);font:12px system-ui,sans-serif;margin-top:3px}
@@ -63,143 +63,129 @@ summary{cursor:pointer;font-weight:700;padding:12px 0}details p{margin:0 0 14px;
 @media(max-width:900px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.panel,.two,.safe{grid-template-columns:1fr}}
 @media(max-width:520px){.flow{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.flow li,.win .b.ok,.win .b.op{animation:none}}
+.q{display:flex;align-items:center;gap:10px;margin:18px 0 10px}.qn{width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:800;display:grid;place-items:center;font-size:14px}.ql{font-weight:800;font-size:18px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 18px}
+.chip{min-height:46px;padding:0 16px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-weight:700;cursor:pointer}
+.chip[aria-checked="true"]{border-color:var(--accent);background:var(--accent-tint)}.chip .det{font-size:11.5px;font-weight:800;color:var(--accent)}
+.res{display:flex;flex-direction:column;gap:12px}
+.big-dl{min-height:60px;font-size:18px;justify-content:center}
+.todo li{margin:9px 0}
+.mini{margin-left:6px;padding:4px 10px;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent);font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+.fast{margin-top:10px}.fast .cmd-box{white-space:pre-wrap;word-break:break-all}
+.trouble{display:flex;flex-wrap:wrap;gap:8px}
+.tq{min-height:46px;padding:8px 14px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-weight:600;text-align:left;cursor:pointer}
+.tq[aria-expanded="true"]{border-color:var(--accent);background:var(--accent-tint)}
+.tans{margin-top:12px;padding:16px 18px;border-radius:16px;border-left:4px solid var(--accent);background:var(--surface);box-shadow:var(--shadow)}.tans p{margin:6px 0 0;color:var(--text-dim)}
 </style>
 </head>
 <body>
 <main class="ins">
-  <h1>Mettre à jour l'extension</h1>
-  <p class="lead">Un petit fichier à lancer : il retrouve ton extension tout seul, tu vérifies que c'est le bon dossier, tu valides, et il la met à jour s'il existe une nouvelle version. Pour Windows, macOS et Linux.</p>
+  <h1>Pilote automatique</h1>
+  <p class="lead">Il met ton extension à jour tout seul. Tu télécharges un fichier, tu double-cliques, tu cliques sur « Valider ». C'est tout.</p>
 
   <ol class="flow" aria-label="Les quatre étapes">
-    <li><span class="n">1</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M10 12l4 2.500-4 2.500z" fill="currentColor"/></svg></span><h3>Tu lances le fichier</h3><p>Double-clic sur le <code>.bat</code> (Windows) ou le <code>.command</code> (macOS), ou <code>bash maj-extension.sh</code> (Linux).</p></li>
-    <li><span class="n">2</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.500" cy="10.500" r="6.500"/><path d="m20 20-4.900-4.900"/></svg></span><h3>Il retrouve l'extension</h3><p>Il lit les profils de Chrome, Edge, Brave, Vivaldi et Firefox pour en déduire où elle est rangée.</p></li>
-    <li><span class="n">3</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h6l2 2h10v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg></span><h3>Tu vérifies le dossier</h3><p>Il te montre le chemin. « Ouvrir le dossier » permet de contrôler que c'est le bon, puis tu cliques sur « Valider ».</p></li>
-    <li><span class="n">4</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 0 1-14 5.300M4 12a8 8 0 0 1 14-5.300"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></span><h3>Il met à jour</h3><p>Il cherche une version plus récente et, s'il y en a une, remplace les fichiers tout seul. Sinon : « Déjà à jour ».</p></li>
+    <li><span class="n">1</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg></span><p class="ft">Télécharge</p><p>Le fichier de ton ordinateur, ci-dessous.</p></li>
+    <li><span class="n">2</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M10 12l4 2.500-4 2.500z" fill="currentColor"/></svg></span><p class="ft">Double-clique</p><p>Il retrouve l'extension tout seul.</p></li>
+    <li><span class="n">3</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span><p class="ft">Valide</p><p>Il te montre le dossier : clique sur « Valider ».</p></li>
+    <li><span class="n">4</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 0 1-14 5.300M4 12a8 8 0 0 1 14-5.300"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></span><p class="ft">Recharge</p><p>Un clic dans ton navigateur, c'est à jour.</p></li>
   </ol>
 
-  <h2>Choisis ton système</h2>
-  <p class="sub">Le même principe partout : seul le fichier à lancer change.</p>
+  <h2 id="assistant">Ton pilote en 2 questions</h2>
+  <p class="sub">On a deviné tes réponses : corrige si besoin.</p>
+  <div class="q"><span class="qn">1</span><span class="ql">Ton ordinateur ?</span></div>
   <div class="os-tabs" role="tablist" aria-label="Système d'exploitation" id="tabs"></div>
+  <div class="q"><span class="qn">2</span><span class="ql">Ton navigateur ?</span></div>
+  <div class="chips" role="radiogroup" aria-label="Navigateur" id="browsers"></div>
   <div id="panels"></div>
 
-  <h2>La fenêtre de confirmation</h2>
-  <p class="sub">Voilà ce que tu vois à l'étape 3 (sous Windows ; sur macOS et Linux, c'est une fenêtre du système avec les mêmes boutons, ou des choix au clavier dans le terminal).</p>
+  <h2>À quoi ressemble la fenêtre</h2>
+  <p class="sub">Vérifie le chemin si tu veux, puis « Valider ».</p>
   <div class="two">
     <div class="win" aria-hidden="true">
       <div class="bar"><i></i>Mise à jour de l'extension My UCA</div>
       <div class="body">
-        <h4>C'est bien le dossier de ton extension ?</h4>
+        <p class="wt">C'est bien le dossier de ton extension ?</p>
         <p>Je l'ai retrouvé dans ton navigateur. Vérifie que c'est le bon, puis valide.</p>
-        <div class="path">C:\Users\toi\Bureau\extension_uca_chrome<small>Chrome, profil Default, version 1.46.45</small></div>
+        <div class="path">Edge : C:\Users\toi\Bureau\extension_uca_edge<small>version 1.46.45</small></div>
         <div class="acts"><span class="b op">Ouvrir le dossier</span><span class="b">Autre dossier…</span><span class="b">Annuler</span><span class="b ok">Valider</span></div>
       </div>
     </div>
     <div class="card-x">
-      <h3>Ce que font les boutons</h3>
+      <h3>Les boutons</h3>
       <ol>
-        <li><b>Ouvrir le dossier</b> : ouvre l'Explorateur (ou le Finder, ou le gestionnaire de fichiers) sur ce dossier, pour vérifier à l'œil.</li>
-        <li><b>Valider</b> : lance la recherche d'une nouvelle version, puis la mise à jour si elle existe.</li>
-        <li><b>Autre dossier…</b> : si le dossier trouvé n'est pas le bon, tu choisis le bon.</li>
-        <li><b>Annuler</b> : rien n'est modifié.</li>
+        <li><b>Valider</b> : met à jour.</li>
+        <li><b>Ouvrir le dossier</b> : pour vérifier à l'œil.</li>
+        <li><b>Autre dossier…</b> : si ce n'est pas le bon.</li>
+        <li><b>Annuler</b> : rien ne change.</li>
       </ol>
-      <p style="margin:0">Si plusieurs dossiers sont trouvés (plusieurs navigateurs ou profils), il te demande d'abord lequel mettre à jour.</p>
+      <p style="margin:0">Plusieurs navigateurs ? Il met à jour leurs dossiers d'un coup.</p>
     </div>
   </div>
 
-  <h2 id="commande">Tout en une commande</h2>
-  <p class="sub">Quand l'extension détecte une nouvelle version, l'écran « Mise à jour obligatoire » propose « Appliquer la mise à jour » : il télécharge le script de ton système et affiche la commande complète à copier dans un terminal. Tu peux aussi l'écrire toi-même.</p>
-  <div class="two">
-    <div class="card-x">
-      <h3>La commande</h3>
-      <span class="cmd-box">Windows :
-maj-extension.bat /browser firefox /os windows /version 1.46.54 /yes
+  <h2 id="aide">Ça ne marche pas ?</h2>
+  <p class="sub">Touche ton problème.</p>
+  <div class="trouble" id="trouble"></div>
+  <div class="tans" id="tans" role="status" aria-live="polite" hidden></div>
 
-macOS / Linux :
-bash maj-extension.sh --browser firefox --os linux --version 1.46.54 --yes</span>
-      <p style="margin:0">Colle-la dans un terminal (Invite de commandes, Terminal). Pas de fenêtre de confirmation : il retrouve le dossier, met à jour, puis rouvre ton navigateur sur la nouvelle version de l'extension.</p>
-    </div>
-    <div class="card-x">
-      <h3>Les arguments</h3>
-      <ol>
-        <li><b>/browser</b> (<code>--browser</code>) : chrome, edge, brave, vivaldi, chromium ou firefox. Le script ne regarde que ce navigateur, puis l'ouvre à la fin.</li>
-        <li><b>/os</b> (<code>--os</code>) : windows, macos ou linux (indicatif).</li>
-        <li><b>/version</b> (<code>--version</code>) : la version attendue. Le script vérifie qu'il l'a bien obtenue.</li>
-        <li><b>/yes</b> (<code>--yes</code>) : aucune fenêtre ni question.</li>
-        <li><b>un dossier</b> (facultatif) : le chemin de l'extension, s'il n'est pas retrouvé tout seul. L'extension ne connaît pas son propre chemin sur le disque, c'est pourquoi le script le cherche lui-même.</li>
-      </ol>
-    </div>
-  </div>
-
-  <h2 id="plusieurs">Plusieurs navigateurs, plusieurs dossiers</h2>
-  <p class="sub">Si tu pointes le mauvais dossier, le script cherche le <code>manifest.json</code> dans les sous-dossiers, dans les dossiers voisins, puis au-dessus. Sans argument <code>/browser</code>, il met aussi à jour les dossiers rangés côte à côte, nommés d'après leur navigateur.</p>
-  <div class="two">
-    <div class="card-x"><h3>Un dossier par navigateur</h3><p>L'installateur Windows crée <code>extension_uca_chrome</code>, <code>extension_uca_edge</code>, <code>extension_uca_brave</code>, <code>extension_uca_vivaldi</code> et <code>extension_uca_firefox</code> selon les navigateurs que tu coches. Chaque navigateur charge son dossier.</p></div>
-    <div class="card-x"><h3>Le script écrit le nom de chaque navigateur</h3><p>Il lit les profils de Chrome, Edge, Brave, Vivaldi et Firefox, plus le nom des dossiers, et indique par exemple « Dossier : …\extension_uca_edge (Edge) ». À la fin, il propose d'ouvrir la page des extensions de chaque navigateur concerné.</p></div>
-  </div>
-
-  <h2>Et la mise à jour automatique ?</h2>
-  <p class="sub">Avec Chrome ou Edge, l'extension peut aussi se mettre à jour toute seule, sans aucun script.</p>
-  <div class="two">
-    <div class="card-x">
-      <h3>Dans le navigateur (Chrome, Edge)</h3>
-      <p>La première fois, le bouton « Télécharger et appliquer la mise à jour » te demande de choisir le dossier de l'extension et d'autoriser l'écriture. Choisis « Autoriser à chaque visite » : ensuite, les mises à jour se font sans aucun clic.</p>
-      <a class="btn-line" href="extension/#maj">Voir les détails</a>
-    </div>
-    <div class="card-x">
-      <h3>Firefox</h3>
-      <p>Firefox ne permet pas de réécrire les fichiers d'une extension chargée à la main. Le script remplace les fichiers, puis tu cliques sur « Recharger » dans <code>about:debugging</code>.</p>
-      <a class="btn-line" href="installation.html">Aide à l'installation</a>
-    </div>
-  </div>
-
-  <h2 id="recharger">Recharger l'extension, navigateur par navigateur</h2>
-  <p class="sub">Une fois le script terminé, le navigateur doit relire les fichiers. Chaque navigateur a sa page des extensions : copie l'adresse dans la barre d'adresse.</p>
+  <h2 id="recharger">Recharger l'extension</h2>
+  <p class="sub">Dernière étape : copie l'adresse, colle-la dans la barre d'adresse, clique sur « Recharger ».</p>
   <div class="safe br">
     <div class="card-x"><h3>Chrome</h3><ol><li>Ouvre <code>chrome://extensions</code>.</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur la flèche ronde (<b>Recharger</b>).</li></ol></div>
     <div class="card-x"><h3>Edge</h3><ol><li>Ouvre <code>edge://extensions</code>.</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur <b>Recharger</b>.</li></ol></div>
-    <div class="card-x"><h3>Brave</h3><ol><li>Ouvre <code>brave://extensions</code>.</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur la flèche ronde (<b>Recharger</b>).</li></ol></div>
-    <div class="card-x"><h3>Firefox</h3><ol><li>Ouvre <code>about:debugging#/runtime/this-firefox</code>.</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur <b>Recharger</b>. Firefox standard oublie une extension chargée à la main au redémarrage : refais alors « Charger un module complémentaire temporaire » et choisis son <code>manifest.json</code>.</li></ol></div>
-    <div class="card-x"><h3>Vivaldi, Opera, Chromium</h3><ol><li>Ouvre <code>vivaldi://extensions</code>, <code>opera://extensions</code> ou <code>chrome://extensions</code> (Chromium).</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur <b>Recharger</b>.</li></ol></div>
-    <div class="card-x"><h3>Plusieurs navigateurs</h3><p>Si tu l'as installée dans Chrome, Edge et Firefox avec l'installateur, chaque navigateur a son dossier (<code>extension_uca_chrome</code>, <code>extension_uca_edge</code>, <code>extension_uca_firefox</code>). Le script les met tous à jour d'un coup et écrit le nom de chaque navigateur. Recharge ensuite l'extension dans chacun.</p></div>
+    <div class="card-x"><h3>Brave</h3><ol><li>Ouvre <code>brave://extensions</code>.</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur <b>Recharger</b>.</li></ol></div>
+    <div class="card-x"><h3>Firefox</h3><ol><li>Ouvre <code>about:debugging#/runtime/this-firefox</code>.</li><li>Trouve « Emploi du temps UCA ».</li><li>Clique sur <b>Recharger</b>.</li></ol></div>
+    <div class="card-x"><h3>Vivaldi, Opera, Chromium</h3><ol><li>Ouvre <code>vivaldi://extensions</code>, <code>opera://extensions</code> ou <code>chrome://extensions</code>.</li><li>Clique sur <b>Recharger</b>.</li></ol></div>
+    <div class="card-x"><h3>Sans rien faire</h3><p>Chrome et Edge rechargent aussi l'extension tout seuls à la prochaine vérification (quelques minutes).</p></div>
   </div>
 
-  <h2>Ce que le script ne fait pas</h2>
-  <div class="safe">
-    <div class="card-x"><h3>Aucun droit spécial</h3><p>Pas de mot de passe administrateur, pas de <code>sudo</code> : il écrit seulement dans ton dossier personnel et dans celui de l'extension.</p></div>
-    <div class="card-x"><h3>Un seul site</h3><p>Il télécharge le ZIP officiel sur ce site, en HTTPS, et rien d'autre. Rien n'est envoyé à personne.</p></div>
-    <div class="card-x"><h3>Tes données restent</h3><p>Emploi du temps, notes et réglages sont dans le navigateur, pas dans ce dossier. Tes propres fichiers dans le dossier ne sont pas touchés.</p></div>
-  </div>
-
-  <h2>Questions fréquentes</h2>
-  <details><summary>Le script ne retrouve pas mon extension</summary><p>Il cherche d'abord dans les sous-dossiers et les dossiers voisins du dossier choisi. S'il ne trouve rien, il te demande alors de choisir le dossier (celui qui contient <code>manifest.json</code>, chargé dans <code>chrome://extensions</code>). Tu peux aussi le lui donner : <code>maj-extension.bat "C:\chemin\dossier"</code> ou <code>bash maj-extension.sh /chemin/du/dossier</code>.</p></details>
-  <details><summary>macOS refuse d'ouvrir le fichier .command</summary><p>La première fois, fais un clic droit sur le fichier puis « Ouvrir ». Si le fichier n'est pas exécutable, ouvre le Terminal et tape <code>bash ~/Downloads/maj-extension.command</code>.</p></details>
-  <details><summary>Que dois-je faire après la mise à jour ?</summary><p>Dans <code>chrome://extensions</code>, clique sur « Recharger » (flèche ronde) sur la carte de l'extension. Sinon, elle se recharge toute seule à la prochaine vérification, au plus tard dans quelques minutes.</p></details>
-  <details><summary>Puis-je forcer la réinstallation ?</summary><p>Oui : <code>maj-extension.bat /force</code> ou <code>bash maj-extension.sh --force</code> réinstalle la dernière version même si tu l'as déjà.</p></details>
+  <h2>Pour les curieux</h2>
+  <details id="commande"><summary>La commande complète et ses arguments</summary>
+    <p>L'écran « Mise à jour obligatoire » de l'extension propose « Appliquer la mise à jour » : il télécharge ce fichier et te donne une commande à coller dans un terminal. Elle met à jour sans aucune question, puis rouvre ton navigateur.</p>
+    <span class="cmd-box">maj-extension.bat /browser firefox /os windows /version 1.46.54 /yes
+bash maj-extension.sh --browser firefox --os linux --version 1.46.54 --yes</span>
+    <p><b>/browser</b> (<code>--browser</code>) : chrome, edge, brave, vivaldi, chromium ou firefox. <b>/version</b> : version attendue, vérifiée à la fin. <b>/yes</b> : sans fenêtre. <b>/force</b> : réinstalle même à jour. Un <b>chemin</b> en dernier si le dossier n'est pas retrouvé (l'extension ne connaît pas son propre dossier : le pilote le cherche).</p>
+  </details>
+  <details id="plusieurs"><summary>Plusieurs navigateurs, plusieurs dossiers</summary>
+    <p>L'installateur Windows crée un dossier par navigateur : <code>extension_uca_chrome</code>, <code>extension_uca_edge</code>, <code>extension_uca_firefox</code>… Le pilote les met tous à jour et écrit le nom de chaque navigateur. Si tu choisis le mauvais dossier, il cherche dans les sous-dossiers, les dossiers voisins, puis au-dessus.</p>
+  </details>
+  <details><summary>Ce que le pilote ne fait jamais</summary>
+    <p>Aucun mot de passe administrateur, pas de <code>sudo</code>. Il télécharge seulement le ZIP officiel de ce site, en HTTPS. Tes données (emploi du temps, notes) sont dans le navigateur : il n'y touche pas.</p>
+  </details>
+  <details><summary>Et sans pilote ?</summary>
+    <p>Avec Chrome ou Edge, le bouton « Télécharger et appliquer la mise à jour » de l'extension peut aussi tout faire : choisis le dossier une fois, puis « Autoriser à chaque visite ». <a href="extension/#maj">Détails</a>.</p>
+  </details>
 </main>
 <script>
 (function () {
   "use strict";
   var ua = navigator.userAgent || "";
   var det = /Windows/i.test(ua) ? "windows" : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? "linux" : "windows";
-  var dl = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>';
+  var detB = /Firefox\//.test(ua) ? "firefox" : /Edg\//.test(ua) ? "edge" : /OPR\//.test(ua) ? "other" : /Vivaldi/i.test(ua) ? "other" : navigator.brave ? "brave" : "chrome";
+  var dl = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>';
   var OS = [
     { id: "windows", name: "Windows", ico: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.6 10.5 4.5v6.9H3zM11.6 4.4 21 3v8.4h-9.4zM3 12.6h7.5v6.9L3 18.4zM11.6 12.6H21V21l-9.4-1.3z"/></svg>',
-      file: "maj-extension.bat", size: "9 Ko", title: "Script Windows (.bat)",
-      desc: "Une fenêtre te montre le dossier retrouvé, avec « Ouvrir le dossier » et « Valider ». Il cherche Chrome, Edge, Brave, Vivaldi et Firefox.",
-      steps: ["Télécharge le fichier (le navigateur peut avertir à propos d'un .bat : garde-le).", "Double-clique dessus, n'importe où : plus besoin de le mettre dans le dossier de l'extension.", "Vérifie le dossier proposé, clique sur <b>Valider</b>.", "Recharge l'extension dans ton navigateur (<a href='#recharger'>voir comment, navigateur par navigateur</a>)."],
-      cmd: 'maj-extension.bat            (double-clic)\nmaj-extension.bat /force     (réinstaller même à jour)', need: "Windows 10 ou 11, PowerShell (déjà installé). Aucun droit administrateur." },
+      file: "maj-extension.bat", size: "9 Ko",
+      open: "Double-clique sur <b>maj-extension.bat</b> dans tes Téléchargements. Si Windows avertit : « Informations complémentaires » puis « Exécuter quand même ».",
+      cmd: function (b) { return '"%USERPROFILE%\\Downloads\\maj-extension.bat" /browser ' + b + ' /yes'; } },
     { id: "mac", name: "macOS", ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>',
-      file: "maj-extension.command", size: "13 Ko", title: "Script macOS (.command)",
-      desc: "Une fenêtre du Mac te montre le dossier retrouvé, avec « Ouvrir le dossier » (Finder) et « Valider ». Il lit les profils de Chrome, Edge, Brave, Vivaldi et Firefox.",
-      steps: ["Télécharge le fichier.", "Double-clique dessus (la première fois : clic droit puis <b>Ouvrir</b>).", "Vérifie le dossier proposé, clique sur <b>Valider</b>.", "Recharge l'extension dans ton navigateur (<a href='#recharger'>voir comment, navigateur par navigateur</a>)."],
-      cmd: 'bash ~/Downloads/maj-extension.command\nbash ~/Downloads/maj-extension.command --force', need: "macOS 10.15 ou plus récent. curl et unzip sont déjà installés. Aucun mot de passe demandé." },
+      file: "maj-extension.command", size: "13 Ko",
+      open: "Fais un <b>clic droit</b> sur <b>maj-extension.command</b>, puis <b>Ouvrir</b> (la première fois seulement).",
+      cmd: function (b) { return 'bash ~/Downloads/maj-extension.command --browser ' + b + ' --yes'; } },
     { id: "linux", name: "Linux", ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7.500 9 3 3-3 3M13 15h4"/></svg>',
-      file: "maj-extension.sh", size: "13 Ko", title: "Script Linux (.sh)",
-      desc: "Une fenêtre (zenity ou kdialog) ou des choix au clavier dans le terminal te montrent le dossier retrouvé : « Ouvrir le dossier », « Valider ».",
-      steps: ["Télécharge le fichier.", "Ouvre un terminal dans le dossier du téléchargement et tape la commande ci-dessous.", "Vérifie le dossier proposé : <b>V</b> pour valider, <b>O</b> pour l'ouvrir (ou les boutons de la fenêtre).", "Recharge l'extension dans ton navigateur (<a href='#recharger'>voir comment, navigateur par navigateur</a>)."],
-      cmd: 'bash maj-extension.sh\nbash maj-extension.sh --force', need: "Chrome, Chromium, Brave, Edge, Vivaldi ou Firefox (aussi en snap ou Flatpak). curl ou wget et unzip." }
+      file: "maj-extension.sh", size: "13 Ko",
+      open: "Ouvre un terminal et colle la commande ci-dessous (bouton « Copier »).",
+      cmd: function (b) { return 'bash ~/Downloads/maj-extension.sh --browser ' + b + ' --yes'; } }
   ];
-  var tabs = document.getElementById("tabs"), panels = document.getElementById("panels");
+  var BR = [
+    { id: "chrome", name: "Chrome", page: "chrome://extensions" },
+    { id: "edge", name: "Edge", page: "edge://extensions" },
+    { id: "brave", name: "Brave", page: "brave://extensions" },
+    { id: "firefox", name: "Firefox", page: "about:debugging#/runtime/this-firefox" },
+    { id: "other", name: "Autre", page: "vivaldi://extensions ou opera://extensions" }
+  ];
+  var state = { os: det, br: detB };
+  var tabs = document.getElementById("tabs"), panels = document.getElementById("panels"), chips = document.getElementById("browsers");
+
   OS.forEach(function (o) {
     var b = document.createElement("button"); b.type = "button"; b.className = "os-tab"; b.id = "tab-" + o.id; b.setAttribute("role", "tab"); b.setAttribute("aria-controls", "p-" + o.id);
     b.innerHTML = o.ico + o.name + (o.id === det ? ' <span class="det">Détecté</span>' : "");
@@ -207,16 +193,66 @@ bash maj-extension.sh --browser firefox --os linux --version 1.46.54 --yes</span
     b.addEventListener("keydown", function (e) { var i = OS.findIndex(function (x) { return x.id === o.id; }); if (e.key === "ArrowRight") { e.preventDefault(); show(OS[(i + 1) % OS.length].id, true); } else if (e.key === "ArrowLeft") { e.preventDefault(); show(OS[(i + OS.length - 1) % OS.length].id, true); } });
     tabs.appendChild(b);
     var p = document.createElement("div"); p.className = "panel"; p.id = "p-" + o.id; p.setAttribute("role", "tabpanel"); p.setAttribute("aria-labelledby", "tab-" + o.id); p.hidden = true;
-    p.innerHTML = '<div class="card-x"><h3>' + o.title + '</h3><p>' + o.desc + '</p><div class="btns"><a class="btn-dl" id="dl-' + o.id + '" href="extension/' + o.file + '" download>' + dl + 'Télécharger ' + o.file + '</a><a class="btn-line" href="https://github.com/kiricoucou/uca-extension/blob/main/extension/' + o.file + '" target="_blank" rel="noopener">Voir le code</a></div><p class="meta">' + o.file + ' · ' + o.size + ' · ' + o.need + '</p></div>'
-      + '<div class="card-x"><h3>Comment faire</h3><ol>' + o.steps.map(function (t) { return "<li>" + t + "</li>"; }).join("") + '</ol><span class="cmd-box">' + o.cmd + '</span></div>';
+    p.innerHTML = '<div class="card-x res"><h3>Ton pilote : ' + o.file + '</h3>'
+      + '<a class="btn-dl big-dl" id="dl-' + o.id + '" href="extension/' + o.file + '" download>' + dl + 'Télécharger le pilote</a>'
+      + '<p class="meta">' + o.file + ' · ' + o.size + ' · aucun mot de passe demandé · <a href="https://github.com/kiricoucou/uca-extension/blob/main/extension/' + o.file + '" target="_blank" rel="noopener">voir le code</a></p></div>'
+      + '<div class="card-x"><h3>Ensuite</h3><ol class="todo">'
+      + '<li>' + o.open + '</li>'
+      + '<li>Clique sur <b>Valider</b> dans la fenêtre.</li>'
+      + '<li class="rl"></li></ol>'
+      + '<details class="fast"><summary>Encore plus rapide : une commande</summary><p>Colle-la dans un terminal : aucune question, tout est automatique.</p><span class="cmd-box"></span><button type="button" class="btn-line copy">Copier la commande</button></details></div>';
     panels.appendChild(p);
   });
+  BR.forEach(function (b) {
+    var c = document.createElement("button"); c.type = "button"; c.className = "chip"; c.dataset.b = b.id; c.setAttribute("role", "radio");
+    c.textContent = b.name; if (b.id === detB) c.insertAdjacentHTML("beforeend", ' <span class="det">Détecté</span>');
+    c.addEventListener("click", function () { state.br = b.id; render(); });
+    chips.appendChild(c);
+  });
+
+  function render() {
+    var br = BR.filter(function (x) { return x.id === state.br; })[0];
+    chips.querySelectorAll(".chip").forEach(function (c) { c.setAttribute("aria-checked", String(c.dataset.b === state.br)); });
+    OS.forEach(function (o) {
+      var p = document.getElementById("p-" + o.id), arg = state.br === "other" ? "chrome" : state.br;
+      p.querySelector(".rl").innerHTML = "Ouvre <code>" + br.page + "</code> et clique sur <b>Recharger</b>." + (state.br === "other" ? "" : ' <button type="button" class="mini cp" data-c="' + br.page + '">Copier l\'adresse</button>');
+      var cmd = o.cmd(arg); p.querySelector(".cmd-box").textContent = cmd; p.querySelector(".copy").dataset.c = cmd;
+    });
+  }
   function show(id, focus) {
+    state.os = id;
     OS.forEach(function (o) { var on = o.id === id; var t = document.getElementById("tab-" + o.id); t.setAttribute("aria-selected", String(on)); t.tabIndex = on ? 0 : -1; document.getElementById("p-" + o.id).hidden = !on; if (on && focus) t.focus(); });
     try { history.replaceState(null, "", "#" + id); } catch (e) {}
   }
+  panels.addEventListener("click", function (e) {
+    var b = e.target.closest(".copy, .cp"); if (!b) return;
+    var t = b.dataset.c, old = b.textContent;
+    var ok = function () { b.textContent = "Copié !"; setTimeout(function () { b.textContent = old; }, 1600); };
+    try { navigator.clipboard.writeText(t).then(ok, function () { b.textContent = t; }); } catch (err) { b.textContent = t; }
+  });
+
+  /* ---------- « Ça ne marche pas ? » : un problème, une réponse ---------- */
+  var T = [
+    ["Le navigateur bloque le fichier", "Garde-le : dans Chrome ou Edge, clique sur les trois points du téléchargement puis « Conserver ». Le fichier vient de ce site et ne demande aucun droit spécial."],
+    ["Windows affiche « Windows a protégé votre ordinateur »", "Clique sur « Informations complémentaires », puis « Exécuter quand même ». C'est l'avertissement habituel pour un fichier téléchargé."],
+    ["Il ne trouve pas mon extension", "Clique sur « Autre dossier… » et choisis le dossier où tu as décompressé l'extension (par ex. Bureau\\uca-extension). Pas besoin du bon sous-dossier : il le cherche dedans et à côté."],
+    ["Mac : « impossible d'ouvrir »", "Clic droit sur le fichier, puis « Ouvrir », puis encore « Ouvrir ». À faire une seule fois."],
+    ["C'est fini mais la version n'a pas changé", "Il manque le rechargement : ouvre la page des extensions de ton navigateur et clique sur « Recharger » (voir plus bas). Sur Firefox, c'est about:debugging."],
+    ["Firefox a oublié l'extension", "Firefox standard l'enlève à chaque redémarrage : about:debugging → « Charger un module complémentaire temporaire » → choisis le manifest.json du dossier extension_uca_firefox."]
+  ];
+  var tr = document.getElementById("trouble"), ans = document.getElementById("tans");
+  T.forEach(function (x, i) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "tq"; b.textContent = x[0]; b.setAttribute("aria-expanded", "false");
+    b.addEventListener("click", function () {
+      tr.querySelectorAll(".tq").forEach(function (o) { o.setAttribute("aria-expanded", String(o === b)); });
+      ans.hidden = false; ans.innerHTML = "<b>" + x[0] + "</b><p>" + x[1] + "</p>";
+    });
+    tr.appendChild(b);
+  });
+
   var h = (location.hash || "").replace("#", "");
   show(OS.some(function (o) { return o.id === h; }) ? h : det);
+  render();
   window.addEventListener("hashchange", function () { var k = (location.hash || "").replace("#", ""); if (OS.some(function (o) { return o.id === k; })) show(k); });
 })();
 </script>

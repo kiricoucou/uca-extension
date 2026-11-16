@@ -298,3 +298,6 @@ dialog.choice .choice-close{margin-top:8px;background:none;border:0;color:var(--
 .demo-hint{position:absolute;left:50%;bottom:14px;transform:translate(-50%,8px);max-width:calc(100% - 24px);padding:8px 14px;border-radius:99px;background:rgba(15,18,24,.88);color:#fff;font:600 13px/1.3 system-ui,sans-serif;text-align:center;pointer-events:none;opacity:0;transition:opacity .2s,transform .2s;z-index:5}
 .demo-hint.on{opacity:1;transform:translate(-50%,0)}
 @media (prefers-reduced-motion:reduce){.demo-hint{transition:none}}
+
+/* accueil : Que veux-tu faire ? */
+.todo-cards .cbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}.todo-cards .cbtns .btn{margin-top:0}.todo-cards p{margin:0;color:var(--text-dim)}.ghost-btn{background:transparent!important;color:var(--accent)!important;border:1px solid var(--border)!important;box-shadow:none!important}

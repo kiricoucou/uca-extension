@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Télécharger l'appli — Emploi du temps UCA</title>
+<meta name="description" content="Télécharger l'appli Emploi du temps UCA : Android (APK) ou iPhone (PWA). Un bouton, c'est tout.">
+<link rel="canonical" href="https://kiricoucou.github.io/uca-extension/appli.html">
+<link rel="icon" type="image/png" href="app/icons/icon-192.png">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="site-theme.css">
+<style>
+.ap{max-width:960px;margin:0 auto;padding:28px 16px 64px}
+.ap h1{font-size:clamp(30px,6vw,46px);margin:0 0 6px;letter-spacing:-.03em}
+.ap .lead{color:var(--text-dim);font-size:18px;margin:0 0 24px}
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.pc{position:relative;display:flex;flex-direction:column;gap:14px;padding:22px;border-radius:22px;border:2px solid var(--border);background:var(--surface);box-shadow:var(--shadow)}
+.pc.me{border-color:var(--accent)}
+.pc .me-tag{position:absolute;top:-12px;left:18px;padding:3px 10px;border-radius:99px;background:var(--accent);color:var(--on-accent);font-size:12.5px;font-weight:800;display:none}
+.pc.me .me-tag{display:inline-block}
+.pc .hd{display:flex;align-items:center;gap:12px}
+.pc .hd svg{width:40px;height:40px;flex-shrink:0}
+.pc h2{margin:0;font-size:24px;letter-spacing:-.02em}
+.pc .hd small{display:block;color:var(--text-dim);font-size:14px;font-weight:500}
+.big{display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;padding:0 20px;border-radius:16px;background:var(--accent);color:var(--on-accent);font:inherit;font-size:18px;font-weight:800;text-decoration:none;border:0;cursor:pointer}
+.big svg{width:22px;height:22px}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:8px;counter-reset:s}
+.steps li{position:relative;padding:2px 0 2px 36px;font-size:15.5px;line-height:1.45;min-height:26px}
+.steps li::before{counter-increment:s;content:counter(s);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:50%;background:var(--accent-tint);color:var(--accent);font-weight:800;font-size:14px;display:grid;place-items:center}
+.steps b{font-weight:700}
+.share{margin-top:22px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px;align-items:center;padding:20px;border-radius:22px;border:1px solid var(--border);background:var(--surface)}
+.share .qr{width:148px;height:148px;border-radius:12px;background:#fff;padding:8px;display:grid;place-items:center}
+.share .qr svg{width:100%;height:100%}
+.share h2{margin:0 0 4px;font-size:20px}.share p{margin:0 0 12px;color:var(--text-dim)}
+.share .row{display:flex;flex-wrap:wrap;gap:8px}
+.ghost{display:inline-flex;align-items:center;min-height:46px;padding:0 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-weight:700;text-decoration:none;cursor:pointer}
+.more{margin-top:18px;color:var(--text-dim);font-size:14.5px}
+.more a{color:var(--accent);font-weight:600}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:720px){.cards{grid-template-columns:1fr}.share{grid-template-columns:1fr;justify-items:center;text-align:center}.share .row{justify-content:center}}
+</style>
+</head>
+<body>
+<main class="ap">
+  <h1>Télécharger l'appli</h1>
+  <p class="lead">Choisis ton téléphone. Un bouton, trois gestes, c'est installé.</p>
+
+  <div class="cards">
+    <section class="pc" id="android" aria-labelledby="hA">
+      <span class="me-tag">Ton téléphone</span>
+      <div class="hd"><svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 10a7 7 0 0114 0v7H5z" fill="#22c55e" fill-opacity=".15"/><path d="M8 4l1.5 2.5M16 4l-1.5 2.5M9 13h.01M15 13h.01"/></svg><div><h2 id="hA">Android</h2><small>Samsung, Xiaomi, Pixel… · Android 7+</small></div></div>
+      <a class="big" id="dlApk" href="https://github.com/kiricoucou/uca-extension/raw/main/EdtUca.apk" download><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>Télécharger l'APK</a>
+      <ol class="steps"><li>Ouvre le fichier <b>EdtUca.apk</b> téléchargé.</li><li>Si demandé : <b>Autoriser</b> l'installation.</li><li>Touche <b>Installer</b>, puis connecte-toi à Odin.</li></ol>
+    </section>
+    <section class="pc" id="iphone" aria-labelledby="hI">
+      <span class="me-tag">Ton téléphone</span>
+      <div class="hd"><svg viewBox="0 0 24 24" fill="none" stroke="#0b7bc4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5" fill="#0b7bc4" fill-opacity=".15"/><path d="M11 18.5h2"/></svg><div><h2 id="hI">iPhone</h2><small>iOS, avec Safari</small></div></div>
+      <a class="big" id="openPwa" href="app/index.html?source=pwa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5"/></svg>Ouvrir l'appli</a>
+      <ol class="steps"><li>Dans Safari, touche <b>Partager</b> (carré avec flèche).</li><li>Choisis <b>Sur l'écran d'accueil</b>.</li><li>Touche <b>Ajouter</b> : l'icône apparaît.</li></ol>
+    </section>
+  </div>
+
+  <section class="share" aria-labelledby="hS">
+    <div class="qr" id="qr" role="img" aria-label="QR code de cette page"></div>
+    <div>
+      <h2 id="hS">Tu es sur ordinateur ?</h2>
+      <p>Scanne ce QR code avec ton téléphone, ou envoie-lui le lien.</p>
+      <div class="row"><button type="button" class="ghost" id="copy">Copier le lien</button><button type="button" class="ghost" id="shareBtn" hidden>Partager</button></div>
+    </div>
+  </section>
+
+  <p class="more">Besoin de plus ? <a href="app-download.html">Installation guidée</a> · <a href="telecharger/">Détails de l'appli Android</a> · <a href="aide.html">Aide</a></p>
+</main>
+<script src="vendor/qrcode.js"></script>
+<script>
+(function () {
+  "use strict";
+  var URL_PAGE = "https://kiricoucou.github.io/uca-extension/appli.html";
+  var ua = navigator.userAgent || "";
+  var ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  var android = /Android/i.test(ua);
+  if (android) document.getElementById("android").classList.add("me");
+  if (ios) document.getElementById("iphone").classList.add("me");
+  if (ios) document.querySelector(".cards").prepend(document.getElementById("iphone"));
+  try {
+    var q = qrcode(0, "M"); q.addData(URL_PAGE); q.make();
+    document.getElementById("qr").innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+  } catch (e) { document.getElementById("qr").hidden = true; }
+  var copy = document.getElementById("copy");
+  copy.addEventListener("click", function () {
+    var done = function () { copy.textContent = "Lien copié"; setTimeout(function () { copy.textContent = "Copier le lien"; }, 2000); };
+    try { navigator.clipboard.writeText(URL_PAGE).then(done, function () { copy.textContent = URL_PAGE; }); } catch (e) { copy.textContent = URL_PAGE; }
+  });
+  var sb = document.getElementById("shareBtn");
+  if (navigator.share) { sb.hidden = false; sb.addEventListener("click", function () { navigator.share({ title: "Appli Emploi du temps UCA", url: URL_PAGE }).catch(function () {}); }); }
+  if (android || ios) document.querySelector(".share h2").textContent = "Partager avec un ami";
+})();
+</script>
+<script src="site-nav.js" defer></script>
+</body>
+</html>

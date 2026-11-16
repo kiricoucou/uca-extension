@@ -201,7 +201,7 @@ def page(vs, dates):
 </header>
 <main class="wrap news">
   <h1>Quoi de neuf</h1>
-  <p class="lead">Les nouveautés de chaque version, de la plus récente à la plus ancienne. Page générée depuis <code>UPDATES.md</code>.</p>
+  <p class="lead">Ce qui change à chaque version, la plus récente en haut.</p>
 {sections}
 </main>
 <footer class="site">

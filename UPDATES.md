@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.57 — site plus clair : menu décrit, recherche, page appli, pilote automatique
+
+- Site : menu hamburger avec toutes les pages et une courte description sous chacune ; recherche globale dans l'en-tête (bouton Rechercher ou touche /) ; nouvelle page « Télécharger l'appli » (appli.html : Android APK ou iPhone, QR code pour envoyer le lien) ; page « Pilote automatique » refaite (assistant en 2 questions : ordinateur et navigateur, bouton unique, rechargement adapté, « Ça ne marche pas ? » en un clic) ; accueil « Que veux-tu faire ? » en 6 cartes ; introductions des pages raccourcies.
+
 ## 1.46.56 — script de mise à jour plus rapide
 
 - Script de mise à jour Windows : plus de barre de progression PowerShell (téléchargement bien plus rapide). Vérifié en vrai sur Windows avec les trois dossiers Chrome, Edge et Firefox.

@@ -39,13 +39,39 @@
     return '<svg class="nv-i" viewBox="0 0 24 24" width="22" height="22" style="fill:none;stroke:' + a[0] + ';stroke-width:2;stroke-linecap:round;stroke-linejoin:round" aria-hidden="true">' + tint + '<path d="' + a[2] + '" style="fill:none;stroke:' + a[0] + '"/></svg>';
   }
 
-  /* ---------- liste des liens (une icône différente par bouton) ---------- */
+  /* ---------- toutes les pages : [titre, lien, icône, description courte, mots-clés pour la recherche] ---------- */
   var L = [
-    ['Site', [['Accueil', '', 'home'], ['Agenda en ligne', 'app/shell.html#home', 'agenda'], ['Nouveautés', 'nouveautes.html', 'news'], ['Aide', 'aide.html', 'help'], ['Transports', 'transport.html', 'bus'], ['Carte des lieux', 'lieux-map.html', 'pin']]],
-    ['Installer', [['Télécharger l’extension (ZIP)', 'extension/', 'puzzle'], ['Installateurs Windows · Mac · Linux', 'extension/#installateurs', 'install'], ['Application Android (APK)', 'telecharger/', 'phone'], ['Mettre à jour l’extension', 'mise-a-jour.html', 'update'], ['Aide à l’installation (en images)', 'installation.html', 'guide']]],
-    ['Projet', [['Soutenir le projet (don)', 'don.html', 'heart'], ['Merci d’avoir installé', 'merci.html', 'thanks'], ['Confidentialité', 'confidentialite.html', 'shield'], ['English', 'en/', 'globe']]]
+    ['Utiliser', [
+      ['Accueil', '', 'home', 'My UCA en une minute : ce que ça fait.', 'presentation site demo'],
+      ['Agenda en ligne', 'app/shell.html#home', 'agenda', 'Ton emploi du temps, sans rien installer.', 'edt cours planning odin calendrier web'],
+      ['Aide', 'aide.html', 'help', 'Questions fréquentes et premiers pas.', 'faq probleme question support connexion'],
+      ['Nouveautés', 'nouveautes.html', 'news', 'Ce qui change à chaque version.', 'version changelog quoi de neuf historique']
+    ]],
+    ['Installer', [
+      ['Télécharger l’appli', 'appli.html', 'phone', 'Android ou iPhone : juste le lien.', 'apk android iphone ios pwa telephone mobile application telecharger telechargement appli app'],
+      ['Installer l’app pas à pas', 'app-download.html', 'install', 'Choisis ton appareil, on te guide.', 'ordinateur windows mac linux telephone guide installer'],
+      ['Extension navigateur', 'extension/', 'puzzle', 'Pour Chrome, Edge, Brave et Firefox.', 'zip chrome edge firefox brave extension telecharger'],
+      ['Installateurs automatiques', 'extension/#installateurs', 'install', 'Un fichier qui installe tout seul.', 'bat command sh installateur windows mac linux automatique'],
+      ['Aide à l’installation', 'installation.html', 'guide', 'Chaque étape en images.', 'tutoriel images captures pas a pas'],
+      ['Appli Android (détails)', 'telecharger/', 'phone', 'Captures, versions et téléchargement APK.', 'apk android telecharger captures'],
+      ['Appli sur iPhone et PC', 'app/install.html', 'agenda', 'Ajouter l’agenda à l’écran d’accueil.', 'pwa iphone ios safari ecran accueil installer']
+    ]],
+    ['Mettre à jour', [
+      ['Pilote automatique', 'mise-a-jour.html', 'update', 'Met l’extension à jour tout seul.', 'maj mise a jour bat sh command script pilote automatique recharger']
+    ]],
+    ['Pratique', [
+      ['Transports', 'transport.html', 'bus', 'Bus et tram vers les campus.', 'bus tram t2c horaires mobilite'],
+      ['Carte des lieux', 'lieux-map.html', 'pin', 'Trouver une salle ou un campus.', 'carte plan salle batiment campus']
+    ]],
+    ['Projet', [
+      ['Soutenir le projet', 'don.html', 'heart', 'Un don, si l’appli te sert.', 'don paypal crypto soutenir']
+      , ['Merci d’avoir installé', 'merci.html', 'thanks', 'Premiers pas après l’installation.', 'merci bienvenue premiers pas ouvrir agenda']
+      , ['Confidentialité', 'confidentialite.html', 'shield', 'Aucune donnée envoyée à un tiers.', 'vie privee donnees rgpd securite']
+      , ['English', 'en/', 'globe', 'The site in English.', 'anglais english']
+    ]]
   ];
-  var TOP = { '': 'home', 'index.html': 'home', 'nouveautes.html': 'news', 'transport.html': 'bus', 'aide.html': 'help', 'app/': 'agenda', 'app/index.html': 'agenda', 'en/': 'globe', 'extension/': 'puzzle', 'installation.html': 'guide', 'mise-a-jour.html': 'update', 'lieux-map.html': 'pin', 'don.html': 'heart', '#demo': 'play', '#comparatif': 'compare', '#faq': 'faq' };
+  var TOP = { '': 'home', 'index.html': 'home', 'nouveautes.html': 'news', 'transport.html': 'bus', 'aide.html': 'help', 'app/': 'agenda', 'app/index.html': 'agenda', 'en/': 'globe', 'extension/': 'puzzle', 'installation.html': 'guide', 'mise-a-jour.html': 'update', 'appli.html': 'phone', 'lieux-map.html': 'pin', 'don.html': 'heart', '#demo': 'play', '#comparatif': 'compare', '#faq': 'faq' };
+  I.search = ['currentColor', '', 'M10.5 4a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM20 20l-4.6-4.6'];
 
   /* ---------- thème ---------- */
   function getTheme() { try { return localStorage.getItem(KEY) || 'auto'; } catch (e) { return 'auto'; } }
@@ -85,16 +111,92 @@
     '.nv-menu a:last-child{border-bottom:0}.nv-menu h4{margin:12px 0 2px;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.65}';
   var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
+  /* ---------- styles : descriptions sous les liens, recherche ---------- */
+  var css2 = '' +
+    '.nv-panel nav a{align-items:flex-start;padding:9px 12px}' +
+    '.nv-panel nav a .nv-i{margin-top:2px}' +
+    '.nv-t{display:flex;flex-direction:column;gap:1px;min-width:0}' +
+    '.nv-t small{font-weight:500;font-size:13px;line-height:1.35;color:var(--text-dim,#52525b)}' +
+    '.nv-menu a{align-items:flex-start}.nv-menu .nv-t small{opacity:.75}' +
+    '.nv-find{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--border,#e4e4e7);background:var(--surface,#fff);color:var(--text-dim,#52525b);font:500 14px/1 var(--font,system-ui,sans-serif);cursor:pointer;flex-shrink:0}' +
+    '.nv-find:hover{border-color:var(--accent-2,#3d9be9)}.nv-find svg{width:18px;height:18px}' +
+    '.nv-find kbd{font:600 11px var(--font,system-ui,sans-serif);padding:2px 6px;border-radius:6px;border:1px solid var(--border,#e4e4e7)}' +
+    '@media (max-width:640px){.nv-find .nv-fl,.nv-find kbd{display:none}.nv-find{width:44px;padding:0;justify-content:center}}' +
+    '.topbar .nv-find{margin-left:6px}' +
+    '.nv-sbox{position:fixed;inset:0;z-index:970;background:rgba(9,9,11,.5);display:none;align-items:flex-start;justify-content:center;padding:10vh 16px 16px}' +
+    '.nv-sbox.open{display:flex}' +
+    '.nv-sdlg{width:min(560px,100%);max-height:78vh;display:flex;flex-direction:column;border-radius:16px;background:var(--surface,#fff);color:var(--text,#09090b);border:1px solid var(--border,#e4e4e7);box-shadow:0 24px 60px rgba(9,9,11,.3);overflow:hidden;font-family:var(--font,system-ui,sans-serif)}' +
+    '.nv-sin{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border,#e4e4e7)}.nv-sin svg{width:20px;height:20px;flex-shrink:0}' +
+    '.nv-sin input{flex:1;min-width:0;border:0;outline:0;background:transparent;color:inherit;font:500 17px var(--font,system-ui,sans-serif);min-height:36px}' +
+    '.nv-sin button{border:1px solid var(--border,#e4e4e7);background:transparent;color:inherit;border-radius:8px;padding:6px 10px;font:600 12.5px var(--font,system-ui,sans-serif);cursor:pointer}' +
+    '.nv-sres{overflow-y:auto;padding:6px}.nv-sres a{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border-radius:10px;color:inherit;text-decoration:none;font-weight:600}' +
+    '.nv-sres a.on,.nv-sres a:hover{background:var(--accent-tint,#e6f3fd)}.nv-sres p{margin:14px;color:var(--text-dim,#52525b);font-size:14px}' +
+    '.nv-pfind{margin:10px 14px 0;width:calc(100% - 28px);justify-content:flex-start}';
+  var st2 = document.createElement('style'); st2.textContent = css2; document.head.appendChild(st2);
+
+  function norm(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+  function item(a, cur) {
+    var u = root + a[1];
+    return '<a href="' + u + '"' + (cur && u.split('#')[0] === cur && a[1].indexOf('#') < 0 ? ' aria-current="page"' : '') + '>' + svg(a[2]) + '<span class="nv-t"><span>' + a[0] + '</span><small>' + a[3] + '</small></span></a>';
+  }
   function here() { return location.href.split('#')[0].split('?')[0]; }
   function links(cur) {
     var h = '';
-    L.forEach(function (g) {
-      h += '<h4>' + g[0] + '</h4>';
-      g[1].forEach(function (a) { var u = root + a[1]; h += '<a href="' + u + '"' + (cur && u.split('#')[0] === cur && a[1].indexOf('#') < 0 ? ' aria-current="page"' : '') + '>' + svg(a[2]) + '<span>' + a[0] + '</span></a>'; });
-    });
+    L.forEach(function (g) { h += '<h4>' + g[0] + '</h4>'; g[1].forEach(function (a) { h += item(a, cur); }); });
     return h;
   }
-  function build() {
+  /* ---------- recherche globale : titre, description et mots-clés de chaque page, sans accents ---------- */
+  function search(q) {
+    var words = norm(q).split(/[\s'’-]+/).filter(function (w) { return w.length > 1; }), out = [];
+    L.forEach(function (g) {
+      g[1].forEach(function (a) {
+        var title = norm(a[0]), hay = title + ' ' + norm(a[3]) + ' ' + norm(a[4]) + ' ' + norm(g[0]);
+        if (!words.length) { out.push([0, a]); return; }
+        var score = 0;
+        for (var i = 0; i < words.length; i++) {
+          var w = words[i], stem = w.length > 6 ? w.slice(0, w.length - 3) : w;   // « telechargement » trouve « telecharger »
+          if (hay.indexOf(w) < 0 && hay.indexOf(stem) < 0) return;
+          score += title.indexOf(stem) >= 0 ? 3 : 1;
+        }
+        if (words.length > 1 && hay.indexOf(words.join(' ')) >= 0) score += 4;   // expression entière (« mise a jour »)
+        out.push([score, a]);
+      });
+    });
+    return out.sort(function (x, y) { return y[0] - x[0]; }).map(function (x) { return x[1]; });
+  }
+  function buildSearch() {
+    var box = document.createElement('div'); box.className = 'nv-sbox'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-label', 'Rechercher une page');
+    box.innerHTML = '<div class="nv-sdlg"><div class="nv-sin">' + svg('search') + '<input type="search" id="nvSearch" placeholder="Chercher une page : appli, mise à jour, carte…" aria-label="Chercher une page" autocomplete="off"><button type="button">Échap</button></div><div class="nv-sres" id="nvRes" role="listbox"></div></div>';
+    document.body.appendChild(box);
+    var input = box.querySelector('input'), res = box.querySelector('.nv-sres'), sel = 0;
+    function render() {
+      var r = search(input.value); sel = 0;
+      res.innerHTML = r.length ? r.map(function (a, i) { return item(a, null).replace('<a ', '<a role="option" class="' + (i === 0 ? 'on' : '') + '" '); }).join('') : '<p>Aucune page trouvée. Essaie « appli », « mise à jour » ou « aide ».</p>';
+    }
+    function mark() { var as = res.querySelectorAll('a'); as.forEach(function (a, i) { a.classList.toggle('on', i === sel); }); if (as[sel]) as[sel].scrollIntoView({ block: 'nearest' }); }
+    function set(o) { box.classList.toggle('open', o); document.body.style.overflow = o ? 'hidden' : ''; if (o) { input.value = ''; render(); setTimeout(function () { input.focus(); }, 30); } }
+    input.addEventListener('input', render);
+    input.addEventListener('keydown', function (e) {
+      var as = res.querySelectorAll('a');
+      if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(sel + 1, as.length - 1); mark(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(sel - 1, 0); mark(); }
+      else if (e.key === 'Enter' && as[sel]) { e.preventDefault(); location.href = as[sel].href; set(false); }
+    });
+    box.addEventListener('click', function (e) { if (e.target === box || e.target.closest('.nv-sin button')) set(false); else if (e.target.closest('a')) set(false); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && box.classList.contains('open')) set(false);
+      var tag = (e.target && e.target.tagName) || '';
+      if ((e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) && !/INPUT|TEXTAREA|SELECT/.test(tag) && !e.target.isContentEditable) { e.preventDefault(); set(true); }
+    });
+    return set;
+  }
+  function findBtn(openSearch, extra) {
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'nv-find' + (extra ? ' ' + extra : ''); b.setAttribute('aria-label', 'Rechercher une page');
+    b.innerHTML = svg('search') + '<span class="nv-fl">Rechercher</span><kbd>/</kbd>';
+    b.addEventListener('click', function () { openSearch(true); });
+    return b;
+  }
+  function build(openSearch) {
     var cur = here().replace(/index\.html$/, '');
     var ov = document.createElement('div'); ov.className = 'nv-overlay';
     var p = document.createElement('div'); p.className = 'nv-panel'; p.id = 'nvPanel'; p.setAttribute('role', 'dialog'); p.setAttribute('aria-label', 'Menu'); p.setAttribute('aria-hidden', 'true');
@@ -102,6 +204,7 @@
     function tb(k, label, ic) { return '<button type="button" data-t="' + k + '" aria-pressed="' + (t === k) + '">' + svg(ic) + label + '</button>'; }
     p.innerHTML = '<header><span>Menu</span><button type="button" aria-label="Fermer le menu">✕</button></header>' +
       '<div class="nv-theme" role="group" aria-label="Thème">' + tb('light', 'Clair', 'sun') + tb('dark', 'Sombre', 'moon') + tb('auto', 'Auto', 'auto') + '</div><nav>' + links(cur) + '</nav>';
+    var pf = findBtn(function () { set(false); openSearch(true); }, 'nv-pfind'); p.insertBefore(pf, p.querySelector('.nv-theme'));
     document.body.appendChild(ov); document.body.appendChild(p);
     function set(o) { ov.classList.toggle('open', o); p.classList.toggle('open', o); p.setAttribute('aria-hidden', String(!o)); document.body.style.overflow = o ? 'hidden' : ''; if (o) p.querySelector('header button').focus(); }
     ov.addEventListener('click', function () { set(false); });
@@ -118,16 +221,18 @@
     });
   }
   function init() {
-    var set = build();
-    window.UCA_NAV = { open: function () { set(true); }, close: function () { set(false); }, menuHtml: function () { return '<div class="nv-menu">' + links(null) + '</div>'; }, homeUrl: root };
+    var openSearch = buildSearch();
+    var set = build(openSearch);
+    window.UCA_NAV = { open: function () { set(true); }, close: function () { set(false); }, search: function () { openSearch(true); }, menuHtml: function () { return '<div class="nv-menu">' + links(null) + '</div>'; }, homeUrl: root };
     decorateTop();
     var b = document.createElement('button'); b.type = 'button'; b.className = 'nv-burger'; b.setAttribute('aria-label', 'Ouvrir le menu'); b.setAttribute('aria-controls', 'nvPanel'); b.innerHTML = svg('burger');
     b.addEventListener('click', function () { set(true); });
     var tb = document.querySelector('.topbar .wrap');
-    if (tb) { tb.appendChild(b); return; }
+    if (tb) { tb.appendChild(findBtn(openSearch)); tb.appendChild(b); return; }
     if (document.body.hasAttribute('data-nv-none')) return;   // pages qui ont leur propre barre (application)
     var bar = document.createElement('div'); bar.className = 'nv-bar';
     bar.innerHTML = '<a class="nv-home" href="' + root + '">' + svg('home') + 'Accueil</a><span class="nv-spacer"></span>';
+    bar.appendChild(findBtn(openSearch));
     bar.appendChild(b);
     document.body.insertBefore(bar, document.body.firstChild);
   }

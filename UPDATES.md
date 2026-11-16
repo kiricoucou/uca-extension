@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.48 — page mise-a-jour : style
+
+- Page mise-a-jour.html : icônes à côté des titres d'étapes et titres plus grands (hiérarchie plus nette).
+
 ## 1.46.47 — scripts de mise à jour Windows, macOS, Linux ; téléphone
 
 - Mise à jour de l'extension par script : maj-extension.bat (Windows), maj-extension.command (macOS) et maj-extension.sh (Linux) retrouvent tout seuls le dossier de l'extension dans Chrome, Edge, Brave, Vivaldi ou Firefox, te le montrent (« Ouvrir le dossier », puis « Valider ») et mettent l'extension à jour s'il existe une nouvelle version. Nouvelle page mise-a-jour.html qui les présente étape par étape.

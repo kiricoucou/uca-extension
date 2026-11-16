@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.46 — app Android 1.4.26 : contraste du badge « En cours » (Lumen)
+
+- Design Lumen : le vert du badge « En cours » et du statut « justifiée » est plus foncé en thème clair, pour un contraste lisible (norme d'accessibilité), sur l'extension, l'app web et l'APK.
+
 ## 1.46.45 — installer et ouvrir la PWA pour de vrai
 
 - Page app-download.html : la page est maintenant installable (manifeste et service worker), donc « Installer via le web » lance la vraie fenêtre d'installation de Chrome au lieu d'ouvrir une page. Une fois l'app installée, le bouton devient « Ouvrir l'app installée » et, sur Android, ouvre l'app (adresse intent:) plutôt qu'un onglet. Même comportement pour « Ouvrir l'app installée » sur l'accueil.

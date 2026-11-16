@@ -14,9 +14,17 @@
     "25 widgets pour l'écran d'accueil : prochain cours, ma journée, 3 jours, devoirs, examens, moyenne, notes par matière, absences, connexion et plus encore (appui long sur l'écran d'accueil, puis Widgets, My UCA).",
     "Toucher un widget ouvre l'écran utile (agenda, notes, absences ou devoirs). Les widgets « Connexion » et « Synchronisation » ont un vrai bouton pour te reconnecter ou resynchroniser."
   ],
-  "ota_version": "1.4.25",
+  "ota_version": "1.4.26",
   "ota_base_version_code": 21,
   "history": [
+    {
+      "version": "1.46.46",
+      "app": "1.4.26",
+      "title": "contraste du badge « En cours » (Lumen)",
+      "items": [
+        "Design Lumen : le vert du badge « En cours » et du statut « justifiée » est plus foncé en thème clair, pour un contraste lisible (norme d'accessibilité), sur l'extension, l'app web et l'APK."
+      ]
+    },
     {
       "version": "1.46.43",
       "app": "1.4.25",
@@ -88,14 +96,6 @@
         "Compte (app web) : carte « Session privée » (données uniquement dans ce navigateur, rien d'envoyé, app vide sur un autre ordinateur tant qu'on n'importe pas) et bouton d'envoi vers un…",
         "Notes : le texte du panneau Notes redevient lisible dans la démo du site (téléphone) ; nouvelle courbe « Évolution de la moyenne générale », elle s'élargit à chaque synchro qui apporte…",
         "Site : menu hamburger sur téléphone, colonne « Recommandé » (Extension) dans le comparatif, « Site » renommé « Aide », fiches de version avec date et heure de sortie, tutoriel…"
-      ]
-    },
-    {
-      "version": "1.46.21",
-      "app": "1.4.18",
-      "title": "compétences (UE)",
-      "items": [
-        "Notes > 👁 Voir mes compétences : la moyenne de chaque UE (« UE RT 1.1 - Assister l'administrateur du réseau ») calculée depuis les matières, en barres à la hauteur de la moyenne, avec un…"
       ]
     }
   ]

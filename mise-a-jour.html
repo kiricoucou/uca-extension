@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mettre à jour l'extension — Emploi du temps UCA</title>
+<meta name="description" content="Mettre à jour l'extension Emploi du temps UCA avec le script de ton système (.bat, .command, .sh) : il retrouve le dossier tout seul, tu vérifies, tu valides, il met à jour.">
+<link rel="canonical" href="https://kiricoucou.github.io/uca-extension/mise-a-jour.html">
+<link rel="icon" type="image/png" href="app/icons/icon-192.png">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="site-theme.css">
+<style>
+.ins{max-width:1080px;margin:0 auto;padding:28px 16px 70px}
+.ins h1{font-size:clamp(28px,5vw,44px);margin:0 0 8px;letter-spacing:-.03em}
+.ins .lead{color:var(--text-dim);font-size:18px;max-width:740px;margin:0 0 26px}
+.ins h2{font-size:clamp(22px,3.4vw,30px);margin:42px 0 6px;letter-spacing:-.02em}
+.ins .sub{color:var(--text-dim);margin:0 0 18px;max-width:720px}
+.flow{counter-reset:f;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;list-style:none;margin:0;padding:0}
+.flow li{position:relative;padding:18px;border-radius:20px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px;animation:fl 8s infinite}
+.flow li:nth-child(2){animation-delay:2s}.flow li:nth-child(3){animation-delay:4s}.flow li:nth-child(4){animation-delay:6s}
+.flow .n{width:30px;height:30px;border-radius:50%;background:var(--accent);color:var(--on-accent);font-weight:800;display:grid;place-items:center;font-size:15px}
+.flow .ic{width:48px;height:48px;border-radius:14px;background:var(--accent-tint);color:var(--accent);display:grid;place-items:center}.flow .ic svg{width:26px;height:26px}
+.flow h3{margin:0;font-size:18px}.flow p{margin:0;color:var(--text-dim);font-size:15px}
+@keyframes fl{0%,22%{border-color:var(--accent);transform:translateY(-3px)}28%,100%{border-color:var(--border);transform:none}}
+.os-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
+.os-tab{display:inline-flex;align-items:center;gap:10px;min-height:50px;padding:0 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-weight:700;cursor:pointer}
+.os-tab svg{width:20px;height:20px}
+.os-tab[aria-selected="true"]{border-color:var(--accent);background:var(--accent-tint)}
+.os-tab .det{font-size:11.5px;font-weight:800;color:var(--accent)}
+.panel{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+.panel[hidden]{display:none}
+.card-x{padding:22px;border-radius:20px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow);min-width:0}
+.card-x h3{margin:0 0 6px;font-size:20px}.card-x p{margin:0 0 12px;color:var(--text-dim);font-size:15.5px}
+.card-x ol{margin:0 0 14px;padding-left:20px;color:var(--text-dim);font-size:15px}.card-x li{margin:5px 0}.card-x li b{color:var(--text)}
+.card-x code,.cmd{background:var(--surface-2);padding:2px 7px;border-radius:7px;font:13px ui-monospace,Consolas,monospace}
+.cmd-box{display:block;padding:10px 12px;margin:0 0 14px;border-radius:12px;background:var(--surface-2);font:13px/1.5 ui-monospace,Consolas,monospace;overflow-x:auto;white-space:pre}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn-dl{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:50px;padding:0 22px;border-radius:14px;border:0;background:var(--accent);color:var(--on-accent);font:inherit;font-weight:700;text-decoration:none;cursor:pointer}
+.btn-dl svg{width:20px;height:20px}
+.btn-line{display:inline-flex;align-items:center;min-height:50px;padding:0 18px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-weight:600;text-decoration:none}
+.meta{margin:12px 0 0;font-size:13.5px;color:var(--text-dim)}
+/* maquette de la fenêtre de confirmation */
+.win{border-radius:14px;border:1px solid var(--border);background:var(--surface);box-shadow:0 18px 40px -22px rgba(0,0,0,.45);overflow:hidden}
+.win .bar{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--surface-2);font-size:13px;font-weight:700}
+.win .bar i{width:10px;height:10px;border-radius:50%;background:#ef6b6b;box-shadow:16px 0 0 #ffbd2e,32px 0 0 #28c840;margin-right:36px}
+.win .body{padding:16px}
+.win h4{margin:0 0 4px;font-size:16px}
+.win p{margin:0 0 10px;font-size:13.5px;color:var(--text-dim)}
+.win .path{padding:9px 11px;border-radius:9px;border:1px solid var(--border);background:var(--bg);font:12.5px ui-monospace,Consolas,monospace;overflow-x:auto;white-space:nowrap}
+.win .path small{display:block;color:var(--text-dim);font:12px system-ui,sans-serif;margin-top:3px}
+.win .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;justify-content:flex-end}
+.win .b{padding:8px 14px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:13.5px}
+.win .b.ok{background:var(--accent);color:var(--on-accent);border-color:transparent;animation:okp 2.6s infinite}
+.win .b.op{animation:opp 2.6s infinite}
+@keyframes okp{0%,55%{outline:2px solid transparent;outline-offset:2px}70%{outline:2px solid var(--accent);outline-offset:4px}100%{outline:2px solid transparent;outline-offset:2px}}
+@keyframes opp{0%,15%{border-color:var(--border)}30%,45%{border-color:var(--accent)}60%,100%{border-color:var(--border)}}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.safe{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.safe .card-x{padding:18px}.safe h3{font-size:17px}.safe p{margin:0;font-size:14.5px}
+details{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:4px 16px;margin:10px 0}
+summary{cursor:pointer;font-weight:700;padding:12px 0}details p{margin:0 0 14px;color:var(--text-dim)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:900px){.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.panel,.two,.safe{grid-template-columns:1fr}}
+@media(max-width:520px){.flow{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.flow li,.win .b.ok,.win .b.op{animation:none}}
+</style>
+</head>
+<body>
+<main class="ins">
+  <h1>Mettre à jour l'extension</h1>
+  <p class="lead">Un petit fichier à lancer : il retrouve ton extension tout seul, tu vérifies que c'est le bon dossier, tu valides, et il la met à jour s'il existe une nouvelle version. Pour Windows, macOS et Linux.</p>
+
+  <ol class="flow" aria-label="Les quatre étapes">
+    <li><span class="n">1</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M10 12l4 2.500-4 2.500z" fill="currentColor"/></svg></span><h3>Tu lances le fichier</h3><p>Double-clic sur le <code>.bat</code> (Windows) ou le <code>.command</code> (macOS), ou <code>bash maj-extension.sh</code> (Linux).</p></li>
+    <li><span class="n">2</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.500" cy="10.500" r="6.500"/><path d="m20 20-4.900-4.900"/></svg></span><h3>Il retrouve l'extension</h3><p>Il lit les profils de Chrome, Edge, Brave, Vivaldi et Firefox pour en déduire où elle est rangée.</p></li>
+    <li><span class="n">3</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h6l2 2h10v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg></span><h3>Tu vérifies le dossier</h3><p>Il te montre le chemin. « Ouvrir le dossier » permet de contrôler que c'est le bon, puis tu cliques sur « Valider ».</p></li>
+    <li><span class="n">4</span><span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 0 1-14 5.300M4 12a8 8 0 0 1 14-5.300"/><path d="M18 3v4h-4M6 21v-4h4"/></svg></span><h3>Il met à jour</h3><p>Il cherche une version plus récente et, s'il y en a une, remplace les fichiers tout seul. Sinon : « Déjà à jour ».</p></li>
+  </ol>
+
+  <h2>Choisis ton système</h2>
+  <p class="sub">Le même principe partout : seul le fichier à lancer change.</p>
+  <div class="os-tabs" role="tablist" aria-label="Système d'exploitation" id="tabs"></div>
+  <div id="panels"></div>
+
+  <h2>La fenêtre de confirmation</h2>
+  <p class="sub">Voilà ce que tu vois à l'étape 3 (sous Windows ; sur macOS et Linux, c'est une fenêtre du système avec les mêmes boutons, ou des choix au clavier dans le terminal).</p>
+  <div class="two">
+    <div class="win" aria-hidden="true">
+      <div class="bar"><i></i>Mise à jour de l'extension My UCA</div>
+      <div class="body">
+        <h4>C'est bien le dossier de ton extension ?</h4>
+        <p>Je l'ai retrouvé dans ton navigateur. Vérifie que c'est le bon, puis valide.</p>
+        <div class="path">C:\Users\toi\Bureau\extension_uca_chrome<small>Chrome, profil Default, version 1.46.45</small></div>
+        <div class="acts"><span class="b op">Ouvrir le dossier</span><span class="b">Autre dossier…</span><span class="b">Annuler</span><span class="b ok">Valider</span></div>
+      </div>
+    </div>
+    <div class="card-x">
+      <h3>Ce que font les boutons</h3>
+      <ol>
+        <li><b>Ouvrir le dossier</b> : ouvre l'Explorateur (ou le Finder, ou le gestionnaire de fichiers) sur ce dossier, pour vérifier à l'œil.</li>
+        <li><b>Valider</b> : lance la recherche d'une nouvelle version, puis la mise à jour si elle existe.</li>
+        <li><b>Autre dossier…</b> : si le dossier trouvé n'est pas le bon, tu choisis le bon.</li>
+        <li><b>Annuler</b> : rien n'est modifié.</li>
+      </ol>
+      <p style="margin:0">Si plusieurs dossiers sont trouvés (plusieurs navigateurs ou profils), il te demande d'abord lequel mettre à jour.</p>
+    </div>
+  </div>
+
+  <h2>Et la mise à jour automatique ?</h2>
+  <p class="sub">Avec Chrome ou Edge, l'extension peut aussi se mettre à jour toute seule, sans aucun script.</p>
+  <div class="two">
+    <div class="card-x">
+      <h3>Dans le navigateur (Chrome, Edge)</h3>
+      <p>La première fois, le bouton « Télécharger et appliquer la mise à jour » te demande de choisir le dossier de l'extension et d'autoriser l'écriture. Choisis « Autoriser à chaque visite » : ensuite, les mises à jour se font sans aucun clic.</p>
+      <a class="btn-line" href="extension/#maj">Voir les détails</a>
+    </div>
+    <div class="card-x">
+      <h3>Firefox</h3>
+      <p>Firefox ne permet pas de réécrire les fichiers d'une extension chargée à la main. Le script remplace les fichiers, puis tu cliques sur « Recharger » dans <code>about:debugging</code>.</p>
+      <a class="btn-line" href="installation.html">Aide à l'installation</a>
+    </div>
+  </div>
+
+  <h2>Ce que le script ne fait pas</h2>
+  <div class="safe">
+    <div class="card-x"><h3>Aucun droit spécial</h3><p>Pas de mot de passe administrateur, pas de <code>sudo</code> : il écrit seulement dans ton dossier personnel et dans celui de l'extension.</p></div>
+    <div class="card-x"><h3>Un seul site</h3><p>Il télécharge le ZIP officiel sur ce site, en HTTPS, et rien d'autre. Rien n'est envoyé à personne.</p></div>
+    <div class="card-x"><h3>Tes données restent</h3><p>Emploi du temps, notes et réglages sont dans le navigateur, pas dans ce dossier. Tes propres fichiers dans le dossier ne sont pas touchés.</p></div>
+  </div>
+
+  <h2>Questions fréquentes</h2>
+  <details><summary>Le script ne retrouve pas mon extension</summary><p>Il te demande alors de choisir le dossier (celui qui contient <code>manifest.json</code>, chargé dans <code>chrome://extensions</code>). Tu peux aussi le lui donner : <code>maj-extension.bat "C:\chemin\dossier"</code> ou <code>bash maj-extension.sh /chemin/du/dossier</code>.</p></details>
+  <details><summary>macOS refuse d'ouvrir le fichier .command</summary><p>La première fois, fais un clic droit sur le fichier puis « Ouvrir ». Si le fichier n'est pas exécutable, ouvre le Terminal et tape <code>bash ~/Downloads/maj-extension.command</code>.</p></details>
+  <details><summary>Que dois-je faire après la mise à jour ?</summary><p>Dans <code>chrome://extensions</code>, clique sur « Recharger » (flèche ronde) sur la carte de l'extension. Sinon, elle se recharge toute seule à la prochaine vérification, au plus tard dans quelques minutes.</p></details>
+  <details><summary>Puis-je forcer la réinstallation ?</summary><p>Oui : <code>maj-extension.bat /force</code> ou <code>bash maj-extension.sh --force</code> réinstalle la dernière version même si tu l'as déjà.</p></details>
+</main>
+<script>
+(function () {
+  "use strict";
+  var ua = navigator.userAgent || "";
+  var det = /Windows/i.test(ua) ? "windows" : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? "linux" : "windows";
+  var dl = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>';
+  var OS = [
+    { id: "windows", name: "Windows", ico: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.6 10.5 4.5v6.9H3zM11.6 4.4 21 3v8.4h-9.4zM3 12.6h7.5v6.9L3 18.4zM11.6 12.6H21V21l-9.4-1.3z"/></svg>',
+      file: "maj-extension.bat", size: "9 Ko", title: "Script Windows (.bat)",
+      desc: "Une fenêtre te montre le dossier retrouvé, avec « Ouvrir le dossier » et « Valider ». Il cherche Chrome, Edge, Brave, Vivaldi et Firefox.",
+      steps: ["Télécharge le fichier (le navigateur peut avertir à propos d'un .bat : garde-le).", "Double-clique dessus, n'importe où : plus besoin de le mettre dans le dossier de l'extension.", "Vérifie le dossier proposé, clique sur <b>Valider</b>.", "Dans <code>chrome://extensions</code>, clique sur « Recharger »."],
+      cmd: 'maj-extension.bat            (double-clic)\nmaj-extension.bat /force     (réinstaller même à jour)', need: "Windows 10 ou 11, PowerShell (déjà installé). Aucun droit administrateur." },
+    { id: "mac", name: "macOS", ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>',
+      file: "maj-extension.command", size: "13 Ko", title: "Script macOS (.command)",
+      desc: "Une fenêtre du Mac te montre le dossier retrouvé, avec « Ouvrir le dossier » (Finder) et « Valider ». Il lit les profils de Chrome, Edge, Brave, Vivaldi et Firefox.",
+      steps: ["Télécharge le fichier.", "Double-clique dessus (la première fois : clic droit puis <b>Ouvrir</b>).", "Vérifie le dossier proposé, clique sur <b>Valider</b>.", "Dans <code>chrome://extensions</code>, clique sur « Recharger »."],
+      cmd: 'bash ~/Downloads/maj-extension.command\nbash ~/Downloads/maj-extension.command --force', need: "macOS 10.15 ou plus récent. curl et unzip sont déjà installés. Aucun mot de passe demandé." },
+    { id: "linux", name: "Linux", ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7.500 9 3 3-3 3M13 15h4"/></svg>',
+      file: "maj-extension.sh", size: "13 Ko", title: "Script Linux (.sh)",
+      desc: "Une fenêtre (zenity ou kdialog) ou des choix au clavier dans le terminal te montrent le dossier retrouvé : « Ouvrir le dossier », « Valider ».",
+      steps: ["Télécharge le fichier.", "Ouvre un terminal dans le dossier du téléchargement et tape la commande ci-dessous.", "Vérifie le dossier proposé : <b>V</b> pour valider, <b>O</b> pour l'ouvrir (ou les boutons de la fenêtre).", "Dans <code>chrome://extensions</code>, clique sur « Recharger »."],
+      cmd: 'bash maj-extension.sh\nbash maj-extension.sh --force', need: "Chrome, Chromium, Brave, Edge, Vivaldi ou Firefox (aussi en snap ou Flatpak). curl ou wget et unzip." }
+  ];
+  var tabs = document.getElementById("tabs"), panels = document.getElementById("panels");
+  OS.forEach(function (o) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "os-tab"; b.id = "tab-" + o.id; b.setAttribute("role", "tab"); b.setAttribute("aria-controls", "p-" + o.id);
+    b.innerHTML = o.ico + o.name + (o.id === det ? ' <span class="det">Détecté</span>' : "");
+    b.addEventListener("click", function () { show(o.id); });
+    b.addEventListener("keydown", function (e) { var i = OS.findIndex(function (x) { return x.id === o.id; }); if (e.key === "ArrowRight") { e.preventDefault(); show(OS[(i + 1) % OS.length].id, true); } else if (e.key === "ArrowLeft") { e.preventDefault(); show(OS[(i + OS.length - 1) % OS.length].id, true); } });
+    tabs.appendChild(b);
+    var p = document.createElement("div"); p.className = "panel"; p.id = "p-" + o.id; p.setAttribute("role", "tabpanel"); p.setAttribute("aria-labelledby", "tab-" + o.id); p.hidden = true;
+    p.innerHTML = '<div class="card-x"><h3>' + o.title + '</h3><p>' + o.desc + '</p><div class="btns"><a class="btn-dl" id="dl-' + o.id + '" href="extension/' + o.file + '" download>' + dl + 'Télécharger ' + o.file + '</a><a class="btn-line" href="https://github.com/kiricoucou/uca-extension/blob/main/extension/' + o.file + '" target="_blank" rel="noopener">Voir le code</a></div><p class="meta">' + o.file + ' · ' + o.size + ' · ' + o.need + '</p></div>'
+      + '<div class="card-x"><h3>Comment faire</h3><ol>' + o.steps.map(function (t) { return "<li>" + t + "</li>"; }).join("") + '</ol><span class="cmd-box">' + o.cmd + '</span></div>';
+    panels.appendChild(p);
+  });
+  function show(id, focus) {
+    OS.forEach(function (o) { var on = o.id === id; var t = document.getElementById("tab-" + o.id); t.setAttribute("aria-selected", String(on)); t.tabIndex = on ? 0 : -1; document.getElementById("p-" + o.id).hidden = !on; if (on && focus) t.focus(); });
+    try { history.replaceState(null, "", "#" + id); } catch (e) {}
+  }
+  var h = (location.hash || "").replace("#", "");
+  show(OS.some(function (o) { return o.id === h; }) ? h : det);
+  window.addEventListener("hashchange", function () { var k = (location.hash || "").replace("#", ""); if (OS.some(function (o) { return o.id === k; })) show(k); });
+})();
+</script>
+<script src="site-nav.js" defer></script>
+</body>
+</html>

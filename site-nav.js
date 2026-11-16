@@ -42,10 +42,10 @@
   /* ---------- liste des liens (une icône différente par bouton) ---------- */
   var L = [
     ['Site', [['Accueil', '', 'home'], ['Agenda en ligne', 'app/shell.html#home', 'agenda'], ['Nouveautés', 'nouveautes.html', 'news'], ['Aide', 'aide.html', 'help'], ['Transports', 'transport.html', 'bus'], ['Carte des lieux', 'lieux-map.html', 'pin']]],
-    ['Installer', [['Télécharger l’extension (ZIP)', 'extension/', 'puzzle'], ['Installateurs Windows · Mac · Linux', 'extension/#installateurs', 'install'], ['Application Android (APK)', 'telecharger/', 'phone'], ['Mettre à jour l’extension', 'extension/#maj', 'update'], ['Aide à l’installation (en images)', 'installation.html', 'guide']]],
+    ['Installer', [['Télécharger l’extension (ZIP)', 'extension/', 'puzzle'], ['Installateurs Windows · Mac · Linux', 'extension/#installateurs', 'install'], ['Application Android (APK)', 'telecharger/', 'phone'], ['Mettre à jour l’extension', 'mise-a-jour.html', 'update'], ['Aide à l’installation (en images)', 'installation.html', 'guide']]],
     ['Projet', [['Soutenir le projet (don)', 'don.html', 'heart'], ['Merci d’avoir installé', 'merci.html', 'thanks'], ['Confidentialité', 'confidentialite.html', 'shield'], ['English', 'en/', 'globe']]]
   ];
-  var TOP = { '': 'home', 'index.html': 'home', 'nouveautes.html': 'news', 'transport.html': 'bus', 'aide.html': 'help', 'app/': 'agenda', 'app/index.html': 'agenda', 'en/': 'globe', 'extension/': 'puzzle', 'installation.html': 'guide', 'lieux-map.html': 'pin', 'don.html': 'heart', '#demo': 'play', '#comparatif': 'compare', '#faq': 'faq' };
+  var TOP = { '': 'home', 'index.html': 'home', 'nouveautes.html': 'news', 'transport.html': 'bus', 'aide.html': 'help', 'app/': 'agenda', 'app/index.html': 'agenda', 'en/': 'globe', 'extension/': 'puzzle', 'installation.html': 'guide', 'mise-a-jour.html': 'update', 'lieux-map.html': 'pin', 'don.html': 'heart', '#demo': 'play', '#comparatif': 'compare', '#faq': 'faq' };
 
   /* ---------- thème ---------- */
   function getTheme() { try { return localStorage.getItem(KEY) || 'auto'; } catch (e) { return 'auto'; } }

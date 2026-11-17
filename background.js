@@ -155,6 +155,18 @@ async function fetchPackageBuffer() {
   if (!r.ok) throw new Error("Téléchargement impossible (HTTP " + r.status + ").");
   return await r.arrayBuffer();
 }
+async function fetchSignatureText() {
+  const url = (typeof UCA_SELFUPDATE !== "undefined" ? UCA_SELFUPDATE.SIG_URL : "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/extension/uca-extension-chrome.zip.sig") + "?t=" + Date.now();
+  const r = await fetch(url, { cache: "no-store" });
+  if (!r.ok) throw new Error("Signature du paquet introuvable (HTTP " + r.status + ").");
+  return await r.text();
+}
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || msg.type !== "UCA_FETCH_PACKAGE_SIG") return false;
+  if (sender && sender.id && sender.id !== chrome.runtime.id) return false;
+  fetchSignatureText().then((sig) => sendResponse({ ok: true, sig })).catch((e) => sendResponse({ ok: false, error: String((e && e.message) || e) }));
+  return true;
+});
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || msg.type !== "UCA_FETCH_PACKAGE") return false;
   fetchPackageBuffer().then((buf) => {
@@ -169,7 +181,7 @@ async function forceUpdate(latest) {
   try {
     // Dossier déjà autorisé (mise à jour automatique) : on télécharge, on applique et on recharge sans rien demander.
     if (typeof UCA_SELFUPDATE !== "undefined" && UCA_SELFUPDATE.supported(false) && !(await isStoreBuild())) {
-      try { if (await UCA_SELFUPDATE.run({ interactive: false, getPackage: fetchPackageBuffer })) { chrome.runtime.reload(); return; } } catch (e) { /* on retombe sur la page de mise à jour */ }
+      try { if (await UCA_SELFUPDATE.run({ interactive: false, getPackage: fetchPackageBuffer, getSignature: fetchSignatureText })) { chrome.runtime.reload(); return; } } catch (e) { /* on retombe sur la page de mise à jour */ }
     }
     const disk = await (await fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" })).json();
     if (compareVersions(chrome.runtime.getManifest().version, disk.version) < 0 && compareVersions(disk.version, latest) >= 0) { chrome.runtime.reload(); return; }

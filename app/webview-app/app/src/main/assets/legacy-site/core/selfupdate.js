@@ -9,7 +9,22 @@
 "use strict";
 
 const PACKAGE_URL = "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/extension/uca-extension-chrome.zip";
+const SIG_URL = PACKAGE_URL + ".sig";
+/* Clé publique (RSA, SPKI) de la clé de signature du projet (tools/SignBundle.java pubkey) : le ZIP n'est écrit dans le
+   dossier que si sa signature (fichier .sig publié à côté, message « UCA-EXT-PKG-V1:<sha256> ») est valable. */
+const PUBLIC_KEY = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAonKu45jPQjfHM+Cd9QAjIvEnRkG3SJP1W88Ok0OLyWR7K7DlwVxBPxz1WhEeKrNWyVVf5blUe4+4iiU9gLVDo55T+k8oVp3x14sblS09oN7QE/dTKeGS3GfKF0oTYZAcAwlj6BQadjfyAhf98rimDdt8EdyCGzEO5+yyxVsCwIkBlzvbCPAZvzQWioIzY4hhuYGaYGNpqTnGWnb2BjGOWCsgEGJLFqWknSvkdHEmh+jZQBzGYGmXhetAeJHe4yAw5SaTsi92P9FwFJ46C1+ICnVI/7QnpBYp6pDJ93biCpOoiyICRTcnhTDKtV2gc3REw1paQAauM03nyHGo8b33UQIDAQAB";
 const DB = "uca_selfupdate", STORE = "kv", KEY = "dir";
+
+function b64bytes(s) { const bin = atob(String(s || "").trim()), a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
+/* Vrai seulement si sigB64 est une signature valable du paquet buf par la clé du projet. */
+async function verifyPackage(buf, sigB64) {
+  try {
+    const key = await crypto.subtle.importKey("spki", b64bytes(PUBLIC_KEY), { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
+    const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", buf));
+    const msg = new TextEncoder().encode("UCA-EXT-PKG-V1:" + Array.from(hash, (b) => b.toString(16).padStart(2, "0")).join(""));
+    return await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, b64bytes(sigB64), msg);
+  } catch (e) { return false; }
+}
 
 function supported(needPicker) { return (!needPicker || typeof root.showDirectoryPicker === "function") && typeof DecompressionStream === "function" && typeof indexedDB !== "undefined"; }
 
@@ -132,10 +147,20 @@ async function fetchPackage() {
   for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
   return a.buffer;
 }
+async function fetchSignature() {
+  if (typeof window === "undefined" || !root.chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
+    const r = await fetch(SIG_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error("Signature du paquet introuvable (HTTP " + r.status + ").");
+    return await r.text();
+  }
+  const res = await chrome.runtime.sendMessage({ type: "UCA_FETCH_PACKAGE_SIG" });
+  if (!res || !res.ok) throw new Error((res && res.error) || "Signature du paquet introuvable (connexion ?).");
+  return res.sig;
+}
 
 /* Mise à jour complète. interactive = true : peut ouvrir la boîte « Sélectionner un dossier » et demander l'autorisation
    (à appeler depuis un clic). Renvoie la nouvelle version ; lève une erreur lisible sinon. */
-async function run({ interactive, onProgress, pick, getPackage } = {}) {
+async function run({ interactive, onProgress, pick, getPackage, getSignature } = {}) {
   if (!supported(!!interactive)) throw new Error("Ce navigateur ne permet pas la mise à jour automatique (Firefox) : suis les étapes manuelles.");
   const step = (t) => { if (onProgress) onProgress(0, 1, t); };
   let dir = await saved();
@@ -162,6 +187,9 @@ async function run({ interactive, onProgress, pick, getPackage } = {}) {
   }
   step("Téléchargement de la dernière version");
   const buf = await (getPackage ? getPackage() : fetchPackage());
+  const sig = await (getSignature ? getSignature() : fetchSignature());
+  // Rien n'est écrit dans le dossier si le paquet n'est pas signé par le projet (paquet modifié en route ou falsifié).
+  if (!(await verifyPackage(buf, sig))) throw new Error("Paquet refusé : signature invalide (le fichier téléchargé n'est pas celui publié par le projet).");
   step("Application des changements");
   const version = await applyZip(dir, buf, onProgress);
   return version;
@@ -169,5 +197,5 @@ async function run({ interactive, onProgress, pick, getPackage } = {}) {
 
 async function hasFolder() { try { return !!(await saved()); } catch (e) { return false; } }
 
-root.UCA_SELFUPDATE = { PACKAGE_URL, supported, run, applyZip, readZip, safePath, forget, hasFolder, permission, saved };
+root.UCA_SELFUPDATE = { PACKAGE_URL, SIG_URL, verifyPackage, supported, run, applyZip, readZip, safePath, forget, hasFolder, permission, saved };
 })(typeof self !== "undefined" ? self : this);

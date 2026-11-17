@@ -31,7 +31,7 @@ STUB = """() => {
   chrome.tabs.create = async () => ({});
 }"""
 
-RUN = """async ([b64, mode]) => {
+RUN = """async ([b64, mode, sig]) => {
   const bin = atob(b64), a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
   const SU = window.UCA_SELFUPDATE;
   const root = await navigator.storage.getDirectory();
@@ -45,7 +45,7 @@ RUN = """async ([b64, mode]) => {
   }
   const dir = await root.getDirectoryHandle('ext');
   const progress = [];
-  const v = await SU.run({ interactive: mode === 'interactive', pick: async () => dir, getPackage: async () => a.buffer, onProgress: (n, t, l) => progress.push([n, t]) });
+  const v = await SU.run({ interactive: mode === 'interactive', pick: async () => dir, getPackage: async () => a.buffer, getSignature: async () => sig, onProgress: (n, t, l) => progress.push([n, t]) });
   async function has(path) { try { let d = dir; const parts = path.split('/'); const f = parts.pop(); for (const p of parts) d = await d.getDirectoryHandle(p); await d.getFileHandle(f); return true; } catch (e) { return false; } }
   const man = JSON.parse(await (await (await dir.getFileHandle('manifest.json')).getFile()).text());
   const perso = await (await (await dir.getFileHandle('fichier-perso.txt')).getFile()).text();
@@ -59,6 +59,9 @@ def main():
     zbytes = zpath.read_bytes()
     want = json.loads(zipfile.ZipFile(io.BytesIO(zbytes)).read("manifest.json"))["version"]
     b64 = base64.b64encode(zbytes).decode()
+    sigp = zpath.with_name(zpath.name + ".sig")
+    check("le ZIP publié a sa signature (.sig)", sigp.exists())
+    sig = sigp.read_text().strip() if sigp.exists() else ""
     evil = io.BytesIO()
     with zipfile.ZipFile(evil, "w") as z:
         z.writestr("manifest.json", json.dumps({"name": "UCA", "version": "9.9.9"})); z.writestr("../evil.txt", "x")
@@ -76,25 +79,41 @@ def main():
             page.on("pageerror", lambda e: errors.append(str(e)))
             page.goto(f"{base}/settings.html"); page.wait_for_timeout(900)
             check("selfupdate chargé et pris en charge par le navigateur", page.evaluate("() => !!window.UCA_SELFUPDATE && UCA_SELFUPDATE.supported(true)"))
-            page.evaluate(RUN, [b64, "prepare"])
-            r = page.evaluate(RUN, [b64, "interactive"])
+            page.evaluate(RUN, [b64, "prepare", sig])
+            r = page.evaluate(RUN, [b64, "interactive", sig])
             check("1re mise à jour (choix du dossier) : version appliquée = version du ZIP", r["v"] == want and r["manifest"] == want, str(r))
             check("fichiers nouveaux écrits (code, core/, designs/studio/, script .bat)", r["background"] and r["core"] and r["designs"] and r["bat"], str(r))
             check("fichier personnel du dossier conservé", r["perso"] == "à garder")
             check("progression jusqu'au dernier fichier", r["last"] and r["last"][0] == r["last"][1], str(r["last"]))
             check("dossier mémorisé pour les fois suivantes", r["saved"] is True)
-            page.evaluate(RUN, [b64, "prepare"])
+            page.evaluate(RUN, [b64, "prepare", sig])
             page.evaluate("async () => { const root = await navigator.storage.getDirectory(); await UCA_SELFUPDATE.forget(); }")
-            page.evaluate(RUN, [b64, "interactive"])
-            page.evaluate(RUN, [b64, "prepare"])
+            page.evaluate(RUN, [b64, "interactive", sig])
+            page.evaluate(RUN, [b64, "prepare", sig])
             # mode silencieux (sans clic) : utilise le dossier mémorisé si l'autorisation est encore là
             page.evaluate("async () => { const root = await navigator.storage.getDirectory(); const d = await root.getDirectoryHandle('ext'); const { UCA_SELFUPDATE: S } = window; await (async () => { const db = await new Promise((res) => { const q = indexedDB.open('uca_selfupdate', 1); q.onsuccess = () => res(q.result); }); await new Promise((res) => { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(d, 'dir'); t.oncomplete = res; }); })(); }")
-            r2 = page.evaluate(RUN, [b64, "silent"])
+            r2 = page.evaluate(RUN, [b64, "silent", sig])
             check("mise à jour silencieuse (sans clic) quand le dossier est déjà autorisé", r2["v"] == want and r2["manifest"] == want, str(r2))
             # sécurité
             bad = page.evaluate("""async (b64) => { const bin = atob(b64), a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
               const root = await navigator.storage.getDirectory(); const dir = await root.getDirectoryHandle('ext');
               try { await UCA_SELFUPDATE.applyZip(dir, a.buffer); return 'écrit'; } catch (e) { return String(e.message); } }""", evil64)
+            # signature : paquet falsifié, signature absente ou fausse -> refus, rien n'est écrit
+            tam64 = base64.b64encode(zbytes + b"x").decode()
+            SIGT = """async ([b64, sig, how]) => { const bin = atob(b64), a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+              const root = await navigator.storage.getDirectory(); const dir = await root.getDirectoryHandle('ext');
+              try { await UCA_SELFUPDATE.run({ interactive: false, pick: async () => dir, getPackage: async () => a.buffer, getSignature: async () => { if (how === 'absente') throw new Error('Signature du paquet introuvable'); return sig; } }); return 'écrit'; } catch (e) { return String(e.message); } }"""
+            page.evaluate(RUN, [b64, "prepare", sig])
+            r_t = page.evaluate(SIGT, [tam64, sig, "ok"])
+            check("paquet falsifié (1 octet ajouté) refusé : signature invalide", "signature invalide" in r_t, r_t)
+            r_a = page.evaluate(SIGT, [b64, sig, "absente"])
+            check("signature introuvable : mise à jour refusée", "introuvable" in r_a, r_a)
+            r_g = page.evaluate(SIGT, [b64, "AAAA" + sig[4:], "ok"])
+            check("fausse signature refusée", "signature invalide" in r_g, r_g)
+            r_e = page.evaluate(SIGT, [b64, "", "ok"])
+            check("signature vide refusée", "signature invalide" in r_e, r_e)
+            kept = page.evaluate("async () => { const root = await navigator.storage.getDirectory(); const d = await root.getDirectoryHandle('ext'); const m = JSON.parse(await (await (await d.getFileHandle('manifest.json')).getFile()).text()); return m.version; }")
+            check("après ces refus, le dossier est resté à l'ancienne version (rien écrit)", kept == "1.0.0", kept)
             check("ZIP avec un chemin « ../ » refusé avant toute écriture", "suspect" in bad, bad)
             bad2 = page.evaluate("""async (b64) => { const bin = atob(b64), a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
               const root = await navigator.storage.getDirectory(); const dir = await root.getDirectoryHandle('ext');

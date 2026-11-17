@@ -206,6 +206,15 @@ def main():
             zi = zipfile.ZipInfo(name); zi.compress_type = zipfile.ZIP_DEFLATED; zi.external_attr = 0o755 << 16
             zf.writestr(zi, sh.encode("utf-8"))
         zf.writestr("nettoyer-dossier-extension.bat", (OUT / "nettoyer-dossier-extension.bat").read_bytes())
+    # Signature du ZIP (mise à jour automatique : l'extension refuse tout paquet non signé par le projet).
+    ks = ROOT / "app" / "webview-app" / "keystore" / "keystore.properties"
+    sigf = OUT / (ZIP + ".sig")
+    if ks.exists():
+        j = str(ROOT / "tools" / "SignBundle.java")
+        subprocess.run(["java", j, "sign-ext", str(OUT / ZIP), str(sigf), str(ks)], check=True, stdout=subprocess.DEVNULL)
+        subprocess.run(["java", j, "verify-ext", str(OUT / ZIP), str(sigf), str(ks)], check=True, stdout=subprocess.DEVNULL)
+    else:
+        print("ATTENTION : keystore.properties introuvable, ZIP non signé : la mise à jour automatique de l'extension sera refusée.")
     mo = lambda f: f"{f.stat().st_size / 1048576:.1f}".replace(".", ",") + " Mo"
     z, a = OUT / ZIP, ROOT / "EdtUca.apk"
     sizes = {"zip": mo(z), "apk": mo(a), "both": f"{(z.stat().st_size + a.stat().st_size) / 1048576:.1f}".replace(".", ",") + " Mo"}

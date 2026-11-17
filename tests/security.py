@@ -88,6 +88,27 @@ def shell_check(p, data):
         srv.terminate()
 
 
+def signature_check():
+    """Mise à jour automatique : le ZIP publié est signé par le projet et l'extension vérifie la signature avant d'écrire."""
+    import re
+    import shutil
+    import subprocess
+    sj = (ROOT / "core" / "selfupdate.js").read_text(encoding="utf-8")
+    sigf = ROOT / "extension" / "uca-extension-chrome.zip.sig"
+    check("mise à jour auto : la signature est vérifiée avant toute écriture dans le dossier", "verifyPackage(buf, sig)" in sj and sj.index("verifyPackage(buf, sig)") < sj.index("await applyZip(dir, buf"))
+    check("mise à jour auto : le ZIP publié a sa signature (.sig)", sigf.exists())
+    ks = ROOT / "app" / "webview-app" / "keystore" / "keystore.properties"
+    if shutil.which("java") and ks.exists() and sigf.exists():
+        j = str(ROOT / "tools" / "SignBundle.java")
+        pub = subprocess.run(["java", j, "pubkey", "-", "-", str(ks)], capture_output=True, text=True).stdout.strip()
+        m = re.search(r'PUBLIC_KEY = "([^"]+)"', sj)
+        check("clé publique embarquée = clé de signature du projet", bool(m) and m.group(1) == pub)
+        r = subprocess.run(["java", j, "verify-ext", str(ROOT / "extension" / "uca-extension-chrome.zip"), str(sigf), str(ks)], capture_output=True, text=True)
+        check("signature du ZIP publié valable", r.returncode == 0, r.stdout + r.stderr)
+    else:
+        print("ignoré : java ou keystore absent (vérification de la signature du ZIP)")
+
+
 def main():
     permissions_check()
     with sync_playwright() as p:
@@ -131,6 +152,7 @@ def main():
         ctx.close()
         shell_check(p, data)
 
+    signature_check()
     print(f"\n{sum(results)}/{len(results)} vérifications OK")
     sys.exit(0 if all(results) else 1)
 

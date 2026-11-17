@@ -43,4 +43,5 @@ merci.html
 don.html
 stats.json
 installation.html
-aide-install
+aide-install/img
+aide-install/steps.json

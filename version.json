@@ -14,9 +14,17 @@
     "25 widgets pour l'écran d'accueil : prochain cours, ma journée, 3 jours, devoirs, examens, moyenne, notes par matière, absences, connexion et plus encore (appui long sur l'écran d'accueil, puis Widgets, My UCA).",
     "Toucher un widget ouvre l'écran utile (agenda, notes, absences ou devoirs). Les widgets « Connexion » et « Synchronisation » ont un vrai bouton pour te reconnecter ou resynchroniser."
   ],
-  "ota_version": "1.4.26",
+  "ota_version": "1.4.27",
   "ota_base_version_code": 21,
   "history": [
+    {
+      "version": "1.46.59",
+      "app": "1.4.27",
+      "title": "sécurité, 9 failles corrigées",
+      "items": [
+        "Sécurité (audit attaque/défense) : le pont de l'extension ne répond plus aux pages locales (file://, localhost) ni aux iframes, seulement au site officiel, avec un délai entre deux…"
+      ]
+    },
     {
       "version": "1.46.46",
       "app": "1.4.26",
@@ -84,18 +92,6 @@
         "Courbe d'évolution de la moyenne : le passé est reconstruit à partir de la date de première vue de chaque note (plus besoin d'attendre plusieurs synchros) ; un seul point est dessiné…",
         "APK : le design Studio est proposé dans les Préférences.",
         "Site : les versions qui n'ont jamais eu de publication à leur nom (1.46.1, 1.46.7, 1.46.8) indiquent « livrée avec la 1.46.x » et la date de cette version, au lieu d'une date approchée."
-      ]
-    },
-    {
-      "version": "1.46.24",
-      "app": "1.4.19",
-      "title": "design Studio, notifications, session privée",
-      "items": [
-        "Design Studio (nouveau, par défaut) : tableau de bord clair, panneaux blancs très arrondis, cartes de cours pastel, accent marine ; mêmes fonctions que les 4 autres designs. Appliqué à…",
-        "Notifications (app) : marquer lue / non lue, garder (reste même quand le changement disparaît à la synchro), supprimer, tout supprimer sauf les gardées, restaurer, filtres (toutes, non…",
-        "Compte (app web) : carte « Session privée » (données uniquement dans ce navigateur, rien d'envoyé, app vide sur un autre ordinateur tant qu'on n'importe pas) et bouton d'envoi vers un…",
-        "Notes : le texte du panneau Notes redevient lisible dans la démo du site (téléphone) ; nouvelle courbe « Évolution de la moyenne générale », elle s'élargit à chaque synchro qui apporte…",
-        "Site : menu hamburger sur téléphone, colonne « Recommandé » (Extension) dans le comparatif, « Site » renommé « Aide », fiches de version avec date et heure de sortie, tutoriel…"
       ]
     }
   ]

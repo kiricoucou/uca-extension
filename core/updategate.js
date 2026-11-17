@@ -50,6 +50,7 @@
         var info = fromUA(), file = info.os === "windows" ? "maj-extension.bat" : info.os === "macos" ? "maj-extension.command" : "maj-extension.sh";
         chrome.storage.local.get("uca_latest_version", function (d) {
           var ver = (d && d.uca_latest_version) || "";
+          if (!/^\d{1,4}(\.\d{1,5}){1,3}$/.test(String(ver))) ver = "";   // jamais de texte libre dans une commande de terminal
           var cmd = info.os === "windows"
             ? "\"%USERPROFILE%\\Downloads\\" + file + "\" /browser " + info.browser + " /os windows /version " + ver + " /yes"
             : "bash ~/Downloads/" + file + " --browser " + info.browser + " --os " + info.os + " --version " + ver + " --yes";

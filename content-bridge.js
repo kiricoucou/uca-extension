@@ -3,6 +3,15 @@
   // Les iframes d'une page matchée ne doivent pas pouvoir piloter l'extension.
   if (window.top !== window) return;
 
+  // Seul le site officiel peut piloter l'extension et recevoir ses messages. Les pages file:// et localhost / 127.0.0.1
+  // (matchées pour le développement et les tests) restent inertes, sauf si le drapeau « uca_dev_bridge » a été posé dans le
+  // stockage de l'extension (inaccessible à une page web). Sans cela, n'importe quelle page locale pourrait lancer une
+  // connexion Odin et lire l'état de session / les résultats de synchro.
+  const OFFICIAL_ORIGIN = "https://kiricoucou.github.io";
+  if (location.origin === OFFICIAL_ORIGIN) { init(); }
+  else { try { chrome.storage.local.get(["uca_dev_bridge"], (d) => { if (d && d.uca_dev_bridge === true) init(); }); } catch (_) {} }
+
+  function init() {
   const ALLOWED_MODES = new Set(["resync", "login"]);
   // file:// a une origine "null" (pas utilisable comme targetOrigin) : même fenêtre de toute façon.
   const TARGET_ORIGIN = location.origin === "null" ? "*" : location.origin;
@@ -42,4 +51,5 @@
   }
 
   post({ type: "UCA_EXTENSION_READY" });
+  }
 })();

@@ -155,6 +155,14 @@ function validate(snap) {
   const bad = () => new Error("Ce n'est pas un fichier de synchro de l'emploi du temps UCA.");
   if (!snap || snap.format !== "uca-sync" || !snap.data || !Array.isArray(snap.data.uca_events)) throw bad();
   // Un fichier ou un lien vient de l'extérieur : ces champs sont repris tels quels dans le HTML de l'agenda.
+  // Taille bornée et réglages/notes de la bonne forme (objet ou liste), jamais une valeur détournée.
+  if (JSON.stringify(snap.data).length > 8 * 1024 * 1024) throw bad();
+  for (const k of ["uca_settings", "uca_scales", "uca_filters", "uca_notes_seen", "uca_subject_colors", "uca_releve_notes"]) {
+    const v = snap.data[k]; if (v !== undefined && v !== null && (typeof v !== "object" || Array.isArray(v))) throw bad();
+  }
+  for (const k of ["uca_absences", "uca_tasks", "uca_edt_changes", "uca_activity", "uca_notes_history"]) {
+    const v = snap.data[k]; if (v !== undefined && v !== null && typeof v !== "object") throw bad();
+  }
   for (const ev of snap.data.uca_events) {
     if (!ev || !EVENT_INTS.every((k) => Number.isInteger(ev[k]))) throw bad();
     if (ev.date !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(ev.date)) throw bad();

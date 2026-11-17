@@ -115,6 +115,11 @@ async function writeFile(root_, path, data) {
   await w.write(data); await w.close();
 }
 
+function cmpVer(a, b) {
+  const pa = String(a).split(".").map((x) => parseInt(x, 10) || 0), pb = String(b).split(".").map((x) => parseInt(x, 10) || 0);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) { const d = (pa[i] || 0) - (pb[i] || 0); if (d) return d < 0 ? -1 : 1; }
+  return 0;
+}
 /* Écrit tout le ZIP dans le dossier ; manifest.json en dernier (une panne en route laisse l'ancienne version annoncée :
    le verrou de mise à jour reste et on peut réessayer). */
 async function applyZip(dir, buf, onProgress) {
@@ -123,6 +128,11 @@ async function applyZip(dir, buf, onProgress) {
   if (!mf) throw new Error("Paquet invalide : pas de manifest.json.");
   const newM = JSON.parse(new TextDecoder().decode(await mf.read()));
   if (!/UCA/.test(String(newM.name || ""))) throw new Error("Paquet inattendu (nom sans « UCA »).");
+  // Anti-retour en arrière : la signature ne porte pas la version, un ancien paquet (signé mais vulnérable) rejoué sur le
+  // dépôt ne doit jamais remplacer une version plus récente déjà installée dans ce dossier.
+  let installed = null;
+  try { installed = (await readManifest(dir)).version; } catch (e) { /* dossier sans manifest lisible : rien à comparer */ }
+  if (installed && cmpVer(newM.version, installed) < 0) throw new Error("Paquet refusé : version plus ancienne que celle installée (" + newM.version + " < " + installed + ").");
   const rest = entries.filter((e) => e !== mf);
   let done = 0;
   for (const e of rest) {

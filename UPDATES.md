@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.59 — app Android 1.4.27 : sécurité, 9 failles corrigées
+
+- Sécurité (audit attaque/défense) : le pont de l'extension ne répond plus aux pages locales (file://, localhost) ni aux iframes, seulement au site officiel, avec un délai entre deux ouvertures d'agenda ; la version distante est validée avant d'être affichée dans une commande ; le partage de fichier vers la PWA refuse les sites tiers et les fichiers trop gros ; l'import de données est borné ; la mise à jour automatique refuse un retour à une version plus ancienne ; les installateurs Windows et macOS valident la version lue en ligne ; des notes internes ne sont plus publiées sur le site ; l'application ignore les adresses et seuils venant de version.json. Aucun changement visible.
+
 ## 1.46.58 — sécurité : mises à jour automatiques signées
 
 - Sécurité : le paquet de l'extension téléchargé par la mise à jour automatique (Chrome, Edge) est maintenant signé par le projet (RSA-SHA256, même clé que l'application). L'extension vérifie la signature avant d'écrire le moindre fichier : un paquet modifié en route, remplacé ou sans signature est refusé. Aucun changement visible.

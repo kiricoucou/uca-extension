@@ -96,7 +96,9 @@ async function fetchLatestVersion() {
   if (!res.ok) throw new Error("HTTP " + res.status);
   const remote = await res.json();
   if (!remote || !remote.version) throw new Error("manifest.json sans version");
-  return remote.version;
+  // Format strict : cette valeur finit dans une commande à coller dans un terminal (core/updategate.js).
+  if (!/^\d{1,4}(\.\d{1,5}){1,3}$/.test(String(remote.version))) throw new Error("manifest.json : version invalide");
+  return String(remote.version);
 }
 
 /* Paquet des magasins (addons.mozilla.org, Chrome Web Store) : le fichier store-build.txt n'existe que dans
@@ -268,6 +270,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 /* Bouton « Ouvrir l'agenda » des pages du site (merci.html) : ouvre l'agenda du design choisi (ou le sélecteur). */
 chrome.runtime.onMessage.addListener((msg, sender) => {
   if (!msg || msg.type !== "UCA_OPEN_AGENDA" || !sender || !sender.tab) return false;
+  // Délai minimal entre deux ouvertures demandées par une page (anti-inondation d'onglets).
+  if (Date.now() - (globalThis.__ucaLastOpenAgenda || 0) < 4000) return false;
+  globalThis.__ucaLastOpenAgenda = Date.now();
   (async () => {
     // Ouverture automatique (installateur) : une seule fois, et pas si l'agenda vient déjà de s'ouvrir à l'installation.
     if (msg.auto) {

@@ -412,7 +412,7 @@ $form.Add_Shown({
   $form.Activate()
   try {
     $m = Invoke-RestMethod -Uri ("$Base/manifest.json?t=" + [DateTime]::UtcNow.Ticks) -TimeoutSec 20
-    $script:latest = $m.version; $lblVer.Text = 'Version disponible : ' + $m.version
+    if ([string]$m.version -notmatch '^\d{1,4}(\.\d{1,5}){1,3}$') { throw 'version invalide' }; $script:latest = [string]$m.version; $lblVer.Text = 'Version disponible : ' + $m.version
   } catch { $lblVer.Text = 'Impossible de joindre le site (connexion ?).'; $lblVer.ForeColor = [System.Drawing.Color]::FromArgb(165,14,14) }
   if ($script:isAdmin -and $env:MYUCA_AUTO -ne '1' -and $script:latest) { $lblAuto.Text = 'Mode administrateur : installation automatique dans 10 s (tous les navigateurs detectes, fermes automatiquement). Clique sur Suivant pour personnaliser.'; $timer.Start() }
 })
@@ -420,7 +420,7 @@ Show-Page 1
 if ($env:MYUCA_SELFTEST -eq '1') { Write-Host 'selftest ok'; exit 0 }
 if ($env:MYUCA_AUTO -eq '1') {
   $tbInstall.Text = $env:MYUCA_INSTALL; $tbDl.Text = $env:MYUCA_DL
-  $m = Invoke-RestMethod -Uri ("$Base/manifest.json?t=" + [DateTime]::UtcNow.Ticks) -TimeoutSec 20; $script:latest = $m.version
+  $m = Invoke-RestMethod -Uri ("$Base/manifest.json?t=" + [DateTime]::UtcNow.Ticks) -TimeoutSec 20; if ([string]$m.version -notmatch '^\d{1,4}(\.\d{1,5}){1,3}$') { throw 'version invalide' }; $script:latest = [string]$m.version
   $want = @(($env:MYUCA_BROWSERS -split ',') | Where-Object { $_ })
   for ($i = 0; $i -lt $script:browsers.Count; $i++) { $clb.SetItemChecked($i, ($want -contains $script:browsers[$i].id)) }
   Run-Install

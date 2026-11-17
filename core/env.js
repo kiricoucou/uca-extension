@@ -114,7 +114,8 @@ async function checkAppUpdate() {
   try {
     const cur = (await loadedManifest) || lat;
     const current = cur && cur.version, latest = lat && lat.version;
-    if (!current || !latest) { await local.set({ uca_update_check_failed: "manifest.json invalide" }); return; }
+    const VER = /^\d{1,4}(\.\d{1,5}){1,3}$/;
+    if (!current || !latest || !VER.test(String(latest))) { await local.set({ uca_update_check_failed: "manifest.json invalide" }); return; }
     const applied = (function () { try { return localStorage.getItem("uca_updater_applied") || ""; } catch (_) { return ""; } })();
     const isNewer = compareVersions(current, latest) < 0 && (!applied || compareVersions(applied, latest) < 0);
     const effectiveCurrent = (applied && compareVersions(applied, current) > 0) ? applied : current;

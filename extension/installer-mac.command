@@ -49,6 +49,7 @@ say "Installation : $INST"; say "Téléchargements : $DLDIR"
 
 # ---------------------------------------------------------------- 3) derniere version
 VERSION="$(curl -fsSL $PROTO "$BASE_URL/manifest.json?t=$(date +%s)" 2>/dev/null | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n1)"
+printf '%s' "$VERSION" | grep -Eq '^[0-9]{1,4}(\.[0-9]{1,5}){1,3}$' || VERSION=""   # jamais de texte libre venu du site dans une URL / commande
 [ -z "$VERSION" ] && { warn "Site injoignable : vérifie ta connexion."; exit 1; }
 say "Dernière version : $VERSION"
 

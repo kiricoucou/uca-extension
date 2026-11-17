@@ -86,9 +86,13 @@ self.addEventListener("fetch", (e) => {
   if (url.origin !== location.origin) return;
   if (e.request.method === "POST" && url.pathname.endsWith("/app/import.html")) {
     e.respondWith((async () => {
+      // Un formulaire hébergé sur un autre site (cross-site) ne doit pas pouvoir déposer un fichier ici : le partage natif
+      // du système arrive sans page tierce (Sec-Fetch-Site « none » ou « same-origin »).
+      const site = e.request.headers.get("Sec-Fetch-Site");
+      if (site === "cross-site" || site === "same-site") return Response.redirect(new URL("app/import.html", self.registration.scope).href, 303);
       const form = await e.request.formData();
       const file = form.get("file");
-      if (file) await (await caches.open("uca-share")).put("shared-file", new Response(await file.text()));
+      if (file && file.size <= 5 * 1024 * 1024) await (await caches.open("uca-share")).put("shared-file", new Response(await file.text()));
       return Response.redirect(new URL("app/import.html?shared=1", self.registration.scope).href, 303);
     })());
     return;

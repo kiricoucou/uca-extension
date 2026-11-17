@@ -103,6 +103,7 @@ def main():
                     viewport={"width": 390, "height": 844},
                 )
                 sw = ctx.service_workers[0] if ctx.service_workers else ctx.wait_for_event("serviceworker")
+                sw.evaluate("() => chrome.storage.local.set({ uca_dev_bridge: true })")   # le pont n'est actif sur localhost que pour les tests
 
                 warm = ctx.new_page()
                 for host in ("https://odin.iut.uca.fr/warmup", "https://ent.uca.fr/warmup"):

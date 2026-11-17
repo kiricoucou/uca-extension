@@ -57,6 +57,57 @@ def permissions_check():
     }, str(hosts))
 
 
+def version_format_check():
+    """La « dernière version » distante finit dans une commande de terminal : format strict partout."""
+    pat = r"^\d{1,4}(\.\d{1,5}){1,3}$"
+    for f in ("background.js", "core/env.js", "core/updategate.js"):
+        check(f"{f} : version distante validée par un format strict", pat in (ROOT / f).read_text(encoding="utf-8"))
+
+
+def static_hardening_check():
+    su = (ROOT / "core" / "selfupdate.js").read_text(encoding="utf-8")
+    check("selfupdate : refuse un paquet plus ancien que la version installée (anti-retour en arrière)", "plus ancienne que celle installée" in su)
+    pf = (ROOT / "pages-files.txt").read_text(encoding="utf-8").split()
+    check("site publié : pas de notes de travail (aide-install entier)", "aide-install" not in pf and "aide-install/img" in pf)
+    kt = (ROOT / "app/webview-app/app/src/main/java/fr/edtuca/app/GithubUpdateManager.kt").read_text(encoding="utf-8")
+    check("app Android : adresses de version.json ignorées (dépôt, OTA, raw en dur)", 'optString("github_repo_url"' not in kt and 'optString("ota_bundle_url"' not in kt and 'https://github.com/kiricoucou/' in kt)
+    iw = (ROOT / "extension" / "installer-windows.bat").read_text(encoding="utf-8")
+    check("installateur Windows : version distante validée (pas d'injection d'arguments)", iw.count("-notmatch '^\\d{1,4}(\\.\\d{1,5}){1,3}$'") >= 2)
+    check("installateur macOS : version distante validée", "grep -Eq '^[0-9]{1,4}" in (ROOT / "extension" / "installer-mac.command").read_text(encoding="utf-8"))
+    ota = (ROOT / "tests" / "build_ota.py").read_text(encoding="utf-8")
+    check("paquet OTA : fichiers cachés exclus", 'startswith(".")' in ota)
+    import zipfile
+    names = zipfile.ZipFile(ROOT / "ota-bundle.zip").namelist()
+    check("paquet OTA publié : aucun fichier caché (.impeccable…)", not [n for n in names if any(seg.startswith(".") for seg in n.split("/"))])
+
+
+def bridge_origin_check(p):
+    """Le pont content-bridge.js doit rester inerte sur une page locale (127.0.0.1) tant que le drapeau de développement
+    n'est pas posé : une page web quelconque ne doit ni piloter l'extension ni recevoir son état."""
+    import subprocess, socket, tempfile
+    root = Path(__file__).resolve().parent.parent
+    sock = socket.socket(); sock.bind(("127.0.0.1", 0)); port = sock.getsockname()[1]; sock.close()
+    srv = subprocess.Popen([sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1", "--directory", str(root)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        ctx = p.chromium.launch_persistent_context(tempfile.mkdtemp(), headless=False, args=["--headless=new", f"--disable-extensions-except={ROOT}", f"--load-extension={ROOT}"])
+        sw = ctx.service_workers[0] if ctx.service_workers else ctx.wait_for_event("serviceworker")
+        url = f"http://127.0.0.1:{port}/merci.html"
+        def seen(flag):
+            sw.evaluate("(f) => chrome.storage.local.set({ uca_dev_bridge: f })", flag)
+            pg = ctx.new_page()
+            pg.add_init_script("window.__got=[]; window.addEventListener('message', e => { if (e.data && e.data.source === 'uca-extension') window.__got.push(e.data.type); });")
+            for _ in range(30):
+                try: pg.goto(url); break
+                except Exception: pg.wait_for_timeout(200)
+            pg.wait_for_timeout(1500)
+            got = pg.evaluate("() => window.__got"); pg.close(); return got
+        check("pont : page locale sans drapeau dev = aucun message de l'extension (pas de fuite d'état)", seen(False) == [])
+        check("pont : avec le drapeau dev (tests), la page locale reçoit bien UCA_EXTENSION_READY", "UCA_EXTENSION_READY" in seen(True))
+        ctx.close()
+    finally:
+        srv.terminate()
+
+
 def shell_check(p, data):
     """Coque de l'app web (app/shell.html) : groupes, changements d'emploi du temps et notes piégés, aucun script exécuté."""
     import subprocess, socket
@@ -111,6 +162,8 @@ def signature_check():
 
 def main():
     permissions_check()
+    version_format_check()
+    static_hardening_check()
     with sync_playwright() as p:
         ctx, sw, base = launch(p, viewport={"width": 1280, "height": 860})
         data = poisoned_seed()
@@ -151,6 +204,7 @@ def main():
             page.close()
         ctx.close()
         shell_check(p, data)
+        bridge_origin_check(p)
 
     signature_check()
     print(f"\n{sum(results)}/{len(results)} vérifications OK")

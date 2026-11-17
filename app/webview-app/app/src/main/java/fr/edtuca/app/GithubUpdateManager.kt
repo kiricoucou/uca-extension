@@ -109,16 +109,19 @@ object GithubUpdateManager {
                     val json = JSONObject(body)
 
                     val remoteVersion = json.optString("version", localVersionName)
-                    val remoteVersionCode = json.optInt("version_code", localVersionCode)
-                    val minApkVersionCode = json.optInt("min_apk_version_code", 2)
+                    val remoteVersionCodeRaw = json.optInt("version_code", localVersionCode)
+                    // version.json n'est pas signé : un code absurde (ex. 9999) bloquerait l'app pour tous. Écart borné, sinon ignoré.
+                    val remoteVersionCode = if (remoteVersionCodeRaw in 0..(localVersionCode + 50)) remoteVersionCodeRaw else localVersionCode
+                    val minApkRaw = json.optInt("min_apk_version_code", 2)
+                    val minApkVersionCode = if (minApkRaw in 0..(localVersionCode + 50)) minApkRaw else localVersionCode
                     val commitSha = json.optString("commit_sha", "main").take(7)
                     val branch = json.optString("branch", "main")
                     val publishedAt = json.optString("published_at", "25/10/2026")
                     val forceUpdate = json.optBoolean("force_update", false)
                     val apkUrl = GITHUB_RAW_APK_URL // en dur : jamais d'adresse venue de version.json
-                    val otaUrl = json.optString("ota_bundle_url", GITHUB_OTA_BUNDLE_URL)
-                    val rawBase = json.optString("raw_base_url", GITHUB_RAW_BASE_URL)
-                    val repoUrl = json.optString("github_repo_url", GITHUB_REPO_URL)
+                    val otaUrl = GITHUB_OTA_BUNDLE_URL
+                    val rawBase = GITHUB_RAW_BASE_URL
+                    val repoUrl = GITHUB_REPO_URL // en dur : jamais d'adresse venue de version.json (sinon bouton menant à une page tierce)
 
                     val changelogList = mutableListOf<String>()
                     // Toutes les versions de l'app publiées depuis celle installée (pas seulement la dernière).
@@ -322,6 +325,8 @@ object GithubUpdateManager {
 
     fun openGithubDownload(activity: Activity, url: String) {
         try {
+            // Uniquement le dépôt du projet : jamais un autre hôte ou schéma.
+            if (!url.startsWith("https://github.com/kiricoucou/")) return
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             activity.startActivity(intent)
         } catch (_: Exception) {}

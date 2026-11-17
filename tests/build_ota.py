@@ -28,7 +28,7 @@ def gradle_version():
 
 
 def build(out_zip: Path, bundle_version: str, base_code: int):
-    files = sorted(p for p in SITE.rglob("*") if p.is_file() and p.name != "ota.json")
+    files = sorted(p for p in SITE.rglob("*") if p.is_file() and p.name != "ota.json" and not any(part.startswith(".") for part in p.relative_to(SITE).parts))   # jamais de fichiers cachés (.impeccable, .git...) dans le paquet
     bad = [p for p in files if p.suffix.lstrip(".").lower() not in ALLOWED]
     if bad:
         raise SystemExit("types non autorisés dans le paquet : " + ", ".join(str(p.relative_to(SITE)) for p in bad[:5]))

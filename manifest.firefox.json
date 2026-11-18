@@ -15,7 +15,9 @@
     "https://odin.iut.uca.fr/*",
     "https://edt.uca.fr/*",
     "http://odin.iut.uca.fr/*",
-    "https://raw.githubusercontent.com/*"
+    "https://raw.githubusercontent.com/*",
+    "https://api.t2c.fr/*",
+    "https://www.t2c.fr/*"
   ],
   "icons": {
     "16": "icons/icon16.png",

@@ -25,6 +25,11 @@
       chrome.runtime.sendMessage({ type: "UCA_SYNC_REQUEST", mode: data.mode });
     }
     if (data.type === "UCA_OPEN_AGENDA") chrome.runtime.sendMessage({ type: "UCA_OPEN_AGENDA", auto: data.auto === true });
+    if (data.type === "UCA_T2C_DEPARTURES_REQUEST") {
+      chrome.runtime.sendMessage({ type: "UCA_T2C_DEPARTURES_REQUEST", stopId: data.stopId }, (res) => {
+        post({ type: "UCA_T2C_DEPARTURES_RESPONSE", reqId: data.reqId, res: res });
+      });
+    }
   });
 
   chrome.runtime.onMessage.addListener((msg) => {

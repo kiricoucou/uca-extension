@@ -11,3 +11,4 @@ build/
 **/build/
 *.log
 .idea/
+images/

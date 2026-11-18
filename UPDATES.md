@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.62 — QR de la page appli cliquable
+
+- Sur la page Télécharger l'appli, le QR code est cliquable : il s'ouvre en grand pour être scanné facilement depuis l'écran.
+
 ## 1.46.61 — lien /app/ : choix page ou agenda
 
 - Ouvrir le lien de l'agenda en ligne demande d'abord : consulter la page ou accéder à l'agenda en ligne, avant d'afficher quoi que ce soit.

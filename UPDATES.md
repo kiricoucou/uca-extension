@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.61 — lien /app/ : choix page ou agenda
+
+- Ouvrir le lien de l'agenda en ligne demande d'abord : consulter la page ou accéder à l'agenda en ligne, avant d'afficher quoi que ce soit.
+
 ## 1.46.60 — app Android 1.4.28 : notes cliquables
 
 - Notes : chaque note avec sa barre de progression est cliquable (ordinateur et téléphone) et ouvre un détail : note, coefficient, moyenne de la classe, meilleure et moins bonne note. Dans le graphique d'une matière, les barres et les libellés ouvrent aussi ce détail. La croix du détail (ou un clic à côté, ou Échap) ferme seulement le détail : le panneau Notes reste ouvert.

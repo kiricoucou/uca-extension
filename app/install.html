@@ -60,7 +60,7 @@
   // ?force=1 : demandé depuis l'app (menu « Installer l'app ») : le guide s'affiche même si un design est déjà choisi.
   const force = new URLSearchParams(location.search).get("force") === "1";
   if (standalone) { try { localStorage.setItem("uca_pwa_installed", "1"); } catch (e) { /* ignore */ } }
-  if (standalone || (uca_design && !force)) { localStorage.setItem("uca_install_seen", "1"); location.replace("index.html"); return; }
+  if (standalone || (uca_design && !force)) { localStorage.setItem("uca_install_seen", "1"); location.replace("index.html?go=1"); return; }
   const ua = navigator.userAgent;
   const iosOther = /crios|fxios|edgios|opios/i.test(ua);
   const firefoxAndroid = /android/i.test(ua) && /firefox/i.test(ua);
@@ -79,7 +79,7 @@
     btn.addEventListener("click", async () => {
       btn.disabled = true; btn.textContent = "Vérification…";
       await chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
-      location.href = "index.html";
+      location.href = "index.html?go=1";
     });
     document.getElementById("iosCard").classList.add("hidden");
     return;
@@ -102,7 +102,7 @@
     if (choice.outcome === "accepted") { localStorage.setItem("uca_install_seen", "1"); try { localStorage.setItem("uca_pwa_installed", "1"); } catch (e) { /* ignore */ } }
     deferred = null;
   });
-  document.getElementById("continueBtn").addEventListener("click", () => { localStorage.setItem("uca_install_seen", "1"); location.href = "index.html"; });
+  document.getElementById("continueBtn").addEventListener("click", () => { localStorage.setItem("uca_install_seen", "1"); location.href = "index.html?go=1"; });
 })();
 </script>
 </body>

@@ -14,7 +14,7 @@ async function finish(snap) {
     status(`${res.events} cours importés${when ? " (données du " + when + ")" : ""}.`, "ok");
     $("openBtn").classList.remove("hidden");
     $("chooseCard").classList.add("hidden");
-    setTimeout(() => location.replace("index.html"), 1400);
+    setTimeout(() => location.replace("index.html?go=1"), 1400);
   } catch (e) {
     status(e.message, "err");
   }
@@ -179,8 +179,8 @@ $("linkGoBtn").addEventListener("click", () => {
 
 $("scanBtn").addEventListener("click", startScan);
 $("stopBtn").addEventListener("click", stopScan);
-$("openBtn").addEventListener("click", () => location.replace("index.html"));
-$("skipBtn").addEventListener("click", () => { sessionStorage.setItem("uca_import_skip", "1"); location.replace("index.html"); });
+$("openBtn").addEventListener("click", () => location.replace("index.html?go=1"));
+$("skipBtn").addEventListener("click", () => { sessionStorage.setItem("uca_import_skip", "1"); location.replace("index.html?go=1"); });
 // Android (hors APK) : proposer l'app qui se connecte à Odin directement.
 if (/Android/i.test(navigator.userAgent) && !window.AndroidUCA && $("odinApk")) $("odinApk").classList.remove("hidden");
 window.UCA_IMPORT = { importText };

@@ -478,7 +478,7 @@ async function onAction(act, el) {
     if (!confirm("Effacer emploi du temps, notes, absences et réglages de cet appareil ?")) return;
     await chrome.storage.local.clear();
     ["uca_profile_photo", "uca_notif_read", "uca_notif_dismissed", "uca_notif_saved", "uca_maps_consent", "uca_install_seen"].forEach((k) => localStorage.removeItem(k));
-    location.replace("index.html");
+    location.replace("index.html?go=1");
   }
 }
 

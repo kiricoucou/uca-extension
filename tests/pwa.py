@@ -52,6 +52,9 @@ def run_flow(browser, device, base, label, errors, design_id):
     webkit = browser.browser_type.name == "webkit"
     page.on("pageerror", lambda e: None if (webkit and "sw.js" in str(e)) or "ResizeObserver" in str(e) else errors.append(f"[{label}] {e}"))
     page.goto(base + "app/"); page.wait_for_load_state("networkidle")
+    # Lien ouvert dans un navigateur : on demande d'abord « consulter la page » ou « agenda en ligne », rien d'autre n'est affiché.
+    check(f"{label} : le lien /app/ demande d'abord consulter la page ou l'agenda en ligne", page.locator("#gate").is_visible() and not page.locator("#boot").is_visible() and "install.html" not in page.url and page.locator("#gatePage").get_attribute("href") == "../appli.html", page.url)
+    page.click("#gateAgenda"); page.wait_for_load_state("networkidle"); page.wait_for_timeout(600)
     check(f"{label} : guide d'installation à la première visite", "install.html" in page.url, page.url)
     shot(page, f"{label}-installation")
     page.click("#continueBtn"); page.wait_for_url("**/choose.html?tab=1", timeout=8000); page.wait_for_timeout(500)
@@ -83,7 +86,7 @@ def run_flow(browser, device, base, label, errors, design_id):
     if browser.browser_type.name == "chromium":
         ready = page.evaluate("() => navigator.serviceWorker.ready.then(r => !!r.active)")
         check(f"{label} : service worker actif", ready)
-        page.goto(base + "app/index.html"); page.wait_for_timeout(1500)
+        page.goto(base + "app/index.html?go=1"); page.wait_for_timeout(1500)
         ctx.set_offline(True)
         page.reload(); page.wait_for_timeout(2500)
         check(f"{label} : fonctionne hors ligne", A().locator(".m-card, .view.active .event-card").count() > 0)
@@ -241,7 +244,9 @@ def no_install_loop_once_configured(browser, base, errors):
     page.evaluate("(d) => new Promise(r => chrome.storage.local.set(d, r))", data)
     # Pas de "uca_install_seen" dans localStorage, pas de mode standalone : avant le correctif,
     # index.html renvoyait quand même vers install.html.
-    page.goto(base + "app/index.html"); page.wait_for_timeout(1200)
+    page.goto(base + "app/index.html"); page.wait_for_timeout(600)
+    check("design déjà choisi : le choix « page ou agenda » est quand même posé d'abord", page.locator("#gate").is_visible())
+    page.click("#gateAgenda"); page.wait_for_timeout(1500)
     check("design déjà choisi : jamais renvoyé vers le guide d'installation", "install.html" not in page.url, page.url)
     check("design déjà choisi : app ouverte directement (coque + agenda)", "shell.html" in page.url and "agenda.html" in (page.query_selector("#agendaFrame").get_attribute("src") or ""), page.url)
     ctx.close()

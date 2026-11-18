@@ -8,9 +8,24 @@
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<main class="center">
+<main class="center" id="boot" hidden>
   <img class="app-logo" src="icons/icon-192.png" alt="">
   <p class="muted">Ouverture…</p>
+</main>
+<main id="gate" hidden>
+  <img class="app-logo" src="icons/icon-192.png" alt="">
+  <h1>Emploi du temps UCA</h1>
+  <p class="lead">Que veux-tu faire ?</p>
+  <div class="card">
+    <h2>Accéder à l'agenda en ligne</h2>
+    <p>Ouvre ton emploi du temps, tes notes et tes lieux directement dans ce navigateur.</p>
+    <button class="btn primary" id="gateAgenda" type="button">Ouvrir l'agenda en ligne</button>
+  </div>
+  <div class="card">
+    <h2>Consulter la page</h2>
+    <p>Découvre l'appli, l'installer sur ton téléphone ou ton ordinateur.</p>
+    <a class="btn" id="gatePage" href="../appli.html">Voir la page de présentation</a>
+  </div>
 </main>
 <script src="../core/env.js"></script>
 <script>
@@ -18,6 +33,17 @@
    puis la coque de l'app (onglets comme l'app Android ; les paramètres de raccourci sont transmis à l'agenda). */
 (async function () {
   const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  // Ouverture du lien dans un navigateur, sans rien d'autre : on demande d'abord « consulter la page » ou « agenda en ligne »,
+  // avant d'afficher quoi que ce soit. Pas de question dans l'appli installée, dans un cadre, avec un raccourci (?view=, ?open=, ?source=…)
+  // ni une fois le choix fait dans cet onglet.
+  let asked = false; try { asked = sessionStorage.getItem("uca_app_go") === "1"; } catch (e) { /* stockage indisponible */ }
+  if (!standalone && window.top === window && !location.search && !asked) {
+    const gate = document.getElementById("gate"); gate.hidden = false;
+    document.getElementById("gateAgenda").onclick = () => { try { sessionStorage.setItem("uca_app_go", "1"); } catch (e) { /* ignoré */ } location.reload(); };
+    document.getElementById("gateAgenda").focus();
+    return;
+  }
+  document.getElementById("boot").hidden = false;
   const [{ uca_design }, designs] = await Promise.all([chrome.storage.local.get("uca_design"), fetch(chrome.runtime.getURL("designs/designs.json")).then((r) => r.json())]);
   // Design déjà choisi sur cet appareil : il a déjà servi, jamais revoir le guide d'installation
   // (y compris dans une fenêtre "application" classique où le mode standalone n'est pas détecté).

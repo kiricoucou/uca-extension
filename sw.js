@@ -75,7 +75,7 @@ self.addEventListener("activate", (e) => {
 // Notification « prochain cours » : un appui ouvre (ou ramène) l'app.
 self.addEventListener("notificationclick", (e) => {
   e.notification.close();
-  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => (list.length ? list[0].focus() : self.clients.openWindow(new URL("app/index.html", self.registration.scope).href))));
+  e.waitUntil(self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => (list.length ? list[0].focus() : self.clients.openWindow(new URL("app/index.html?go=1", self.registration.scope).href))));
 });
 self.addEventListener("message", (e) => { if (e.data && e.data.type === "SKIP_WAITING") self.skipWaiting(); });
 

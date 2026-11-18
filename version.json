@@ -14,9 +14,17 @@
     "25 widgets pour l'écran d'accueil : prochain cours, ma journée, 3 jours, devoirs, examens, moyenne, notes par matière, absences, connexion et plus encore (appui long sur l'écran d'accueil, puis Widgets, My UCA).",
     "Toucher un widget ouvre l'écran utile (agenda, notes, absences ou devoirs). Les widgets « Connexion » et « Synchronisation » ont un vrai bouton pour te reconnecter ou resynchroniser."
   ],
-  "ota_version": "1.4.27",
+  "ota_version": "1.4.28",
   "ota_base_version_code": 21,
   "history": [
+    {
+      "version": "1.46.60",
+      "app": "1.4.28",
+      "title": "notes cliquables",
+      "items": [
+        "Notes : chaque note avec sa barre de progression est cliquable (ordinateur et téléphone) et ouvre un détail : note, coefficient, moyenne de la classe, meilleure et moins bonne note. Dans…"
+      ]
+    },
     {
       "version": "1.46.59",
       "app": "1.4.27",
@@ -80,18 +88,6 @@
         "Design Lumen (verre liquide) remplace Bulletin ; le choix mémorisé est migré automatiquement. Contrastes conformes WCAG AA.",
         "Première installation : le design par défaut (Studio) est appliqué et l'onglet du calendrier des cours s'ouvre tout seul, avec le bouton pour se connecter à Odin ; changer de design…",
         "Démo et navigation du site / de l'app web : menu avec icônes, bascule clair / sombre, démo avec des cours jusqu'en septembre 2027 et des scénarios de changements."
-      ]
-    },
-    {
-      "version": "1.46.28",
-      "app": "1.4.20",
-      "title": "notifications gérables, passé de la courbe, dates de sortie",
-      "items": [
-        "Notifications gérables partout : dans la cloche « Activité » de l'extension et dans l'écran Notifications de l'APK (comme dans l'app web) : garder (★, jamais supprimée), supprimer, tout…",
-        "Durée de conservation réglable : 7, 14, 30 (défaut), 90 jours ou illimitée, dans Paramètres (extension), Préférences (APK et app web). Les notifications gardées ne sont jamais concernées.",
-        "Courbe d'évolution de la moyenne : le passé est reconstruit à partir de la date de première vue de chaque note (plus besoin d'attendre plusieurs synchros) ; un seul point est dessiné…",
-        "APK : le design Studio est proposé dans les Préférences.",
-        "Site : les versions qui n'ont jamais eu de publication à leur nom (1.46.1, 1.46.7, 1.46.8) indiquent « livrée avec la 1.46.x » et la date de cette version, au lieu d'une date approchée."
       ]
     }
   ]

@@ -1030,6 +1030,8 @@ function closeOnOutsideClick(panelId, wrapId) {
     const p = $(panelId);
     if (!p.classList.contains("open") || !document.contains(e.target)) return;
     if (p.contains(e.target) || $(wrapId).contains(e.target) || e.target.closest("#mobileMenu")) return;
+    // Le détail d'une note (fenêtre par-dessus le panneau) fait partie du panneau : sa croix ou un clic à côté ne ferme que lui.
+    if (e.target.closest && e.target.closest("#gradeDetailOverlay")) return;
     p.classList.remove("open");
     if ($("ucaSheetBackdrop")) $("ucaSheetBackdrop").hidden = true;
   });
@@ -1092,8 +1094,9 @@ function openGradeDetailModal(label, row) {
       </div>
     `;
     document.body.appendChild(overlay);
-    overlay.querySelector("#closeGdm").onclick = () => overlay.classList.remove("open");
-    overlay.onclick = (e) => { if (e.target === overlay) overlay.classList.remove("open"); };
+    overlay.querySelector("#closeGdm").onclick = (e) => { e.stopPropagation(); overlay.classList.remove("open"); };
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay.classList.contains("open")) { e.stopPropagation(); overlay.classList.remove("open"); } }, true);
+    overlay.onclick = (e) => { e.stopPropagation(); if (e.target === overlay) overlay.classList.remove("open"); };
   }
   $("gdmTitle").textContent = label;
   const note = row.note != null ? fmtNote(row.note) + " / 20" : "En attente de notation";
@@ -1397,6 +1400,10 @@ function svgEl(tag, attrs) { const e = document.createElementNS(SVG_NS, tag); Ob
 .np-arrow{display:inline-block;color:var(--accent);font-weight:900;margin-right:6px;animation:np-point .6s ease-in-out infinite;}
 @keyframes np-point{0%,100%{transform:translateX(0)}50%{transform:translateX(7px)}}
 .np-mat{scroll-margin-top:72px;}
+.np-eval-row{cursor:pointer;border-radius:8px;padding:3px 4px;margin-left:-4px;margin-right:-4px;transition:background .15s;}
+.np-eval-row:hover{background:rgba(127,127,127,.12);}
+.np-eval-row:focus-visible{outline:2px solid var(--accent,#18b7b0);outline-offset:1px;}
+.np-chart-scroll svg text.np-lab{cursor:pointer;}
 .np-mat.np-flash{border-radius:8px;animation:np-flash 1.2s ease-out 2;}
 @keyframes np-flash{0%{background:rgba(127,127,127,.3)}100%{background:transparent}}
 .cal-arrow{position:fixed;z-index:400;pointer-events:none;font-size:26px;line-height:1;font-weight:900;color:var(--accent,#00bfa5);text-shadow:0 1px 3px rgba(0,0,0,.5);animation:cal-bounce .6s ease-in-out infinite;}
@@ -1497,12 +1504,15 @@ function matiereChart(label) {
     const bars = [[cx - bw - 1, e.note, gradeColor(e.note), 1, "Ta note"], [cx + 1, e.moy, "currentColor", .35, "Moyenne de la classe"]];
     bars.forEach(([bx, v, fill, op, what]) => {
       if (v == null) return;
-      const r = svgEl("rect", { x: bx, y: y(v), width: bw, height: Math.max(1, y(0) - y(v)), fill, "fill-opacity": op, rx: 2 });
-      const tt = svgEl("title"); tt.textContent = `${e.label} — ${what} : ${fmtNote(v)} / 20`; r.appendChild(tt);
+      const r = svgEl("rect", { x: bx, y: y(v), width: bw, height: Math.max(1, y(0) - y(v)), fill, "fill-opacity": op, rx: 2, class: "np-bar" });
+      const tt = svgEl("title"); tt.textContent = `${e.label} — ${what} : ${fmtNote(v)} / 20. Toucher pour le détail`; r.appendChild(tt);
+      r.addEventListener("click", () => openGradeDetailModal(e.label, e));
       svg.appendChild(r);
     });
-    svg.appendChild(svgText(cx, H - 16, e.label.length > 12 ? e.label.slice(0, 11) + "…" : e.label));
-    svg.appendChild(svgText(cx, H - 5, fmtNote(e.note)));
+    const t1 = svgText(cx, H - 16, e.label.length > 12 ? e.label.slice(0, 11) + "…" : e.label), t2 = svgText(cx, H - 5, fmtNote(e.note));
+    [t1, t2].forEach((tx) => { tx.setAttribute("class", "np-lab"); tx.setAttribute("role", "button"); tx.setAttribute("tabindex", "0"); tx.setAttribute("aria-label", `${e.label} : détail de la note`);
+      tx.addEventListener("click", () => openGradeDetailModal(e.label, e));
+      tx.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openGradeDetailModal(e.label, e); } }); svg.appendChild(tx); });
   });
   wrap.appendChild(chartScroll(svg));
   wrap.appendChild(gradeLegend());
@@ -1604,6 +1614,13 @@ function overviewChart() {
       // Note à barème (sur 12, sur 25…) : le chiffre est violet tant que le barème n'est pas confirmé, rose ensuite ; la barre garde la couleur de la note.
       if (sc) { val.classList.add(e.choice == null ? "sc-note-ask" : "sc-note-done"); val.title = e.choice == null ? "Barème à confirmer" : "Barème choisi (⇄ pour le changer)"; }
       row.append(left, val); box.appendChild(row);
+      // Toute la ligne (titre, barre de progression, note) ouvre le détail : meilleure note, moins bonne, moyenne de la classe…
+      row.classList.add("np-eval-row"); row.tabIndex = 0; row.setAttribute("role", "button");
+      row.title = "Voir le détail : meilleure note, moins bonne note, moyenne de la classe";
+      row.setAttribute("aria-label", `${bare} : ${fmtNote(e.note)} sur 20. Voir le détail`);
+      const showDetail = () => openGradeDetailModal(bare, e);
+      row.addEventListener("click", showDetail);
+      row.addEventListener("keydown", (ev) => { if (ev.target === row && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); showDetail(); } });
     });
     wrap.appendChild(box);
   });

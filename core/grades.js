@@ -168,7 +168,7 @@ function reconstructHistory(releve, notesSeen, history) {
 function matiereSeries(releve, label) {
   for (const ue of (releve && releve.ue) || []) {
     const m = (ue.matieres || []).find((x) => x.label === label);
-    if (m) return (m.evals || []).filter((e) => e.note != null).map((e) => ({ label: e.label.replace(/\s*\(sur[^)]*\)/i, ""), note: e.note, moy: e.moy == null ? null : e.moy }));
+    if (m) return (m.evals || []).filter((e) => e.note != null).map((e) => ({ label: e.label.replace(/\s*\(sur[^)]*\)/i, ""), note: e.note, moy: e.moy == null ? null : e.moy, coeff: e.coeff, maxi: e.maxi, mini: e.mini }));
   }
   return [];
 }

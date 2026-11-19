@@ -185,6 +185,34 @@ $("wipeBtn").addEventListener("click", () => {
 });
 document.addEventListener("click", (e) => { if (!e.target.closest("#wipeBtn") && $("wipeBtn").classList.contains("armed")) setWipeArmed(false); });
 
+/* Remise à blanc complète : toutes les données de l'extension sur cet appareil (hors état des mises à jour), puis retour au choix du design.
+   Même confirmation en deux clics que « Réinitialiser l'agenda », mais sans annulation possible. */
+let fullArmed = 0;
+const FULL_LABEL = "Tout supprimer et remettre à blanc";
+const FULL_KEEP = ["uca_store_build", "uca_update_available", "uca_current_version", "uca_latest_version", "uca_update_check_failed"];
+function setFullArmed(on) {
+  clearTimeout(fullArmed);
+  const b = $("fullWipeBtn");
+  if (on) { b.textContent = "Confirmer : tout supprimer, sans retour"; b.classList.add("armed"); fullArmed = setTimeout(() => setFullArmed(false), 5000); }
+  else { b.textContent = FULL_LABEL; b.classList.remove("armed"); }
+}
+async function fullWipe() {
+  const all = await chrome.storage.local.get(null);
+  await chrome.storage.local.remove(Object.keys(all).filter((k) => !FULL_KEEP.includes(k)));
+  try { if (chrome.storage.session && chrome.storage.session.clear) await chrome.storage.session.clear(); } catch (e) { /* absent selon le navigateur */ }
+  try { Object.keys(localStorage).filter((k) => k.indexOf("uca_") === 0 && k !== "uca_store").forEach((k) => localStorage.removeItem(k)); } catch (e) { /* stockage indisponible */ }
+  try { sessionStorage.clear(); } catch (e) { /* ignoré */ }
+  try { if (window.caches) { const ks = await caches.keys(); await Promise.all(ks.map((k) => caches.delete(k))); } } catch (e) { /* ignoré */ }
+  try { if (chrome.alarms && chrome.alarms.clearAll) await chrome.alarms.clearAll(); } catch (e) { /* ignoré */ }
+}
+$("fullWipeBtn").addEventListener("click", () => {
+  if (!$("fullWipeBtn").classList.contains("armed")) { setFullArmed(true); return; }
+  setFullArmed(false);
+  $("fullWipeBtn").disabled = true;
+  fullWipe().then(() => { location.href = chrome.runtime.getURL("choose.html?tab=1"); }, () => { $("fullWipeBtn").disabled = false; });
+});
+document.addEventListener("click", (e) => { if (!e.target.closest("#fullWipeBtn") && $("fullWipeBtn").classList.contains("armed")) setFullArmed(false); });
+
 let undoTimer = 0;
 function renderUndoBanner() {
   chrome.storage.local.get("uca_reset_backup").then(({ uca_reset_backup: backup }) => {

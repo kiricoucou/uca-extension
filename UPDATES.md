@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.63 — Paramètres : tout supprimer et remettre à blanc
+
+- Nouveau bouton dans les Paramètres : « Tout supprimer et remettre à blanc ». Il efface toutes les données de l'extension sur l'appareil (cours, notes, absences, réglages, design, code de partage) après une confirmation en deux clics, puis revient au choix du design.
+
 ## 1.46.62 — QR de la page appli cliquable
 
 - Sur la page Télécharger l'appli, le QR code est cliquable : il s'ouvre en grand pour être scanné facilement depuis l'écran.

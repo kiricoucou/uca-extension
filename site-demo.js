@@ -16,7 +16,12 @@ let started = false;
 function layout() {
   const size = device === "phone" ? PHONE : DESKTOP;
   const border = device === "phone" ? 16 : 2;
-  const scale = Math.min(1, ((stage.clientWidth || size.w + border) - border) / size.w);
+  let scale = Math.min(1, ((stage.clientWidth || size.w + border) - border) / size.w);
+  // Téléphone : toujours entier à l'écran en hauteur (boutons des designs au-dessus, un peu d'air en dessous), sans passer sous 55 %.
+  if (device === "phone") {
+    const room = (window.innerHeight || 800) - 150;
+    scale = Math.min(scale, Math.max(0.55, (room - border) / size.h));
+  }
   frame.style.width = size.w + "px"; frame.style.height = size.h + "px";
   frame.style.transform = scale < 1 ? `scale(${scale})` : "";
   box.style.width = Math.round(size.w * scale) + "px"; box.style.height = Math.round(size.h * scale) + "px";

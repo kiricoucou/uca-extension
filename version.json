@@ -14,9 +14,17 @@
     "25 widgets pour l'écran d'accueil : prochain cours, ma journée, 3 jours, devoirs, examens, moyenne, notes par matière, absences, connexion et plus encore (appui long sur l'écran d'accueil, puis Widgets, My UCA).",
     "Toucher un widget ouvre l'écran utile (agenda, notes, absences ou devoirs). Les widgets « Connexion » et « Synchronisation » ont un vrai bouton pour te reconnecter ou resynchroniser."
   ],
-  "ota_version": "1.4.28",
+  "ota_version": "1.4.29",
   "ota_base_version_code": 21,
   "history": [
+    {
+      "version": "1.46.64",
+      "app": "1.4.29",
+      "title": "la flèche du cours disparaît à l'appui sur le menu",
+      "items": [
+        "Quand un cours est désigné par la flèche animée (depuis Examens ou Devoirs), un appui sur le bouton menu la fait disparaître tout de suite, même si ses 6 secondes ne sont pas écoulées.…"
+      ]
+    },
     {
       "version": "1.46.60",
       "app": "1.4.28",
@@ -76,18 +84,6 @@
       "items": [
         "APK : mise à jour obligatoire plus tolérante. Quand on lance le téléchargement du nouvel APK puis qu'on annule l'installateur Android (« Ouvrir avec… » une seule fois / toujours, ou…",
         "Téléchargement plus sûr : l'APK est écrit dans un fichier temporaire et ne prend son nom définitif qu'une fois complet."
-      ]
-    },
-    {
-      "version": "1.46.29",
-      "app": "1.4.21",
-      "title": "logos par design, Studio, Lumen, calendrier à l'installation",
-      "items": [
-        "Un logo SVG animé par design (Animé, Professionnel, Carnet, Lumen, Studio), affichés sur chaque carte du choix de design et sur le bouton « Design » (agenda et popup). Respectent «…",
-        "Design Studio recalé sur un tableau de bord planning : colonnes hachurées, cartes à liseré coloré sur fond pastel, jour courant et bouton « Importer » en noir, coins très arrondis.",
-        "Design Lumen (verre liquide) remplace Bulletin ; le choix mémorisé est migré automatiquement. Contrastes conformes WCAG AA.",
-        "Première installation : le design par défaut (Studio) est appliqué et l'onglet du calendrier des cours s'ouvre tout seul, avec le bouton pour se connecter à Odin ; changer de design…",
-        "Démo et navigation du site / de l'app web : menu avec icônes, bascule clair / sombre, démo avec des cours jusqu'en septembre 2027 et des scénarios de changements."
       ]
     }
   ]

@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.64 — app Android 1.4.29 : la flèche du cours disparaît à l'appui sur le menu
+
+- Quand un cours est désigné par la flèche animée (depuis Examens ou Devoirs), un appui sur le bouton menu la fait disparaître tout de suite, même si ses 6 secondes ne sont pas écoulées. Extension, app web et APK.
+
 ## 1.46.63 — Paramètres : tout supprimer et remettre à blanc
 
 - Nouveau bouton dans les Paramètres : « Tout supprimer et remettre à blanc ». Il efface toutes les données de l'extension sur l'appareil (cours, notes, absences, réglages, design, code de partage) après une confirmation en deux clics, puis revient au choix du design.

@@ -731,6 +731,7 @@ function buildMobileMenu() {
 }
 $("menuBtn").addEventListener("click", (e) => {
   e.stopPropagation();
+  clearCalArrow(); // la flèche du cours désigné disparaît toujours à l'appui sur le menu, délai ou pas
   const m = $("mobileMenu");
   if (m.classList.contains("open")) { closeMobileMenu(); return; }
   buildMobileMenu(); m.classList.add("open");

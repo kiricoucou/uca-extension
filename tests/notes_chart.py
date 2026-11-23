@@ -100,6 +100,8 @@ def main():
                 page.locator("#tasksPanel li.tk-click", has_text="Examen").first.click(); page.wait_for_timeout(900)
                 check(f"{design} : clic sur l'examen → panneau fermé", not page.evaluate("() => document.getElementById('tasksPanel').classList.contains('open')"))
                 check(f"{design} : le cours est désigné dans l'agenda par une flèche", page.locator(".cal-arrow").count() == 1 and page.locator(".cal-target").count() >= 1, f"{page.locator('.cal-arrow').count()} / {page.locator('.cal-target').count()}")
+                page.locator("#menuBtn").click(); page.wait_for_timeout(150)
+                check(f"{design} : appui sur le menu → la flèche disparaît tout de suite", page.locator(".cal-arrow").count() == 0 and page.locator(".cal-target").count() == 0, f"{page.locator('.cal-arrow').count()} / {page.locator('.cal-target').count()}")
                 ctx.close()
             browser.close()
     finally:

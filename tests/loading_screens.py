@@ -79,6 +79,18 @@ def main():
             check("démo : la simulation est bien chargée derrière", "agenda.html" in pg.locator(".demo-frame iframe").get_attribute("src"))
             pg.locator("[data-design]").nth(1).click(); pg.wait_for_timeout(250)
             check("démo : changer de design réaffiche l'écran de préparation", "off" not in (pg.locator(".demo-load").get_attribute("class") or "") or pg.locator(".demo-load").evaluate("e => getComputedStyle(e).opacity") != "0")
+            pg.close(); DELAYS.clear()
+            # --- minimum 3 s, même si la simulation est prête tout de suite
+            pg = b.new_page(viewport={"width": 1280, "height": 800}); pg.on("pageerror", lambda e: errs.append(str(e)))
+            pg.goto(base + "index.html"); t1 = time.time()
+            pg.wait_for_function("() => document.querySelector('.demo-frame iframe').getAttribute('src')", timeout=10000)
+            t_start = time.time()
+            pg.wait_for_timeout(2000)
+            check("démo prête tout de suite : l'écran reste au moins 2 s", "off" not in (pg.locator(".demo-load").get_attribute("class") or ""))
+            pg.wait_for_function("() => document.querySelector('.demo-load').classList.contains('off')", timeout=10000)
+            dur = time.time() - t_start
+            check("démo prête tout de suite : l'écran dure au moins 3 s au total", dur >= 2.6, f"{dur:.2f}s")
+            check("démo : écran disparu et simulation visible ensuite", pg.locator(".demo-load").evaluate("e => getComputedStyle(e).pointerEvents") == "none")
             check("aucune erreur JavaScript", not errs, "; ".join(errs)[:200])
             b.close()
     finally:

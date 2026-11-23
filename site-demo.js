@@ -100,14 +100,19 @@ veil.className = "demo-load"; veil.setAttribute("role", "status"); veil.setAttri
 veil.innerHTML = '<div class="dl-in"><div class="dl-t">Préparation de la simulation…</div><div class="dl-bar" role="progressbar" aria-label="Préparation de la simulation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div><div class="dl-p">0 %</div></div>';
 box.appendChild(veil);
 const vBar = veil.querySelector("i"), vTxt = veil.querySelector(".dl-p"), vPb = veil.querySelector(".dl-bar");
-let vPct = 0, vTimer = 0;
+const MIN_MS = 3000;   // la simulation s'affiche au minimum 3 s après le début de la préparation
+let vPct = 0, vTimer = 0, vStart = 0, vOffTimer = 0;
 function vSet(p) { vPct = p; vBar.style.width = p + "%"; vTxt.textContent = Math.round(p) + " %"; vPb.setAttribute("aria-valuenow", String(Math.round(p))); }
 function veilOn() {
-  clearInterval(vTimer); veil.classList.remove("off"); vSet(4);
-  // Avance vers 90 % pendant que le cadre se charge ; le dernier pas est donné par la fin réelle du chargement.
-  vTimer = setInterval(() => { if (vPct < 90) vSet(vPct + (90 - vPct) * 0.1); }, 200);
+  clearInterval(vTimer); clearTimeout(vOffTimer); veil.classList.remove("off"); vSet(4); vStart = Date.now();
+  // Avance régulièrement vers 90 % sur la durée minimale ; le dernier pas est donné par la fin réelle du chargement.
+  vTimer = setInterval(() => { const t = Math.min(1, (Date.now() - vStart) / MIN_MS); vSet(Math.max(vPct, 4 + (90 - 4) * (1 - Math.pow(1 - t, 2)))); }, 100);
 }
-function veilOff() { clearInterval(vTimer); vSet(100); setTimeout(() => veil.classList.add("off"), 250); }
+function veilOff() {
+  // Prête trop vite : on attend la durée minimale avant d'afficher la simulation.
+  clearTimeout(vOffTimer);
+  vOffTimer = setTimeout(() => { clearInterval(vTimer); vSet(100); setTimeout(() => veil.classList.add("off"), 250); }, Math.max(0, MIN_MS - (Date.now() - vStart)));
+}
 frame.addEventListener("load", () => {
   // Ignorer le chargement du cadre vide d'origine : seule la vraie simulation termine l'écran de préparation.
   let href = ""; try { href = frame.contentWindow.location.href; } catch (e) { href = frame.src; }

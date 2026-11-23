@@ -34,8 +34,8 @@ def main():
             # 1) Bouton de l'extension
             ctx = b.new_context(viewport={"width": 1200, "height": 900}); pg = ctx.new_page(); pg.on("pageerror", lambda e: errors.append(str(e)))
             pg.goto(base + "index.html"); pg.wait_for_timeout(500)
-            href = pg.evaluate("() => [...document.querySelectorAll('article.card a.btn')].find(a => a.textContent.trim() === \"Comment l'installer\").getAttribute('href')")
-            check("« Comment l'installer » -> installation.html", href == "installation.html", href)
+            href = pg.evaluate("() => [...document.querySelectorAll('article.card a.btn')].find(a => a.textContent.trim() === \"Installer sur mon ordinateur\").getAttribute('href')")
+            check("« Installer sur mon ordinateur » -> installation.html", href == "installation.html", href)
             check("installation.html existe et s'ouvre", pg.request.get(base + "installation.html").status == 200)
             check("« Installer l'app » -> app-download.html", pg.get_attribute(APP_BTN, "href") == "app-download.html")
 

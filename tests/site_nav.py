@@ -69,7 +69,9 @@ def main():
 
             # ---- accueil : « Que veux-tu faire ? »
             cards = pg.locator(".todo-cards .card").count()
-            check("accueil : 6 cartes « Que veux-tu faire ? »", cards == 6, cards)
+            check("accueil : 5 cartes « Que veux-tu faire ? »", cards == 5, cards)
+            check("accueil : la carte « Sur mon ordinateur » est la première, recommandée, et mène à la page d'installation", pg.locator(".todo-cards .card").first.get_attribute("class").split()[:2] == ["card", "reco"] and "Recommandé" in pg.locator(".todo-cards .card").first.inner_text() and pg.locator(".todo-cards .card").first.locator("a").get_attribute("href") == "installation.html")
+            check("accueil : plus de carte « Voir mon emploi du temps »", "Voir mon emploi du temps" not in pg.locator(".todo-cards").inner_text())
             check("accueil : la carte téléphone mène à appli.html", pg.locator(".todo-cards a[href='appli.html']").count() == 1)
             check("accueil : la carte « Mettre à jour » mène au pilote", pg.locator(".todo-cards a[href='mise-a-jour.html']").count() == 1)
 

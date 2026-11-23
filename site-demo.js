@@ -93,7 +93,38 @@ function guardTouches() {
 }
 frame.addEventListener("load", guardTouches);
 
-function start() { if (started) return; started = true; load(); }
+/* Écran de chargement de la simulation : elle se prépare en arrière plan, avec une barre de progression ;
+   dès qu'elle est prête (cadre chargé), l'écran disparaît. Chaque changement de design ou d'appareil le réaffiche. */
+const veil = document.createElement("div");
+veil.className = "demo-load"; veil.setAttribute("role", "status"); veil.setAttribute("aria-live", "polite");
+veil.innerHTML = '<div class="dl-in"><div class="dl-t">Préparation de la simulation…</div><div class="dl-bar" role="progressbar" aria-label="Préparation de la simulation" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div><div class="dl-p">0 %</div></div>';
+box.appendChild(veil);
+const vBar = veil.querySelector("i"), vTxt = veil.querySelector(".dl-p"), vPb = veil.querySelector(".dl-bar");
+let vPct = 0, vTimer = 0;
+function vSet(p) { vPct = p; vBar.style.width = p + "%"; vTxt.textContent = Math.round(p) + " %"; vPb.setAttribute("aria-valuenow", String(Math.round(p))); }
+function veilOn() {
+  clearInterval(vTimer); veil.classList.remove("off"); vSet(4);
+  // Avance vers 90 % pendant que le cadre se charge ; le dernier pas est donné par la fin réelle du chargement.
+  vTimer = setInterval(() => { if (vPct < 90) vSet(vPct + (90 - vPct) * 0.1); }, 200);
+}
+function veilOff() { clearInterval(vTimer); vSet(100); setTimeout(() => veil.classList.add("off"), 250); }
+frame.addEventListener("load", () => {
+  // Ignorer le chargement du cadre vide d'origine : seule la vraie simulation termine l'écran de préparation.
+  let href = ""; try { href = frame.contentWindow.location.href; } catch (e) { href = frame.src; }
+  if (started && frame.getAttribute("src") && href !== "about:blank") veilOff();
+});
+const baseLoad = load;
+load = function () { if (!started) return; veilOn(); baseLoad(); };
+
+function start() {
+  if (started) return;
+  // La simulation ne retarde jamais le chargement du site : elle démarre une fois la page entièrement chargée.
+  if (document.readyState !== "complete") { window.addEventListener("load", () => setTimeout(start, 300), { once: true }); return; }
+  started = true; frame.loading = "eager"; load();
+}
+// Préchargement en arrière plan : la démo démarre peu après le chargement de la page, sans attendre qu'on arrive dessus.
+const idle = () => setTimeout(start, 800);
+if (document.readyState === "complete") idle(); else window.addEventListener("load", idle);
 if ("IntersectionObserver" in window) {
   new IntersectionObserver((entries, obs) => { if (entries.some((e) => e.isIntersecting)) { start(); obs.disconnect(); } }, { rootMargin: "200px" }).observe(root);
 } else start();

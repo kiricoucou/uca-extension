@@ -6,6 +6,36 @@
   var s = document.currentScript, root = new URL('.', s.src).href;
   var KEY = 'uca-site-theme';
 
+  /* ---------- écran de chargement : seulement si la page met plus de 2 s à se charger complètement ---------- */
+  (function () {
+    try {
+      if (document.readyState === 'complete' || document.getElementById('ucaLoading')) return;
+      var wait = Math.max(0, 2000 - (window.performance && performance.now ? performance.now() : 0)), box = null, bar = null, pct = 0, timer = 0, done = false;
+      function show() {
+        if (done || document.readyState === 'complete') return;
+        var st = document.createElement('style');
+        st.textContent = '#ucaLoading{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:var(--bg,#fff);color:var(--text,#111);font:600 17px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;opacity:1;transition:opacity .3s}' +
+          '#ucaLoading.off{opacity:0;pointer-events:none}#ucaLoading .in{display:grid;gap:14px;justify-items:center;text-align:center;padding:24px;width:min(86vw,360px)}' +
+          '#ucaLoading .lg{width:72px;height:72px;border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,.18)}#ucaLoading .sp{width:100%;height:8px;border-radius:99px;background:rgba(127,127,127,.25);overflow:hidden}' +
+          '#ucaLoading .sp i{display:block;height:100%;width:8%;border-radius:99px;background:var(--accent,#0b6fa8);transition:width .4s}#ucaLoading small{font-weight:500;opacity:.7;font-size:14px}' +
+          '@media (prefers-reduced-motion:reduce){#ucaLoading,#ucaLoading .sp i{transition:none}}';
+        document.head.appendChild(st);
+        box = document.createElement('div'); box.id = 'ucaLoading'; box.setAttribute('role', 'status'); box.setAttribute('aria-live', 'polite');
+        box.innerHTML = '<div class="in"><img class="lg" alt="" src="' + root + 'app/icons/icon-192.png"><div>Chargement du site…</div><div class="sp"><i></i></div><small>Encore quelques secondes</small></div>';
+        document.body.appendChild(box); bar = box.querySelector('i');
+        timer = setInterval(function () { pct += (92 - pct) * 0.12; bar.style.width = pct.toFixed(0) + '%'; }, 300);
+      }
+      function hide() {
+        done = true; clearInterval(timer);
+        if (!box) return;
+        bar.style.width = '100%'; box.classList.add('off');
+        setTimeout(function () { if (box.parentNode) box.parentNode.removeChild(box); }, 400);
+      }
+      setTimeout(show, wait);
+      window.addEventListener('load', hide);
+    } catch (e) { /* l'écran de chargement est un confort : jamais bloquant */ }
+  })();
+
   /* ---------- icônes : [couleur, forme teintée (fermée), traits] ---------- */
   var I = {
     home:    ['#0b7bc4', 'M4 11l8-7 8 7v9H4z', 'M3 12l9-8 9 8M9 20v-6h6v6'],

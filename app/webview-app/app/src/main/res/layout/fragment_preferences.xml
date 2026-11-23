@@ -170,6 +170,18 @@
                         android:textStyle="bold" />
 
                     <Button
+                        android:id="@+id/btnForceUpdate"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:text="Forcer la mise à jour"
+                        android:textColor="@color/on_accent"
+                        android:background="@drawable/bg_cta"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <Button
                         android:id="@+id/btnTestBlockingUpdate"
                         android:layout_width="0dp"
                         android:layout_height="40dp"

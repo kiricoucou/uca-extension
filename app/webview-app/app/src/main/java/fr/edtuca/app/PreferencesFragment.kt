@@ -159,6 +159,12 @@ class PreferencesFragment : Fragment() {
             }
         }
 
+        root.findViewById<View>(R.id.btnForceUpdate)?.setOnClickListener {
+            txtGithubStatus?.text = "Mise à jour forcée : téléchargement du paquet signé depuis GitHub..."
+            val act = requireActivity() as MainActivity
+            act.checkLiveUpdate(manual = true, force = true) { message -> txtGithubStatus?.text = message }
+        }
+
         // Le test de l'écran de mise à jour bloquant n'existe que dans les versions de test (jamais publiées).
         if ((ctx.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) == 0) root.findViewById<View>(R.id.btnTestBlockingUpdate)?.visibility = View.GONE
         root.findViewById<View>(R.id.btnTestBlockingUpdate)?.setOnClickListener {

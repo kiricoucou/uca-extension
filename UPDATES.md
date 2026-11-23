@@ -55,6 +55,10 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.65 — app Android 1.4.30 : bouton « Forcer la mise à jour »
+
+- APK : nouveau bouton « Forcer la mise à jour » dans les Préférences (section mise à jour). Il retélécharge et réinstalle le paquet des pages publié sur GitHub même si l'application se croit déjà à jour (signature toujours vérifiée), puis recharge l'agenda.
+
 ## 1.46.64 — app Android 1.4.29 : la flèche du cours disparaît à l'appui sur le menu
 
 - Quand un cours est désigné par la flèche animée (depuis Examens ou Devoirs), un appui sur le bouton menu la fait disparaître tout de suite, même si ses 6 secondes ne sont pas écoulées. Extension, app web et APK.

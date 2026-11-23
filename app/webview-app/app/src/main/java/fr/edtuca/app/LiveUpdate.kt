@@ -168,10 +168,10 @@ object LiveUpdate {
      * Cherche une mise à jour des pages et l'applique si tout est valable. Appelé en arrière-plan ;
      * [onResult] est rappelé sur le thread principal. Ne bloque jamais l'utilisateur.
      */
-    fun checkAndApply(context: Context, onResult: (Result) -> Unit) {
+    fun checkAndApply(context: Context, force: Boolean = false, onResult: (Result) -> Unit) {
         val ctx = context.applicationContext
         executor.execute {
-            val result = try { run(ctx) } catch (e: Exception) { Result.Failed(e.message ?: "erreur") }
+            val result = try { run(ctx, force) } catch (e: Exception) { Result.Failed(e.message ?: "erreur") }
             main.post { onResult(result) }
         }
     }
@@ -180,7 +180,8 @@ object LiveUpdate {
     fun checkAndApplyNow(context: Context): Result =
         try { run(context.applicationContext) } catch (e: Exception) { Result.Failed(e.message ?: "erreur") }
 
-    private fun run(ctx: Context): Result {
+    /** [force] : réinstalle le paquet publié même s'il porte la même version (ou une plus ancienne) ; la signature et la version native restent vérifiées. */
+    private fun run(ctx: Context, force: Boolean = false): Result {
         val local = versionCode(ctx)
         val current = liveRoot(ctx)?.let { JSONObject(File(it, "ota.json").readText()).getString("bundle_version") }
             ?: versionName(ctx)
@@ -189,7 +190,7 @@ object LiveUpdate {
         if (info.optInt("min_apk_version_code", 0) > local) return Result.NeedsApk
         val announced = info.optString("ota_version", "")
         if (announced.isEmpty() || info.optInt("ota_base_version_code", -1) != local) return Result.UpToDate
-        if (GithubUpdateManager.compareSemver(announced, current) <= 0) return Result.UpToDate
+        if (!force && GithubUpdateManager.compareSemver(announced, current) <= 0) return Result.UpToDate
 
         val zip = download("$BUNDLE_URL?t=${System.currentTimeMillis()}", MAX_ZIP_BYTES)
         val sig = String(download("$SIG_URL?t=${System.currentTimeMillis()}", 4096))
@@ -200,7 +201,7 @@ object LiveUpdate {
         val meta = JSONObject(File(staging, "ota.json").readText())
         if (meta.getInt("base_version_code") != local) { staging.deleteRecursively(); return Result.Failed("version native différente") }
         val version = meta.getString("bundle_version")
-        if (GithubUpdateManager.compareSemver(version, current) <= 0) { staging.deleteRecursively(); return Result.UpToDate }
+        if (!force && GithubUpdateManager.compareSemver(version, current) <= 0) { staging.deleteRecursively(); return Result.UpToDate }
         if (!File(staging, "index.html").isFile) { staging.deleteRecursively(); return Result.Failed("paquet incomplet") }
 
         // Remplacement : l'ancien dossier n'est supprimé qu'une fois le nouveau en place.

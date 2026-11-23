@@ -371,11 +371,11 @@ class MainActivity : AppCompatActivity() {
      * Mise à jour automatique des pages depuis GitHub (paquet signé, voir LiveUpdate), au plus toutes les 30 minutes
      * sauf demande manuelle. Une version qui change le code natif passe par l'écran d'installation de l'APK.
      */
-    fun checkLiveUpdate(manual: Boolean = false, onDone: ((String) -> Unit)? = null) {
+    fun checkLiveUpdate(manual: Boolean = false, force: Boolean = false, onDone: ((String) -> Unit)? = null) {
         val now = System.currentTimeMillis()
         if (!manual && now - lastLiveCheck < 10 * 60 * 1000) return
         lastLiveCheck = now
-        LiveUpdate.checkAndApply(this) { result ->
+        LiveUpdate.checkAndApply(this, force) { result ->
             if (isFinishing || isDestroyed) return@checkAndApply
             when (result) {
                 is LiveUpdate.Result.Applied -> {

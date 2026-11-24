@@ -4,6 +4,7 @@ aide.html
 install.html
 app-download.html
 mise-a-jour.html
+statut.html
 appli.html
 confidentialite.html
 nouveautes.html

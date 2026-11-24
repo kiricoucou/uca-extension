@@ -57,7 +57,7 @@ def main():
             first = pg.locator("#nvRes a").first.get_attribute("href")
             check("recherche « telechargement appli » (sans accent) : appli.html en premier", first.endswith("appli.html"), first)
             pg.fill("#nvSearch", "mise à jour"); pg.wait_for_timeout(200)
-            check("recherche « mise à jour » : le pilote automatique en premier", pg.locator("#nvRes a").first.get_attribute("href").endswith("mise-a-jour.html"), pg.locator("#nvRes a").first.get_attribute("href"))
+            check("recherche « mise à jour » : la page Statut en premier, le pilote automatique ensuite", pg.locator("#nvRes a").first.get_attribute("href").endswith("statut.html") and pg.locator("#nvRes a[href$='mise-a-jour.html']").count() == 1, pg.locator("#nvRes a").first.get_attribute("href"))
             pg.fill("#nvSearch", "bus"); pg.wait_for_timeout(200); pg.keyboard.press("Enter"); pg.wait_for_timeout(800)
             check("Entrée : ouvre le premier résultat (transports)", "transport.html" in pg.url, pg.url)
             pg.goto(base + "index.html"); pg.wait_for_timeout(1000)

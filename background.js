@@ -163,6 +163,14 @@ async function fetchSignatureText() {
   if (!r.ok) throw new Error("Signature du paquet introuvable (HTTP " + r.status + ").");
   return await r.text();
 }
+/* Page « Statut » du site : l'utilisateur a autorisé la mise à jour (fenêtre du pont de contenu) puis le site a écrit les
+   fichiers dans le dossier de l'extension ; on recharge pour appliquer. Seul le pont de contenu de cette extension peut le demander. */
+chrome.runtime.onMessage.addListener((msg, sender) => {
+  if (!msg || msg.type !== "UCA_RELOAD_EXTENSION") return false;
+  if (!sender || sender.id !== chrome.runtime.id || !sender.tab) return false;
+  chrome.runtime.reload();
+  return false;
+});
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || msg.type !== "UCA_FETCH_PACKAGE_SIG") return false;
   if (sender && sender.id && sender.id !== chrome.runtime.id) return false;

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Statut et mise à jour — Emploi du temps UCA</title>
+<meta name="description" content="Vois si ton extension Emploi du temps UCA est à jour et mets-la à jour en un clic, depuis cette page, avec ton autorisation.">
+<link rel="canonical" href="https://kiricoucou.github.io/uca-extension/statut.html">
+<link rel="icon" type="image/png" href="app/icons/icon-192.png">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="site-theme.css">
+<style>
+.st{max-width:860px;margin:0 auto;padding:28px 16px 70px}
+.st h1{font-size:clamp(28px,5vw,44px);margin:0 0 8px;letter-spacing:-.03em}
+.st .lead{color:var(--text-dim);font-size:19px;max-width:700px;margin:0 0 24px}
+.steps{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0 0 20px;padding:0;counter-reset:s}
+.steps li{counter-increment:s;display:inline-flex;align-items:center;gap:9px;min-height:40px;padding:0 14px 0 8px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-weight:700;font-size:14.5px}
+.steps li::before{content:counter(s);display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--surface-2);font-weight:800;font-size:13px;color:var(--text)}
+.steps li.on{border-color:var(--accent);color:var(--text);background:var(--accent-tint)}
+.steps li.on::before{background:var(--accent);color:var(--on-accent)}
+.steps li.ok::before{content:"\2713";background:var(--accent);color:var(--on-accent)}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:0 0 18px}
+.tile{padding:20px;border-radius:20px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow);min-width:0}
+.tile .k{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--text-dim);margin:0 0 6px}
+.tile .v{font-size:clamp(26px,5vw,36px);font-weight:800;letter-spacing:-.02em;margin:0;overflow-wrap:anywhere}
+.tile .d{margin:6px 0 0;color:var(--text-dim);font-size:14.5px}
+.tile.good{border-color:var(--accent)}
+.panel-s{padding:22px;border-radius:20px;border:1px solid var(--border);background:var(--surface);box-shadow:var(--shadow);margin:0 0 18px}
+.panel-s h2{margin:0 0 6px;font-size:clamp(20px,3.4vw,26px);letter-spacing:-.02em}
+.panel-s p{margin:0 0 14px;color:var(--text-dim)}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:999px;font-weight:800;font-size:13.5px;background:var(--surface-2);color:var(--text);margin:0 0 10px}
+.badge.good{background:var(--accent);color:var(--on-accent)}
+.badge.warn{background:#ffe3a3;color:#4a3300}
+.btns{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn-s{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:52px;padding:0 24px;border-radius:14px;border:0;background:var(--accent);color:var(--on-accent);font:inherit;font-weight:700;font-size:16.5px;text-decoration:none;cursor:pointer}
+.btn-s[disabled]{opacity:.55;cursor:default}
+.btn-l{display:inline-flex;align-items:center;min-height:52px;padding:0 20px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-weight:600;text-decoration:none;cursor:pointer}
+.bar{height:12px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin:6px 0 10px}
+.bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:999px;transition:width .25s}
+.pt{font-size:14.5px;color:var(--text-dim);margin:0}
+.spin{display:inline-block;width:18px;height:18px;border-radius:50%;border:3px solid var(--border);border-top-color:var(--accent);animation:sp .8s linear infinite;vertical-align:-3px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.tiny{font-size:13.5px;color:var(--text-dim);margin:16px 0 0}
+.tiny a,.tiny button{color:var(--accent);font:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline}
+dialog.ask{width:min(480px,calc(100vw - 32px));border:1px solid var(--border);border-radius:20px;background:var(--surface);color:var(--text);padding:24px;box-shadow:0 30px 70px -20px rgba(0,0,0,.55)}
+dialog.ask::backdrop{background:rgba(0,0,0,.55)}
+dialog.ask h2{margin:0 0 8px;font-size:22px;letter-spacing:-.01em}
+dialog.ask ul{margin:0 0 16px;padding-left:20px;color:var(--text-dim)}dialog.ask li{margin:6px 0}
+dialog.ask .btns{justify-content:flex-end}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(max-width:620px){.tiles{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.spin{animation:none}.bar i{transition:none}}
+</style>
+</head>
+<body>
+<main class="st">
+  <h1>Statut et mise à jour</h1>
+  <p class="lead">Vois en un coup d'œil si ton extension est à jour, et mets-la à jour d'un clic. Rien ne se passe sans ton accord.</p>
+
+  <ol class="steps" aria-label="Étapes" id="steps">
+    <li data-s="1">Activer la détection</li>
+    <li data-s="2">Comparer les versions</li>
+    <li data-s="3">Mettre à jour</li>
+  </ol>
+
+  <div class="tiles">
+    <div class="tile" id="tOnline"><p class="k">Version en ligne</p><p class="v" id="vOnline"><span class="spin" aria-hidden="true"></span></p><p class="d" id="dOnline">Lecture en cours…</p></div>
+    <div class="tile" id="tLocal"><p class="k">Sur ton navigateur</p><p class="v" id="vLocal">—</p><p class="d" id="dLocal">Détection désactivée.</p></div>
+  </div>
+
+  <section class="panel-s" id="main" aria-live="polite"></section>
+
+  <p class="tiny" id="tinyRow"><span id="revokeWrap" hidden><button type="button" id="revoke">Désactiver la détection</button> · </span><a href="mise-a-jour.html">Pilote automatique (.bat, .command, .sh)</a> · <a href="nouveautes.html">Quoi de neuf</a></p>
+</main>
+
+<dialog class="ask" id="ask" aria-labelledby="askT">
+  <h2 id="askT">Autoriser la mise à jour ?</h2>
+  <p style="margin:0 0 10px;color:var(--text-dim)">Ce site demande la permission de :</p>
+  <ul>
+    <li>communiquer avec ton extension ;</li>
+    <li>télécharger la dernière version officielle (signature vérifiée) ;</li>
+    <li>modifier le dossier de l'extension sur ton ordinateur, puis la recharger.</li>
+  </ul>
+  <p style="margin:0 0 16px;color:var(--text-dim);font-size:14.5px">Tu choisis toi-même le dossier dans la boîte du navigateur. Si tu refuses, on te propose le fichier de mise à jour à lancer à la main.</p>
+  <div class="btns"><button type="button" class="btn-l" id="askNo">Refuser</button><button type="button" class="btn-s" id="askYes">Autoriser</button></div>
+</dialog>
+
+<script src="core/selfupdate.js"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var ua = navigator.userAgent || "";
+  var OS = /Windows/i.test(ua) ? "windows" : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? "linux" : "windows";
+  var SCRIPT = { windows: "maj-extension.bat", mac: "maj-extension.command", linux: "maj-extension.sh" };
+  var PILOT = "mise-a-jour.html#" + OS;
+  var canWrite = typeof window.showDirectoryPicker === "function" && !!window.UCA_SELFUPDATE && window.UCA_SELFUPDATE.supported(true);
+  var FLAG = "uca_statut_detect_on", AFTER = "uca_statut_after_update";
+  var st = { online: null, local: null, legacy: false, readySeen: false };
+  var reqSeq = 0, waiters = {};
+
+  function store(k, v) { try { if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+  function load(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function cmp(a, b) { var x = String(a).split(".").map(Number), y = String(b).split(".").map(Number); for (var i = 0; i < Math.max(x.length, y.length); i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d < 0 ? -1 : 1; } return 0; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  /* ---------- dialogue avec l'extension (pont de contenu) ---------- */
+  window.addEventListener("message", function (ev) {
+    if (ev.source !== window) return;
+    var d = ev.data;
+    if (!d || d.source !== "uca-extension") return;
+    if (d.type === "UCA_EXTENSION_READY") { st.readySeen = true; return; }
+    var w = d.reqId && waiters[d.reqId];
+    if (w) w(d);
+  });
+  function ask(type, extra, opts) {
+    opts = opts || {};
+    return new Promise(function (resolve) {
+      var id = "r" + (++reqSeq) + "-" + Date.now(), done = false, t;
+      function fin(v) { if (done) return; done = true; clearTimeout(t); delete waiters[id]; resolve(v); }
+      waiters[id] = function (d) {
+        if (d.type.slice(-8) === "_PENDING") { clearTimeout(t); t = setTimeout(function () { fin(null); }, 180000); return; }
+        fin(d);
+      };
+      t = setTimeout(function () { fin(null); }, opts.quick || 1800);
+      window.postMessage(Object.assign({ source: "uca-site", type: type, reqId: id }, extra || {}), location.origin === "null" ? "*" : location.origin);
+    });
+  }
+
+  /* ---------- version en ligne ---------- */
+  function readOnline() {
+    return fetch("manifest.json?t=" + Date.now(), { cache: "no-store" }).then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }).then(function (m) {
+      st.online = m.version;
+      $("vOnline").textContent = m.version; $("dOnline").textContent = "Dernière version publiée sur GitHub.";
+      return fetch("news-dates.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : {}; }).then(function (j) {
+        if (j && j[m.version]) { try { $("dOnline").textContent = "Publiée le " + new Date(j[m.version]).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) + "."; } catch (e) {} }
+      }).catch(function () {});
+    }).catch(function () { $("vOnline").textContent = "?"; $("dOnline").textContent = "Impossible de lire la version en ligne (réseau ?)."; });
+  }
+
+  /* ---------- rendu ---------- */
+  function steps(n) { Array.prototype.forEach.call($("steps").children, function (li) { var s = +li.dataset.s; li.className = s < n ? "ok" : s === n ? "on" : ""; }); }
+  function view(step, html) { steps(step); $("main").innerHTML = html; $("revokeWrap").hidden = !(load(FLAG) === "1"); }
+  function setLocal(v, d, good) { $("vLocal").textContent = v; $("dLocal").textContent = d; $("tLocal").classList.toggle("good", !!good); }
+
+  function viewStart() {
+    setLocal("—", "Détection désactivée.");
+    view(1, '<span class="badge">Détection désactivée</span><h2>Active la détection</h2><p>Un clic, puis ton extension te demandera si elle peut dire sa version à ce site. Rien d\'autre n\'est lu ni envoyé.</p><div class="btns"><button type="button" class="btn-s" id="go">Activer la détection</button></div>');
+    $("go").addEventListener("click", detect);
+  }
+  function viewBusy(t) { view(1, '<span class="badge"><span class="spin" aria-hidden="true"></span> ' + esc(t) + '</span><p>Si une fenêtre s\'ouvre sur la page, c\'est ton extension qui te demande l\'accord.</p>'); }
+
+  function detect() {
+    viewBusy("Détection en cours…");
+    $("go") && ($("go").disabled = true);
+    ask("UCA_STATUS_REQUEST").then(function (r) {
+      if (r && r.granted) { st.local = r.version; st.legacy = false; store(FLAG, "1"); return compare(); }
+      if (r && r.granted === false) { store(FLAG, null); return viewDenied(); }
+      if (st.readySeen) { st.legacy = true; st.local = null; store(FLAG, "1"); return viewLegacy(); }
+      viewAbsent();
+    });
+  }
+  function viewDenied() {
+    setLocal("—", "Accès refusé à l'extension.");
+    view(1, '<span class="badge warn">Détection refusée</span><h2>Pas de détection</h2><p>Tu as refusé : le site ne connaît pas ta version. Tu peux réessayer, ou lancer directement le fichier de mise à jour.</p><div class="btns"><button type="button" class="btn-s" id="go">Réessayer</button><a class="btn-l" href="' + PILOT + '">Fichier de mise à jour</a></div>');
+    $("go").addEventListener("click", detect);
+  }
+  function viewAbsent() {
+    setLocal("—", "Extension non détectée.");
+    view(1, '<span class="badge warn">Extension non détectée</span><h2>Je ne vois pas ton extension</h2><p>Elle n\'est pas installée dans ce navigateur, ou elle est désactivée, ou ce n\'est pas le navigateur où tu l\'as installée. Ouvre cette page dans le bon navigateur, ou installe l\'extension.</p><div class="btns"><button type="button" class="btn-s" id="go">Réessayer</button><a class="btn-l" href="installation.html">Installer l\'extension</a><a class="btn-l" href="' + PILOT + '">Fichier de mise à jour</a></div>');
+    $("go").addEventListener("click", detect);
+  }
+  function viewLegacy() {
+    setLocal("Ancienne", "Version trop ancienne pour répondre (avant 1.46.66).", false);
+    view(2, '<span class="badge warn">Mise à jour conseillée</span><h2>Ton extension est ancienne</h2><p>Elle est bien là mais ne sait pas encore dire sa version. Mets-la à jour : ensuite la détection marchera.</p>' + updateButtons());
+    wireUpdate();
+  }
+  function compare() {
+    setLocal(st.local, "Installée dans ce navigateur.", true);
+    if (st.online && cmp(st.local, st.online) < 0) {
+      view(3, '<span class="badge warn">Mise à jour disponible</span><h2>' + esc(st.local) + ' → ' + esc(st.online) + '</h2><p>Une version plus récente est en ligne. Mise à jour en un clic, avec ton accord.</p>' + updateButtons());
+      wireUpdate();
+    } else {
+      var fresh = st.justUpdated && cmp(st.local, st.justUpdated) >= 0; st.justUpdated = null;
+      view(3, '<span class="badge good">' + (fresh ? 'Mise à jour réussie' : 'À jour') + '</span><h2>' + (fresh ? 'Version ' + esc(st.local) + ' installée' : 'Tout est bon') + '</h2><p>Ton extension est à la dernière version publiée. Je vérifie à chaque ouverture de cette page.</p><div class="btns"><button type="button" class="btn-l" id="again">Revérifier</button></div>');
+      $("again").addEventListener("click", function () { readOnline().then(detect); });
+    }
+  }
+  function updateButtons() {
+    return '<div class="btns"><button type="button" class="btn-s" id="upd">Mettre à jour</button><a class="btn-l" href="' + PILOT + '">Fichier de mise à jour (' + SCRIPT[OS] + ')</a></div>';
+  }
+  function wireUpdate() { $("upd").addEventListener("click", startUpdate); }
+
+  /* ---------- refus ou impossible : on envoie vers le fichier de mise à jour de son système ---------- */
+  function toPilot(msg) {
+    view(3, '<span class="badge warn">Mise à jour à la main</span><h2>Direction le fichier de mise à jour</h2><p>' + esc(msg) + ' On t\'emmène vers <b>' + SCRIPT[OS] + '</b> pour ton système.</p><div class="btns"><a class="btn-s" href="' + PILOT + '" id="gp">Y aller maintenant</a></div>');
+    setTimeout(function () { location.href = PILOT; }, 2600);
+  }
+
+  /* ---------- mise à jour directe ---------- */
+  function startUpdate() {
+    if (!canWrite) { toPilot("Ce navigateur ne permet pas la mise à jour directe (c'est le cas de Firefox)."); return; }
+    var dlg = $("ask");
+    $("askYes").onclick = function () { dlg.close(); permission(); };
+    $("askNo").onclick = function () { dlg.close(); toPilot("Tu as refusé la mise à jour directe."); };
+    dlg.oncancel = function (e) { e.preventDefault(); dlg.close(); toPilot("Tu as refusé la mise à jour directe."); };
+    dlg.showModal(); $("askYes").focus();
+  }
+  function permission() {
+    if (st.legacy) { run(); return; }
+    viewBusy("Autorisation de l'extension…");
+    ask("UCA_UPDATE_PERMISSION_REQUEST", null, { quick: 4000 }).then(function (r) {
+      if (r && r.granted) run();
+      else if (r && r.granted === false) toPilot("L'extension n'a pas reçu ton autorisation.");
+      else run(); // pas de réponse : l'extension ne sait pas répondre, le dossier choisi reste le vrai droit
+    });
+  }
+  function progressView(text, pct) {
+    view(3, '<span class="badge"><span class="spin" aria-hidden="true"></span> Mise à jour en cours</span><h2 id="pt">' + esc(text) + '</h2><div class="bar" role="progressbar" aria-label="Progression de la mise à jour" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><i id="pb" style="width:' + pct + '%"></i></div><p class="pt" id="ps">Ne ferme pas cette page.</p>');
+  }
+  function run() {
+    progressView("Choisis le dossier de l'extension", 5);
+    window.UCA_SELFUPDATE.run({
+      interactive: true,
+      onProgress: function (done, total, text) {
+        var pct = total > 1 ? Math.max(8, Math.min(95, Math.round(done / total * 90) + 8)) : 12;
+        var b = $("pb"); if (!b) return;
+        b.style.width = pct + "%"; b.parentNode.setAttribute("aria-valuenow", pct);
+        if (text) $("pt").textContent = text;
+      }
+    }).then(function (version) {
+      if (!version) { toPilot("La mise à jour directe n'a pas pu démarrer."); return; }
+      finish(version);
+    }).catch(function (e) {
+      if (e && (e.name === "AbortError" || /abort|cancel|annul/i.test(String(e.message || "")))) { toPilot("Tu n'as pas choisi de dossier."); return; }
+      if (e && /refus|denied|autorisation/i.test(String(e.message || ""))) { toPilot("L'autorisation d'écriture a été refusée."); return; }
+      view(3, '<span class="badge warn">Échec</span><h2>La mise à jour directe a échoué</h2><p>' + esc((e && e.message) || "Erreur inconnue.") + '</p><div class="btns"><button type="button" class="btn-s" id="upd">Réessayer</button><a class="btn-l" href="' + PILOT + '">Fichier de mise à jour (' + SCRIPT[OS] + ')</a></div>');
+      wireUpdate();
+    });
+  }
+  function finish(version) {
+    var b = $("pb"); if (b) { b.style.width = "100%"; b.parentNode.setAttribute("aria-valuenow", 100); }
+    if (st.legacy) {
+      view(3, '<span class="badge good">Fichiers mis à jour</span><h2>Version ' + esc(version) + ' installée</h2><p>Dernière étape : ouvre la page des extensions de ton navigateur et clique sur « Recharger » (<code>chrome://extensions</code>, <code>edge://extensions</code>, <code>brave://extensions</code>). Reviens ensuite ici.</p><div class="btns"><a class="btn-l" href="mise-a-jour.html#recharger">Voir comment recharger</a></div>');
+      return;
+    }
+    $("pt").textContent = "Rechargement de l'extension…";
+    ask("UCA_RELOAD_REQUEST", null, { quick: 3000 }).then(function (r) {
+      store(AFTER, version);
+      if (r && r.ok) { setTimeout(function () { location.reload(); }, 2200); }
+      else { view(3, '<span class="badge good">Fichiers mis à jour</span><h2>Version ' + esc(version) + ' installée</h2><p>Il reste à recharger l\'extension à la main : ouvre la page des extensions de ton navigateur et clique sur « Recharger ».</p><div class="btns"><a class="btn-l" href="mise-a-jour.html#recharger">Voir comment recharger</a></div>'); }
+    });
+  }
+
+  $("revoke").addEventListener("click", function () {
+    ask("UCA_STATUS_REVOKE").then(function () { store(FLAG, null); st.local = null; viewStart(); });
+  });
+
+  /* ---------- démarrage ---------- */
+  readOnline().then(function () {
+    st.justUpdated = load(AFTER); store(AFTER, null);
+    if (load(FLAG) === "1") detect(); else viewStart();
+  });
+})();
+</script>
+<script src="site-nav.js" defer></script>
+</body>
+</html>

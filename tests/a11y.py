@@ -58,7 +58,7 @@ def site_audit(p):
     try:
         time.sleep(1)
         browser = p.chromium.launch(args=[NO_REAL_SERVERS])
-        for path in ("", "en/", "nouveautes.html", "aide.html"):
+        for path in ("", "en/", "nouveautes.html", "aide.html", "statut.html"):
             for label, size in (("ordinateur", {"width": 1280, "height": 900}), ("téléphone", {"width": 390, "height": 844})):
                 ctx = browser.new_context(viewport=size)
                 pg = ctx.new_page()

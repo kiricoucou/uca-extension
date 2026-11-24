@@ -55,6 +55,13 @@ Ajouté :
 - Design bulletin : il lui manquait ses icônes SVG (page d'aide cassée hors ligne comme en ligne), ajoutées en vert.
 - Doc : `store/PUBLIER.md` explique ce qui dépend de la publication AMO pour la synchro directe sur Firefox Android, et ce qui reste à tester sur un vrai téléphone.
 
+## 1.46.66 — page Statut : détecter la version et mettre à jour depuis le site
+
+- Nouvelle page **statut.html** (menu « Mettre à jour ») : un bouton « Activer la détection » ; l'extension demande alors elle-même à l'utilisateur si le site peut lire sa version (fenêtre dessinée par l'extension, seuls les vrais clics comptent, autorisation mémorisée et retirable depuis la page).
+- Si une version plus récente est en ligne : « Mettre à jour ». Le site demande l'autorisation de communiquer avec l'extension, de télécharger la version officielle (signature vérifiée) et de modifier le dossier de l'extension ; l'extension redemande son accord, l'utilisateur choisit le dossier, la page écrit les fichiers avec une barre de progression, puis recharge l'extension, sans passer par le fichier .bat.
+- Refus (ou Firefox, sans accès au dossier) : redirection vers le fichier de mise à jour de son système (.bat, .command, .sh).
+- Les extensions plus anciennes que cette version sont reconnues (« version ancienne ») et peuvent aussi être mises à jour depuis la page ; il reste alors à cliquer « Recharger » dans la page des extensions.
+
 ## 1.46.65 — app Android 1.4.30 : bouton « Forcer la mise à jour »
 
 - APK : nouveau bouton « Forcer la mise à jour » dans les Préférences (section mise à jour). Il retélécharge et réinstalle le paquet des pages publié sur GitHub même si l'application se croit déjà à jour (signature toujours vérifiée), puis recharge l'agenda.

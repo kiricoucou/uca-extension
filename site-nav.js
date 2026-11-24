@@ -87,7 +87,8 @@
       ['Appli sur iPhone et PC', 'app/install.html', 'agenda', 'Ajouter l’agenda à l’écran d’accueil.', 'pwa iphone ios safari ecran accueil installer']
     ]],
     ['Mettre à jour', [
-      ['Pilote automatique', 'mise-a-jour.html', 'update', 'Met l’extension à jour tout seul.', 'maj mise a jour bat sh command script pilote automatique recharger']
+      ['Pilote automatique', 'mise-a-jour.html', 'update', 'Met l’extension à jour tout seul.', 'maj mise a jour bat sh command script pilote automatique recharger'],
+      ['Statut et mise à jour', 'statut.html', 'update', 'Vois ta version et mets à jour en un clic.', 'statut version detecter verifier a jour mettre a jour directe autoriser']
     ]],
     ['Pratique', [
       ['Transports', 'transport.html', 'bus', 'Bus et tram vers les campus.', 'bus tram t2c horaires mobilite'],
@@ -100,7 +101,7 @@
       , ['English', 'en/', 'globe', 'The site in English.', 'anglais english']
     ]]
   ];
-  var TOP = { '': 'home', 'index.html': 'home', 'nouveautes.html': 'news', 'transport.html': 'bus', 'aide.html': 'help', 'app/': 'agenda', 'app/index.html': 'agenda', 'en/': 'globe', 'extension/': 'puzzle', 'installation.html': 'guide', 'mise-a-jour.html': 'update', 'appli.html': 'phone', 'lieux-map.html': 'pin', 'don.html': 'heart', '#demo': 'play', '#comparatif': 'compare', '#faq': 'faq' };
+  var TOP = { '': 'home', 'index.html': 'home', 'nouveautes.html': 'news', 'transport.html': 'bus', 'aide.html': 'help', 'app/': 'agenda', 'app/index.html': 'agenda', 'en/': 'globe', 'extension/': 'puzzle', 'installation.html': 'guide', 'mise-a-jour.html': 'update', 'statut.html': 'update', 'appli.html': 'phone', 'lieux-map.html': 'pin', 'don.html': 'heart', '#demo': 'play', '#comparatif': 'compare', '#faq': 'faq' };
   I.search = ['currentColor', '', 'M10.5 4a6.5 6.5 0 100 13 6.5 6.5 0 000-13zM20 20l-4.6-4.6'];
 
   /* ---------- thème ---------- */
@@ -260,7 +261,7 @@
     var tb = document.querySelector('.topbar .wrap');
     if (tb) { tb.appendChild(findBtn(openSearch)); tb.appendChild(b); return; }
     if (document.body.hasAttribute('data-nv-none')) return;   // pages qui ont leur propre barre (application)
-    var bar = document.createElement('div'); bar.className = 'nv-bar';
+    var bar = document.createElement('header'); bar.className = 'nv-bar';
     bar.innerHTML = '<a class="nv-home" href="' + root + '">' + svg('home') + 'Accueil</a><span class="nv-spacer"></span>';
     bar.appendChild(findBtn(openSearch));
     bar.appendChild(b);

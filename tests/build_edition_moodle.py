@@ -6,7 +6,7 @@ pour tester les notes Moodle sans rien mélanger.
   - nom, description et infobulle différents, icônes teintées orange avec un badge « M » (barre d'outils, notifications) ;
   - paquet « magasin » : aucun vérificateur de mise à jour GitHub (elle ne se remplace donc jamais par la version
     normale), pas d'accès à raw.githubusercontent.com ;
-  - « Notes Moodle » activé par défaut.
+  - « Notes Moodle » activé par défaut (comme dans l'extension normale).
 
 Usage : python -I -X utf8 tests/build_edition_moodle.py [dossier_de_sortie]
 Puis chrome://extensions -> Mode développeur -> « Charger l'extension non empaquetée » -> ce dossier.
@@ -72,12 +72,6 @@ def main():
     icons = [p for p in out.rglob("icon*.png") if "icons" in p.parts]
     for p in icons:
         tint(p)
-
-    # « Notes Moodle » activé d'office dans cette édition (réglage par défaut du code).
-    settings = out / "core" / "settings.js"
-    s = settings.read_text(encoding="utf-8")
-    assert "moodleNotes: false," in s
-    settings.write_text(s.replace("moodleNotes: false,", "moodleNotes: true, ", 1), encoding="utf-8")
 
     (out / "LISEZ-MOI-EDITION-MOODLE.txt").write_text(
         "ÉDITION MOODLE — extension indépendante de l'extension normale.\n\n"

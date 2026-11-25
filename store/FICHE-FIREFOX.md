@@ -68,4 +68,4 @@ Tous droits réservés (All Rights Reserved).
 - Données collectées (Firefox) : **aucune** (déjà déclaré dans le manifeste).
 - Notes pour le relecteur : coller `NOTES-RELECTEUR.md`.
 
-- **Accès à https://moodle2026.uca.fr/\* (et 2027, 2028)** : lecture des pages de notes de l'étudiant sur Moodle (réglage « Notes Moodle », désactivé par défaut). Chaque note détectée est proposée à l'étudiant, qui la valide ou la refuse ; rien n'est envoyé ailleurs.
+- **Accès à https://moodle2026.uca.fr/\* (et 2027, 2028)** : lecture des pages de notes de l'étudiant sur Moodle (réglage « Notes Moodle », activé par défaut, désactivable). Chaque note détectée est proposée à l'étudiant, qui la valide ou la refuse ; rien n'est envoyé ailleurs.

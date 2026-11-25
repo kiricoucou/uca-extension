@@ -22,7 +22,7 @@ const DEFAULTS = {
   absenceAlert: 0,        // 0 = désactivée ; sinon alerte à N absences non justifiées
   statusWatch: false,     // surveille Odin et la connexion toutes les 5 min, notifie panne / retour
   activityKeepDays: 30,   // jours de conservation des notifications non gardées de la cloche (0 = illimité)
-  moodleNotes: false,     // cherche les nouvelles notes sur Moodle (validation par l'utilisateur avant d'entrer dans les moyennes)
+  moodleNotes: true,      // cherche les nouvelles notes sur Moodle, activé par défaut (validation par l'utilisateur avant d'entrer dans les moyennes)
   noteNewDays: 2,         // note affichée en orange pendant N jours, puis en jaune pendant autant
 };
 

@@ -74,6 +74,7 @@ def main():
     data = seed()
     with sync_playwright() as p:
         ctx, sw, base = launch(p, viewport={"width": 1400, "height": 860})
+        check("réglage « Notes Moodle » activé par défaut (profil neuf)", sw.evaluate("() => UCA_getSettings().then((s) => s.moodleNotes === true)"))
         data["uca_releve_notes"] = RELEVE
         data["uca_settings"] = {"moodleNotes": True, "notifyNewGrades": True}
         sw.evaluate("(d) => chrome.storage.local.set(d)", data)
@@ -162,7 +163,7 @@ def main():
         check("secours : notes avec barème et note sur 20", any(g["title"] == "Résultats évaluation 1" and g["note20"] == 19 for g in inpage.get("data", [])))
         # méthode principale de bout en bout : un onglet Moodle est déjà ouvert -> lecture depuis cette page (pas de CORS, pas de nouvel onglet)
         tabs_before = sw.evaluate("() => chrome.tabs.query({}).then((t) => t.length)")
-        sw.evaluate("() => { self.__swM = 0; const rf = self.__realFetch; self.fetch = (u, ...r) => { if (String(u).includes('moodle')) self.__swM++; return rf(u, ...r); }; self.__moodleOrder = ['page']; return chrome.storage.local.remove('uca_moodle'); }")
+        sw.evaluate("() => { self.__swM = 0; const rf = self.__realFetch; self.fetch = (u, ...r) => { if (String(u).includes('moodle')) self.__swM++; return rf(u, ...r); }; self.__moodleOrder = ['page']; chrome.cookies.getAll = async () => [{ name: 'MoodleSession' }]; return chrome.storage.local.remove('uca_moodle'); }")
         res_page = sw.evaluate("() => syncMoodleQuietly()")
         check("lecture depuis la page : notes lues dans l'onglet Moodle déjà ouvert", res_page.get("issue") is None and res_page.get("read") == 3 and res_page.get("pending") == 3, str(res_page))
         check("lecture depuis la page : aucun onglet ouvert ni laissé", sw.evaluate("() => chrome.tabs.query({}).then((t) => t.length)") == tabs_before)
@@ -189,6 +190,22 @@ def main():
             if (url.includes("id=3333")) return mk(url, other);
             return mk(url, "<html></html>"); }; }""", [OVERVIEW, COURSE, newcourse])
         sw.evaluate("() => syncMoodleQuietly()")
+
+        # --- synchro automatique (arrière-plan) : sans session Moodle dans le navigateur, aucun onglet n'est ouvert ; à la main, on essaie toujours
+        gate = sw.evaluate("""async () => {
+          const out = {}; const realTab = self.scrapeMoodleViaTab, realCookies = chrome.cookies.getAll;
+          let called = 0; self.scrapeMoodleViaTab = async () => { called++; return { data: [] }; };
+          chrome.permissions.contains = async () => true; self.__moodleOrder = undefined;
+          chrome.cookies.getAll = async () => [];
+          manualSync = false; const a = await scrapeMoodlePage(); out.silentNoCookie = [a.issue, called];
+          manualSync = true; const b = await scrapeMoodlePage(); out.manualNoCookie = [!!b.data, called];
+          chrome.cookies.getAll = async () => [{ name: 'MoodleSession2026' }];
+          manualSync = false; called = 0; const c = await scrapeMoodlePage(); out.silentWithCookie = [!!c.data, called];
+          manualSync = false; self.scrapeMoodleViaTab = realTab; chrome.cookies.getAll = realCookies; self.__moodleOrder = ['direct'];
+          return out; }""")
+        check("synchro automatique sans session Moodle : rien n'est ouvert (« session »)", gate["silentNoCookie"] == ["session", 0], str(gate))
+        check("recherche lancée à la main sans cookie : on essaie quand même (proposera de se connecter)", gate["manualNoCookie"] == [True, 1], str(gate))
+        check("synchro automatique avec session Moodle (cookie MoodleSession) : la lecture se fait", gate["silentWithCookie"] == [True, 1], str(gate))
 
         # --- « Me connecter à Moodle » : la recherche reprend toute seule une fois connecté
         sw.evaluate("() => { self.__synced = 0; self.__realSync = self.syncMoodleQuietly; self.syncMoodleQuietly = async () => { self.__synced++; return { read: 0, pending: 0 }; }; return chrome.storage.local.set({ uca_moodle_login: { tabId: 77, base: 'https://moodle2026.uca.fr', at: Date.now() } }); }")

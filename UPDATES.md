@@ -19,6 +19,12 @@ Donc concrètement :
 
 # Historique des versions
 
+## 1.47.1 — app Android 1.4.32 : « Notes Moodle » activé par défaut
+
+- **Nouveau : tes notes Moodle dans ton relevé.** L'extension lit tes notes sur Moodle (bouton « Chercher sur Moodle » de la fenêtre Notes, et à chaque synchro) et te propose chaque nouvelle note avec sa matière et son coefficient : tu la valides ou tu la refuses, rien n'entre dans tes moyennes sans ton accord. Les notes validées restent modifiables, les refusées vont à la corbeille (restaurables), une barre de progression en pourcentage suit la recherche.
+- Le réglage **Notes Moodle** est **activé par défaut** (Paramètres pour le désactiver). Sur l'app Android et l'app web, les notes Moodle validées arrivent avec le partage chiffré.
+- Synchro automatique : si tu n'es pas connecté à Moodle dans ce navigateur, elle ne fait rien (aucun onglet ouvert pour rien) ; le bouton « Chercher sur Moodle » essaie toujours et propose « Me connecter à Moodle ».
+
 ## 1.47.0 — app Android 1.4.31 : notes Moodle avec validation, corbeille, fenêtres déplaçables
 
 - **Notes Moodle** (Paramètres → « Notes Moodle », désactivé par défaut) : à chaque synchro, l'extension lit tes cours et tes notes sur Moodle avec ta session (`core/moodle.js`, `background.js`). Les cours sont retrouvés dans ta page Notes à chaque fois : aucun identifiant de cours ou d'année n'est codé en dur (`moodle*.uca.fr`).

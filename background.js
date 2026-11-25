@@ -1033,12 +1033,22 @@ async function scrapeMoodleViaTab(base) {
     return moodleScriptIssue(e);
   }
 }
+/* Session Moodle présente dans ce navigateur : un cookie « MoodleSession… » existe pour l'hôte. Sans l'API des cookies, on suppose que oui. */
+async function hasMoodleSession(base) {
+  try {
+    const all = await chrome.cookies.getAll({ url: base + "/" });
+    return all.some((c) => /^MoodleSession/i.test(c.name));
+  } catch (e) { return true; }
+}
 async function scrapeMoodlePage() {
   let last = null;
   for (const b of moodleBases()) {
     let allowed = false;
     try { allowed = await chrome.permissions.contains({ origins: [b + "/*"] }); } catch (e) { allowed = false; }
     if (!allowed) { last = last || { issue: "permission", detail: new URL(b).host }; continue; }
+    // Synchro automatique (en arrière-plan) : tant que l'utilisateur n'a pas de session Moodle dans ce navigateur, on ne fait rien
+    // (aucun onglet ouvert pour rien) ; la recherche lancée à la main, elle, essaie toujours et propose de se connecter.
+    if (!manualSync && !(await hasMoodleSession(b))) { last = last || { issue: "session" }; continue; }
     await moodleProgress({ phase: "onglet", done: 0, total: 0, label: "Lecture de Moodle (" + new URL(b).host + ")…" });
     const r = await scrapeMoodleViaTab(b);
     if (r.data || r.issue === "session" || r.issue === "serviceDown") return r;

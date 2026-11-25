@@ -34,6 +34,10 @@ jobs:
         run: python -I -X utf8 tests/scrape.py
       - name: Notes, simulateur et absences
         run: python -I -X utf8 tests/grades.py
+      - name: Notes Moodle (lecture, validation, fusion)
+        run: python -I -X utf8 tests/moodle.py
+      - name: Notes Moodle dans l'app web (téléphone)
+        run: python -I -X utf8 tests/moodle_app.py
       - name: Agenda (raccourcis, couleurs, design automatique)
         run: python -I -X utf8 tests/agenda.py
       - name: Paquets des magasins (contenu, manifestes, Android simulé)

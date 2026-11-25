@@ -1,6 +1,7 @@
 // Firefox charge core/settings.js via manifest.background.scripts ; Chrome (service worker) ici.
 if (typeof UCA_getSettings === "undefined" && typeof importScripts === "function") importScripts("core/settings.js");
 if (typeof UCA_GRADES === "undefined" && typeof importScripts === "function") importScripts("core/grades.js");
+if (typeof UCA_MOODLE === "undefined" && typeof importScripts === "function") importScripts("core/moodle.js");
 if (typeof UCA_STATUS === "undefined" && typeof importScripts === "function") importScripts("core/status.js");
 if (typeof UCA_ADE === "undefined" && typeof importScripts === "function") importScripts("core/ade.js");
 if (typeof UCA_ACTIVITY === "undefined" && typeof importScripts === "function") importScripts("core/activity.js");
@@ -471,8 +472,7 @@ const ADE_CAS_URL = "https://ent.uca.fr/cas/login?service=" + encodeURIComponent
 
 /* Exécutée DANS la page ADE (injectée par executeScript, donc autonome) : trouve le bouton d'export, génère l'adresse et la renvoie. */
 async function adePageDiscover() {
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  const until = async (fn, ms) => { const end = Date.now() + ms; while (Date.now() < end) { const v = fn(); if (v) return v; await sleep(250); } return null; };
+    const until = async (fn, ms) => { const end = Date.now() + ms; while (Date.now() < end) { const v = fn(); if (v) return v; await sleep(250); } return null; };
   const visible = (e) => !!e && !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
   const byText = (re) => [...document.querySelectorAll("button")].find((b) => re.test(b.textContent || "") && visible(b));
   const close = async () => { const b = byText(/^(Fermer|Annuler)$/i); if (b) { b.click(); await sleep(300); } };
@@ -813,7 +813,7 @@ const ISSUE_LABEL = { session: "session expirée", maintenance: "Odin en mainten
 async function recordScrapeIssue(kind, r) {
   const { uca_scrape_issues } = await chrome.storage.local.get("uca_scrape_issues");
   const issues = Object.assign({}, uca_scrape_issues);
-  if (r.issue) { issues[kind] = { issue: r.issue, at: Date.now() }; await diag("scrape-" + kind, r.issue + (r.detail ? " : " + r.detail : "")); }
+  if (r.issue) { issues[kind] = { issue: r.issue, at: Date.now(), detail: r.detail ? String(r.detail).slice(0, 120) : undefined }; await diag("scrape-" + kind, r.issue + (r.detail ? " : " + r.detail : "")); }
   else delete issues[kind];
   await chrome.storage.local.set({ uca_scrape_issues: issues });
 }
@@ -889,13 +889,297 @@ async function syncNotesQuietly() {
     await recordNotesSeen(releve);
     const sync = new Date().toISOString();
     await chrome.storage.local.set({ uca_releve_notes: releve, uca_releve_notes_sync: sync });
-    const { uca_notes_seen, uca_notes_history, uca_scales } = await chrome.storage.local.get(["uca_notes_seen", "uca_notes_history", "uca_scales"]);
-    // Historique de la moyenne générale : un point seulement quand elle change.
-    const history = UCA_GRADES.nextHistory(uca_notes_history, UCA_GRADES.applyScales(releve, uca_scales), Date.now());
-    if (history) await chrome.storage.local.set({ uca_notes_history: history });
+    const { uca_notes_seen, uca_notes_history } = await chrome.storage.local.get(["uca_notes_seen", "uca_notes_history"]);
+    const history = await recordAverageHistory(releve);
     broadcast({ type: "UCA_NOTES_RESULT", ok: true, releve, sync, notesSeen: uca_notes_seen || {}, notesHistory: history || uca_notes_history || [] });
   }
 }
+
+/* Historique de la moyenne générale : un point seulement quand elle change. Compte les notes Moodle validées. */
+async function recordAverageHistory(releve) {
+  const { uca_notes_history, uca_scales, uca_moodle } = await chrome.storage.local.get(["uca_notes_history", "uca_scales", "uca_moodle"]);
+  const history = UCA_GRADES.nextHistory(uca_notes_history, UCA_GRADES.applyScales(UCA_MOODLE.mergeReleve(releve, uca_moodle), uca_scales), Date.now());
+  if (history) await chrome.storage.local.set({ uca_notes_history: history });
+  return history;
+}
+// Validation ou refus d'une note Moodle (notification, fenêtre Notes) : la moyenne a pu changer.
+chrome.storage.onChanged.addListener(async (changes, area) => {
+  if (area !== "local" || !changes.uca_moodle) return;
+  const { uca_releve_notes } = await chrome.storage.local.get("uca_releve_notes");
+  if (uca_releve_notes) await recordAverageHistory(uca_releve_notes);
+});
+
+/* ============ Notes Moodle (validation par l'utilisateur, voir core/moodle.js) ============ */
+/* Chrome refuse un motif d'hôte comme « moodle*.uca.fr » (le joker n'est permis qu'en tête, « *.uca.fr ») : l'accès est
+   donné année par année dans le manifeste. L'adresse de l'année en cours est essayée d'abord (rentrée en septembre). */
+function moodleBases(now) {
+  const d = new Date(now || Date.now()), y = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1;
+  return [y, y + 1, y - 1].map((n) => `https://moodle${n}.uca.fr`);
+}
+const MOODLE_MAX_COURSES = 60;
+
+/* Progression de la recherche (barre de la fenêtre Notes) : uca_moodle_progress = { active, phase, done, total, label, at }. */
+async function moodleProgress(p) {
+  try { await chrome.storage.local.set({ uca_moodle_progress: Object.assign({ active: true, phase: "", done: 0, total: 0, label: "" }, p, { at: Date.now() }) }); } catch (e) { /* sans conséquence */ }
+}
+chrome.runtime.onMessage.addListener((msg) => { if (msg && msg.type === "UCA_MOODLE_PROGRESS") moodleProgress({ phase: msg.phase, done: msg.done, total: msg.total, label: msg.label }); });
+
+/* Page Moodle avec les cookies de la session de l'utilisateur. Redirigé hors de Moodle ou vers la page de
+   connexion = session expirée (aucune fenêtre n'est ouverte : la synchro automatique reste silencieuse). */
+async function moodleGet(base, path) {
+  let resp;
+  try { resp = await fetch(base + path, { credentials: "include", redirect: "follow", signal: AbortSignal.timeout(20000) }); }
+  catch (e) { return { issue: "error", detail: "redirections ou réseau" }; }   // Moodle boucle sur le CAS quand les cookies ne passent pas
+  if (new URL(resp.url).origin !== base || /\/login\/|\/cas\/|authentication/i.test(resp.url)) return { issue: "session" };
+  if (resp.status >= 500) return { issue: "serviceDown", detail: "HTTP " + resp.status };
+  if (!resp.ok) return { issue: "error", detail: "HTTP " + resp.status };
+  const html = await resp.text();
+  if (/name="username"[\s\S]{0,400}name="password"|id="login"[\s\S]{0,200}<form/i.test(html.slice(0, 20000))) return { issue: "session" };
+  return { html };
+}
+
+/* L'adresse de Moodle change chaque année (moodle2026 -> moodle2027) et les cours aussi : rien n'est codé en dur.
+   Les cours viennent de la page Notes du profil à chaque synchro, les notes de chaque rapport de cours. */
+async function scrapeMoodleDirect(releve) {
+  let base = null, ov = null, lastIssue = null;
+  for (const b of moodleBases()) {
+    let allowed = true;
+    try { allowed = await chrome.permissions.contains({ origins: [b + "/*"] }); } catch (e) { allowed = true; }
+    if (!allowed) { lastIssue = lastIssue || { issue: "permission", detail: new URL(b).host }; continue; }
+    const r = await moodleGet(b, "/grade/report/overview/index.php");
+    if (r.issue === "session") return r;               // connecté nulle part : inutile d'essayer les autres années
+    if (r.issue) { lastIssue = lastIssue && lastIssue.issue !== "permission" ? lastIssue : r; continue; }
+    const probe = UCA_MOODLE.parseOverview(r.html);
+    if (probe.courses.length) { base = b; ov = r; break; }
+    lastIssue = { issue: "structure", detail: new URL(b).host };
+  }
+  if (!ov) return lastIssue || { issue: "error", detail: "Moodle injoignable" };
+  const { userId, courses } = UCA_MOODLE.parseOverview(ov.html);
+  const scraped = [];
+  let failed = 0, doneN = 0;
+  const totalN = Math.min(courses.length, MOODLE_MAX_COURSES);
+  for (const c of courses.slice(0, MOODLE_MAX_COURSES)) {
+    await moodleProgress({ phase: "cours", done: doneN++, total: totalN, label: c.name });
+    const r = await moodleGet(base, `/course/user.php?mode=grade&id=${c.id}${userId ? "&user=" + userId : ""}`);
+    if (r.issue === "session") return r;
+    if (r.issue) { failed++; continue; }
+    UCA_MOODLE.parseCourseGrades(r.html).forEach((g) => scraped.push(Object.assign({ courseId: c.id, course: c.name }, g)));
+    await sleep(250);
+  }
+  if (failed === Math.min(courses.length, MOODLE_MAX_COURSES)) return { issue: "error", detail: "aucun cours lisible" };
+  return { data: scraped };
+}
+
+/* Secours : si la lecture directe échoue (cookies de session non transmis par le service worker, boucle de
+   redirection vers le CAS...), on ouvre Moodle dans un onglet en arrière-plan et la lecture se fait DEPUIS la page
+   (même origine : les cookies de l'utilisateur passent forcément). core/moodle.js est injecté dans l'onglet. */
+/* Exécutée DANS la page Moodle (chrome.scripting.executeScript) : même origine, donc les cookies de l'utilisateur
+   passent. Dépend uniquement de UCA_MOODLE (core/moodle.js injecté avant). Aucune variable du service worker. */
+async function moodleInPageScrape(maxCourses) {
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const get = async (path) => {
+    const r = await fetch(path, { credentials: "same-origin", redirect: "follow", signal: AbortSignal.timeout(20000) });
+    if (new URL(r.url).origin !== location.origin || /\/login\/|\/cas\//i.test(new URL(r.url).pathname)) return { issue: "session" };
+    if (!r.ok) return { issue: r.status >= 500 ? "serviceDown" : "error", detail: "HTTP " + r.status };
+    return { html: await r.text() };
+  };
+  const ov = await get("/grade/report/overview/index.php");
+  if (ov.issue) return ov;
+  const { userId, courses } = UCA_MOODLE.parseOverview(ov.html);
+  if (!courses.length) return { issue: "structure" };
+  const data = []; let failed = 0, doneN = 0;
+  const totalN = Math.min(courses.length, maxCourses);
+  for (const c of courses.slice(0, maxCourses)) {
+    try { chrome.runtime.sendMessage({ type: "UCA_MOODLE_PROGRESS", phase: "cours", done: doneN++, total: totalN, label: c.name }); } catch (e) { /* barre facultative */ }
+    const r = await get("/course/user.php?mode=grade&id=" + c.id + (userId ? "&user=" + userId : ""));
+    if (r.issue === "session") return r;
+    if (r.issue) { failed++; continue; }
+    UCA_MOODLE.parseCourseGrades(r.html).forEach((g) => data.push(Object.assign({ courseId: c.id, course: c.name }, g)));
+    await wait(200);
+  }
+  return failed === Math.min(courses.length, maxCourses) ? { issue: "error", detail: "aucun cours lisible" } : { data };
+}
+
+/* Lecture DEPUIS une page Moodle : la requête part de la page elle-même (même origine), donc aucune règle CORS et les
+   cookies de l'utilisateur passent toujours. C'est la méthode principale. Un onglet Moodle déjà ouvert est réutilisé ;
+   sinon un onglet est ouvert en arrière-plan puis refermé. */
+async function runMoodleInTab(tabId, base) {
+  await chrome.scripting.executeScript({ target: { tabId }, files: ["core/moodle.js"] });
+  const [res] = await chrome.scripting.executeScript({ target: { tabId }, args: [MOODLE_MAX_COURSES], func: moodleInPageScrape });
+  return (res && res.result) || { issue: "error", detail: "onglet sans réponse" };
+}
+function moodleScriptIssue(e) {
+  const msg = String((e && e.message) || e);
+  return /cannot access|must request permission|permission|host/i.test(msg) ? { issue: "permission", detail: msg.slice(0, 80) } : { issue: "error", detail: msg.slice(0, 80) };
+}
+async function scrapeMoodleViaTab(base) {
+  let tab, mine = false;
+  try {
+    const open = await chrome.tabs.query({ url: base + "/*" });
+    const usable = open.find((t) => { try { const u = new URL(t.url); return u.origin === base && !/\/login\/|\/cas\//i.test(u.pathname) && !t.discarded; } catch (e) { return false; } });
+    if (usable) {
+      try { return await runMoodleInTab(usable.id, base); } catch (e) { /* onglet inutilisable : on en ouvre un propre */ }
+    }
+    tab = await chrome.tabs.create({ url: base + "/grade/report/overview/index.php", active: false }); mine = true;
+    await waitForComplete(tab.id, 25000);
+    const fresh = await chrome.tabs.get(tab.id);
+    let u; try { u = new URL(fresh.url || ""); } catch (e) { u = null; }
+    if (!u || u.origin !== base || /\/login\/|\/cas\//i.test(u.pathname)) { await chrome.tabs.remove(tab.id); return { issue: "session" }; }
+    const out = await runMoodleInTab(tab.id, base);
+    await chrome.tabs.remove(tab.id);
+    return out;
+  } catch (e) {
+    if (tab && mine) { try { await chrome.tabs.remove(tab.id); } catch (_) {} }
+    return moodleScriptIssue(e);
+  }
+}
+async function scrapeMoodlePage() {
+  let last = null;
+  for (const b of moodleBases()) {
+    let allowed = false;
+    try { allowed = await chrome.permissions.contains({ origins: [b + "/*"] }); } catch (e) { allowed = false; }
+    if (!allowed) { last = last || { issue: "permission", detail: new URL(b).host }; continue; }
+    await moodleProgress({ phase: "onglet", done: 0, total: 0, label: "Lecture de Moodle (" + new URL(b).host + ")…" });
+    const r = await scrapeMoodleViaTab(b);
+    if (r.data || r.issue === "session" || r.issue === "serviceDown") return r;
+    last = r.issue === "structure" && last && last.issue !== "permission" ? last : r;
+  }
+  return last || { issue: "error", detail: "Moodle injoignable" };
+}
+
+/* Ordre des méthodes : « page » (depuis un onglet Moodle, sans CORS) puis « direct » (requête du service worker, en
+   dernier recours : elle dépend des autorisations du navigateur et peut être refusée par CORS). */
+async function scrapeMoodle(releve) {
+  const order = self.__moodleOrder || ["page", "direct"];
+  let best = null;
+  for (const mode of order) {
+    const r = mode === "page" ? await scrapeMoodlePage() : await scrapeMoodleDirect(releve);
+    if (r.data) return r;
+    if (!best || best.issue === "permission" || (r.issue !== "permission" && r.issue !== "error")) best = r.issue === "permission" && best ? best : r;
+    await diag("moodle-" + mode + "-echec", `${r.issue}${r.detail ? " (" + r.detail + ")" : ""}`);
+    if (r.issue === "session" || r.issue === "serviceDown") return r;   // inutile d'insister : connexion ou site en cause
+  }
+  return best || { issue: "error", detail: "Moodle injoignable" };
+}
+
+async function syncMoodleQuietly() {
+  const settings = await UCA_getSettings();
+  if (!settings.moodleNotes) return { read: 0, pending: 0, issue: null, detail: null };
+  await moodleProgress({ phase: "connexion", done: 0, total: 0, label: "Connexion à Moodle…" });
+  try { return await syncMoodleInner(); }
+  finally { await chrome.storage.local.set({ uca_moodle_progress: { active: false, at: Date.now() } }); }
+}
+async function syncMoodleInner() {
+  const result = { read: 0, pending: 0, issue: null, detail: null };
+  const { uca_moodle, uca_releve_notes } = await chrome.storage.local.get(["uca_moodle", "uca_releve_notes"]);
+  const r = await scrapeMoodle(uca_releve_notes);
+  if (r.data) await moodleProgress({ phase: "analyse", done: 1, total: 1, label: "Analyse des notes…" });
+  await recordScrapeIssue("moodle", r);
+  if (!r.data) { result.issue = r.issue; result.detail = r.detail || null; return result; }
+  const { store, fresh, firstRun } = UCA_MOODLE.diff(uca_moodle, r.data, uca_releve_notes, Date.now());
+  await chrome.storage.local.set({ uca_moodle: store });
+  await diag("moodle-ok", `${r.data.length} notes lues · ${fresh.length} nouvelle(s)`);
+  result.read = r.data.length; result.pending = UCA_MOODLE.list(store, "pending").length;
+  if (firstRun) {
+    const n = UCA_MOODLE.list(store, "pending").length;
+    if (n) await notifyMoodleSummary(n);
+  } else if (fresh.length) {
+    await logActivity(fresh.map((it, i) => ({ id: `moodle|${it.id}|${it.raw}`, at: it.at, kind: "grade", type: "grade", title: "Note Moodle à valider", text: UCA_MOODLE.describe(it).line })));
+    if (fresh.length > 3) await notifyMoodleSummary(fresh.length);
+    else for (const it of fresh) await notifyMoodle(it);
+  }
+  return result;
+}
+
+const IS_FIREFOX = typeof navigator !== "undefined" && /firefox/i.test(navigator.userAgent || "");
+async function notifyMoodle(it) {
+  if (manualSync) return;
+  const settings = await UCA_getSettings();
+  if (!settings.notifyNewGrades) return;
+  const d = UCA_MOODLE.describe(it), design = await currentDesign();
+  const opts = {
+    type: "basic",
+    iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
+    title: d.title,
+    message: d.line + (d.feedback ? "\n" + d.feedback.slice(0, 160) : ""),
+    priority: 2, requireInteraction: true,
+  };
+  // Boutons : Chrome / Edge de bureau seulement. Ailleurs, la note se valide dans la fenêtre Notes.
+  if (!IS_FIREFOX) opts.buttons = [{ title: "Valider la note" }, { title: "Refuser la note" }];
+  notify("uca_moodle|" + it.id, opts);
+}
+async function notifyMoodleSummary(n) {
+  if (manualSync) return;
+  const settings = await UCA_getSettings();
+  if (!settings.notifyNewGrades) return;
+  const design = await currentDesign();
+  notify("uca_moodle_all|" + Date.now(), {
+    type: "basic", iconUrl: chrome.runtime.getURL(`${design ? design.folder + "/icons" : "icons"}/icon128.png`),
+    title: n === 1 ? "1 note Moodle à valider" : `${n} notes Moodle à valider`,
+    message: "Ouvre la fenêtre Notes pour valider ou refuser chaque note.", priority: 1,
+  });
+}
+
+/* Refuser se fait directement depuis la notification. Valider n'ajoute jamais la note toute seule : la matière
+   proposée et le coefficient doivent être confirmés par l'utilisateur, dans la fenêtre Notes (la carte de la note
+   est ouverte et mise en évidence). */
+async function refuseMoodle(id) {
+  const { uca_moodle } = await chrome.storage.local.get("uca_moodle");
+  const it = uca_moodle && uca_moodle.items && uca_moodle.items[id];
+  if (!it) return false;
+  await chrome.storage.local.set({ uca_moodle: UCA_MOODLE.decide(uca_moodle, id, "refused", {}, Date.now()) });
+  return true;
+}
+async function moodleReviewUrl(id) {
+  const design = await currentDesign();
+  return chrome.runtime.getURL(design ? `${design.folder}/agenda.html?open=notes&moodle=${encodeURIComponent(id)}` : "choose.html?tab=1");
+}
+if (typeof chrome.notifications !== "undefined" && chrome.notifications.onButtonClicked) chrome.notifications.onButtonClicked.addListener(async (nid, idx) => {
+  if (!nid.startsWith("uca_moodle|")) return;
+  const id = nid.slice("uca_moodle|".length);
+  if (idx === 1) await refuseMoodle(id);
+  else chrome.tabs.create({ url: await moodleReviewUrl(id) });
+  chrome.notifications.clear(nid);
+});
+
+/* « Me connecter à Moodle » : ouvre la page de connexion (CAS) dans un onglet et mémorise cet onglet. Dès qu'il arrive sur Moodle,
+   connecté (le CAS peut demander plusieurs minutes de double authentification), la recherche des notes se lance toute seule.
+   Mémorisé dans chrome.storage (pas en mémoire) : le service worker peut être arrêté pendant la connexion. */
+const MOODLE_LOGIN_WAIT_MS = 20 * 60 * 1000;
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || msg.type !== "UCA_MOODLE_LOGIN") return;
+  const base = moodleBases()[0];
+  chrome.tabs.create({ url: base + "/login/index.php", active: true }).then(async (tab) => {
+    await chrome.storage.local.set({ uca_moodle_login: { tabId: tab.id, base, at: Date.now() } });
+    await diag("moodle-connexion", "onglet de connexion ouvert");
+    sendResponse({ ok: true });
+  }, (e) => sendResponse({ ok: false, error: String((e && e.message) || e) }));
+  return true;
+});
+async function moodleLoginTabUpdated(tabId, info, tab) {
+  if (!info || info.status !== "complete") return;
+  const { uca_moodle_login } = await chrome.storage.local.get("uca_moodle_login");
+  if (!uca_moodle_login || uca_moodle_login.tabId !== tabId) return;
+  if (Date.now() - uca_moodle_login.at > MOODLE_LOGIN_WAIT_MS) { await chrome.storage.local.remove("uca_moodle_login"); return; }
+  let u; try { u = new URL((tab && tab.url) || ""); } catch (e) { return; }
+  if (u.origin !== uca_moodle_login.base || /\/login\/|\/cas\//i.test(u.pathname)) return;   // pas encore connecté
+  await chrome.storage.local.remove("uca_moodle_login");
+  await diag("moodle-connexion", "connecté : recherche des notes");
+  manualSync = true;
+  try { await syncMoodleQuietly(); } finally { manualSync = false; }
+}
+chrome.tabs.onUpdated.addListener((tabId, info, tab) => { moodleLoginTabUpdated(tabId, info, tab).catch(() => {}); });
+chrome.tabs.onRemoved.addListener(async (tabId) => {
+  const { uca_moodle_login } = await chrome.storage.local.get("uca_moodle_login");
+  if (uca_moodle_login && uca_moodle_login.tabId === tabId) await chrome.storage.local.remove("uca_moodle_login");
+});
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || msg.type !== "UCA_MOODLE_SYNC") return;
+  manualSync = true;
+  syncMoodleQuietly().then((res) => sendResponse(Object.assign({ ok: true }, res)), (e) => sendResponse({ ok: false, error: String((e && e.message) || e) })).finally(() => { manualSync = false; });
+  return true;
+});
 
 /* Page lue, en-têtes de date présents, mais aucun cours reconnu alors que l'ancien emploi du temps en contient
    encore à venir : Odin a sans doute changé son affichage. On garde l'ancien emploi du temps (jamais écrasé
@@ -923,6 +1207,7 @@ async function syncSucceeded(text, silent) {
   broadcast({ type: "UCA_SYNC_RESULT", ok: true, text, events, lastSync, silent, edtChanges: uca_edt_changes || [] });
   await syncAbsencesQuietly();
   await syncNotesQuietly();
+  await syncMoodleQuietly().catch((e) => diag("moodle-echec", String((e && e.message) || e).slice(0, 120)));
   await syncClassSchedule().catch((e) => diag("ade-echec", String((e && e.message) || e).slice(0, 120)));
 }
 

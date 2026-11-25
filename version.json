@@ -14,9 +14,22 @@
     "Préférences : nouveau bouton « Forcer la mise à jour » pour réinstaller tout de suite les pages publiées sur GitHub, même si l'application se croit à jour.",
     "La flèche qui désigne un cours disparaît dès qu'on touche le menu."
   ],
-  "ota_version": "1.4.30",
+  "ota_version": "1.4.31",
   "ota_base_version_code": 22,
   "history": [
+    {
+      "version": "1.47.0",
+      "app": "1.4.31",
+      "title": "notes Moodle avec validation, corbeille, fenêtres déplaçables",
+      "items": [
+        "Notes Moodle (Paramètres → « Notes Moodle », désactivé par défaut) : à chaque synchro, l'extension lit tes cours et tes notes sur Moodle avec ta session (core/moodle.js, background.js).…",
+        "Rien n'entre dans les moyennes sans ton accord : chaque nouvelle note donne une notification « Nouvelle note détectée sur Moodle : matière, note / barème, commentaire » avec Valider la…",
+        "Choix de la matière : menu à couleurs avec recherche, matières rangées par UE, « Créer une nouvelle matière » toujours en tête. La matière du relevé qui porte le même code est…",
+        "Fenêtres de la fenêtre Notes : « Notes Moodle déjà traitées » s'ouvre dans une petite fenêtre à droite de l'écran (modifiables, bouton Fermer en haut à droite) : le graphique du panneau…",
+        "Corbeille : la fenêtre « Notes Moodle déjà traitées » ne montre que les notes validées (modifiables). Une note refusée ou ignorée va automatiquement à la corbeille (bouton 🗑 juste à côté…",
+        "App Android et app web (PWA) : mêmes pages que l'extension. La recherche sur Moodle se fait depuis l'extension (un navigateur isole les cookies de Moodle) ; les notes Moodle validées, la…"
+      ]
+    },
     {
       "version": "1.46.65",
       "app": "1.4.30",
@@ -74,15 +87,6 @@
       "items": [
         "App Android : la connexion à Odin est gardée. Quitter l'app ne déconnecte pas ; un contrôle silencieux toutes les 30 minutes garde la session vivante (interrupteur dans les réglages,…",
         "Aide à l'installation : pour l'installateur automatique, un menu choisit le système (Windows, macOS, Linux) et une fiche à droite propose le bon fichier ; pour le ZIP, le bouton «…"
-      ]
-    },
-    {
-      "version": "1.46.40",
-      "app": "1.4.23",
-      "title": "« Aujourd'hui » le week-end et notes à barème en violet/rose",
-      "items": [
-        "Vues 5 et 6 jours : un samedi ou un dimanche, « Aujourd'hui » (bouton, menu et touche T) affiche la semaine suivante au lieu de la semaine qui vient de finir ; même chose à l'ouverture…",
-        "Notes à barème (sur 12, sur 25…) : le chiffre de la note est violet tant que le barème n'est pas confirmé, rose ensuite, dans le tableau comme dans la liste sous le graphique (le rouge…"
       ]
     }
   ]

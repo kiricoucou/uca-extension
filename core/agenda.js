@@ -13,7 +13,9 @@ let absences = null;
 let scrapeIssues = {};
 let releveNotes = null;          // relevé avec les barèmes choisis appliqués (voir UCA_GRADES.applyScales)
 let releveRaw = null, scales = {}; // relevé tel que lu sur Odin ; barèmes choisis par évaluation (uca_scales)
-function setReleve(raw, sc) { releveRaw = raw || null; if (sc) scales = sc; releveNotes = UCA_GRADES.applyScales(releveRaw, scales); }
+let moodleStore = null;            // notes Moodle (uca_moodle) : en attente, validées ou refusées
+// Les notes Moodle validées par l'utilisateur sont fusionnées dans le relevé Odin avant l'application des barèmes.
+function setReleve(raw, sc) { releveRaw = raw || null; if (sc) scales = sc; releveNotes = UCA_GRADES.applyScales(UCA_MOODLE.mergeReleve(releveRaw, moodleStore), scales); }
 let notesHistory = [];
 let subjectColors = {};
 let tasks = [];
@@ -859,7 +861,7 @@ async function updatePinnedNext() {
   } catch (e) { /* notification indisponible : sans conséquence */ }
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_class_events", "uca_my_groups", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks", "uca_activity", "uca_activity_seen", "uca_scales"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_class_events", "uca_my_groups", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks", "uca_activity", "uca_activity_seen", "uca_scales", "uca_moodle", "uca_moodle_progress"], (data) => {
     // Hors Android natif (qui a sa propre synchro CAS en arrière-plan) : sans données, écran d'import.
     if (window.UCA_APP && !window.AndroidUCA && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) {
       location.href = chrome.runtime.getURL("app/import.html");
@@ -878,6 +880,7 @@ function loadFromStorage() {
     scrapeIssues = data.uca_scrape_issues || {};
     notesHistory = data.uca_notes_history || [];
     subjectColors = data.uca_subject_colors || {};
+    moodleStore = data.uca_moodle || null; moodleProgressState = data.uca_moodle_progress || null;
     setReleve(data.uca_releve_notes, data.uca_scales || {});
     notesSeen = data.uca_notes_seen || {};
     setEdtChanges(data.uca_edt_changes);
@@ -886,6 +889,13 @@ function loadFromStorage() {
       const params = new URLSearchParams(location.search);
       if (params.get("view") && availableViews().includes(params.get("view"))) { settings = Object.assign({}, settings, { startView: params.get("view") }); }
       if (params.get("open")) setTimeout(() => openToolPanel(params.get("open") + "Panel", isMobileUI()), 300);
+      // Lien d'une notification Moodle : la carte de la note à confirmer est mise en évidence (matière puis coefficient).
+      if (params.get("moodle")) setTimeout(() => {
+        const card = Array.from(document.querySelectorAll(".np-moodle-card")).find((c) => c.dataset.moodleId === params.get("moodle"));
+        if (!card) return;
+        card.scrollIntoView({ block: "center" }); card.style.outline = "3px solid currentColor"; card.style.outlineOffset = "2px";
+        const s = card.querySelector(".mdl-pick"); if (s) s.focus();
+      }, 700);
       if (location.hash === "#phone" && !window.UCA_APP) setTimeout(openPhoneModal, 300);
       if (settings.startView !== "auto" && availableViews().includes(settings.startView)) currentView = settings.startView;
       else if (isMobileUI()) currentView = "list";
@@ -917,7 +927,20 @@ function togglePanel(panel) {
   const r = panel.getBoundingClientRect();
   if (r.left < 8) { panel.style.left = "0"; panel.style.right = "auto"; }
   else if (r.right > window.innerWidth - 8) { panel.style.right = "0"; panel.style.left = "auto"; }
+  fitPanelHeight(panel);
 }
+/* Un panneau déroulant (Devoirs, Filtres, Exporter…) ne dépasse jamais le bas de la fenêtre : il garde 16 px de marge (la barre
+   des tâches reste visible) et défile à l'intérieur si son contenu est plus long. Recalculé quand la fenêtre change de taille. */
+const PANEL_BOTTOM_MARGIN = 16;
+function fitPanelHeight(panel) {
+  if (!panel || panel.id === "notesPanel" || panel.classList.contains("as-sheet") || !panel.classList.contains("open")) return;
+  if (panel.dataset.cssMaxH === undefined) { panel.style.maxHeight = ""; panel.dataset.cssMaxH = getComputedStyle(panel).maxHeight; }
+  const top = panel.getBoundingClientRect().top, avail = Math.max(160, Math.floor(window.innerHeight - top - PANEL_BOTTOM_MARGIN));
+  const css = parseFloat(panel.dataset.cssMaxH);
+  panel.style.maxHeight = (Number.isFinite(css) && /px$/.test(panel.dataset.cssMaxH) ? Math.min(css, avail) : avail) + "px";
+  panel.style.overflowY = "auto";
+}
+window.addEventListener("resize", () => { Object.keys(TOOL_PANELS).forEach((id) => { const p = $(id); if (p && p.classList.contains("open")) fitPanelHeight(p); }); });
 
 /* ============================= Absences ============================= */
 function plural(n, w) { if (n === null || n === undefined) return "? " + w; return n + " " + w + (n > 1 ? "s" : ""); }
@@ -970,8 +993,35 @@ const SCRAPE_ISSUE_TEXT = {
   structure: "Odin semble avoir changé sa page : ces données datent de la dernière synchro réussie. Signale-le dans l'aide si ça dure.",
   error: "Lecture impossible cette fois : ces données datent de la dernière synchro réussie.",
 };
+const MOODLE_ISSUE_TEXT = {
+  session: "Session Moodle introuvable : ouvre Moodle dans ce navigateur, connecte-toi, puis relance la recherche.",
+  permission: "Autorisation d'accès à Moodle manquante : ouvre chrome://extensions, « Détails » de cette extension, et autorise l'accès au site.",
+  serviceDown: "Moodle est indisponible : réessaie plus tard.",
+  structure: "Moodle semble avoir changé sa page de notes : aucune note n'a pu être lue.",
+  error: "Lecture de Moodle impossible cette fois.",
+};
 function scrapeIssueNode(kind) {
   const i = scrapeIssues[kind];
+  if (kind === "moodle" && i && MOODLE_ISSUE_TEXT[i.issue]) {
+    const n = document.createElement("div");
+    n.className = "scrape-issue"; n.setAttribute("role", "status");
+    n.style.cssText = "margin:0 0 8px;padding:8px 10px;border:1px solid var(--danger);border-radius:8px;color:var(--danger);font-size:12.5px;line-height:1.4;";
+    n.textContent = MOODLE_ISSUE_TEXT[i.issue] + (i.detail ? " [" + i.detail + "]" : "");
+    // Boutons d'action : se connecter à Moodle (la recherche reprend toute seule une fois connecté) ou relancer la recherche.
+    const acts = document.createElement("div"); acts.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;";
+    const mk = (label, bg, id, fn) => { const b = document.createElement("button"); b.type = "button"; b.id = id; b.textContent = label; b.style.cssText = mdlSolid(bg); b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); return b; };
+    if (i.issue === "session") {
+      acts.append(
+        mk("🔑 Me connecter à Moodle", MDL_BLUE, "moodleLoginBtn", () => { try { chrome.runtime.sendMessage({ type: "UCA_MOODLE_LOGIN" }, () => { void chrome.runtime.lastError; }); } catch (e) { window.open(moodleCandidateOrigin().replace("/*", "") + "/login/index.php", "_blank", "noopener"); } toast("Connecte-toi à Moodle dans l'onglet qui s'ouvre : la recherche reprendra toute seule", "ok"); }),
+        mk("↻ Relancer la recherche", MDL_GREEN, "moodleRetryBtn", () => runMoodleSearch()));
+    } else if (i.issue === "permission") {
+      acts.append(mk("Autoriser l'accès à Moodle", MDL_BLUE, "moodleAllowBtn", () => runMoodleSearch()));
+    } else {
+      acts.append(mk("↻ Réessayer", MDL_GREEN, "moodleRetryBtn", () => runMoodleSearch()));
+    }
+    n.appendChild(acts);
+    return n;
+  }
   if (!i || !SCRAPE_ISSUE_TEXT[i.issue]) return null;
   const n = document.createElement("div");
   n.className = "scrape-issue"; n.setAttribute("role", "status");
@@ -1026,13 +1076,17 @@ $("absencesBtn").addEventListener("click", (e) => {
 });
 // Ferme le panneau sur un clic dehors. Le panneau peut être déplacé en feuille (téléphone) :
 // un clic dedans, dans le menu qui l'ouvre ou sur un élément qu'il vient de reconstruire ne compte pas.
+let pressStartedInNotes = false;
+document.addEventListener("pointerdown", (e) => { pressStartedInNotes = !!(e.target && e.target.closest && e.target.closest("#notesPanel, #moodleSide, .mdl-pop")); }, true);
 function closeOnOutsideClick(panelId, wrapId) {
   document.addEventListener("click", (e) => {
     const p = $(panelId);
+    if (panelId === "notesPanel" && pressStartedInNotes) return;
     if (!p.classList.contains("open") || !document.contains(e.target)) return;
     if (p.contains(e.target) || $(wrapId).contains(e.target) || e.target.closest("#mobileMenu")) return;
     // Le détail d'une note (fenêtre par-dessus le panneau) fait partie du panneau : sa croix ou un clic à côté ne ferme que lui.
     if (e.target.closest && e.target.closest("#gradeDetailOverlay")) return;
+    if (panelId === "notesPanel" && e.target.closest && e.target.closest("#moodleSide, .mdl-pop")) return;
     p.classList.remove("open");
     if ($("ucaSheetBackdrop")) $("ucaSheetBackdrop").hidden = true;
   });
@@ -1294,6 +1348,22 @@ function examsBlock() {
   return box;
 }
 
+/* Les examens à venir ne sont plus listés dans la fenêtre Notes : un bouton ouvre le panneau « À faire et examens » (celui du
+   bouton Devoirs), qui les affiche déjà avec leur compte à rebours. La fenêtre Notes se referme, comme pour tout autre outil. */
+function examsButtonBlock() {
+  const n = upcomingExams().length;
+  if (!n) return null;
+  const box = npEl("div", "np-exams-open"); box.style.cssText = "padding:8px 16px 0;";
+  const b = npEl("button", "", `📅 Ouvrir les examens à venir (${n})`); b.type = "button"; b.id = "examsOpenBtn";
+  b.style.cssText = MOODLE_BTN_CSS + "display:flex;width:100%;max-width:100%;align-items:center;gap:8px;justify-content:space-between;box-sizing:border-box;text-align:left;white-space:normal;";
+  b.setAttribute("aria-label", `Ouvrir les ${n} examen${n > 1 ? "s" : ""} à venir dans le panneau À faire et examens`);
+  const arrow = npEl("span", "", "›"); arrow.setAttribute("aria-hidden", "true"); arrow.style.cssText = "font-weight:800;flex:none;";
+  b.appendChild(arrow);
+  b.addEventListener("click", (e) => { e.stopPropagation(); openToolPanel("tasksPanel", isMobileUI(), { back: true }); });
+  box.appendChild(b);
+  return box;
+}
+
 function simResultText(r, target, label) {
   const f = fmtNote, n = r.pending, ev = `${n} évaluation${n > 1 ? "s" : ""} à venir (coeff ${f(r.coeff)})`;
   const cur = r.current == null ? "" : ` Actuellement : ${f(r.current)} / 20.`;
@@ -1427,6 +1497,8 @@ let npNeed = 0;
    n'apparaît que si l'écran lui-même est trop étroit. */
 function fitNotesPanel() {
   const p = $("notesPanel"); if (!p) return;
+  notesProgrammaticAt = performance.now();
+  if (p.dataset.userSized === "1") return;          // largeur choisie par l'utilisateur : jamais écrasée par l'ajustement automatique
   if (window.innerWidth <= 700 || npNeed <= 440) { p.style.removeProperty("max-width"); p.style.removeProperty("width"); return; }
   const w = Math.round(Math.min(npNeed + 84, window.innerWidth * 0.96));
   p.style.setProperty("max-width", w + "px", "important"); p.style.setProperty("width", w + "px", "important");
@@ -1434,7 +1506,8 @@ function fitNotesPanel() {
 function chartSvg(w, h) {
   npNeed = Math.max(npNeed, w);
   const svg = svgEl("svg", { viewBox: `0 0 ${w} ${h}`, role: "group", width: String(w) });
-  svg.style.cssText = `display:block;margin:4px 0 0;min-width:100%;max-width:none;width:${w}px;`;
+  // Hauteur plafonnée : sur un panneau large, le graphique grandissait avec la largeur et devenait immense.
+  svg.style.cssText = `display:block;margin:4px auto 0;min-width:100%;max-width:none;width:${w}px;max-height:${Math.round(Math.min(170, h * 0.78))}px;`;
   return svg;
 }
 function chartScroll(svg) {
@@ -1699,18 +1772,623 @@ function chartBlock() {
   box.append(sel, body); draw();
   return box;
 }
-function renderNotesPanel() {
+/* Notes détectées sur Moodle : l'utilisateur valide (la note rejoint le tableau et les moyennes) ou refuse
+   (ignorée : des contrôles fictifs existent). Rien n'entre dans les calculs sans validation. */
+function saveMoodleDecision(id, status, opts) {
+  chrome.storage.local.get("uca_moodle", (d) => {
+    const next = UCA_MOODLE.decide(d.uca_moodle, id, status, opts, Date.now());
+    if (next && next !== d.uca_moodle) chrome.storage.local.set({ uca_moodle: next });
+  });
+}
+let moodleProgressState = null;    // uca_moodle_progress : recherche en cours (barre de progression)
+function moodleProgressActive() { return !!(moodleProgressState && moodleProgressState.active && Date.now() - (moodleProgressState.at || 0) < 120000); }
+/* Barre de progression de la recherche Moodle : cours lus / cours à lire, avec le cours en cours. Mise à jour sur
+   place (sans refaire tout le panneau, pour ne pas faire perdre la saisie d'une carte en cours de modification). */
+function moodleProgressNode() {
+  const p = moodleProgressState;
+  const box = npEl("div", "np-moodle-progress"); box.id = "moodleProgress";
+  box.style.cssText = "margin:0 0 8px;padding:8px 10px;border:2px solid " + MDL_BLUE + ";background:rgba(31,111,235,.08);border-radius:10px;";
+  box.setAttribute("role", "status");
+  const top = npEl("div", "np-mp-top"); top.style.cssText = "display:flex;align-items:baseline;gap:12px;margin-bottom:6px;";
+  const label = npEl("div", "np-mp-label"); label.style.cssText = "flex:1 1 auto;min-width:0;font-size:.9em;";
+  const pctEl = npEl("div", "np-mp-pct"); pctEl.style.cssText = "flex:none;font-size:1.35em;font-weight:800;font-variant-numeric:tabular-nums;color:" + MDL_BLUE + ";";
+  top.append(label, pctEl);
+  const track = npEl("div", "np-mp-track"); track.setAttribute("role", "progressbar"); track.setAttribute("aria-valuemin", "0"); track.setAttribute("aria-valuemax", "100");
+  track.style.cssText = "height:10px;border-radius:6px;border:1px solid currentColor;overflow:hidden;";
+  const fill = npEl("div", "np-mp-fill"); fill.style.cssText = "height:100%;width:0;background:" + MDL_BLUE + ";transition:width .25s;";
+  track.appendChild(fill); box.append(top, track);
+  paintMoodleProgress(box, p);
+  return box;
+}
+function paintMoodleProgress(box, p) {
+  const label = box.querySelector(".np-mp-label"), pctEl = box.querySelector(".np-mp-pct"), track = box.querySelector(".np-mp-track"), fill = box.querySelector(".np-mp-fill");
+  if (!label || !p) return;
+  // Pourcentage de cours lus (8 cours terminés sur 24 : 33 %) ; « Analyse » = 100 %, connexion et ouverture = 0 %.
+  const known = p.total > 0 && p.phase === "cours";
+  const pct = known ? Math.min(100, Math.round(p.done / p.total * 100)) : p.phase === "analyse" ? 100 : 0;
+  label.textContent = known ? `Lecture de Moodle — cours ${Math.min(p.done + 1, p.total)} / ${p.total}${p.label ? " — " + p.label : ""}` : (p.label || "Recherche en cours…");
+  if (pctEl) pctEl.textContent = pct + " %";
+  track.setAttribute("aria-valuenow", String(pct)); track.setAttribute("aria-valuetext", pct + " %"); track.setAttribute("aria-label", label.textContent);
+  fill.style.width = pct + "%";
+}
+/* Autorisation d'accès à Moodle : demandée ici, au clic de l'utilisateur (Chrome n'accepte la demande que sur un geste),
+   si le navigateur ne l'a pas encore accordée. Sans effet si elle l'est déjà. */
+function moodleCandidateOrigin() {
+  const d = new Date(), y = d.getMonth() >= 7 ? d.getFullYear() : d.getFullYear() - 1;
+  return `https://moodle${y}.uca.fr/*`;
+}
+/* Promesse « accès accordé ou sans objet ». Appelée directement dans le clic (geste de l'utilisateur) : si l'accès est déjà
+   accordé, Chrome répond tout de suite sans rien afficher. */
+function ensureMoodleAccess() {
+  return new Promise((resolve) => {
+    try {
+      if (!chrome.permissions || !chrome.permissions.request) return resolve(true);
+      chrome.permissions.request({ origins: [moodleCandidateOrigin()] }, (granted) => {
+        void chrome.runtime.lastError;
+        if (granted === false) { toast("Accès à Moodle refusé : la recherche ne pourra pas lire tes notes", "err"); return resolve(false); }
+        resolve(true);
+      });
+    } catch (e) { resolve(true); }
+  });
+}
+/* Lance la recherche des notes sur Moodle (bouton « Chercher sur Moodle » ou boutons du message d'erreur) : demande d'abord
+   l'accès au navigateur (geste de l'utilisateur), affiche la progression, puis le résultat. */
+function runMoodleSearch() {
+  moodleProgressState = { active: true, phase: "connexion", done: 0, total: 0, label: "Connexion à Moodle…", at: Date.now() }; renderNotesPanel();
+  ensureMoodleAccess().then((ok) => {
+    if (!ok) { chrome.storage.local.set({ uca_moodle_progress: { active: false, at: Date.now() } }); moodleProgressState = null; renderNotesPanel(); return; }
+    try {
+      chrome.runtime.sendMessage({ type: "UCA_MOODLE_SYNC" }, (res) => {
+        void chrome.runtime.lastError;
+        if (res && res.ok && !res.issue) toast(`${res.read} note${res.read > 1 ? "s" : ""} lue${res.read > 1 ? "s" : ""} sur Moodle · ${res.pending} à confirmer`, "ok");
+        else if (res && res.issue) toast("Moodle : " + (MOODLE_ISSUE_TEXT[res.issue] || "lecture impossible"), "err");
+      });
+    } catch (e) { moodleProgressState = null; renderNotesPanel(); }
+  });
+}
+/* « Dernière recherche : il y a 3 minutes » (mise à jour chaque seconde, d'après la date de la dernière lecture réussie). */
+function relTimeFr(ms) {
+  const sec = Math.max(0, Math.floor(ms / 1000));
+  if (sec < 5) return "à l'instant";
+  if (sec < 60) return `il y a ${sec} seconde${sec > 1 ? "s" : ""}`;
+  const m = Math.floor(sec / 60); if (m < 60) return `il y a ${m} minute${m > 1 ? "s" : ""}`;
+  const h = Math.floor(m / 60); if (h < 24) return `il y a ${h} heure${h > 1 ? "s" : ""}`;
+  const d = Math.floor(h / 24); return `il y a ${d} jour${d > 1 ? "s" : ""}`;
+}
+window.UCA_relTimeFr = relTimeFr;   // exposé pour les tests
+function paintMoodleAgo(el) {
+  if (!el) return;
+  const t = moodleStore && moodleStore.sync ? Date.parse(moodleStore.sync) : NaN;
+  el.textContent = Number.isFinite(t) ? "Dernière recherche : " + relTimeFr(Date.now() - t) : "Jamais lancée";
+  el.title = Number.isFinite(t) ? new Date(t).toLocaleString("fr-FR") : "";
+}
+setInterval(() => paintMoodleAgo($("moodleAgo")), 1000);
+
+/* ---- Panneau Notes : déplaçable et redimensionnable (ordinateur) ----
+   Position et taille sont mémorisées (localStorage, sans conséquence si indisponible). Par défaut, le panneau s'ouvre à 10 px
+   sous la barre « Semaine du … au … » : rien ne le colle aux pointillés du haut et le calendrier reste visible. */
+const NOTES_GEOM_KEY = "uca_notes_geom_v1";
+let notesProgrammaticAt = 0;
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+function loadNotesGeom() { try { const g = JSON.parse(localStorage.getItem(NOTES_GEOM_KEY) || "null"); return g && typeof g === "object" ? g : null; } catch (e) { return null; } }
+function saveNotesGeom(g) { try { localStorage.setItem(NOTES_GEOM_KEY, JSON.stringify(g)); } catch (e) { /* mémorisation facultative */ } }
+function notesTopDefault() { const sub = $("weekSubLabel"); return Math.round((sub ? sub.getBoundingClientRect().bottom : 110) + 10); }
+function notesManaged(panel) { return !!panel && !isMobileUI() && !panel.classList.contains("as-sheet"); }
+function saveNotesGeomFromPanel(panel) {
+  saveNotesGeom({ x: Math.round(parseFloat(panel.style.left) || 0), y: Math.round(parseFloat(panel.style.top) || 0), w: panel.offsetWidth, h: panel.style.height ? panel.offsetHeight : null });
+}
+function applyNotesGeometry(panel, reset) {
+  const bar = panel.querySelector(".np-dragbar"), barGap = panel.querySelector(".np-bar-gap");
+  if (barGap) barGap.style.display = notesManaged(panel) ? "block" : "none";
+  if (!notesManaged(panel)) {
+    if (bar) bar.style.display = "none";
+    ["position", "top", "left", "right", "bottom", "height", "resize", "min-width", "min-height", "max-height", "padding-top"].forEach((p) => panel.style.removeProperty(p));
+    return;
+  }
+  if (bar) {
+    bar.style.display = "flex";
+    let bg = getComputedStyle(panel).backgroundColor; if (!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = getComputedStyle(document.body).backgroundColor;
+    bar.style.backgroundColor = bg; bar.style.color = panelInk();     // fond opaque et encre du panneau : contraste garanti
+  }
+  notesProgrammaticAt = performance.now();
+  const vw = window.innerWidth, vh = window.innerHeight, g = reset ? null : loadNotesGeom(), st = panel.style;
+  const top = g && Number.isFinite(g.y) ? clampN(g.y, 0, vh - 140) : notesTopDefault();
+  panel.dataset.userSized = g && g.w ? "1" : "0";
+  st.position = "fixed"; st.right = "auto"; st.bottom = "auto"; st.top = top + "px";
+  st.minWidth = "340px"; st.minHeight = "200px"; st.resize = "both"; st.overflow = "auto";
+  st.paddingTop = "0px";                       // la barre de titre est collée en haut : le contenu qui défile ne passe jamais au-dessus
+  st.maxHeight = Math.max(220, vh - top - 12) + "px";
+  if (g && g.w) { st.setProperty("width", clampN(g.w, 340, vw - 16) + "px", "important"); st.setProperty("max-width", "none", "important"); }
+  st.height = g && g.h ? clampN(g.h, 200, Math.max(220, vh - top - 12)) + "px" : "";
+  const width = panel.getBoundingClientRect().width;
+  const wrapLeft = $("notesWrap") ? $("notesWrap").getBoundingClientRect().left : 16;
+  st.left = clampN(g && Number.isFinite(g.x) ? g.x : wrapLeft, 8, Math.max(8, vw - width - 8)) + "px";
+  panel._lastW = panel.offsetWidth; panel._lastH = panel.offsetHeight;
+}
+function initNotesPanelChrome() {
+  const panel = $("notesPanel");
+  if (!panel || panel.querySelector(".np-dragbar")) return;
+  const bar = npEl("div", "np-dragbar"); bar.tabIndex = 0; bar.setAttribute("role", "toolbar");
+  bar.setAttribute("aria-label", "Déplacer la fenêtre Notes : glisser, ou flèches du clavier ; double-clic pour la remettre à sa place ; coin bas droit pour la redimensionner");
+  // Barre de titre : poignée à six points, titre, rappel des gestes ; opaque, bordée, avec 14 px d'air avant le contenu.
+  bar.style.cssText = "position:sticky;top:0;z-index:5;display:none;align-items:center;gap:12px;min-height:38px;box-sizing:border-box;margin:0;padding:6px 16px;cursor:grab;user-select:none;touch-action:none;border-bottom:2px solid rgba(127,127,127,.55);border-radius:6px 6px 0 0;";
+  const grip = npEl("span", "np-grip"); grip.setAttribute("aria-hidden", "true");
+  grip.style.cssText = "flex:none;display:inline-grid;grid-template-columns:repeat(2,4px);gap:3px;padding:2px 0;";
+  for (let i = 0; i < 6; i++) { const dot = npEl("i", ""); dot.style.cssText = "display:block;width:4px;height:4px;border-radius:50%;background:currentColor;"; grip.appendChild(dot); }
+  const ttl = npEl("span", "np-bar-title", "Notes"); ttl.style.cssText = "flex:none;font-weight:800;font-size:14px;letter-spacing:.04em;";
+  const hint = npEl("span", "np-bar-hint", "Glisse pour déplacer · coin ↘ pour agrandir"); hint.style.cssText = "flex:1 1 auto;min-width:0;text-align:right;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;";
+  bar.append(grip, ttl, hint);
+  panel.insertBefore(bar, panel.firstChild);
+  // 14 px d'espace sous la barre (un élément à part : la marge négative du haut absorbait la marge du bas).
+  const barGap = npEl("div", "np-bar-gap"); barGap.style.cssText = "height:14px;flex:none;display:none;"; barGap.setAttribute("aria-hidden", "true");
+  panel.insertBefore(barGap, bar.nextSibling);
+  bar.title = "Glisse pour déplacer la fenêtre. Double-clic : position d'origine.";
+  const place = (x, y) => {
+    notesProgrammaticAt = performance.now();
+    const left = clampN(x, 0, window.innerWidth - Math.min(panel.offsetWidth, window.innerWidth)), top = clampN(y, 0, window.innerHeight - 60);
+    panel.style.left = left + "px"; panel.style.top = top + "px"; panel.style.maxHeight = Math.max(220, window.innerHeight - top - 12) + "px";
+  };
+  bar.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || !notesManaged(panel)) return;
+    e.preventDefault();
+    // Départ = position posée (left/top), pas le rectangle affiché : une animation d'ouverture (échelle, décalage) le fausserait.
+    const l0 = parseFloat(panel.style.left) || 0, t0 = parseFloat(panel.style.top) || 0, dx = e.clientX - l0, dy = e.clientY - t0;
+    try { bar.setPointerCapture(e.pointerId); } catch (_) { /* sans capture : suivi par le document */ }
+    bar.style.cursor = "grabbing";
+    const move = (ev) => { place(ev.clientX - dx, ev.clientY - dy); fitMoodleSide(); };
+    const up = () => {
+      bar.removeEventListener("pointermove", move); bar.removeEventListener("pointerup", up); bar.removeEventListener("pointercancel", up);
+      bar.style.cursor = "grab"; panel.dataset.userSized = "1"; saveNotesGeomFromPanel(panel); fitMoodleSide();
+    };
+    bar.addEventListener("pointermove", move); bar.addEventListener("pointerup", up); bar.addEventListener("pointercancel", up);
+  });
+  bar.addEventListener("keydown", (e) => {
+    const d = { ArrowLeft: [-16, 0], ArrowRight: [16, 0], ArrowUp: [0, -16], ArrowDown: [0, 16] }[e.key];
+    if (!d || !notesManaged(panel)) return;
+    e.preventDefault(); place((parseFloat(panel.style.left) || 0) + d[0], (parseFloat(panel.style.top) || 0) + d[1]); panel.dataset.userSized = "1"; saveNotesGeomFromPanel(panel); fitMoodleSide();
+  });
+  bar.addEventListener("dblclick", () => { try { localStorage.removeItem(NOTES_GEOM_KEY); } catch (e) { /* rien */ } applyNotesGeometry(panel, true); });
+  // Redimensionnement par le coin (resize: both) : appui dans les 22 px du coin bas droit, taille mémorisée au relâchement.
+  panel.addEventListener("pointerdown", (e) => {
+    const r = panel.getBoundingClientRect();
+    panel._resizeStart = notesManaged(panel) && e.clientX > r.right - 22 && e.clientY > r.bottom - 22;
+  }, true);
+  const endResize = () => {
+    if (!panel._resizeStart) return;
+    panel._resizeStart = false;
+    setTimeout(() => { if (!panel.classList.contains("open")) return; panel.dataset.userSized = "1"; panel._lastW = panel.offsetWidth; panel._lastH = panel.offsetHeight; saveNotesGeomFromPanel(panel); fitMoodleSide(); }, 30);
+  };
+  window.addEventListener("pointerup", endResize, true); window.addEventListener("mouseup", endResize, true);
+  // Secours : un changement de taille hors des changements faits par le code (poignée tactile, autre méthode).
+  if (typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(() => {
+      if (!panel.classList.contains("open") || !notesManaged(panel)) return;
+      const w = panel.offsetWidth, h = panel.offsetHeight;
+      // Taille de référence = dernière taille posée par le code ou mémorisée (et non celle de l'image précédente :
+      // pendant un glissement, chaque image ne change que de quelques pixels).
+      if (performance.now() - notesProgrammaticAt < 250) { panel._lastW = w; panel._lastH = h; return; }
+      const changed = Math.abs(w - (panel._lastW || w)) > 2 || (panel.style.height && Math.abs(h - (panel._lastH || h)) > 2);
+      if (!changed) return;
+      panel._lastW = w; panel._lastH = h;
+      panel.dataset.userSized = "1"; saveNotesGeomFromPanel(panel);
+    }).observe(panel);
+  }
+  window.addEventListener("resize", () => { if (panel.classList.contains("open")) { applyNotesGeometry(panel); renderMoodleSide(); } });
+}
+
+/* ---- Notes Moodle déjà traitées : petite fenêtre à droite de l'écran (le graphique des notes reste visible à gauche) ---- */
+let moodleSideOpen = false;
+let moodleSideData = { validated: [], trash: [], matieres: [] };
+let moodleSideView = "done";          // "done" = notes validées (modifiables) ; "trash" = corbeille (notes refusées ou supprimées)
+function closeMoodleSide() { moodleSideOpen = false; moodleSideView = "done"; renderMoodleSide(); const t = $("moodleDoneToggle"); if (t) t.focus(); }
+/* Décision sur plusieurs notes d'un coup (vider la corbeille). */
+function saveMoodleDecisionsBulk(ids, status) {
+  chrome.storage.local.get("uca_moodle", (d) => {
+    let st = d.uca_moodle; ids.forEach((id) => { st = UCA_MOODLE.decide(st, id, status, {}, Date.now()); });
+    if (st && st !== d.uca_moodle) chrome.storage.local.set({ uca_moodle: st });
+  });
+}
+/* Ligne de la corbeille : compacte (la note, sa matière), avec Restaurer (elle retourne en attente, modifiable et validable
+   dans la fenêtre Notes) et Supprimer (définitif : elle ne sera plus jamais redemandée). */
+function moodleTrashRow(it) {
+  const d = UCA_MOODLE.describe(it);
+  const row = npEl("div", "np-moodle-trash-row"); row.dataset.moodleId = it.id; row.dataset.status = it.status;
+  row.setAttribute("role", "group"); row.setAttribute("aria-label", "Corbeille : " + d.line);
+  row.style.cssText = `border:2px solid ${MDL_RED};background:rgba(209,52,58,.10);border-radius:12px;padding:8px 12px;margin-bottom:8px;box-sizing:border-box;overflow-wrap:anywhere;`;
+  const head = npEl("div", ""); head.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;";
+  head.appendChild(mdlPill("🗑 Corbeille", MDL_RED));
+  const line = npEl("span", "", d.line); line.style.cssText = "flex:1 1 200px;min-width:0;";
+  head.appendChild(line); row.appendChild(head);
+  const acts = npEl("div", ""); acts.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;";
+  const back = npEl("button", "", "↩ Restaurer"); back.type = "button"; back.style.cssText = mdlSolid(MDL_GREEN); back.setAttribute("aria-label", "Restaurer la note : elle repasse en attente");
+  back.addEventListener("click", () => { saveMoodleDecision(it.id, "pending", {}); toast("Note restaurée : elle attend ta validation dans la fenêtre Notes", "ok"); });
+  const del = npEl("button", "", "Supprimer"); del.type = "button"; del.style.cssText = mdlSolid(MDL_RED); del.setAttribute("aria-label", "Supprimer définitivement cette note");
+  del.addEventListener("click", () => saveMoodleDecision(it.id, "deleted", {}));
+  acts.append(back, del); row.appendChild(acts);
+  return row;
+}
+function syncMoodleToggle() {
+  const head = $("moodleDoneToggle"); if (!head) return;
+  head.setAttribute("aria-expanded", String(moodleSideOpen));
+  head.style.fontWeight = moodleSideOpen ? "800" : "";
+  const arrow = head.querySelector(".np-moodle-arrow"); if (arrow) arrow.textContent = moodleSideOpen ? "◂" : "▸";   // flèche seule, sans texte
+}
+function renderMoodleSide() {
+  const old = $("moodleSide"), keepScroll = old && old.querySelector(".mdl-side-body") ? old.querySelector(".mdl-side-body").scrollTop : 0;
+  if (old) old.remove();
+  syncMoodleToggle();
+  const { validated, trash, matieres } = moodleSideData, panel = $("notesPanel");
+  const view = moodleSideView === "trash" ? "trash" : "done";
+  if (!moodleSideOpen || (!validated.length && !trash.length) || !panel || !panel.classList.contains("open")) {
+    if (moodleSideWasOpen && panel && panel.classList.contains("open") && notesManaged(panel)) { moodleSideWasOpen = false; applyNotesGeometry(panel); }
+    moodleSideWasOpen = false;
+    return;
+  }
+  let bg = getComputedStyle(panel).backgroundColor; if (!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = getComputedStyle(document.body).backgroundColor;
+  const phone = isMobileUI(), top = notesTopDefault();
+  const savedW = loadMoodleSideW(), place = moodleSidePlacement(panel), sideW = savedW || place.width;
+  const side = npEl("aside", "mdl-side"); side.id = "moodleSide"; side.setAttribute("aria-label", "Notes Moodle déjà traitées, modifiables");
+  side.style.cssText = `position:fixed;z-index:${phone ? 150 : 125};box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;border:2px solid currentColor;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.35);background:${bg};color:${panelInk()};`
+    + (phone ? "left:8px;right:8px;bottom:8px;max-height:60vh;" : `top:${top}px;right:12px;width:${sideW}px;max-width:calc(100vw - 24px);max-height:calc(100vh - ${top + 12}px);`);
+  const head = npEl("div", "mdl-side-head"); head.style.cssText = "display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(127,127,127,.45);flex:none;";
+  const nv = validated.length, nr = trash.length;
+  const title = npEl("div", ""); title.style.cssText = "flex:1;min-width:0;";
+  const t1 = npEl("div", "", view === "trash" ? "🗑 Corbeille" : "Notes Moodle déjà traitées"); t1.style.cssText = "font-weight:800;";
+  const t2 = npEl("div", "", view === "trash" ? `${nr} note${nr > 1 ? "s" : ""} refusée${nr > 1 ? "s" : ""} ou supprimée${nr > 1 ? "s" : ""} — restaurables` : `${nv} validée${nv > 1 ? "s" : ""} — modifiables`); t2.style.cssText = "font-size:.8em;opacity:.8;";
+  title.append(t1, t2);
+  const reset = npEl("button", "", "↔ Taille par défaut"); reset.type = "button"; reset.id = "moodleSideReset"; reset.style.cssText = MOODLE_BTN_CSS + "flex:none;min-height:28px;padding:2px 8px;font-size:.8em;";
+  reset.style.display = savedW ? "" : "none"; reset.setAttribute("aria-label", "Remettre la fenêtre à sa taille par défaut");
+  const doReset = () => { saveMoodleSideW(null); side.dataset.userSized = "0"; reset.style.display = "none"; applyMoodleSidePlacement(side, moodleSidePlacement($("notesPanel"))); if (!isMobileUI()) avoidMoodleSide($("notesPanel"), side); };
+  reset.addEventListener("click", doReset);
+  const close = npEl("button", "", "✕ Fermer"); close.type = "button"; close.id = "moodleSideClose"; close.style.cssText = MOODLE_BTN_CSS + "flex:none;";
+  close.setAttribute("aria-label", "Fermer les notes Moodle traitées");
+  close.addEventListener("click", closeMoodleSide);
+  // Corbeille : juste à côté de « Fermer » ; ouvre la corbeille (notes refusées ou supprimées), le même bouton revient aux notes validées.
+  const trashBtn = npEl("button", "", view === "trash" ? "← Notes validées" : `🗑 Corbeille (${nr})`); trashBtn.type = "button"; trashBtn.id = "moodleTrashBtn";
+  trashBtn.style.cssText = MOODLE_BTN_CSS + "flex:none;" + (view === "trash" ? `border-color:${MDL_RED};` : "");
+  trashBtn.setAttribute("aria-pressed", String(view === "trash"));
+  trashBtn.setAttribute("aria-label", view === "trash" ? "Revenir aux notes validées" : `Ouvrir la corbeille : ${nr} note${nr > 1 ? "s" : ""}`);
+  trashBtn.addEventListener("click", () => { moodleSideView = view === "trash" ? "done" : "trash"; renderMoodleSide(); const b = $("moodleTrashBtn"); if (b) b.focus(); });
+  head.append(title, reset, trashBtn, close);
+  side.dataset.userSized = savedW ? "1" : "0";
+  // Poignée sur le bord gauche : on tire pour changer la largeur (la fenêtre reste collée au bord droit de l'écran).
+  const grip = npEl("div", "mdl-side-grip"); grip.tabIndex = 0; grip.setAttribute("role", "separator"); grip.setAttribute("aria-orientation", "vertical");
+  grip.setAttribute("aria-label", "Largeur de la fenêtre : glisser ou flèches gauche et droite ; double-clic : taille par défaut");
+  grip.title = "Glisse pour changer la largeur · double-clic : taille par défaut (15 px après le panneau Notes)";
+  grip.style.cssText = "position:absolute;left:0;top:0;bottom:0;width:10px;cursor:ew-resize;touch-action:none;z-index:3;background:linear-gradient(90deg,rgba(127,127,127,.35),transparent);";
+  const setW = (w, persist) => {
+    const nw = Math.round(clampN(w, 300, window.innerWidth - 24));
+    side.style.width = nw + "px"; side.dataset.userSized = "1"; reset.style.display = "";
+    grip.setAttribute("aria-valuenow", String(nw));
+    if (persist) saveMoodleSideW(nw);
+  };
+  grip.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || phone) return;
+    e.preventDefault();
+    try { grip.setPointerCapture(e.pointerId); } catch (_) { /* sans capture */ }
+    const right = side.getBoundingClientRect().right;
+    const move = (ev) => setW(right - ev.clientX, false);
+    const up = () => { grip.removeEventListener("pointermove", move); grip.removeEventListener("pointerup", up); grip.removeEventListener("pointercancel", up); setW(side.offsetWidth, true); };
+    grip.addEventListener("pointermove", move); grip.addEventListener("pointerup", up); grip.addEventListener("pointercancel", up);
+  });
+  grip.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    e.preventDefault(); setW(side.offsetWidth + (e.key === "ArrowLeft" ? 20 : -20), true);
+  });
+  grip.addEventListener("dblclick", doReset);
+  side.appendChild(grip);
+  const body = npEl("div", "mdl-side-body"); body.id = "moodleDoneList"; body.style.cssText = "overflow:auto;padding:10px 12px;flex:1 1 auto;min-height:0;";
+  body.dataset.view = view;
+  const note = (txt) => { const p = npEl("div", "", txt); p.style.cssText = "opacity:.8;padding:18px 6px;text-align:center;"; return p; };
+  if (view === "trash") {
+    if (!nr) body.appendChild(note("La corbeille est vide."));
+    else {
+      const bar = npEl("div", ""); bar.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;";
+      const hint = npEl("span", "", "Restaurer remet la note en attente ; Supprimer est définitif."); hint.style.cssText = "flex:1 1 180px;font-size:.85em;opacity:.85;";
+      const empty = npEl("button", "", "Vider la corbeille"); empty.type = "button"; empty.id = "moodleTrashEmpty"; empty.style.cssText = MOODLE_BTN_CSS + `border-color:${MDL_RED};min-height:30px;`;
+      let armed = 0;
+      empty.addEventListener("click", () => {
+        if (!armed) { armed = setTimeout(() => { armed = 0; empty.textContent = "Vider la corbeille"; empty.style.cssText = MOODLE_BTN_CSS + `border-color:${MDL_RED};min-height:30px;`; }, 5000); empty.textContent = "Confirmer : tout supprimer"; empty.style.cssText = mdlSolid(MDL_RED) + "min-height:30px;"; return; }
+        clearTimeout(armed); saveMoodleDecisionsBulk(trash.map((x) => x.id), "deleted");
+      });
+      bar.append(hint, empty); body.appendChild(bar);
+      trash.slice(0, 80).forEach((it) => body.appendChild(moodleTrashRow(it)));
+    }
+  } else {
+    if (!nv) body.appendChild(note("Aucune note validée pour l'instant. Les notes refusées sont dans la corbeille (🗑)."));
+    validated.slice(0, 60).forEach((it) => body.appendChild(moodleCard(it, matieres)));
+  }
+  side.addEventListener("keydown", (e) => { if (e.key === "Escape" && !document.querySelector(".mdl-pop")) closeMoodleSide(); });
+  side.append(head, body); document.body.appendChild(side);
+  if (!phone && !savedW) applyMoodleSidePlacement(side, place);
+  body.scrollTop = keepScroll;
+  moodleSideWasOpen = true;
+  if (!phone && !savedW) avoidMoodleSide(panel, side);
+}
+let moodleSideWasOpen = false;
+const MOODLE_SIDE_GAP = 15, MOODLE_SIDE_MIN = 360, MOODLE_SIDE_MAX = 900;
+const MOODLE_SIDE_W_KEY = "uca_moodle_side_w_v1";
+function loadMoodleSideW() { try { const w = Number(localStorage.getItem(MOODLE_SIDE_W_KEY)); return Number.isFinite(w) && w >= 300 ? Math.min(w, window.innerWidth - 24) : null; } catch (e) { return null; } }
+function saveMoodleSideW(w) { try { if (w == null) localStorage.removeItem(MOODLE_SIDE_W_KEY); else localStorage.setItem(MOODLE_SIDE_W_KEY, String(Math.round(w))); } catch (e) { /* mémorisation facultative */ } }
+/* Taille PAR DÉFAUT de la fenêtre de droite : elle commence à 15 px du panneau Notes (aucun « trou ») et va jusqu'à 12 px du
+   bord de l'écran, entre 360 et 900 px. Sur un écran très large (au-delà de 900 px de place), elle garde 900 px et reste
+   à 15 px du panneau. Une largeur choisie à la main est mémorisée ; « Taille par défaut » revient à ce calcul. */
+function moodleSidePlacement(panel) {
+  const pr = panel && panel.classList.contains("open") ? panel.getBoundingClientRect() : null;
+  if (!pr) return { width: MOODLE_SIDE_MIN, left: null };
+  const room = window.innerWidth - 12 - (pr.right + MOODLE_SIDE_GAP);
+  if (room <= MOODLE_SIDE_MAX) return { width: Math.round(Math.max(MOODLE_SIDE_MIN, room)), left: null };
+  return { width: MOODLE_SIDE_MAX, left: Math.round(pr.right + MOODLE_SIDE_GAP) };
+}
+function applyMoodleSidePlacement(side, pl) {
+  side.style.width = pl.width + "px";
+  if (pl.left == null) { side.style.left = "auto"; side.style.right = "12px"; } else { side.style.right = "auto"; side.style.left = pl.left + "px"; }
+}
+/* Réajuste (sans refaire les cartes) quand le panneau Notes est déplacé ou redimensionné. */
+function fitMoodleSide() {
+  const side = $("moodleSide"), panel = $("notesPanel");
+  if (!side || !panel || isMobileUI() || side.dataset.userSized === "1") return;   // taille choisie : on n'y touche pas
+  applyMoodleSidePlacement(side, moodleSidePlacement(panel));
+}
+function avoidMoodleSide(panel, side) {
+  if (!notesManaged(panel)) return;
+  const p = panel.getBoundingClientRect(), sl = side.getBoundingClientRect().left;
+  if (p.right <= sl - MOODLE_SIDE_GAP) return;
+  notesProgrammaticAt = performance.now();
+  const w = Math.max(340, Math.floor(sl - MOODLE_SIDE_GAP - p.left));
+  panel.style.setProperty("width", w + "px", "important"); panel.style.setProperty("max-width", w + "px", "important");
+  if (p.left + 340 > sl - MOODLE_SIDE_GAP) panel.style.left = Math.max(8, Math.floor(sl - MOODLE_SIDE_GAP - Math.max(340, w))) + "px";
+  panel._lastW = panel.offsetWidth; panel._lastH = panel.offsetHeight;
+}
+const MOODLE_HOW = {
+  code: "Matière proposée d'après le code du cours",
+  proche: "Matière la plus proche du cours Moodle : vérifie-la",
+  nouvelle: "Ce cours ne ressemble à aucune matière du relevé : créer une nouvelle matière est recommandé",
+};
+/* Couleurs d'état (texte blanc dessus, contraste ≥ 4,5) : bleu = recherche / en attente, vert = validée, rouge = refusée. */
+const MDL_BLUE = "#1f6feb", MDL_GREEN = "#168a55", MDL_RED = "#d1343a", MDL_AMBER = "#b25e00";
+const MOODLE_BTN_CSS = "color:inherit;background:transparent;border:1px solid currentColor;padding:6px 12px;border-radius:10px;font:inherit;font-weight:700;cursor:pointer;min-height:32px;";
+const mdlSolid = (bg) => `color:#fff;background:${bg};border:1px solid ${bg};padding:6px 12px;border-radius:10px;font:inherit;font-weight:700;cursor:pointer;min-height:32px;`;
+const mdlPill = (text, bg) => { const p = npEl("span", "mdl-pill", text); p.style.cssText = `display:inline-block;flex:none;background:${bg};color:#fff;border-radius:999px;padding:1px 9px;font-size:.78em;font-weight:700;letter-spacing:.02em;white-space:nowrap;`; return p; };
+
+/* Choix de la matière : menu à couleurs, recherche, « Créer une nouvelle matière » toujours en tête (et recommandé
+   quand le cours ne ressemble à aucune matière), la matière recommandée repérée, les autres rangées par UE. */
+function moodlePicker(it, matieres, suggestion) {
+  const customs = UCA_MOODLE.customMatieres(moodleStore).filter((l) => !matieres.some((m) => m.label === l));
+  const state = { matiere: it.matiere || "", isNew: !!it.isNew };
+  const wrap = npEl("div", "mdl-picker"); wrap.style.cssText = "position:relative;flex:1 1 100%;min-width:0;max-width:100%;";
+  const trigger = npEl("button", "mdl-pick"); trigger.type = "button"; trigger.id = "mdlPick-" + it.id.replace(/[^a-z0-9]+/gi, "-");
+  trigger.setAttribute("aria-haspopup", "listbox"); trigger.setAttribute("aria-expanded", "false"); trigger.setAttribute("aria-label", "Matière de cette note");
+  trigger.style.cssText = "display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;min-height:38px;padding:6px 10px;border:1px solid currentColor;border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer;";
+  const nameRow = npEl("div", ""); nameRow.style.cssText = "display:none;align-items:center;gap:6px;margin-top:6px;";
+  const nameLbl = npEl("label", "", "Nom"); nameLbl.style.cssText = "font-size:.85em;font-weight:700;flex:none;";
+  const nameIn = npEl("input", "mdl-newname"); nameIn.type = "text"; nameIn.maxLength = 120; nameIn.id = trigger.id + "-name"; nameLbl.htmlFor = nameIn.id;
+  nameIn.placeholder = "Nom de la nouvelle matière"; nameIn.setAttribute("aria-label", "Nom de la nouvelle matière");
+  nameIn.style.cssText = "flex:1 1 auto;min-width:0;box-sizing:border-box;font:inherit;color:inherit;background:rgba(178,94,0,.14);min-height:34px;border:2px solid " + MDL_AMBER + ";border-radius:8px;padding:2px 8px;";
+  nameIn.value = state.isNew ? state.matiere : (suggestion.isNew ? suggestion.label : "");
+  nameIn.addEventListener("input", () => { if (state.isNew) { state.matiere = nameIn.value; trigger.dataset.value = state.matiere; paintTrigger(); } });
+  nameRow.append(nameLbl, nameIn);
+
+  const dot = (c) => { const d = npEl("span", ""); d.style.cssText = `flex:none;width:12px;height:12px;border-radius:4px;background:${c};`; d.setAttribute("aria-hidden", "true"); return d; };
+  function paintTrigger() {
+    trigger.textContent = "";
+    trigger.dataset.value = state.matiere; trigger.dataset.new = state.isNew ? "1" : "0";
+    if (state.isNew) { trigger.append(dot(MDL_AMBER), (() => { const t = npEl("span", "", "＋ Nouvelle matière : " + (state.matiere || "…")); t.style.cssText = "flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;"; return t; })()); }
+    else if (state.matiere) { trigger.append(dot(colorOf(state.matiere)), (() => { const t = npEl("span", "", state.matiere); t.style.cssText = "flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"; return t; })()); }
+    else { const t = npEl("span", "", "Choisir la matière…"); t.style.cssText = "flex:1;opacity:.7;"; trigger.appendChild(t); }
+    const isRec = state.isNew ? suggestion.isNew : (!suggestion.isNew && suggestion.label === state.matiere);
+    if (isRec) trigger.appendChild(mdlPill("Recommandée", MDL_GREEN));
+    const chev = npEl("span", "", "▾"); chev.setAttribute("aria-hidden", "true"); chev.style.cssText = "flex:none;opacity:.7;"; trigger.appendChild(chev);
+    nameRow.style.display = state.isNew ? "flex" : "none";
+  }
+  const choose = (label, isNew) => {
+    state.isNew = isNew; state.matiere = isNew ? (nameIn.value || suggestion.label || "") : label;
+    if (isNew && !nameIn.value) nameIn.value = state.matiere;
+    paintTrigger(); close(true);
+    if (isNew) { nameIn.focus(); nameIn.select(); }
+  };
+
+  let pop = null, opts = [], activeIdx = -1;
+  function close(refocus) {
+    if (!pop) return;
+    pop.remove(); pop = null; opts = []; activeIdx = -1; trigger.setAttribute("aria-expanded", "false");
+    document.removeEventListener("mousedown", onOutside, true); window.removeEventListener("resize", onGone); document.removeEventListener("scroll", onGone, true);
+    if (refocus) trigger.focus();
+  }
+  function onOutside(e) { if (pop && !pop.contains(e.target) && !trigger.contains(e.target)) close(false); }
+  // « resize » a pour cible window (pas un Node) : contains() lèverait une TypeError.
+  function onGone(e) { if (pop && !(e && e.target instanceof Node && pop.contains(e.target))) close(false); }
+  function setActive(i) {
+    opts.forEach((o, n) => { o.style.outline = n === i ? "2px solid " + MDL_BLUE : ""; o.style.outlineOffset = "-2px"; });
+    activeIdx = i;
+    // Défilement de la liste seulement (jamais scrollIntoView : il ferait défiler le panneau Notes et fermerait le menu).
+    const o = opts[i], l = pop && pop.querySelector(".mdl-list");
+    if (o && l && pop.isConnected) {
+      const rr = o.getBoundingClientRect(), lr = l.getBoundingClientRect();
+      if (rr.top < lr.top) l.scrollTop -= lr.top - rr.top + 8; else if (rr.bottom > lr.bottom) l.scrollTop += rr.bottom - lr.bottom + 8;
+    }
+  }
+  function open() {
+    if (pop) return;
+    const panel = $("notesPanel") || document.body, cs = getComputedStyle(panel), card = trigger.closest(".np-moodle-card, .np-moodle-edit") || trigger;
+    let bg = cs.backgroundColor; if (!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = getComputedStyle(document.body).backgroundColor;
+    if (!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = "#fff";
+    pop = npEl("div", "mdl-pop"); pop.setAttribute("role", "dialog"); pop.setAttribute("aria-label", "Choisir la matière");
+    pop.style.cssText = `position:fixed;z-index:10000;box-sizing:border-box;background:${bg};color:${getComputedStyle(card).color};border:1px solid currentColor;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;`;
+    const search = npEl("input", "mdl-search"); search.type = "search"; search.placeholder = "Rechercher une matière…"; search.setAttribute("aria-label", "Rechercher une matière");
+    search.style.cssText = "margin:8px;box-sizing:border-box;width:calc(100% - 16px);font:inherit;color:inherit;background:rgba(127,127,127,.16);min-height:34px;border:1px solid currentColor;border-radius:8px;padding:2px 10px;";
+    const list = npEl("div", "mdl-list"); list.setAttribute("role", "listbox"); list.style.cssText = "overflow:auto;padding:0 8px 8px;flex:1 1 auto;";
+    const heading = (text, color) => { const h = npEl("div", "", text); h.style.cssText = `font-size:.72em;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin:10px 4px 4px;color:${color || "inherit"};opacity:${color ? 1 : .7};`; h.setAttribute("aria-hidden", "true"); return h; };
+    const row = (o) => {
+      const r = npEl("div", "mdl-opt"); r.setAttribute("role", "option"); r.tabIndex = -1; r.dataset.search = (o.label + " " + (o.search || "")).toLowerCase();
+      const sel = o.isNew ? state.isNew : (!state.isNew && state.matiere === o.label);
+      r.setAttribute("aria-selected", String(!!sel));
+      r.style.cssText = `display:flex;align-items:center;gap:10px;padding:8px 10px;margin:3px 0;border-radius:10px;cursor:pointer;border-left:6px solid ${o.color};background:${o.tint || "rgba(127,127,127,.10)"};`;
+      const code = UCA_MOODLE.codeOf(o.label), rest = code ? o.label.replace(/^[^:]*:\s*/, "") : o.label;
+      const txt = npEl("span", ""); txt.style.cssText = "flex:1;min-width:0;overflow-wrap:anywhere;";
+      if (o.isNew) { const b = npEl("b", "", "＋ Créer une nouvelle matière"); txt.appendChild(b); if (o.hint) { const h = npEl("div", "", o.hint); h.style.cssText = "font-size:.85em;opacity:.85;"; txt.appendChild(h); } }
+      // Code de matière : couleur de la matière conservée, contour noir pour rester lisible sur fond clair comme sombre.
+      else { if (code) { const b = npEl("b", "", code); b.style.cssText = `color:${o.color};margin-right:6px;letter-spacing:.05em;-webkit-text-stroke:2.5px #000;paint-order:stroke fill;`; txt.appendChild(b); } txt.appendChild(document.createTextNode(rest)); }
+      r.appendChild(txt);
+      if (o.rec) r.appendChild(mdlPill("Recommandée", MDL_GREEN));
+      if (sel) r.appendChild(mdlPill("Choisie", MDL_BLUE));
+      r.addEventListener("click", () => choose(o.label, !!o.isNew));
+      r.addEventListener("mousemove", () => setActive(opts.indexOf(r)));
+      list.appendChild(r); opts.push(r);
+      return r;
+    };
+    const build = () => {
+      list.textContent = ""; opts = [];
+      row({ isNew: true, label: suggestion.isNew ? suggestion.label : "", search: "créer nouvelle matière", color: MDL_AMBER, tint: "rgba(178,94,0,.16)", rec: suggestion.isNew, hint: suggestion.isNew ? "Nom proposé : " + suggestion.label : "Pour un cours qui n'est pas dans ton relevé" });
+      if (!suggestion.isNew && suggestion.label) { list.appendChild(heading("Recommandée", MDL_GREEN)); row({ label: suggestion.label, color: colorOf(suggestion.label), rec: true, tint: "rgba(22,138,85,.14)" }); }
+      if (customs.length) { list.appendChild(heading("Matières créées (Moodle)", MDL_AMBER)); customs.forEach((l) => { if (!(suggestion.label === l && !suggestion.isNew)) row({ label: l, color: MDL_AMBER }); }); }
+      const byUe = new Map(); matieres.forEach((m) => { if (!byUe.has(m.ue)) byUe.set(m.ue, []); byUe.get(m.ue).push(m); });
+      byUe.forEach((ms, ue) => {
+        const rows = ms.filter((m) => !(suggestion.label === m.label && !suggestion.isNew));
+        if (!rows.length) return;
+        list.appendChild(heading(ue || "Matières", null));
+        rows.forEach((m) => row({ label: m.label, color: colorOf(m.label), search: ue }));
+      });
+      setActive(Math.max(0, opts.findIndex((o) => o.getAttribute("aria-selected") === "true")));
+    };
+    build();
+    search.addEventListener("input", () => {
+      const q = search.value.trim().toLowerCase();
+      list.querySelectorAll(".mdl-opt").forEach((o) => { o.style.display = !q || o.dataset.search.includes(q) ? "flex" : "none"; });
+      list.querySelectorAll("div[aria-hidden=true]").forEach((h) => { h.style.display = q ? "none" : ""; });
+      opts = [...list.querySelectorAll(".mdl-opt")].filter((o) => o.style.display !== "none"); setActive(opts.length ? 0 : -1);
+    });
+    pop.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(true); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); if (opts.length) setActive((activeIdx + 1) % opts.length); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); if (opts.length) setActive((activeIdx - 1 + opts.length) % opts.length); }
+      else if (e.key === "Enter") { e.preventDefault(); if (opts[activeIdx]) opts[activeIdx].click(); }
+    });
+    pop.append(search, list); document.body.appendChild(pop);
+    const r = trigger.getBoundingClientRect(), vh = window.innerHeight, below = vh - r.bottom - 12, above = r.top - 12;
+    const up = below < 220 && above > below, maxH = Math.max(160, Math.min(380, up ? above : below));
+    pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - Math.min(r.width, window.innerWidth - 16) - 8)) + "px";
+    pop.style.width = Math.min(Math.max(r.width, 260), window.innerWidth - 16) + "px"; pop.style.maxHeight = maxH + "px";
+    if (up) pop.style.bottom = (vh - r.top + 6) + "px"; else pop.style.top = (r.bottom + 6) + "px";
+    trigger.setAttribute("aria-expanded", "true");
+    document.addEventListener("mousedown", onOutside, true); window.addEventListener("resize", onGone);
+    search.focus({ preventScroll: true }); setActive(activeIdx);
+    // Le panneau sous le menu qui défile (molette) ferme le menu ; les défilements internes au menu, non.
+    setTimeout(() => { if (pop) document.addEventListener("scroll", onGone, true); }, 0);
+  }
+  trigger.addEventListener("click", () => (pop ? close(true) : open()));
+  trigger.addEventListener("keydown", (e) => { if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); open(); } });
+  paintTrigger();
+  wrap.append(trigger, nameRow);
+  return { el: wrap, trigger, get: () => ({ matiere: String(state.matiere || "").trim(), isNew: state.isNew }), focus: () => (state.isNew ? nameIn.focus() : trigger.focus()) };
+}
+
+/* Carte d'une note Moodle : matière et coefficient se choisissent (ou se rechoisissent) avant d'enregistrer.
+   Une note en attente propose Valider / Refuser ; une note déjà validée ou refusée reste modifiable à tout moment :
+   changer la matière ou le coefficient, la valider (à nouveau), l'ignorer, ou la remettre en attente.
+   Couleurs : en attente = bleu, validée = vert, refusée / ignorée = rouge. */
+function moodleCard(it, matieres) {
+  const d = UCA_MOODLE.describe(it), done = it.status !== "pending";
+  const tone = it.status === "validated" ? MDL_GREEN : it.status === "refused" ? MDL_RED : MDL_BLUE;
+  const tint = it.status === "validated" ? "rgba(22,138,85,.12)" : it.status === "refused" ? "rgba(209,52,58,.10)" : "rgba(31,111,235,.08)";
+  const card = npEl("div", done ? "np-moodle-edit" : "np-moodle-card");
+  card.style.cssText = `border:2px solid ${tone};background:${tint};border-radius:12px;padding:10px 12px;margin-bottom:8px;box-sizing:border-box;max-width:100%;overflow-wrap:anywhere;`;
+  card.setAttribute("role", "group"); card.setAttribute("aria-label", d.title + " : " + d.line); card.dataset.moodleId = it.id; card.dataset.status = it.status;
+  const head = npEl("div", "fp-h"); head.style.cssText = "display:flex;align-items:center;gap:8px;flex-wrap:wrap;";
+  head.appendChild(mdlPill(it.status === "validated" ? "✓ Validée" : it.status === "refused" ? "✗ Refusée" : "Nouvelle", tone));
+  head.appendChild(npEl("span", "", done ? "Note Moodle — modifiable" : d.title));
+  card.appendChild(head);
+  const line = npEl("div", "", d.line); line.style.marginTop = "6px"; card.appendChild(line);
+  if (d.feedback) { const f = npEl("div", "", d.feedback); f.style.cssText = "opacity:.8;font-size:.9em;margin-top:2px;"; card.appendChild(f); }
+  const suggestion = UCA_MOODLE.suggestMatiere(releveRaw, it.course, it.title, moodleStore);
+  const howKey = it.how && MOODLE_HOW[it.how] ? it.how : suggestion.how;
+  if (!done && MOODLE_HOW[howKey]) { const h = npEl("div", "", MOODLE_HOW[howKey]); h.style.cssText = "opacity:.85;font-size:.85em;margin-top:6px;"; card.appendChild(h); }
+  const row = npEl("div", ""); row.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;";
+  const picker = moodlePicker(it, matieres, suggestion);
+  const coeffLbl = npEl("label", "", "Coeff"); coeffLbl.style.cssText = "font-size:.85em;font-weight:700;flex:none;white-space:nowrap;";
+  const coeff = npEl("input"); coeff.id = picker.trigger.id + "-c"; coeffLbl.htmlFor = coeff.id; coeff.type = "number"; coeff.min = "0.5"; coeff.max = "100"; coeff.step = "0.5"; coeff.value = String(it.coeff || 1);
+  coeff.setAttribute("aria-label", "Coefficient de cette note dans la matière"); coeff.title = "Coefficient"; coeff.style.cssText = "width:64px;font:inherit;min-height:34px;";
+  const btn = (label, css, fn) => { const b = npEl("button", "", label); b.type = "button"; b.style.cssText = css; b.addEventListener("click", fn); return b; };
+  const opts = () => { const v = picker.get(); return { matiere: v.matiere || null, isNew: v.isNew, coeff: coeff.value }; };
+  const validate = () => {
+    const v = picker.get();
+    if (!v.matiere) { picker.focus(); toast(v.isNew ? "Donne un nom à la nouvelle matière" : "Choisis d'abord la matière de cette note", "err"); return; }
+    saveMoodleDecision(it.id, "validated", opts());
+  };
+  const refuse = () => { saveMoodleDecision(it.id, "refused", opts()); toast("Note mise à la corbeille (🗑 dans la fenêtre de droite) : tu peux la restaurer", "ok"); };
+  const later = () => saveMoodleDecision(it.id, "pending", opts());
+  const actions = it.status === "pending" ? [btn("Valider la note", mdlSolid(MDL_GREEN), validate), btn("Refuser la note", mdlSolid(MDL_RED), refuse)]
+    : it.status === "validated" ? [btn("Enregistrer les changements", mdlSolid(MDL_GREEN), validate), btn("🗑 Ignorer la note", mdlSolid(MDL_RED), refuse), btn("Remettre en attente", MOODLE_BTN_CSS, later)]
+    : [btn("Valider la note", mdlSolid(MDL_GREEN), validate), btn("Remettre en attente", MOODLE_BTN_CSS, later)];
+  const cg = npEl("span", ""); cg.style.cssText = "display:inline-flex;gap:6px;align-items:center;"; cg.append(coeffLbl, coeff);
+  row.appendChild(picker.el);
+  const row2 = npEl("div", ""); row2.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%;";
+  [cg].concat(actions).forEach((x) => row2.appendChild(x)); row.appendChild(row2);
+  card.appendChild(row);
+  return card;
+}
+function moodleBlock() {
+  const pending = UCA_MOODLE.list(moodleStore, "pending"), validated = UCA_MOODLE.list(moodleStore, "validated"), trash = UCA_MOODLE.list(moodleStore, "refused"), done = validated.concat(trash);
+  const canSync = settings.moodleNotes && chrome.runtime && chrome.runtime.sendMessage && !window.UCA_APP;
+  if (!pending.length && !done.length && !canSync) { moodleSideData = { validated: [], trash: [], matieres: [] }; renderMoodleSide(); return null; }
+  const box = npEl("div", "np-moodle"); box.style.cssText = "margin:8px 16px;max-width:100%;box-sizing:border-box;";
+  const mIssue = !moodleProgressActive() && scrapeIssueNode("moodle"); if (mIssue) box.appendChild(mIssue);
+  if (moodleProgressActive()) box.appendChild(moodleProgressNode());
+  const matieres = UCA_MOODLE.matieres(releveRaw);
+  pending.slice(0, 20).forEach((it) => box.appendChild(moodleCard(it, matieres)));
+  if (pending.length > 20) box.appendChild(npEl("div", "", `… et ${pending.length - 20} autre(s) en attente`));
+  const acts = npEl("div", "np-moodle-actions"); acts.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:8px;";
+  if (canSync) {
+    const sync = npEl("button", "", moodleProgressActive() ? "Recherche en cours…" : "Chercher sur Moodle"); sync.type = "button"; sync.id = "moodleSyncBtn";
+    sync.style.cssText = mdlSolid(MDL_BLUE); sync.disabled = moodleProgressActive();
+    sync.addEventListener("click", () => { sync.disabled = true; sync.textContent = "Recherche en cours…"; runMoodleSearch(); });
+    const ago = npEl("span", "np-moodle-ago"); ago.id = "moodleAgo"; ago.style.cssText = "font-size:.85em;opacity:.85;";
+    paintMoodleAgo(ago);
+    acts.append(sync, ago);
+  }
+  if (acts.childNodes.length) box.appendChild(acts);
+  if (done.length) {
+    const nv = validated.length, nr = trash.length;
+    const head = npEl("button", "np-moodle-toggle"); head.type = "button"; head.id = "moodleDoneToggle";
+    // Une seule ligne : libellé court (le détail et « modifiables » sont dans l'infobulle et dans la fenêtre de droite).
+    head.style.cssText = MOODLE_BTN_CSS + "display:flex;width:100%;max-width:100%;align-items:center;gap:8px;text-align:left;margin-top:8px;box-sizing:border-box;white-space:nowrap;overflow:hidden;";
+    const lbl = npEl("span", "", `Notes Moodle déjà traitées (${nv} ✓ · 🗑 ${nr})`); lbl.style.cssText = "flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;";
+    head.title = `${nv} note${nv > 1 ? "s" : ""} validée${nv > 1 ? "s" : ""} (modifiables dans la fenêtre de droite), ${nr} dans la corbeille`;
+    head.setAttribute("aria-label", head.title);
+    const arrow = npEl("span", "np-moodle-arrow", moodleSideOpen ? "◂" : "▸"); arrow.setAttribute("aria-hidden", "true");
+    arrow.style.cssText = "flex:none;margin-left:auto;font-size:1.05em;font-weight:800;";
+    head.append(lbl, arrow);
+    head.setAttribute("aria-controls", "moodleSide"); head.setAttribute("aria-expanded", String(moodleSideOpen));
+    head.addEventListener("click", () => { moodleSideOpen = !moodleSideOpen; renderMoodleSide(); });
+    box.appendChild(head);
+  }
+  moodleSideData = { validated, trash, matieres };
+  renderMoodleSide();
+  return box;
+}
+/* Rafraîchit la fenêtre Notes SANS la ramener en haut : choisir un barème (« sur 20 / sur 22 »), valider une note, relancer la
+   recherche… reconstruisent tout le contenu ; la position de défilement est remise là où l'utilisateur était. */
+function renderNotesPanel(resetScroll) {
+  const panel = $("notesPanel"), content = $("npContent");
+  const top = panel ? panel.scrollTop : 0, inner = content ? content.scrollTop : 0;
+  renderNotesPanelNow();
+  if (resetScroll === true) { if (panel) panel.scrollTop = 0; if (content) content.scrollTop = 0; return; }
+  const restore = () => { if (panel) panel.scrollTop = top; if (content) content.scrollTop = inner; };
+  restore(); requestAnimationFrame(restore);      // une seconde fois après la mise en page (graphiques)
+}
+function renderNotesPanelNow() {
   const content = $("npContent");
   content.innerHTML = "";
   npNeed = 0;
   const issueNode = scrapeIssueNode("notes"); if (issueNode) content.appendChild(issueNode);
+  const moodleNode = moodleBlock(); if (moodleNode) content.appendChild(inkify(moodleNode));
   const avg = generalAverage();
   if (!releveNotes || !releveNotes.ue || !releveNotes.ue.length) {
     const empty = document.createElement("div");
     empty.className = "notes-empty";
     empty.innerHTML = D.emptyHtml("notes") + escapeHtml("Aucun relevé — synchronise pour voir tes notes");
     content.appendChild(empty);
-    const exams = examsBlock(); if (exams) content.appendChild(inkify(exams));
+    const exams = examsButtonBlock(); if (exams) content.appendChild(inkify(exams));
     fitNotesPanel();
   } else {
     if (avg != null) {
@@ -1727,7 +2405,7 @@ function renderNotesPanel() {
     if (compView && hasComp) {
       const back = npEl("button", "np-comp-btn", "← Retour aux notes"); back.type = "button"; back.id = "compBack";
       back.style.cssText = "margin:8px 16px;color:inherit;background:transparent;border:1px solid currentColor;padding:6px 12px;border-radius:10px;font:inherit;font-weight:700;cursor:pointer;min-height:32px;";
-      back.addEventListener("click", () => { compView = false; renderNotesPanel(); });
+      back.addEventListener("click", () => { compView = false; renderNotesPanel(true); });
       content.appendChild(inkify(Object.assign(npEl("div", ""), {}))); content.lastChild.appendChild(back);
       content.appendChild(inkify(npEl("div", "fp-h", "Mes compétences (UE)")));
       content.appendChild(inkify(competencesView()));
@@ -1739,12 +2417,12 @@ function renderNotesPanel() {
       const eye = npEl("button", "np-comp-btn", "👁 Voir mes compétences"); eye.type = "button"; eye.id = "compBtn";
       eye.setAttribute("aria-label", "Voir mes compétences : moyenne de chaque UE, seuil de validation à 10");
       eye.style.cssText = "margin:0;color:inherit;background:transparent;border:1px solid currentColor;padding:6px 12px;border-radius:10px;font:inherit;font-weight:700;cursor:pointer;min-height:32px;";
-      eye.addEventListener("click", () => { compView = true; renderNotesPanel(); });
+      eye.addEventListener("click", () => { compView = true; renderNotesPanel(true); });
       const eyeBox = npEl("div", ""); eyeBox.style.cssText = "padding:8px 16px 0;"; eyeBox.appendChild(eye); content.appendChild(inkify(eyeBox));
     }
     // Évolution de la moyenne générale : un point à chaque synchro qui apporte une nouvelle note ; le graphique se construit tout seul.
     const evoBlock = () => { const box = npEl("div", "np-evo"); box.appendChild(npEl("div", "fp-h", "Évolution de la moyenne générale")); const body = npEl("div"); body.style.cssText = "padding:4px 16px 0;"; body.appendChild(historyChart()); box.appendChild(body); return box; };
-    [examsBlock(), simulatorBlock(), chartBlock(), evoBlock(), npEl("div", "fp-h", "Détail des notes")].forEach((b) => { if (b) content.appendChild(inkify(b)); });
+    [examsButtonBlock(), simulatorBlock(), chartBlock(), evoBlock(), npEl("div", "fp-h", "Détail des notes")].forEach((b) => { if (b) content.appendChild(inkify(b)); });
     fitNotesPanel();
     const hintPill = document.createElement("div");
     hintPill.className = "notes-hint-pill";
@@ -1795,10 +2473,16 @@ $("notesBtn").addEventListener("click", (e) => {
   e.stopPropagation();
   $("absencesPanel").classList.remove("open");
   togglePanel($("notesPanel"));
+  if ($("notesPanel").classList.contains("open")) applyNotesGeometry($("notesPanel"));
 });
 closeOnOutsideClick("notesPanel", "notesWrap");
 if ($("notesPanel")) {
   new MutationObserver(() => { reinkNotes(); setTimeout(reinkNotes, 120); setTimeout(reinkNotes, 450); }).observe($("notesPanel"), { attributes: true, attributeFilter: ["class", "style"] });
+}
+initNotesPanelChrome();
+if ($("notesPanel")) {
+  new MutationObserver(() => { if (!$("notesPanel").classList.contains("open") && moodleSideOpen) { moodleSideOpen = false; moodleSideView = "done"; renderMoodleSide(); } })
+    .observe($("notesPanel"), { attributes: true, attributeFilter: ["class"] });
 }
 if (/[?&]openNotes=1/.test(location.search)) {
   setTimeout(() => { if ($("notesBtn")) $("notesBtn").click(); }, 300);
@@ -1912,9 +2596,27 @@ function ensurePanelHeader(panel, id) {
   top.querySelector(".panel-close-x").onclick = close;
   panel.insertBefore(top, panel.firstChild);
 }
-function openToolPanel(id, asSheet) {
+let tasksBack = false;       // panneau Devoirs / examens ouvert depuis le bouton des examens de la fenêtre Notes : un bouton « Retour » s'ajoute
+function ensureTasksBack() {
+  const panel = $("tasksPanel"); if (!panel) return;
+  let box = panel.querySelector("#tasksBack");
+  if (!panel.classList.contains("open")) { tasksBack = false; if (box) box.remove(); return; }
+  if (!tasksBack) { if (box) box.remove(); return; }
+  if (box && box === panel.firstElementChild) return;
+  if (box) box.remove();
+  let bg = getComputedStyle(panel).backgroundColor; if (!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = getComputedStyle(document.body).backgroundColor;
+  box = npEl("div", "tp-back"); box.id = "tasksBack";
+  box.style.cssText = `position:sticky;top:0;z-index:4;padding:10px 16px 8px;background:${bg};border-bottom:1px solid rgba(127,127,127,.35);`;
+  const b = npEl("button", "", "← Retour aux notes"); b.type = "button"; b.id = "tasksBackBtn";
+  b.style.cssText = MOODLE_BTN_CSS + "min-height:34px;";
+  b.addEventListener("click", (e) => { e.stopPropagation(); tasksBack = false; openToolPanel("notesPanel", isMobileUI()); });
+  box.appendChild(b); panel.insertBefore(box, panel.firstChild);
+}
+if ($("tasksPanel")) new MutationObserver(ensureTasksBack).observe($("tasksPanel"), { childList: true, attributes: true, attributeFilter: ["class"] });
+function openToolPanel(id, asSheet, opts) {
   const panel = $(id), conf = TOOL_PANELS[id];
   if (!panel) return;
+  if (id === "tasksPanel") tasksBack = !!(opts && opts.back);
   Object.keys(TOOL_PANELS).forEach(o => { if (o !== id && $(o)) $(o).classList.remove("open"); });
   if (asSheet) {
     document.body.appendChild(panel);
@@ -1925,6 +2627,7 @@ function openToolPanel(id, asSheet) {
   else if (panel.parentNode !== $(conf.wrap)) { $(conf.wrap).appendChild(panel); panel.classList.remove("as-sheet"); }
   if (!panel.classList.contains("open")) conf.build(panel);
   if (asSheet) panel.classList.add("open"); else togglePanel(panel);
+  if (id === "notesPanel" && panel.classList.contains("open")) applyNotesGeometry(panel);
 }
 // Fond assombri derrière une feuille (téléphone) : un appui dessus ferme la feuille.
 function showSheetBackdrop(panel) {
@@ -2184,6 +2887,14 @@ chrome.storage.onChanged.addListener((changes, area) => {
     renderNotesPanel();
   }
   if (changes.uca_scales) { scales = changes.uca_scales.newValue || {}; setReleve(releveRaw); renderNotesPanel(); }
+  if (changes.uca_moodle) { moodleStore = changes.uca_moodle.newValue || null; setReleve(releveRaw); renderNotesPanel(); }
+  if (changes.uca_moodle_progress) {
+    const was = moodleProgressActive();
+    moodleProgressState = changes.uca_moodle_progress.newValue || null;
+    const now = moodleProgressActive(), bar = document.getElementById("moodleProgress");
+    if (now && bar) paintMoodleProgress(bar, moodleProgressState);   // simple mise à jour de la barre
+    else if (now !== was || (now && !bar)) renderNotesPanel();       // début ou fin : on refait le panneau (bouton, erreur, cartes)
+  }
   if (changes.uca_notes_history) { notesHistory = changes.uca_notes_history.newValue || []; renderNotesPanel(); }
   if (changes.uca_scrape_issues) { scrapeIssues = changes.uca_scrape_issues.newValue || {}; renderAbsencesPanel(); renderNotesPanel(); if (syncInfoArgs[0] || syncInfoArgs[1]) { renderSyncInfo(...syncInfoArgs); renderNextInfo(); } }
   if (changes.uca_subject_colors) { subjectColors = changes.uca_subject_colors.newValue || {}; [personalEvents, classEvents].forEach((l) => l.forEach((e) => { e.color = colorOf(e.title); })); render(); }

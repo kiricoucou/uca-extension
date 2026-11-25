@@ -139,9 +139,9 @@ def main():
 
             # examens cliquables
             ag.locator("#notesBtn").click(); ag.wait_for_timeout(300)
-            check(f"{did} : examens à venir dans la fenêtre Notes", ag.locator(".np-exam").count() >= 1 and "DS2" in ag.locator(".np-exam").first.inner_text())
-            ag.locator(".np-exam").first.click(); ag.wait_for_timeout(300)
-            check(f"{did} : clic sur un examen = fenêtre fermée, jour affiché", ag.locator("#notesPanel.open").count() == 0)
+            check(f"{did} : bouton « Ouvrir les examens à venir » dans la fenêtre Notes", ag.locator("#examsOpenBtn").count() == 1 and "examens à venir" in ag.locator("#examsOpenBtn").inner_text())
+            ag.locator("#examsOpenBtn").click(); ag.wait_for_timeout(400)
+            check(f"{did} : le bouton ouvre le panneau des examens (fenêtre Notes refermée)", ag.locator("#notesPanel.open").count() == 0 and ag.locator("#tasksPanel").is_visible() and "DS2" in ag.locator("#tasksPanel").inner_text())
             ag.keyboard.press("t")
 
             # menu mobile

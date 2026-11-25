@@ -15,7 +15,8 @@ OPTIONAL = {"notesAvg", "moreBtn", "morePanel", "moreWrap", "updateOverlay", "up
             "subjectColor", "nextCourse", "phoneShare", "phoneLink", "phoneLinkFallback", "phoneShareInfo", "appImportBtn",
             "gdmBody", "gdmTitle", "gradeDetailOverlay", "weekSubLabel",
             "tasksBtn", "tasksPanel", "tasksWrap",
-            "bellBtn", "bellPanel", "bellWrap", "appSendBtn", "codeChip", "updNowBtn"}  # créés par le core (setupTasksUI, setupBellUI)
+            "bellBtn", "bellPanel", "bellWrap", "appSendBtn", "codeChip", "updNowBtn",
+            "moodleAgo", "moodleDoneToggle", "moodleSide", "moodleTrashBtn"}  # créés par le core (setupTasksUI, setupBellUI, bloc Notes Moodle)
 VIEW_IDS = {"dayView", "threeDayView", "fiveDayView", "sixDayView", "weekView", "monthView"}
 
 

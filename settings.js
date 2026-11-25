@@ -44,6 +44,7 @@ const SECTIONS = [
       options: [[0, "Désactivée"], [2, "À 2 absences"], [3, "À 3 absences"], [4, "À 4 absences"], [5, "À 5 absences"], [6, "À 6 absences"], [8, "À 8 absences"], [10, "À 10 absences"]] },
     { key: "activityKeepDays", type: "select", label: "Conserver les notifications de la cloche", hint: "Les notifications que tu as « gardées » ne sont jamais supprimées ; les autres disparaissent après ce délai.",
       options: [[7, "7 jours"], [14, "14 jours"], [30, "30 jours"], [90, "90 jours"], [0, "Illimité"]] },
+    { ext: true, key: "moodleNotes", type: "switch", label: "Notes Moodle", hint: "Cherche tes notes sur Moodle à chaque synchro. Chaque nouvelle note te demande de la valider ou de la refuser : seules les notes validées entrent dans ton tableau et tes moyennes (les contrôles fictifs de Moodle restent ignorés)." },
     { notif: true, ext: true, key: "notifyNewGrades", type: "switch", label: "Nouvelle note", hint: "Notification quand une note apparaît (ou change) dans ton relevé." },
   ] },
 ];
@@ -52,7 +53,7 @@ const SECTIONS = [
 // changements d'EDT), jamais les réglages ni le design. Une sauvegarde est gardée 10 min pour
 // pouvoir annuler (uca_reset_backup, hors uca_settings : jamais exportée ni dans un lien de partage).
 const RESET_KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_absences_sync",
-  "uca_releve_notes", "uca_releve_notes_sync", "uca_notes_seen", "uca_notes_history", "uca_tasks", "uca_absence_alert", "uca_edt_changes", "uca_activity", "uca_activity_seen", "uca_scales", "uca_app_imported_at", "uca_app_exported_at"];
+  "uca_releve_notes", "uca_releve_notes_sync", "uca_notes_seen", "uca_moodle", "uca_notes_history", "uca_tasks", "uca_absence_alert", "uca_edt_changes", "uca_activity", "uca_activity_seen", "uca_scales", "uca_app_imported_at", "uca_app_exported_at"];
 const UNDO_WINDOW_MS = 10 * 60 * 1000;
 
 function $(id) { return document.getElementById(id); }

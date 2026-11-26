@@ -125,6 +125,7 @@ BODY = """<body>
     <div class="grid">
       <div class="card"><div class="ic">📅</div><h3>Emploi du temps</h3><p>Vue liste du jour, jour en blocs, 3 jours, semaine et mois.</p></div>
       <div class="card"><div class="ic">📊</div><h3>Notes et absences</h3><p>Moyennes, évolution, barème, alerte quand une note arrive.</p></div>
+      <div class="card"><div class="ic">🎓</div><h3>Notes Moodle</h3><p>Cherche tes notes sur Moodle ; tu valides ou refuses chacune. <a href="../synchro-moodle.html">Mode d'emploi</a></p></div>
       <div class="card"><div class="ic">🔔</div><h3>Notifications</h3><p>Cours déplacé, salle changée ou annulé : tu es prévenu.</p></div>
       <div class="card"><div class="ic">📱</div><h3>Vers ton téléphone</h3><p>Envoie tes données à l'app (QR, lien chiffré ou fichier), sans serveur.</p></div>
       <div class="card"><div class="ic">🟢</div><h3>Statut des services</h3><p>Odin, CAS, Moodle en panne ? Tu le sais avant de perdre ton temps.</p></div>

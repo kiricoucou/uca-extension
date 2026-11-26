@@ -123,8 +123,13 @@ h1,h2,h3{font-family:"Caveat",cursive;color:#2f4fa2;font-size:1.6em;}
   <h2 class="section-title">Questions fréquentes</h2>
   <div class="faq">
     <details>
+      <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/notes.svg" alt="">Comment fonctionnent les notes Moodle ?</summary>
+      <p>Dans l'extension, avec ta session Moodle déjà ouverte, <strong>Chercher sur Moodle</strong> (fenêtre Notes) lit la page « Notes » de ton profil, puis le rapport de notes de chaque cours. L'extension relève la note, le barème et le commentaire, convertit la note sur 20 et propose une matière. Vérifie la matière et le coefficient : rien ne compte sans ta validation. L'app du téléphone ne cherche pas sur Moodle.</p>
+      <p>Les notes sont gardées dans le stockage de l'extension (ou de l'app après un import). Un lien de partage, un QR code ou un fichier <code>.ucasync</code> les contient : ne les partage pas avec d'autres personnes. Une note peut ne pas être détectée : vérifie toujours sur Moodle. <a style="color:var(--accent2)" href="https://kiricoucou.github.io/uca-extension/synchro-moodle.html#comment-ca-marche" target="_blank" rel="noopener">Explication complète avec un exemple</a></p>
+    </details>
+    <details>
       <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/user.svg" alt="">Mes données partent-elles vers un serveur ?</summary>
-      <p>Non. Tout reste stocké localement dans ton navigateur (<code>chrome.storage.local</code>). L'extension parle uniquement à <code>odin.iut.uca.fr</code> et <code>ent.uca.fr</code> avec ta propre session.</p>
+      <p>Non. Tout reste stocké localement dans ton navigateur (<code>chrome.storage.local</code>). Pour lire tes données, l'extension utilise ta propre session sur <code>odin.iut.uca.fr</code>, <code>ent.uca.fr</code> et, pour les notes Moodle, sur le Moodle de l'UCA.</p>
     </details>
     <details>
       <summary><img class="gi" style="width:16px;height:16px;vertical-align:-3px" src="svg/time.svg" alt="">La synchro silencieuse échoue parfois, pourquoi ?</summary>

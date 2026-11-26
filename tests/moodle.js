@@ -103,4 +103,13 @@ const tr5 = M.decide(tr1, idA, "pending", {}, 14);
 check("corbeille : restaurer = remettre en attente, réglages conservés", tr5.items[idA].status === "pending" && tr5.items[idA].matiere === store.items[idA].matiere);
 const noMat = M.decide(M.diff(null, [{ courseId: "9", course: "Soutien en anglais", ...g[0] }], { ue: [] }, 1).store, idD, "validated", {}, 2);
 check("validée sans matière (relevé vide) : ignorée par la fusion", M.mergeReleve(releve, noMat).ue[0].matieres.every((m) => m.evals.length === 1));
+// la même note déjà venue d'Odin dans la matière : signalée avant validation (sinon comptée deux fois)
+const odin = { ue: [{ label: "UE 1.1", coeff: 1, matieres: [{ label: "R1.07 : Programmation", coeff: 1, evals: [{ label: "DS (sur 20.0)", key: "k1", coeff: 1, note: 19 }] }, { label: "R1.03 : Maths", coeff: 1, evals: [] }] }] };
+check("doublon : même note dans la même matière -> signalée", (M.sameAsOdin(odin, { matiere: "R1.07 : Programmation", note20: 19 }) || {}).label === "DS (sur 20.0)");
+check("doublon : autre note, autre matière, matière nouvelle ou relevé vide -> rien", !M.sameAsOdin(odin, { matiere: "R1.07 : Programmation", note20: 12 }) && !M.sameAsOdin(odin, { matiere: "R1.03 : Maths", note20: 19 }) && !M.sameAsOdin(odin, { matiere: "Inconnue", note20: 19 }) && !M.sameAsOdin(null, { matiere: "x", note20: 1 }));
+const twins = [{ courseId: "7", course: "Cours", title: "Contrôle", type: "Test", raw: 12, max: 20, note20: 12, feedback: "" }, { courseId: "7", course: "Cours", title: "Contrôle", type: "Test", raw: 15, max: 20, note20: 15, feedback: "" }];
+const t1 = M.diff(null, twins, { ue: [] }, 1).store;
+const t1ids = Object.keys(t1.items);
+const t2 = M.diff(M.decide(t1, t1ids[0], "validated", {}, 2), twins, { ue: [] }, 3);
+check("homonymes d'un même cours : deux notes distinctes, décisions conservées, rien de « nouveau » à la recherche suivante", t1ids.length === 2 && t2.fresh.length === 0 && t2.store.items[t1ids[0]].status === "validated" && t2.store.items[t1ids[1]].status === "pending", [t1ids, t2.fresh.length]);
 process.exit(fails ? 1 : 0);

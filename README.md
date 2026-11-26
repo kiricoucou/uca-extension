@@ -10,9 +10,9 @@ Faite pour rendre l'emploi du temps plus simple à lire au quotidien, avec un af
 
 ## Captures d'écran
 
-| Animé | Professionnel | Bulletin | Carnet |
+| Animé | Professionnel | Professionnel (notes) | Carnet |
 |---|---|---|---|
-| ![Design animé](designs/anime/previews/1-semaine.jpg) | ![Design professionnel](designs/professionnel/previews/1-semaine.jpg) | ![Design bulletin](designs/bulletin/previews/1-semaine.jpg) | ![Design carnet](designs/carnet/previews/1-semaine.jpg) |
+| ![Design animé](designs/anime/previews/1-semaine.jpg) | ![Design professionnel](designs/professionnel/previews/1-semaine.jpg) | ![Aperçu](designs/professionnel/previews/1-semaine.jpg) | ![Design carnet](designs/carnet/previews/1-semaine.jpg) |
 
 | Relevé de notes | Vue mobile | Popup |
 |---|---|---|
@@ -52,7 +52,7 @@ D'autres captures de chaque design (vue mois, détail d'un cours...) sont dans `
 - **Site** : démo interactive sur l'accueil (vrai agenda, données inventées, aucune requête), FAQ, « Quoi de neuf » généré depuis `UPDATES.md` (`tests/gen_news.py`), version anglaise `/en/` avec `hreflang`, balises de partage, `sitemap.xml`, `robots.txt`.
 - **Tests et CI** : `tests/scrape.py` (pages Odin factices dans `tests/pages/`), GitHub Actions (`.github/workflows/tests.yml`) lance toutes les suites à chaque push et produit les paquets Chrome/Firefox (`tests/build_chrome.py`, `tests/build_firefox.py`) ; un tag `vX.Y.Z` publie une version GitHub avec les deux zips.
 - Responsive (menu hamburger sous 820px).
-- **Quatre designs au choix** : animé (sombre turquoise), professionnel (clair épuré), bulletin (clair et dense, esprit carnet de notes scolaire), carnet (papier crème, écriture manuscrite, post-it).
+- **Cinq designs au choix** : animé, professionnel, carnet, lumen et studio.
 - **Plusieurs designs au choix** : au premier lancement l'extension demande quel design utiliser (changeable ensuite). Les fonctionnalités sont identiques, seul l'affichage change.
 
 ## App téléphone (Android et iPhone)
@@ -78,7 +78,7 @@ Pas de Chrome Web Store (extension non publiée) : l'installation se fait « en 
 2. Ouvre un nouvel onglet et tape `chrome://extensions` dans la barre d'adresse (sur Edge : `edge://extensions`).
 3. En haut à droite, active **Mode développeur**.
 4. Clique **Charger l'extension non empaquetée**, puis sélectionne le dossier décompressé (celui qui contient `manifest.json`).
-5. L'icône de l'extension apparaît dans la barre d'outils (épingle-la pour la garder visible). Un onglet s'ouvre automatiquement pour **choisir un design** (animé, professionnel, bulletin ou carnet) — rien n'empêche d'en changer plus tard avec le bouton **Design**.
+5. L'icône de l'extension apparaît dans la barre d'outils (épingle-la pour la garder visible). Un onglet s'ouvre automatiquement pour **choisir un design** (animé, professionnel, carnet, lumen ou studio) — rien n'empêche d'en changer plus tard avec le bouton **Design**.
 6. Clique l'icône de l'extension → **Se connecter**. Une fenêtre CAS UCA s'ouvre : connecte-toi normalement (identifiant, mot de passe, double authentification). L'emploi du temps se charge automatiquement une fois connecté.
 
 ### Firefox
@@ -162,7 +162,7 @@ Prérequis : Python 3 + Playwright (`pip install playwright` puis `playwright in
 
 ## Confidentialité
 
-Voir `confidentialite.html` dans le dossier de chaque design : l'extension utilise uniquement ta session existante sur `odin.iut.uca.fr` et `ent.uca.fr`, ne transmet rien à un tiers, tout reste local.
+Voir `confidentialite.html` dans le dossier de chaque design : l'extension utilise ta session sur Odin, l'ENT et Moodle ; tes données restent sur ton appareil tant que tu ne les partages pas.
 
 ## Licence
 

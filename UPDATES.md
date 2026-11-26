@@ -2,22 +2,23 @@
 
 L'extension vérifie au démarrage, puis toutes les 5 minutes, si `manifest.json` sur la branche `main` de [kiricoucou/uca-extension](https://github.com/kiricoucou/uca-extension) a un numéro de version supérieur à celui actuellement chargé. Si oui, un écran ou un bandeau de mise à jour apparaît (popup et agenda, quel que soit le design choisi) avec le numéro de version et un bouton **Mettre à jour**.
 
-## Limite technique (lis ça avant de penser que c'est cassé)
+## Comment la nouvelle version s'installe
 
-Une extension Chrome chargée en **mode développeur** (`chrome://extensions` → *Charger l'extension non empaquetée*) ne peut pas se réécrire elle-même depuis du JavaScript. Aucune API Chrome ne permet à une extension de télécharger et d'installer son propre code — ce serait de l'exécution de code distant non vérifié, bloqué par design.
-
-Donc concrètement :
-
-- **Si le dossier chargé dans Chrome est bien ce dépôt git** (cas normal pour ce projet) : dès qu'un nouveau commit est poussé sur `main`, les fichiers sur le disque changent (ou changeront après un `git pull` si le dossier n'est pas modifié en direct). Le bouton **Mettre à jour** appelle `chrome.runtime.reload()`, qui recharge l'extension **depuis les fichiers déjà sur le disque**. Si ces fichiers sont à jour, ça applique vraiment la nouvelle version en quelques secondes.
-- **S'il ne l'est pas** (fichiers locaux pas encore synchronisés avec GitHub) : le bouton recharge quand même, mais avec l'ancien code — il faut d'abord mettre à jour le dossier local (`git pull`, ou retélécharger le dépôt) avant de cliquer.
-- Pour une vraie mise à jour 100% automatique et silencieuse (sans aucune manip locale), il faudrait publier l'extension sur le Chrome Web Store : Chrome gère alors le téléchargement et l'installation tout seul via son propre mécanisme (`update_url`), ce que ce dépôt ne fait pas.
-
-## Ce qu'il reste à faire côté utilisateur
-
-- Rien tant que le dossier chargé dans Chrome reste ce dépôt synchronisé (`git pull` de temps en temps, ou laisser Claude committer/pusher directement dedans comme c'est fait actuellement).
-- Si l'extension est un jour distribuée à d'autres personnes (zip téléchargé ailleurs), elles devront retélécharger la nouvelle version manuellement quand l'écran de mise à jour apparaît — le lien "Voir les changements sur GitHub" les y aide.
+- **Chrome, Edge, Brave (dossier chargé à la main) :** l'extension peut se mettre à jour seule si tu lui donnes une fois accès à son dossier ; elle vérifie la signature du paquet avant de remplacer ses fichiers.
+- **Sinon (Firefox, par exemple) :** utilise le script de mise à jour ou remplace les fichiers, puis recharge l'extension.
+- **Version installée par un magasin :** le navigateur s'en charge.
+- **Application Android :** les pages se mettent à jour toutes seules ; quand le code de l'application change, elle propose d'installer le nouvel APK.
 
 # Historique des versions
+
+## 1.47.2 — app Android 1.4.33 : transports plus clairs, notes Moodle expliquées
+
+- **Transports refaits :** uniquement de vrais passages (« En direct » ou « Prévu », sinon « Indisponible »). Les anciens horaires, trajets, trains et covoiturages inventés sont supprimés ; pour ceux-là, des liens vers les sites officiels.
+- **Notes Moodle expliquées :** une nouvelle page simple (comment la note, le barème, le commentaire et la matière sont trouvés, et ce que deviennent tes données), reliée à l'aide et à l'accueil du site.
+- **Première connexion :** une seule question, « Odin, Moodle ou les deux ? ». Ta réponse reste sur ton appareil.
+- **Notes Moodle corrigées :** le menu des matières ne se referme plus tout seul ; une note validée pendant une recherche n'est plus effacée ; un avertissement signale une note déjà présente via Odin.
+- **Nouvel APK 1.4.33 :** à installer par-dessus l'ancien. L'écran Transports y affiche les vrais passages et ouvre les sites officiels dans ton navigateur.
+- Une seule extension : l'ancienne « Édition Moodle » de test est retirée. Les paquets installés par un magasin ont aussi un bouton « Vérifier la mise à jour ».
 
 ## 1.47.1 — app Android 1.4.32 : « Notes Moodle » activé par défaut
 

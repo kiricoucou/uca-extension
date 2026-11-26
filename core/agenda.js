@@ -714,6 +714,8 @@ function buildMobileMenu() {
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   m.appendChild(menuButton("mi", "🌐 Moodle UCA", () => window.open(MOODLE_URL, "_blank", "noopener")));
   m.appendChild(menuButton("mi", "✉️ Messagerie Zimbra", () => window.open(MAIL_URL, "_blank", "noopener")));
+  // Extension : la page Transports est incluse et interroge T2C directement. App web : la même page du site. APK : écran natif.
+  if (!window.AndroidUCA) m.appendChild(menuButton("mi", "🚌 Transports (bus et tram)", () => { if (window.UCA_APP) location.href = "../../transport.html"; else window.open(chrome.runtime.getURL("transport.html"), "_blank"); }));
   m.appendChild(Object.assign(document.createElement("div"), { className: "msep" }));
   if ($("filterPanel")) m.appendChild(menuButton("mi", "🔍 Filtres" + (UCA_TOOLS.activeCount() ? ` (${UCA_TOOLS.activeCount()})` : ""), () => openToolPanel("filterPanel", true)));
   if ($("exportPanel")) m.appendChild(menuButton("mi", "📤 Exporter (.ics)", () => openToolPanel("exportPanel", true)));
@@ -2153,7 +2155,7 @@ const mdlPill = (text, bg) => { const p = npEl("span", "mdl-pill", text); p.styl
 
 /* Choix de la matière : menu à couleurs, recherche, « Créer une nouvelle matière » toujours en tête (et recommandé
    quand le cours ne ressemble à aucune matière), la matière recommandée repérée, les autres rangées par UE. */
-function moodlePicker(it, matieres, suggestion) {
+function moodlePicker(it, matieres, suggestion, onChange) {
   const customs = UCA_MOODLE.customMatieres(moodleStore).filter((l) => !matieres.some((m) => m.label === l));
   const state = { matiere: it.matiere || "", isNew: !!it.isNew };
   const wrap = npEl("div", "mdl-picker"); wrap.style.cssText = "position:relative;flex:1 1 100%;min-width:0;max-width:100%;";
@@ -2185,6 +2187,7 @@ function moodlePicker(it, matieres, suggestion) {
     state.isNew = isNew; state.matiere = isNew ? (nameIn.value || suggestion.label || "") : label;
     if (isNew && !nameIn.value) nameIn.value = state.matiere;
     paintTrigger(); close(true);
+    if (onChange) onChange(state.matiere);
     if (isNew) { nameIn.focus(); nameIn.select(); }
   };
 
@@ -2197,7 +2200,15 @@ function moodlePicker(it, matieres, suggestion) {
   }
   function onOutside(e) { if (pop && !pop.contains(e.target) && !trigger.contains(e.target)) close(false); }
   // « resize » a pour cible window (pas un Node) : contains() lèverait une TypeError.
-  function onGone(e) { if (pop && !(e && e.target instanceof Node && pop.contains(e.target))) close(false); }
+  // « scroll » peut arriver en retard, pour un défilement fait AVANT l'ouverture (vu sous Linux, design lumen) :
+  // on ne ferme que si le bouton du menu a réellement bougé depuis l'ouverture.
+  let openedAt = null;
+  const moved = () => { const q = trigger.getBoundingClientRect(); return !openedAt || Math.abs(q.top - openedAt.top) > 4 || Math.abs(q.left - openedAt.left) > 4; };
+  function onGone(e) {
+    if (!pop || (e && e.target instanceof Node && pop.contains(e.target))) return;
+    if (e && e.type === "scroll" && !moved()) return;
+    close(false);
+  }
   function setActive(i) {
     opts.forEach((o, n) => { o.style.outline = n === i ? "2px solid " + MDL_BLUE : ""; o.style.outlineOffset = "-2px"; });
     activeIdx = i;
@@ -2265,7 +2276,8 @@ function moodlePicker(it, matieres, suggestion) {
       else if (e.key === "Enter") { e.preventDefault(); if (opts[activeIdx]) opts[activeIdx].click(); }
     });
     pop.append(search, list); document.body.appendChild(pop);
-    const r = trigger.getBoundingClientRect(), vh = window.innerHeight, below = vh - r.bottom - 12, above = r.top - 12;
+    openedAt = trigger.getBoundingClientRect();
+    const r = openedAt, vh = window.innerHeight, below = vh - r.bottom - 12, above = r.top - 12;
     const up = below < 220 && above > below, maxH = Math.max(160, Math.min(380, up ? above : below));
     pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - Math.min(r.width, window.innerWidth - 16) - 8)) + "px";
     pop.style.width = Math.min(Math.max(r.width, 260), window.innerWidth - 16) + "px"; pop.style.maxHeight = maxH + "px";
@@ -2300,11 +2312,20 @@ function moodleCard(it, matieres) {
   card.appendChild(head);
   const line = npEl("div", "", d.line); line.style.marginTop = "6px"; card.appendChild(line);
   if (d.feedback) { const f = npEl("div", "", d.feedback); f.style.cssText = "opacity:.8;font-size:.9em;margin-top:2px;"; card.appendChild(f); }
+  const odinReleve = UCA_GRADES.applyScales(releveRaw, scales);
+  const dup = npEl("div", "np-moodle-dup"); dup.setAttribute("role", "note");
+  dup.style.cssText = "margin-top:6px;padding:6px 8px;border:1px solid #b25e00;border-radius:8px;background:rgba(178,94,0,.14);font-size:.85em;font-weight:700;";
+  const paintDup = (matiere) => {
+    const twin = it.status !== "refused" && UCA_MOODLE.sameAsOdin(odinReleve, Object.assign({}, it, { matiere }));
+    dup.hidden = !twin;
+    dup.textContent = twin ? "⚠ La même note est déjà dans cette matière (Odin : « " + twin.label + " »). Si c'est le même contrôle, " + (it.status === "validated" ? "ignore" : "refuse") + " celle-ci : sinon elle compterait deux fois." : "";
+  };
+  paintDup(it.matiere); card.appendChild(dup);
   const suggestion = UCA_MOODLE.suggestMatiere(releveRaw, it.course, it.title, moodleStore);
   const howKey = it.how && MOODLE_HOW[it.how] ? it.how : suggestion.how;
   if (!done && MOODLE_HOW[howKey]) { const h = npEl("div", "", MOODLE_HOW[howKey]); h.style.cssText = "opacity:.85;font-size:.85em;margin-top:6px;"; card.appendChild(h); }
   const row = npEl("div", ""); row.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;";
-  const picker = moodlePicker(it, matieres, suggestion);
+  const picker = moodlePicker(it, matieres, suggestion, (matiere) => paintDup(matiere));
   const coeffLbl = npEl("label", "", "Coeff"); coeffLbl.style.cssText = "font-size:.85em;font-weight:700;flex:none;white-space:nowrap;";
   const coeff = npEl("input"); coeff.id = picker.trigger.id + "-c"; coeffLbl.htmlFor = coeff.id; coeff.type = "number"; coeff.min = "0.5"; coeff.max = "100"; coeff.step = "0.5"; coeff.value = String(it.coeff || 1);
   coeff.setAttribute("aria-label", "Coefficient de cette note dans la matière"); coeff.title = "Coefficient"; coeff.style.cssText = "width:64px;font:inherit;min-height:34px;";
@@ -2812,16 +2833,58 @@ if (window.UCA_APP) {
     chrome.storage.local.get("uca_last_sync", (d) => {
       const hours = settings.autoSyncHours;
       const age = d.uca_last_sync ? Date.now() - new Date(d.uca_last_sync).getTime() : Infinity;
-      if (hours > 0 && age > hours * 3600000) triggerSync();
+      if (hours > 0 && age > hours * 3600000) doSync();
     });
   });
 }
-function triggerSync() {
+/* Première connexion : on demande une seule fois quels services l'utilisateur utilise (Odin, Moodle ou les deux). La réponse
+   (uca_usage) reste sur l'appareil ; elle règle aussi « Notes Moodle » (inutile si l'utilisateur n'utilise pas Moodle).
+   « Plus tard » ferme sans rien enregistrer : la question revient à la prochaine connexion. */
+let usageAsking = null;   // double clic (ou minuterie de l'APK + clic) : une seule fenêtre, la même promesse
+function askUsageOnce() {
+  if (usageAsking) return usageAsking;
+  const p = new Promise((resolve) => {
+    if (window.UCA_APP && window.UCA_APP.demo) { resolve(); return; }
+    chrome.storage.local.get(["uca_usage"], (d) => {
+      if (d && d.uca_usage && d.uca_usage.v) { resolve(); return; }
+      let ov = document.getElementById("usageOverlay"); if (ov) ov.remove();
+      ov = document.createElement("div"); ov.id = "usageOverlay"; ov.className = "modal-overlay open";
+      ov.innerHTML = `<div class="modal grade-modal-box" role="dialog" aria-modal="true" aria-labelledby="usTitle">
+        <div class="modal-head"><h3 id="usTitle">Tu utilises quoi à l'UCA ?</h3><button class="close-x" id="usLater" aria-label="Plus tard">✕</button></div>
+        <div class="modal-body" style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+          <div>Une seule question, pour adapter l'extension à ton usage. Ta réponse reste sur cet appareil.</div>
+          <button type="button" data-v="odin" style="font:inherit;font-weight:800;padding:11px;border-radius:10px;cursor:pointer;">Odin (emploi du temps, notes, absences)</button>
+          <button type="button" data-v="moodle" style="font:inherit;font-weight:800;padding:11px;border-radius:10px;cursor:pointer;">Moodle (cours, notes des enseignants)</button>
+          <button type="button" data-v="both" style="font:inherit;font-weight:800;padding:11px;border-radius:10px;cursor:pointer;">Les deux</button>
+          <button type="button" id="usSkip" style="font:inherit;padding:8px;border-radius:10px;cursor:pointer;opacity:.8;">Plus tard</button>
+        </div></div>`;
+      document.body.appendChild(ov);
+      const done = (v) => {
+        ov.remove();
+        if (!v) { resolve(); return; }
+        // Le réglage d'abord : si la page se ferme entre les deux, la question sera simplement reposée.
+        const remember = () => chrome.storage.local.set({ uca_usage: { v, at: Date.now() } }, () => resolve());
+        Promise.resolve(UCA_saveSettings({ moodleNotes: v !== "odin" })).then(remember, () => resolve());
+      };
+      ov.querySelectorAll("button[data-v]").forEach((b) => { b.onclick = () => done(b.dataset.v); });
+      ov.querySelector("#usSkip").onclick = () => done(null);
+      ov.querySelector("#usLater").onclick = () => done(null);
+      ov.querySelector("button[data-v]").focus();
+    });
+  });
+  usageAsking = p;
+  p.then(() => { usageAsking = null; });
+  return p;
+}
+function doSync() {
   syncBtn.disabled = true;
   toast(T("syncing"));
   chrome.runtime.sendMessage({ type: "UCA_SYNC_REQUEST", mode: "resync" });
 }
+function triggerSync() { askUsageOnce().then(doSync); }
 syncBtn.addEventListener("click", triggerSync);
+// APK : la première connexion se fait dans l'écran natif ; la question est posée à la première ouverture de l'agenda.
+if (window.AndroidUCA) setTimeout(() => { if (!document.hidden) askUsageOnce(); }, 1500);
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (!msg) return;

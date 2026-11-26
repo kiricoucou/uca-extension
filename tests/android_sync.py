@@ -89,7 +89,7 @@ def main():
                 errors = []
                 page.on("pageerror", lambda e: errors.append(str(e)))
                 page.goto(base + "app/index.html"); page.wait_for_timeout(300)
-                page.evaluate("(d) => localStorage.setItem('uca_store', JSON.stringify({ uca_design: d, uca_events: [{year: 2025, month: 0, day: 1, startH: 8, startM: 0, endH: 9, endM: 0, title: 'Ancien cours', date: '2025-01-01'}], uca_last_sync: '2025-01-01T00:00:00.000Z' }))", design)
+                page.evaluate("(d) => localStorage.setItem('uca_store', JSON.stringify({ uca_design: d, uca_usage: { v: 'both', at: 1 }, uca_events: [{year: 2025, month: 0, day: 1, startH: 8, startM: 0, endH: 9, endM: 0, title: 'Ancien cours', date: '2025-01-01'}], uca_last_sync: '2025-01-01T00:00:00.000Z' }))", design)
                 page.goto(base + f"designs/{design}/agenda.html"); page.wait_for_timeout(1200)
                 check(f"{design} : l'app est bien en mode natif (pas de redirection vers l'import)", f"designs/{design}/agenda.html" in page.url, page.url)
 

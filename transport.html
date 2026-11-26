@@ -3,1533 +3,289 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Mobilité & Transports — My UCA (T2C & Région 63)</title>
-<link rel="icon" type="image/png" href="app/icons/icon-512.png">
-<link rel="stylesheet" href="site.css">
-<link rel="stylesheet" href="site-theme.css">
+<title>Mon prochain départ : bus et tram vers les campus — My UCA</title>
+<meta name="description" content="Prochains passages des bus et trams T2C aux arrêts de Clermont-Ferrand, avec vos arrêts favoris. Page étudiante non officielle.">
+<!-- site-only:start -->
+<meta name="uca-site" content="1">
+<link rel="icon" type="image/png" href="icons/icon128.png">
+<!-- site-only:end -->
 <style>
   :root {
     --bg-page: #080d1a;
     --bg: #0d1527;
     --surface: #131f37;
+    --surface-2: #1a2b4c;
     --surface-elevated: #1a2b4c;
     --surface-card: #15223c;
     --border: #223559;
-    --border-light: #2d4573;
+    --border-light: #3d5a8f;
     --text: #f8fafc;
-    --text-dim: #94a3b8;
-    --text-muted: #64748b;
+    --text-dim: #a8b6ca;
     --accent: #00bfa5;
     --accent2: #2fd6cd;
-    --accent-glow: rgba(0, 191, 165, 0.35);
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
+    --accent-tint: #10333f;
+    --on-accent: #031c18;
+    --live-bg: #0d3b2c;
+    --live-text: #6ee7b7;
+    --planned-bg: #12324d;
+    --planned-text: #93d5fd;
+    --warn-bg: #3d2c0b;
+    --warn-text: #fcd34d;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color-scheme: dark;
+  }
+  /* Thème clair : suit le choix du menu (Clair / Sombre / Auto) et, en Auto, le réglage du système. */
+  :root[data-theme="light"] {
+    --bg-page: #eef3f9;
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #f1f5f9;
+    --surface-elevated: #f1f5f9;
+    --surface-card: #ffffff;
+    --border: #dbe4ef;
+    --border-light: #a9bdd4;
+    --text: #0f172a;
+    --text-dim: #475569;
+    --accent: #00695c;
+    --accent2: #00695c;
+    --accent-tint: #dff3f0;
+    --on-accent: #ffffff;
+    --live-bg: #dcfce7;
+    --live-text: #14532d;
+    --planned-bg: #e0f2fe;
+    --planned-text: #0c4a6e;
+    --warn-bg: #fef3c7;
+    --warn-text: #713f12;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg-page: #eef3f9;
+      --bg: #ffffff;
+      --surface: #ffffff;
+      --surface-2: #f1f5f9;
+      --surface-elevated: #f1f5f9;
+      --surface-card: #ffffff;
+      --border: #dbe4ef;
+      --border-light: #a9bdd4;
+      --text: #0f172a;
+      --text-dim: #475569;
+      --accent: #00695c;
+      --accent2: #00695c;
+      --accent-tint: #dff3f0;
+      --on-accent: #ffffff;
+      --live-bg: #dcfce7;
+      --live-text: #14532d;
+      --planned-bg: #e0f2fe;
+      --planned-text: #0c4a6e;
+      --warn-bg: #fef3c7;
+      --warn-text: #713f12;
+      color-scheme: light;
+    }
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     margin: 0;
-    padding: 0;
     background: var(--bg-page);
     color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    line-height: 1.45;
-  }
-  .app-container {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: 16px;
-    min-height: 100vh;
-  }
-  header.trans-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    margin-bottom: 14px;
-  }
-  .brand-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  .brand-logo {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-  }
-  .brand-title {
-    font-size: 16px;
-    font-weight: 800;
-    color: var(--text);
-    letter-spacing: -0.02em;
-  }
-  .brand-sub {
-    font-size: 11px;
-    color: var(--accent2);
-    font-weight: 700;
-  }
-  .back-link {
-    color: var(--accent2);
-    font-size: 12.5px;
-    font-weight: 700;
-    text-decoration: none;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: var(--surface-card);
-    border: 1px solid var(--border);
-    transition: all 0.15s ease;
-  }
-  .back-link:hover {
-    border-color: var(--accent);
-  }
-
-  /* BARRE D'ONGLETS PRINCIPAUX */
-  .trans-tabs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    margin-bottom: 16px;
-    background: var(--bg);
-    padding: 4px;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-  }
-  .trans-tab-btn {
-    padding: 10px 8px;
-    text-align: center;
-    font-size: 12.5px;
-    font-weight: 700;
-    color: var(--text-dim);
-    background: transparent;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-  }
-  .trans-tab-btn.active {
-    background: var(--surface-elevated);
-    color: var(--accent2);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-  }
-  .trans-tab-btn:hover:not(.active) {
-    color: var(--text);
-    background: rgba(255,255,255,0.03);
-  }
-
-  /* CONTENEURS D'ONGLETS */
-  .tab-pane {
-    display: none;
-  }
-  .tab-pane.active {
-    display: block;
-  }
-
-  /* CARTE DE RECHERCHE D'ITINÉRAIRES */
-  .search-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-  }
-  .card-title-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-  }
-  .card-title {
-    font-size: 14.5px;
-    font-weight: 800;
-    color: var(--text);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .field-group {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-  .input-wrap {
-    position: relative;
-  }
-  .input-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-bottom: 4px;
-    display: block;
-  }
-  .trans-input {
-    width: 100%;
-    height: 44px;
-    background: var(--surface-card);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    color: var(--text);
-    font-size: 13.5px;
-    font-weight: 600;
-    padding: 0 12px;
-    outline: none;
-    transition: all 0.15s ease;
-  }
-  .trans-input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-glow);
-  }
-
-  /* BOÎTE DE RECOMMANDATIONS D'ARRÊTS (AUTOCOMPLÉTION DYNAMIQUE) */
-  .suggestions-box {
-    position: absolute;
-    top: 70px;
-    left: 0;
-    right: 0;
-    background: var(--surface-elevated);
-    border: 1px solid var(--accent);
-    border-radius: 12px;
-    box-shadow: 0 12px 32px rgba(0,0,0,0.55);
-    z-index: 90;
-    max-height: 280px;
-    overflow-y: auto;
-    display: none;
-  }
-  .sugg-item {
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: background 0.12s ease;
-  }
-  .sugg-item:last-child {
-    border-bottom: none;
-  }
-  .sugg-item:hover, .sugg-item.highlighted {
-    background: rgba(0, 191, 165, 0.2);
-  }
-  .sugg-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-  .sugg-icon {
-    font-size: 18px;
-    flex-shrink: 0;
-  }
-  .sugg-main {
-    min-width: 0;
-  }
-  .sugg-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .sugg-title mark {
-    background: rgba(0, 191, 165, 0.35);
-    color: #ffffff;
-    font-weight: 800;
-    border-radius: 2px;
-    padding: 0 2px;
-  }
-  .sugg-sub {
-    font-size: 11px;
-    color: var(--text-dim);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 2px;
-    flex-wrap: wrap;
-  }
-  .line-chip-mini {
-    font-size: 9.5px;
-    font-weight: 800;
-    padding: 1px 5px;
-    border-radius: 4px;
-    color: #fff;
-    display: inline-block;
-  }
-
-  .quick-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 6px;
-  }
-  .chip-btn {
-    background: var(--surface-card);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 999px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-  }
-  .chip-btn:hover {
-    border-color: var(--accent);
-    color: var(--text);
-  }
-
-  /* FILTRES PAR MODES */
-  .filters-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-  }
-  .filter-pill {
-    background: var(--surface-card);
-    border: 1px solid var(--border);
-    color: var(--text-dim);
-    font-size: 11.5px;
-    font-weight: 700;
-    padding: 6px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    user-select: none;
-  }
-  .filter-pill.active {
-    background: rgba(0, 191, 165, 0.18);
-    border-color: var(--accent);
-    color: var(--accent2);
-  }
-
-  /* BOUTON RECHERCHER */
-  .btn-search-main {
-    width: 100%;
-    height: 44px;
-    margin-top: 14px;
-    background: linear-gradient(135deg, var(--accent), #009688);
-    border: none;
-    border-radius: 11px;
-    color: #031c18;
-    font-size: 14px;
-    font-weight: 800;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    box-shadow: 0 4px 14px var(--accent-glow);
-    transition: all 0.15s ease;
-  }
-  .btn-search-main:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 18px var(--accent-glow);
-  }
-
-  /* CARTE PROCHAINS DÉPARTS TEMPS RÉEL */
-  .departures-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 16px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-  }
-  .dep-title {
-    font-size: 13px;
-    font-weight: 800;
-    color: var(--text);
-    margin-bottom: 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .dep-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    gap: 10px;
-  }
-  .dep-row:last-child {
-    border-bottom: none;
-  }
-  .dep-left {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-  }
-  .line-tag {
-    font-size: 11.5px;
-    font-weight: 900;
-    padding: 3px 8px;
-    border-radius: 6px;
-    min-width: 38px;
-    text-align: center;
-    display: inline-block;
-    flex-shrink: 0;
-  }
-  .dep-dest {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .dep-meta {
-    font-size: 11px;
-    color: var(--text-dim);
-  }
-  .eta-pill {
-    font-size: 12px;
-    font-weight: 800;
-    color: var(--accent2);
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    flex-shrink: 0;
-    background: rgba(0, 191, 165, 0.1);
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(0, 191, 165, 0.25);
-  }
-  .eta-pill.urgent {
-    color: #10b981;
-    background: rgba(16, 185, 129, 0.15);
-    border-color: rgba(16, 185, 129, 0.35);
-  }
-
-  /* RÉSULTATS D'ITINÉRAIRES */
-  .trip-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px 16px;
-    margin-bottom: 12px;
-    transition: all 0.15s ease;
-  }
-  .trip-card:hover {
-    border-color: var(--border-light);
-  }
-  .trip-head {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 8px;
-  }
-  .trip-times {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-  }
-  .time-large {
-    font-size: 18px;
-    font-weight: 900;
-    color: var(--text);
-  }
-  .time-dur {
-    font-size: 11.5px;
-    color: var(--text-dim);
-    font-weight: 700;
-  }
-  .trip-price {
-    font-size: 14px;
-    font-weight: 800;
-    color: var(--accent2);
-    text-align: right;
-  }
-  .status-badge {
-    font-size: 10px;
-    font-weight: 800;
-    padding: 2px 7px;
-    border-radius: 999px;
-    text-transform: uppercase;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .badge-realtime { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
-  .badge-scheduled { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
-  .badge-disrupted { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
-  .badge-expired { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
-
-  .leg-item {
-    display: flex;
-    gap: 12px;
-    margin-top: 10px;
-    padding-top: 8px;
-    border-top: 1px dashed var(--border);
-  }
-  .leg-icon {
-    font-size: 16px;
-    width: 26px;
-    text-align: center;
-  }
-  .leg-details {
-    flex: 1;
-    min-width: 0;
-  }
-  .leg-title {
-    font-size: 12.5px;
-    font-weight: 700;
-    color: var(--text);
-  }
-  .leg-meta {
-    font-size: 11px;
-    color: var(--text-dim);
-    margin-top: 2px;
-  }
-  .source-meta-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 10.5px;
-    color: var(--text-muted);
-    margin-top: 10px;
-    padding-top: 6px;
-    border-top: 1px solid rgba(255,255,255,0.04);
-  }
-
-  /* VUE "SE BALADER DANS TOUTES LES LIGNES" (ONGLET 2) */
-  .routes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 10px;
-    margin-top: 12px;
-  }
-  .route-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 12px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .route-card:hover {
-    border-color: var(--accent);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 14px rgba(0,0,0,0.3);
-  }
-  .route-card.selected {
-    border-color: var(--accent);
-    background: var(--surface-elevated);
-  }
-  .route-badge-box {
-    width: 44px;
-    height: 38px;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 900;
+    font-family: var(--font);
     font-size: 15px;
-    flex-shrink: 0;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
   }
-  .route-card-info {
-    min-width: 0;
-  }
-  .route-card-title {
-    font-size: 12.5px;
-    font-weight: 800;
-    color: var(--text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .route-card-sub {
-    font-size: 11px;
-    color: var(--text-dim);
-    margin-top: 2px;
-  }
+  a { color: var(--accent2); }
+  mark { background: #ffe27a; color: #18202e; border-radius: 3px; padding: 0 1px; }
+  button, input { font: inherit; color: inherit; }
+  button { cursor: pointer; overflow-wrap: normal; }
+  :focus-visible { outline: 3px solid #f5b400; outline-offset: 2px; }
+  .app-container { max-width: 760px; margin: 0 auto; padding: 14px 12px 40px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-  /* DÉTAIL D'UNE LIGNE & PLAN LINÉAIRE */
-  .line-view-container {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 16px;
-    margin-top: 16px;
-  }
-  .line-view-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
-  }
-  .line-view-title-group {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-  .timeline-container {
-    position: relative;
-    padding-left: 28px;
-    margin-top: 14px;
-  }
-  .timeline-line {
-    position: absolute;
-    top: 12px;
-    bottom: 12px;
-    left: 11px;
-    width: 4px;
-    background: var(--accent);
-    border-radius: 999px;
-  }
-  .timeline-stop-item {
-    position: relative;
-    padding: 8px 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .timeline-dot {
-    position: absolute;
-    left: -23px;
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--surface);
-    border: 3px solid var(--accent);
-  }
-  .timeline-stop-item:hover .timeline-dot {
-    background: var(--accent);
-  }
-  .timeline-stop-info {
-    min-width: 0;
-  }
-  .timeline-stop-name {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text);
-    cursor: pointer;
-  }
-  .timeline-stop-name:hover {
-    color: var(--accent2);
-    text-decoration: underline;
-  }
-  .timeline-stop-sub {
-    font-size: 11px;
-    color: var(--text-dim);
-  }
-  .btn-live-stop {
-    background: var(--surface-card);
-    border: 1px solid var(--border);
-    color: var(--accent2);
-    font-size: 11px;
-    font-weight: 700;
-    padding: 4px 8px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.12s ease;
-  }
-  .btn-live-stop:hover {
-    border-color: var(--accent);
-    background: var(--accent);
-    color: #031c18;
-  }
+  .trans-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .brand-group { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand-logo { width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0; }
+  h1 { font-size: 20px; line-height: 1.25; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  h3 { font-size: 14px; margin: 14px 0 6px; }
+  .sub { font-size: 13px; color: var(--text-dim); margin: 0; }
+  .back-link { font-size: 14px; font-weight: 700; text-decoration: none; padding: 9px 14px; border-radius: 999px; background: var(--surface-card); border: 1px solid var(--border-light); }
 
-  /* MODAL TEMPS RÉEL ARRÊT */
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(4px);
-    z-index: 100;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-  }
-  .modal-box {
-    background: var(--surface-elevated);
-    border: 1px solid var(--border-light);
-    border-radius: 16px;
-    width: 100%;
-    max-width: 520px;
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column;
-    box-shadow: 0 16px 40px rgba(0,0,0,0.6);
-  }
-  .modal-header {
-    padding: 16px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .modal-title {
-    font-size: 15px;
-    font-weight: 800;
-    color: var(--text);
-  }
-  .modal-close {
-    background: transparent;
-    border: none;
-    color: var(--text-dim);
-    font-size: 20px;
-    cursor: pointer;
-    padding: 4px;
-    line-height: 1;
-  }
-  .modal-close:hover {
-    color: var(--text);
-  }
-  .modal-body {
-    padding: 16px;
-    overflow-y: auto;
-  }
+  .tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+  .tab { min-height: 46px; padding: 6px 4px; border: 2px solid transparent; border-radius: 9px; background: transparent; color: var(--text-dim); font-size: 13px; font-weight: 700; }
+  .tab[aria-selected="true"] { background: var(--surface-elevated); border-color: var(--accent); color: var(--text); text-decoration: underline; text-underline-offset: 4px; }
 
-  /* ANNUAIRE DES ARRÊTS (ONGLET 3) */
-  .stops-directory-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 8px;
-    margin-top: 12px;
-    max-height: 520px;
-    overflow-y: auto;
-    padding-right: 4px;
-  }
-  .stop-dir-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 12px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.15s ease;
-  }
-  .stop-dir-card:hover {
-    border-color: var(--border-light);
-    background: var(--surface-elevated);
-  }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .btn { min-height: 44px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--border-light); background: var(--surface-card); font-size: 14px; font-weight: 700; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .btn[aria-pressed="true"] { background: var(--accent-tint); border-color: var(--accent); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .label { display: block; font-weight: 700; margin-bottom: 4px; }
+  .input { width: 100%; min-height: 46px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-light); background: var(--surface-card); font-size: 16px; }
+
+  .stop-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+  .stop-option { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 2px; }
+  .stop-option .sub { font-weight: 400; }
+
+  .line-tag { display: inline-block; min-width: 40px; padding: 3px 8px; border-radius: 7px; text-align: center; font-weight: 900; font-size: 14px; flex-shrink: 0; border: 1px solid rgba(127, 127, 127, 0.6); }
+  .stop-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .group { border-top: 1px solid var(--border); padding: 12px 0 4px; }
+  .group-head { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .group-dest { font-weight: 700; min-width: 0; }
+  .times { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+  .time { border: 1px solid var(--border); background: var(--surface-card); border-radius: 10px; padding: 8px 10px; }
+  .eta { display: block; font-size: 17px; font-weight: 800; }
+  .clock { display: block; font-size: 13px; color: var(--text-dim); }
+  .badge { display: inline-block; margin-top: 4px; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 800; border: 1px solid currentColor; }
+  .badge.live { background: var(--live-bg); color: var(--live-text); }
+  .badge.planned { background: var(--planned-bg); color: var(--planned-text); }
+  .badge.none { background: var(--surface-2); color: var(--text); }
+  .badge.down { background: var(--warn-bg); color: var(--warn-text); }
+  .state-box { border: 1px dashed var(--border-light); border-radius: 12px; padding: 14px; }
+  .state-box p { margin: 6px 0; }
+  .legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font-size: 14px; }
+  .legend .badge { margin: 0 6px 0 0; }
+
+  summary { cursor: pointer; font-weight: 800; min-height: 32px; }
+  details li { margin-bottom: 6px; }
+
+  .routes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr)); gap: 8px; margin-top: 10px; }
+  .route-btn { display: flex; align-items: center; gap: 8px; text-align: left; min-width: 0; }
+  .route-btn span:last-child { min-width: 0; font-size: 12px; font-weight: 400; color: var(--text-dim); }
+  .line-stops { margin: 8px 0 0; padding-left: 26px; }
+  .line-stops li { margin-bottom: 4px; }
+  .line-stops .btn { min-height: 40px; width: 100%; text-align: left; font-weight: 600; }
+
+  .links { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .links a { display: block; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 12px; text-decoration: none; background: var(--surface-card); }
+  .links strong { display: block; }
+  .links span { display: block; font-size: 13px; color: var(--text-dim); }
+  footer.note { font-size: 13px; color: var(--text-dim); }
 </style>
 </head>
 <body>
 
-<div class="app-container">
-  <!-- EN-TÊTE MOBILITÉ -->
+<main class="app-container">
   <header class="trans-header">
     <div class="brand-group">
-      <img src="app/icons/icon-192.png" class="brand-logo" alt="My UCA">
+      <!-- site-only:start -->
+      <img src="icons/icon128.png" class="brand-logo" alt="">
+      <!-- site-only:end -->
       <div>
-        <div class="brand-title">My UCA · Mobilité &amp; Transports</div>
-        <div class="brand-sub">Clermont Auvergne Métropole (T2C direct 63) &amp; Région</div>
+        <h1>Mon prochain départ</h1>
+        <p class="sub">Bus et tram à Clermont-Ferrand. Page étudiante non officielle.</p>
       </div>
     </div>
-    <a href="app/index.html" class="back-link" id="backLink">← Retour Agenda</a>
-    <script>if (window.top !== window) document.getElementById("backLink").hidden = true;</script>
+    <!-- site-only:start -->
+    <a href="app/index.html" class="back-link" id="backLink">← Retour à l'agenda</a>
+    <!-- site-only:end -->
   </header>
 
-  <!-- NAVIGATION PAR ONGLETS -->
-  <nav class="trans-tabs" role="tablist" aria-label="Sections Transports">
-    <button class="trans-tab-btn active" id="tabBtnPlanner" onclick="switchTab('planner')">
-      <span>🔍</span>
-      <span>Itinéraires &amp; Départs</span>
-    </button>
-    <button class="trans-tab-btn" id="tabBtnRoutes" onclick="switchTab('routes')">
-      <span>🗺️</span>
-      <span>Toutes les Lignes T2C (<span id="totalRoutesBadge">54</span>)</span>
-    </button>
-    <button class="trans-tab-btn" id="tabBtnDirectory" onclick="switchTab('directory')">
-      <span>📍</span>
-      <span>Annuaire des Arrêts (<span id="totalStopsBadge">856</span>)</span>
-    </button>
-  </nav>
-
-  <!-- =========================================================================
-       ONGLET 1 : RECHERCHE D'ITINÉRAIRE & PROCHAINS DÉPARTS EN DIRECT
-       ========================================================================= -->
-  <div class="tab-pane active" id="panePlanner">
-    <!-- FORMULAIRE DE RECHERCHE D'ITINÉRAIRE -->
-    <div class="search-card">
-      <div class="card-title-row">
-        <div class="card-title">
-          <span>🔍 Rechercher un itinéraire multimodal</span>
-        </div>
-        <span class="status-badge badge-realtime">🟢 T2C SIV &amp; SNCF Direct</span>
-      </div>
-
-      <div class="field-group">
-        <!-- CHAMP POINT DE DÉPART AVEC AUTOCOMPLÉTION & RECOMMANDATIONS -->
-        <div class="input-wrap">
-          <label class="input-label" for="inputOrigin">Point de départ (Campus, Arrêt ou Gare) :</label>
-          <input
-            type="text"
-            id="inputOrigin"
-            class="trans-input"
-            value="Campus Cézeaux"
-            autocomplete="off"
-            placeholder="Ex : Cézeaux, Jaude, Carnot, Gare SNCF..."
-            oninput="handleStopsInput('origin', this.value)"
-            onfocus="handleStopsInput('origin', this.value)"
-            onkeydown="handleInputKeydown(event, 'origin')"
-            aria-autocomplete="list"
-            aria-controls="originSuggs"
-          >
-          <div id="originSuggs" class="suggestions-box" role="listbox"></div>
-          <div class="quick-chips">
-            <button class="chip-btn" onclick="selectQuickStop('origin', 'CAMP', 'Campus Cézeaux')">📍 Cézeaux</button>
-            <button class="chip-btn" onclick="selectQuickStop('origin', 'CEPE', 'Cézeaux Pellez')">📍 Cézeaux Pellez</button>
-            <button class="chip-btn" onclick="selectQuickStop('origin', 'CARN', 'Carnot (Universités)')">📍 Carnot</button>
-            <button class="chip-btn" onclick="selectQuickStop('origin', 'FACU', 'Faculté / Dunant')">📍 Dunant</button>
-            <button class="chip-btn" onclick="selectQuickStop('origin', 'GASN', 'Gare SNCF')">🚉 Gare SNCF</button>
-          </div>
-        </div>
-
-        <!-- CHAMP DESTINATION AVEC AUTOCOMPLÉTION & RECOMMANDATIONS -->
-        <div class="input-wrap">
-          <label class="input-label" for="inputDest">Destination (Campus, Gare ou Ville) :</label>
-          <input
-            type="text"
-            id="inputDest"
-            class="trans-input"
-            value="Gare SNCF Clermont-Ferrand"
-            autocomplete="off"
-            placeholder="Ex : Gare SNCF, Jaude, Lyon, Paris..."
-            oninput="handleStopsInput('dest', this.value)"
-            onfocus="handleStopsInput('dest', this.value)"
-            onkeydown="handleInputKeydown(event, 'dest')"
-            aria-autocomplete="list"
-            aria-controls="destSuggs"
-          >
-          <div id="destSuggs" class="suggestions-box" role="listbox"></div>
-          <div class="quick-chips">
-            <button class="chip-btn" onclick="selectQuickStop('dest', 'GASN', 'Gare SNCF')">🚉 Gare SNCF</button>
-            <button class="chip-btn" onclick="selectQuickStop('dest', 'JAUD', 'Place de Jaude')">🏙️ Jaude</button>
-            <button class="chip-btn" onclick="selectQuickStop('dest', 'lyon_partdieu', 'Lyon Part-Dieu')">🚅 Lyon</button>
-            <button class="chip-btn" onclick="selectQuickStop('dest', 'paris_bercy', 'Paris Bercy')">🗼 Paris</button>
-            <button class="chip-btn" onclick="selectQuickStop('dest', 'riom_gare', 'Gare de Riom')">📍 Riom</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- DATE & HEURE DE DÉPART -->
-      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
-        <div>
-          <label class="input-label" for="inputDate">Date :</label>
-          <input type="date" id="inputDate" class="trans-input" style="font-size:12.5px;">
-        </div>
-        <div>
-          <label class="input-label" for="inputTime">Heure de départ :</label>
-          <input type="time" id="inputTime" class="trans-input" style="font-size:12.5px;">
-        </div>
-      </div>
-
-      <!-- FILTRES PAR MODE DE TRANSPORT -->
-      <div class="input-label">Modes de transport acceptés :</div>
-      <div class="filters-row" id="modesFilterRow">
-        <div class="filter-pill active" data-mode="tram" onclick="toggleFilter(this)">🚊 Tram A</div>
-        <div class="filter-pill active" data-mode="bus" onclick="toggleFilter(this)">🚌 Bus T2C</div>
-        <div class="filter-pill active" data-mode="train" onclick="toggleFilter(this)">🚆 Train SNCF (TER)</div>
-        <div class="filter-pill active" data-mode="covoit" onclick="toggleFilter(this)">🚗 Covoiturage</div>
-        <div class="filter-pill active" data-mode="car" onclick="toggleFilter(this)">🚍 Autocars (FlixBus)</div>
-      </div>
-
-      <!-- TRI -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px;">
-        <span class="input-label" style="margin:0;">Trier les résultats par :</span>
-        <select id="selectSort" class="trans-input" style="width:190px; height:34px; font-size:12px;" onchange="runSearch()">
-          <option value="fastest">⚡ Le plus rapide</option>
-          <option value="departure">⏰ Départ le plus proche</option>
-          <option value="cheapest">💶 Prix le plus bas</option>
-        </select>
-      </div>
-
-      <!-- BOUTON RECHERCHER -->
-      <button class="btn-search-main" onclick="runSearch()">
-        <span>Rechercher les itinéraires disponibles</span>
-      </button>
-    </div>
-
-    <!-- PROCHAINS DÉPARTS DEPUIS LE POINT DE DÉPART (TEMPS RÉEL EN DIRECT) -->
-    <div class="departures-card">
-      <div class="dep-title">
-        <span>🕒 Prochains Départs en direct : <strong id="depStopName" style="color:var(--accent2);">Campus Cézeaux</strong></span>
-        <span style="color:var(--accent2); cursor:pointer; font-size:12px;" onclick="refreshDepartures(true)">🔄 Actualiser</span>
-      </div>
-      <div id="departuresList">
-        <!-- Rempli en direct par JS -->
-      </div>
-    </div>
-
-    <!-- LISTE DES RÉSULTATS D'ITINÉRAIRES -->
-    <div style="font-size:12px; font-weight:800; text-transform:uppercase; color:var(--text-dim); letter-spacing:0.04em; margin-bottom:10px;">
-      Itinéraires Multimodaux (<span id="resultsCount">0</span>)
-    </div>
-
-    <div id="resultsList">
-      <!-- Rempli par runSearch() -->
-    </div>
+  <div class="tabs" role="tablist" aria-label="Rubriques transports">
+    <button type="button" class="tab" role="tab" id="tab-departs" aria-controls="pane-departs" aria-selected="true">Départs</button>
+    <button type="button" class="tab" role="tab" id="tab-lignes" aria-controls="pane-lignes" aria-selected="false" tabindex="-1">Lignes (<span id="routesCount">0</span>)</button>
+    <button type="button" class="tab" role="tab" id="tab-ailleurs" aria-controls="pane-ailleurs" aria-selected="false" tabindex="-1">Trajets et train</button>
   </div>
 
-  <!-- =========================================================================
-       ONGLET 2 : "SE BALADER DANS TOUTES LES LIGNES" (54 LIGNES, PLANS & ARRÊTS)
-       ========================================================================= -->
-  <div class="tab-pane" id="paneRoutes">
-    <div class="search-card">
-      <div class="card-title-row">
-        <div class="card-title">
-          <span>🗺️ Explorer le Réseau T2C (Clermont Auvergne Métropole)</span>
-        </div>
-        <span class="status-badge badge-realtime">54 lignes complètes</span>
-      </div>
-      <p style="font-size:12px; color:var(--text-dim); margin-top:0;">
-        Clique sur une ligne pour afficher son tracé complet, tous ses arrêts dans l'ordre et consulter les passages en temps réel sur n'importe quel arrêt.
-      </p>
+  <!-- ===================== DÉPARTS ===================== -->
+  <div id="pane-departs" role="tabpanel" aria-labelledby="tab-departs">
+    <section class="card" aria-labelledby="favTitle">
+      <h2 id="favTitle">Mes arrêts favoris</h2>
+      <div class="btn-row" id="favList"></div>
+      <p class="sub" id="favEmpty">Aucun favori pour l'instant. Choisissez un arrêt, puis « Ajouter aux favoris » : il s'affichera dès l'ouverture de la page.</p>
+      <p class="sub" id="favNote" role="status"></p>
 
-      <!-- FILTRE PAR CATÉGORIE DE LIGNE -->
-      <div class="filters-row" id="routesFilterRow">
-        <div class="filter-pill active" onclick="filterRoutesCategory('all', this)">Toutes (54)</div>
-        <div class="filter-pill" onclick="filterRoutesCategory('tram', this)">🚊 Tram A</div>
-        <div class="filter-pill" onclick="filterRoutesCategory('major', this)">⚡ Bus Principaux (B, C, E1-E7)</div>
-        <div class="filter-pill" onclick="filterRoutesCategory('metro', this)">🚌 Lignes S &amp; P (S10-P84)</div>
-        <div class="filter-pill" onclick="filterRoutesCategory('school', this)">🎓 Scolaires &amp; Spéciales</div>
-      </div>
+      <h3 id="campusTitle">Raccourcis campus</h3>
+      <div class="btn-row" id="campusList" role="group" aria-labelledby="campusTitle"></div>
+    </section>
 
-      <!-- GRILLE DES 54 LIGNES -->
-      <div class="routes-grid" id="routesGridContainer">
-        <!-- Rempli par renderRoutesGrid() -->
-      </div>
-    </div>
-
-    <!-- CONTENEUR DU TRACÉ & PLAN D'UNE LIGNE SÉLECTIONNÉE -->
-    <div class="line-view-container" id="lineDetailContainer" style="display:none;">
-      <!-- Rempli dynamiquement au clic sur une ligne -->
-    </div>
-  </div>
-
-  <!-- =========================================================================
-       ONGLET 3 : ANNUAIRE DES 856 ARRÊTS DU 63
-       ========================================================================= -->
-  <div class="tab-pane" id="paneDirectory">
-    <div class="search-card">
-      <div class="card-title-row">
-        <div class="card-title">
-          <span>📍 Annuaire de tous les arrêts du 63 (Clermont Métropole)</span>
-        </div>
-        <span class="status-badge badge-scheduled" id="dirStopsCountBadge">856 arrêts</span>
-      </div>
-
-      <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px; margin-bottom:10px;">
+    <section class="card" id="stopPanel" aria-labelledby="stopName">
+      <div class="stop-head">
         <div>
-          <label class="input-label" for="dirSearchInput">Filtrer un arrêt par nom :</label>
-          <input
-            type="text"
-            id="dirSearchInput"
-            class="trans-input"
-            placeholder="Ex : Cézeaux, Jaude, Delille, Chamalières..."
-            oninput="renderStopsDirectory(this.value, document.getElementById('dirCitySelect').value)"
-          >
+          <h2 id="stopName" tabindex="-1">Choisissez un arrêt</h2>
+          <p class="sub" id="stopInfo">Utilisez un raccourci campus ci-dessus ou la recherche ci-dessous.</p>
         </div>
-        <div>
-          <label class="input-label" for="dirCitySelect">Commune :</label>
-          <select id="dirCitySelect" class="trans-input" style="font-size:12px;" onchange="renderStopsDirectory(document.getElementById('dirSearchInput').value, this.value)">
-            <option value="all">Toutes les communes</option>
-            <option value="Clermont-Ferrand">Clermont-Ferrand</option>
-            <option value="Aubière">Aubière</option>
-            <option value="Beaumont">Beaumont</option>
-            <option value="Chamalières">Chamalières</option>
-            <option value="Cournon">Cournon-d'Auvergne</option>
-            <option value="Royat">Royat</option>
-            <option value="Cébazat">Cébazat</option>
-            <option value="Gerzat">Gerzat</option>
-            <option value="Durtol">Durtol</option>
-            <option value="Romagnat">Romagnat</option>
-            <option value="Lempdes">Lempdes</option>
-            <option value="Pont-du-Château">Pont-du-Château</option>
-          </select>
+        <div class="btn-row" id="stopActions" hidden>
+          <button type="button" class="btn" id="favToggle" aria-pressed="false">☆ Ajouter aux favoris</button>
+          <button type="button" class="btn" id="refreshBtn">Actualiser</button>
         </div>
       </div>
+      <p class="sub" id="fetchTime"></p>
+      <p class="sr-only" id="announce" role="status"></p>
+      <div id="departures"></div>
+    </section>
 
-      <!-- LISTE DES ARRÊTS -->
-      <div class="stops-directory-list" id="stopsDirectoryList">
-        <!-- Rempli par renderStopsDirectory() -->
-      </div>
-    </div>
-  </div>
-</div>
+    <section class="card">
+      <label class="label" for="stopSearch">Chercher un arrêt de bus ou de tram</label>
+      <input type="search" id="stopSearch" class="input" autocomplete="off" placeholder="Arrêt, commune ou ligne" aria-describedby="searchCount">
+      <p class="sub" id="searchCount" role="status"></p>
+      <ul class="stop-list" id="searchResults"></ul>
+      <button type="button" class="btn" id="searchMore" hidden>Afficher plus d'arrêts</button>
+    </section>
 
-<!-- =========================================================================
-     MODAL UNIVERSELLE : TEMPS RÉEL EN DIRECT SUR UN ARRÊT
-     ========================================================================= -->
-<div class="modal-overlay" id="stopLiveModal" onclick="if(event.target === this) closeStopModal()">
-  <div class="modal-box">
-    <div class="modal-header">
-      <div>
-        <div class="modal-title" id="modalStopTitle">Arrêt T2C</div>
-        <div style="font-size:11px; color:var(--text-dim);" id="modalStopCity">Clermont-Ferrand</div>
-      </div>
-      <button class="modal-close" onclick="closeStopModal()" aria-label="Fermer">✕</button>
-    </div>
-    <div class="modal-body" id="modalStopBody">
-      <!-- Rempli en direct avec les prochains passages réels -->
-    </div>
+    <section class="card" aria-labelledby="legendTitle">
+      <h2 id="legendTitle">Ce que veulent dire les mentions</h2>
+      <ul class="legend">
+        <li><span class="badge live">En direct</span>le serveur T2C a transmis une heure en temps réel pour ce passage. Elle peut encore changer.</li>
+        <li><span class="badge planned">Prévu</span>heure théorique donnée par le serveur T2C, sans suivi en temps réel.</li>
+        <li><span class="badge none">Aucun passage annoncé</span>le serveur a répondu et n'annonce aucun passage à venir pour cet arrêt.</li>
+        <li><span class="badge down">Indisponible</span>la page n'a pas obtenu de réponse lisible. Cela ne veut pas dire qu'aucun bus ne passe.</li>
+      </ul>
+    </section>
+
+    <details class="card">
+      <summary>Comment ça marche ?</summary>
+      <ol>
+        <li>Choisissez l'arrêt où vous allez monter. Plusieurs arrêts peuvent avoir des noms proches : vérifiez le nom complet et les lignes.</li>
+        <li>La page demande les prochains passages de cet arrêt au serveur de T2C (api.t2c.fr), directement ou par l'extension si elle est installée. La demande contient le code de l'arrêt et l'heure.</li>
+        <li>Les passages sont classés par ligne et par direction, avec jusqu'à trois horaires chacun. Vérifiez la direction avant de monter.</li>
+        <li>Tant que la page est visible, l'arrêt affiché est redemandé toutes les 30 secondes.</li>
+        <li>Vos favoris restent dans ce navigateur ou cette application, sur cet appareil.</li>
+        <li>Si le serveur ne répond pas, la page n'affiche aucun horaire de remplacement. Consultez alors le site officiel.</li>
+      </ol>
+      <p class="sub">Tarifs, titres de transport, travaux et perturbations : voir <a href="https://www.t2c.fr/" target="_blank" rel="noopener noreferrer">le site officiel de T2C (t2c.fr)</a>.</p>
+    </details>
   </div>
-</div>
+
+  <!-- ===================== LIGNES ===================== -->
+  <div id="pane-lignes" role="tabpanel" aria-labelledby="tab-lignes" hidden>
+    <section class="card">
+      <h2>Les lignes de la copie T2C</h2>
+      <p class="sub">Choisissez une ligne, puis un de ses arrêts pour voir ses prochains passages.</p>
+      <div class="btn-row" id="routeFilters" role="group" aria-label="Filtrer les lignes"></div>
+      <div class="routes-grid" id="routesGrid"></div>
+    </section>
+    <section class="card" id="lineDetail" aria-labelledby="lineTitle" hidden>
+      <h2 id="lineTitle" tabindex="-1"></h2>
+      <p class="sub" id="lineInfo"></p>
+      <ol class="line-stops" id="lineStops"></ol>
+    </section>
+  </div>
+
+  <!-- ===================== SITES OFFICIELS ===================== -->
+  <div id="pane-ailleurs" role="tabpanel" aria-labelledby="tab-ailleurs" hidden>
+    <section class="card">
+      <h2>Préparer un trajet</h2>
+      <p>Cette page ne calcule pas d'itinéraire et ne connaît ni les horaires, ni les prix, ni les places des trains, des cars ou du covoiturage. Pour cela, allez sur les sites officiels. Les liens ouvrent leur page d'accueil.</p>
+      <ul class="links">
+        <li><a href="https://www.t2c.fr/" target="_blank" rel="noopener noreferrer"><strong>T2C (t2c.fr)</strong><span>Bus et tram de l'agglomération : itinéraires, horaires, tarifs, perturbations.</span></a></li>
+        <li><a href="https://www.sncf-connect.com/" target="_blank" rel="noopener noreferrer"><strong>SNCF Connect (sncf-connect.com)</strong><span>Trains.</span></a></li>
+        <li><a href="https://www.blablacar.fr/" target="_blank" rel="noopener noreferrer"><strong>BlaBlaCar (blablacar.fr)</strong><span>Covoiturage et cars.</span></a></li>
+        <li><a href="https://www.flixbus.fr/" target="_blank" rel="noopener noreferrer"><strong>FlixBus (flixbus.fr)</strong><span>Cars longue distance.</span></a></li>
+      </ul>
+    </section>
+  </div>
+
+  <footer class="note">
+    <p id="dataDate"></p>
+  </footer>
+</main>
 
 <script src="core/t2c_data.js"></script>
 <script src="core/mobility.js"></script>
-<script>
-  let currentOriginId = "CAMP";
-  let currentDestId = "GASN";
-  let activeSelectedLine = "A";
-  let currentHighlightedIndex = -1;
+<script src="core/transport-page.js"></script>
 
-  // --- GESTION DES ONGLETS ---
-  function switchTab(tabId) {
-    document.querySelectorAll(".trans-tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
-
-    if (tabId === "planner") {
-      document.getElementById("tabBtnPlanner").classList.add("active");
-      document.getElementById("panePlanner").classList.add("active");
-    } else if (tabId === "routes") {
-      document.getElementById("tabBtnRoutes").classList.add("active");
-      document.getElementById("paneRoutes").classList.add("active");
-      renderRoutesGrid();
-      if (activeSelectedLine) viewLineDetails(activeSelectedLine);
-    } else if (tabId === "directory") {
-      document.getElementById("tabBtnDirectory").classList.add("active");
-      document.getElementById("paneDirectory").classList.add("active");
-      renderStopsDirectory();
-    }
-  }
-
-  // --- INITIALISATION DATE & HEURE ---
-  function initDateTime() {
-    const now = new Date();
-    document.getElementById("inputDate").value = now.toISOString().split("T")[0];
-    const hh = String(now.getHours()).padStart(2, "0");
-    const mm = String(now.getMinutes()).padStart(2, "0");
-    document.getElementById("inputTime").value = `${hh}:${mm}`;
-  }
-
-  // --- AUTOCOMPLÉTION & RECOMMANDATIONS D'ARRÊTS DYNAMIQUES ---
-  function handleStopsInput(kind, query) {
-    const box = document.getElementById(kind === "origin" ? "originSuggs" : "destSuggs");
-    if (!window.UCA_MOBILITY || !box) return;
-
-    currentHighlightedIndex = -1;
-    const results = window.UCA_MOBILITY.searchStops(query, 12);
-    if (!results || !results.length) {
-      box.style.display = "none";
-      return;
-    }
-
-    const qClean = (query || "").trim().toLowerCase();
-
-    box.innerHTML = results.map((s, idx) => {
-      const isTram = s.type === "tram" || (s.lines && s.lines.includes("A"));
-      const isTrain = s.type === "train";
-      const icon = isTrain ? "🚉" : (isTram ? "🚊" : "🚌");
-
-      // Mise en valeur des lettres correspondantes
-      let displayName = s.shortName || s.name;
-      if (qClean && displayName.toLowerCase().includes(qClean)) {
-        const regex = new RegExp(`(${qClean.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, "gi");
-        displayName = displayName.replace(regex, "<mark>$1</mark>");
-      }
-
-      // Badges des lignes connectées
-      const linesHtml = (s.lines || []).slice(0, 5).map(l => {
-        const rColor = (l === "A") ? "#a81815" : (l === "B") ? "#0069b4" : (l === "C") ? "#008c3c" : "#2d4573";
-        return `<span class="line-chip-mini" style="background:${rColor};">${l}</span>`;
-      }).join(" ");
-
-      return `
-        <div
-          class="sugg-item"
-          data-idx="${idx}"
-          role="option"
-          onclick="selectStop('${kind}', '${s.id}', '${(s.shortName || s.name).replace(/'/g, "\\'")}')"
-        >
-          <div class="sugg-left">
-            <span class="sugg-icon">${icon}</span>
-            <div class="sugg-main">
-              <div class="sugg-title">${displayName}</div>
-              <div class="sugg-sub">
-                <span>📍 ${s.city || "Clermont"}</span>
-                ${linesHtml ? `<span>· ${linesHtml}</span>` : ""}
-              </div>
-            </div>
-          </div>
-          <span style="font-size:11px; font-weight:700; color:var(--accent2); flex-shrink:0;">Choisir</span>
-        </div>
-      `;
-    }).join("");
-
-    box.style.display = "block";
-  }
-
-  // Navigation clavier dans les suggestions
-  function handleInputKeydown(e, kind) {
-    const box = document.getElementById(kind === "origin" ? "originSuggs" : "destSuggs");
-    if (!box || box.style.display !== "block") return;
-
-    const items = box.querySelectorAll(".sugg-item");
-    if (!items.length) return;
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      currentHighlightedIndex = (currentHighlightedIndex + 1) % items.length;
-      updateHighlight(items);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      currentHighlightedIndex = (currentHighlightedIndex - 1 + items.length) % items.length;
-      updateHighlight(items);
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (currentHighlightedIndex >= 0 && items[currentHighlightedIndex]) {
-        items[currentHighlightedIndex].click();
-      }
-    } else if (e.key === "Escape") {
-      box.style.display = "none";
-    }
-  }
-
-  function updateHighlight(items) {
-    items.forEach((item, idx) => {
-      if (idx === currentHighlightedIndex) {
-        item.classList.add("highlighted");
-        item.scrollIntoView({ block: "nearest" });
-      } else {
-        item.classList.remove("highlighted");
-      }
-    });
-  }
-
-  // Sélection d'un arrêt
-  function selectStop(kind, id, name) {
-    if (kind === "origin") {
-      currentOriginId = id;
-      document.getElementById("inputOrigin").value = name;
-      document.getElementById("originSuggs").style.display = "none";
-      refreshDepartures(true);
-    } else {
-      currentDestId = id;
-      document.getElementById("inputDest").value = name;
-      document.getElementById("destSuggs").style.display = "none";
-    }
-    runSearch();
-  }
-
-  function selectQuickStop(kind, id, name) {
-    selectStop(kind, id, name);
-  }
-
-  function toggleFilter(el) {
-    el.classList.toggle("active");
-    runSearch();
-  }
-
-  function getActiveModes() {
-    return Array.from(document.querySelectorAll("#modesFilterRow .filter-pill.active")).map(p => p.dataset.mode);
-  }
-
-  // --- PROCHAINS DÉPARTS EN DIRECT POUR LE DÉPART (TEMPS RÉEL T2C SIV) ---
-  async function refreshDepartures(forceLive = false) {
-    const container = document.getElementById("departuresList");
-    const nameEl = document.getElementById("depStopName");
-    if (!window.UCA_MOBILITY || !container) return;
-
-    const stop = window.UCA_MOBILITY.getStopById(currentOriginId) || window.UCA_MOBILITY.stops[0];
-    if (nameEl) nameEl.textContent = stop ? (stop.shortName || stop.name) : "Campus Cézeaux";
-
-    // Affichage immédiat du cache ou du calcul
-    let deps = window.UCA_MOBILITY.getNextDepartures(currentOriginId);
-    renderDeparturesRows(deps, container);
-
-    // Si on veut les données fraîches du satellite/SIV
-    try {
-      deps = await window.UCA_MOBILITY.fetchLiveDepartures(currentOriginId);
-      renderDeparturesRows(deps, container);
-    } catch (_) {}
-  }
-
-  function renderDeparturesRows(deps, container) {
-    if (!deps || !deps.length) {
-      container.innerHTML = `<div style="font-size:12px; color:var(--text-dim); padding:10px 0;">Aucun départ immédiat programmé sur cet arrêt.</div>`;
-      return;
-    }
-
-    container.innerHTML = deps.slice(0, 7).map(d => {
-      const isUrgent = d.etaMinutes <= 2;
-      return `
-        <div class="dep-row">
-          <div class="dep-left">
-            <span class="line-tag" style="background:${d.color}; color:${d.textColor};">${d.line}</span>
-            <div style="min-width:0;">
-              <div class="dep-dest">${d.typeIcon} ${d.destination}</div>
-              <div class="dep-meta">${d.label} · Passage prévu : <b>${d.departureTime}</b></div>
-            </div>
-          </div>
-          <span class="eta-pill ${isUrgent ? 'urgent' : ''}">
-            ${d.realtime ? '<span style="color:#10b981;">🟢</span>' : '🗓️'}
-            <span>${d.countdown}</span>
-          </span>
-        </div>
-      `;
-    }).join("");
-  }
-
-  // --- RECHERCHE D'ITINÉRAIRES MULTIMODAUX ---
-  function runSearch() {
-    const list = document.getElementById("resultsList");
-    const countEl = document.getElementById("resultsCount");
-    if (!window.UCA_MOBILITY || !list) return;
-
-    const activeModes = getActiveModes();
-    const sort = document.getElementById("selectSort").value;
-    const dateVal = document.getElementById("inputDate").value;
-    const timeVal = document.getElementById("inputTime").value;
-
-    const routes = window.UCA_MOBILITY.findRoutes({
-      fromId: currentOriginId,
-      toId: currentDestId,
-      date: dateVal,
-      time: timeVal,
-      modes: activeModes,
-      sortBy: sort
-    });
-
-    if (countEl) countEl.textContent = String(routes.length);
-
-    if (!routes.length) {
-      list.innerHTML = `
-        <div style="background:var(--surface); border:1px dashed var(--border); border-radius:14px; padding:24px; text-align:center; color:var(--text-dim); font-size:13px;">
-          <div style="font-size:32px; margin-bottom:8px;">🚍</div>
-          <strong>Aucun itinéraire direct trouvé avec ces filtres.</strong>
-          <div style="font-size:11.5px; margin-top:4px;">Essaie d'activer d'autres modes de transport ou de modifier ton horaire de départ.</div>
-        </div>
-      `;
-      return;
-    }
-
-    list.innerHTML = routes.map(r => {
-      const legsHtml = (r.legs || []).map(l => {
-        const icon = l.type === "tram" ? "🚊" : l.type === "bus" ? "🚌" : l.type === "train" ? "🚆" : l.type === "covoit" ? "🚗" : l.type === "car" ? "🚍" : "🚶";
-        return `
-          <div class="leg-item">
-            <span class="leg-icon">${icon}</span>
-            <div class="leg-details">
-              <div class="leg-title">${l.title}</div>
-              <div class="leg-meta">De <b>${l.from}</b> à <b>${l.to}</b> (${l.depTime} ➔ ${l.arrTime} · ${l.durationMin} min)</div>
-            </div>
-          </div>
-        `;
-      }).join("");
-
-      return `
-        <div class="trip-card">
-          <div class="trip-head">
-            <div>
-              <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
-                <span class="line-tag" style="background:${r.lineColor}; color:${r.lineTextColor};">${r.line}</span>
-                <span class="status-badge ${r.realtime.badgeClass}">${r.realtime.label}</span>
-              </div>
-              <div class="trip-times">
-                <span class="time-large">${r.departureTime}</span>
-                <span style="color:var(--text-dim);">➔</span>
-                <span class="time-large">${r.arrivalTime}</span>
-                <span class="time-dur">(${r.durationMin} min)</span>
-              </div>
-            </div>
-            <div class="trip-price">
-              ${r.price}
-              <div style="font-size:10px; color:var(--text-dim); font-weight:600;">${r.operator}</div>
-            </div>
-          </div>
-          <div>${legsHtml}</div>
-          <div class="source-meta-row">
-            <span>📡 ${r.source}</span>
-            <span>⏱️ ${r.updatedAt}</span>
-          </div>
-        </div>
-      `;
-    }).join("");
-  }
-
-  // =========================================================================
-  // GESTION DU RÉSEAU & LIGNES T2C ("SE BALADER DANS TOUTES LES LIGNES")
-  // =========================================================================
-  let currentRoutesCategory = "all";
-
-  function filterRoutesCategory(cat, el) {
-    currentRoutesCategory = cat;
-    document.querySelectorAll("#routesFilterRow .filter-pill").forEach(p => p.classList.remove("active"));
-    if (el) el.classList.add("active");
-    renderRoutesGrid();
-  }
-
-  function renderRoutesGrid() {
-    const container = document.getElementById("routesGridContainer");
-    if (!window.UCA_MOBILITY || !container) return;
-
-    let routes = window.UCA_MOBILITY.getAllRoutes();
-
-    if (currentRoutesCategory === "tram") {
-      routes = routes.filter(r => r.type === "tram" || r.shortName === "A");
-    } else if (currentRoutesCategory === "major") {
-      routes = routes.filter(r => ["B", "C", "E1", "E2", "E3", "E4", "E5", "E6", "E7"].includes(r.shortName));
-    } else if (currentRoutesCategory === "metro") {
-      routes = routes.filter(r => r.shortName.startsWith("S") || r.shortName.startsWith("P"));
-    } else if (currentRoutesCategory === "school") {
-      routes = routes.filter(r => /^\d/.test(r.shortName) || r.shortName.startsWith("LS"));
-    }
-
-    container.innerHTML = routes.map(r => `
-      <div class="route-card ${r.shortName === activeSelectedLine ? 'selected' : ''}" onclick="viewLineDetails('${r.shortName}')">
-        <div class="route-badge-box" style="background:${r.color}; color:${r.textColor};">
-          ${r.shortName}
-        </div>
-        <div class="route-card-info">
-          <div class="route-card-title">${r.typeIcon} ${r.desc || `Ligne ${r.shortName}`}</div>
-          <div class="route-card-sub">${r.firstStop ? `${r.firstStop} ↔ ${r.lastStop}` : `${r.stopsCount} arrêts`}</div>
-        </div>
-      </div>
-    `).join("");
-  }
-
-  function viewLineDetails(lineShortName) {
-    activeSelectedLine = lineShortName;
-    renderRoutesGrid();
-
-    const container = document.getElementById("lineDetailContainer");
-    if (!window.UCA_MOBILITY || !container) return;
-
-    const route = window.UCA_MOBILITY.getRouteDetails(lineShortName);
-    if (!route) return;
-
-    const stops = route.stops || [];
-
-    const stopsHtml = stops.map((s, idx) => `
-      <div class="timeline-stop-item">
-        <div class="timeline-dot" style="border-color:${route.color};"></div>
-        <div class="timeline-stop-info">
-          <span class="timeline-stop-name" onclick="openStopModal('${s.stopId || s.id}', '${(s.name || '').replace(/'/g, "\\'")}')">
-            ${idx + 1}. ${s.name}
-          </span>
-          <div class="timeline-stop-sub">Arrêt T2C officiel · Code ${s.stopId || s.id}</div>
-        </div>
-        <button class="btn-live-stop" onclick="openStopModal('${s.stopId || s.id}', '${(s.name || '').replace(/'/g, "\\'")}')">
-          🕒 Direct
-        </button>
-      </div>
-    `).join("");
-
-    container.innerHTML = `
-      <div class="line-view-header">
-        <div class="line-view-title-group">
-          <div class="route-badge-box" style="background:${route.color}; color:${route.textColor}; width:50px; height:44px; font-size:18px;">
-            ${route.shortName}
-          </div>
-          <div>
-            <div style="font-size:16px; font-weight:800; color:var(--text);">${route.typeIcon} ${route.desc}</div>
-            <div style="font-size:12px; color:var(--accent2); font-weight:700;">
-              ${route.directions && route.directions.length ? route.directions.join(" ↔ ") : `${route.firstStop} ↔ ${route.lastStop}`}
-            </div>
-          </div>
-        </div>
-        <div style="font-size:11.5px; color:var(--text-dim); text-align:right;">
-          <b>${stops.length} arrêts</b> sur la ligne
-        </div>
-      </div>
-
-      <div style="font-size:12px; font-weight:800; color:var(--text-dim); text-transform:uppercase; margin-bottom:8px;">
-        Plan linéaire &amp; Tous les arrêts desservis :
-      </div>
-
-      <div class="timeline-container">
-        <div class="timeline-line" style="background:${route.color};"></div>
-        ${stopsHtml.length ? stopsHtml : '<div style="font-size:12px; color:var(--text-dim);">Arrêts en cours de synchronisation.</div>'}
-      </div>
-    `;
-
-    container.style.display = "block";
-    container.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  // =========================================================================
-  // ANNUAIRE DE TOUS LES ARRÊTS DU 63
-  // =========================================================================
-  function renderStopsDirectory(searchVal = "", cityVal = "all") {
-    const list = document.getElementById("stopsDirectoryList");
-    const countBadge = document.getElementById("dirStopsCountBadge");
-    if (!window.UCA_MOBILITY || !list) return;
-
-    let stops = window.UCA_MOBILITY.stops || [];
-
-    if (cityVal && cityVal !== "all") {
-      stops = stops.filter(s => (s.city || "").toLowerCase().includes(cityVal.toLowerCase()));
-    }
-
-    if (searchVal && searchVal.trim()) {
-      const q = searchVal.trim().toLowerCase();
-      stops = stops.filter(s => (s.name || "").toLowerCase().includes(q) || (s.shortName || "").toLowerCase().includes(q));
-    }
-
-    if (countBadge) countBadge.textContent = `${stops.length} arrêts affichés`;
-
-    list.innerHTML = stops.slice(0, 150).map(s => {
-      const isTram = s.type === "tram" || (s.lines && s.lines.includes("A"));
-      const icon = isTram ? "🚊" : "🚌";
-      const linesBadges = (s.lines || []).slice(0, 4).map(l => `<span class="line-chip-mini" style="background:#223559;">${l}</span>`).join(" ");
-
-      return `
-        <div class="stop-dir-card">
-          <div style="min-width:0; margin-right:8px;">
-            <div style="font-size:12.5px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-              ${icon} ${s.shortName || s.name}
-            </div>
-            <div style="font-size:11px; color:var(--text-dim); display:flex; align-items:center; gap:4px; margin-top:2px;">
-              <span>${s.city || "Clermont"}</span>
-              ${linesBadges ? `· ${linesBadges}` : ""}
-            </div>
-          </div>
-          <button class="btn-live-stop" onclick="openStopModal('${s.id}', '${(s.shortName || s.name).replace(/'/g, "\\'")}')">
-            🕒 Direct
-          </button>
-        </div>
-      `;
-    }).join("");
-  }
-
-  // =========================================================================
-  // MODALE TEMPS RÉEL (POUR N'IMPORTE QUEL ARRÊT DU RÉSEAU)
-  // =========================================================================
-  function renderModalDepartures(deps, stopId, title) {
-    const bodyEl = document.getElementById("modalStopBody");
-    if (!bodyEl) return;
-    if (!deps || !deps.length) {
-      bodyEl.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-dim); font-size:13px;">Aucun passage prévu dans les prochaines heures sur cet arrêt.</div>`;
-      return;
-    }
-    bodyEl.innerHTML = deps.map(d => `
-      <div class="dep-row" style="padding:10px 0;">
-        <div class="dep-left">
-          <span class="line-tag" style="background:${d.color}; color:${d.textColor};">${d.line}</span>
-          <div style="min-width:0;">
-            <div class="dep-dest">${d.typeIcon} ${d.destination}</div>
-            <div class="dep-meta">${d.label} · Passage prévu : <b>${d.departureTime}</b> (${d.statusLabel})</div>
-          </div>
-        </div>
-        <span class="eta-pill ${d.etaMinutes <= 2 ? 'urgent' : ''}">
-          ${d.realtime ? '<span style="color:#10b981;">🟢</span>' : '🗓️'}
-          <span>${d.countdown}</span>
-        </span>
-      </div>
-    `).join("") + `
-      <div style="margin-top:16px; display:flex; gap:8px;">
-        <button class="chip-btn" style="flex:1;" onclick="setAsOriginFromModal('${stopId}', '${title.replace(/'/g, "\\'")}')">
-          📍 Définir comme départ
-        </button>
-        <button class="chip-btn" style="flex:1;" onclick="setAsDestFromModal('${stopId}', '${title.replace(/'/g, "\\'")}')">
-          📍 Définir comme destination
-        </button>
-      </div>
-    `;
-  }
-
-  async function openStopModal(stopId, stopName) {
-    const modal = document.getElementById("stopLiveModal");
-    const titleEl = document.getElementById("modalStopTitle");
-    const cityEl = document.getElementById("modalStopCity");
-    const bodyEl = document.getElementById("modalStopBody");
-    if (!modal || !bodyEl) return;
-
-    const stop = window.UCA_MOBILITY.getStopById(stopId);
-    titleEl.textContent = stop ? (stop.shortName || stop.name) : (stopName || "Arrêt T2C");
-    cityEl.textContent = stop ? `Commune de ${stop.city} · Lignes : ${(stop.lines || []).join(", ")}` : "Clermont Auvergne Métropole";
-
-    // Affichage instantané (stale-while-revalidate)
-    const initialDeps = window.UCA_MOBILITY.getNextDepartures(stopId);
-    if (initialDeps && initialDeps.length) {
-      renderModalDepartures(initialDeps, stopId, titleEl.textContent);
-    } else {
-      bodyEl.innerHTML = `
-        <div style="text-align:center; padding:24px; color:var(--accent2); font-size:13px;">
-          <div style="font-size:28px; margin-bottom:8px;">📡</div>
-          Connexion au système temps réel T2C SIV en cours...
-        </div>
-      `;
-    }
-    modal.style.display = "flex";
-
-    try {
-      const deps = await window.UCA_MOBILITY.fetchLiveDepartures(stopId);
-      if (deps && deps.length) {
-        renderModalDepartures(deps, stopId, titleEl.textContent);
-      }
-    } catch (_) {}
-  }
-
-  function closeStopModal() {
-    const modal = document.getElementById("stopLiveModal");
-    if (modal) modal.style.display = "none";
-  }
-
-  function setAsOriginFromModal(id, name) {
-    closeStopModal();
-    selectStop('origin', id, name);
-    switchTab('planner');
-  }
-
-  function setAsDestFromModal(id, name) {
-    closeStopModal();
-    selectStop('dest', id, name);
-    switchTab('planner');
-  }
-
-  // Fermer les boîtes de suggestions si clic extérieur
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".input-wrap")) {
-      const origBox = document.getElementById("originSuggs");
-      const destBox = document.getElementById("destSuggs");
-      if (origBox) origBox.style.display = "none";
-      if (destBox) destBox.style.display = "none";
-    }
-  });
-
-  // INITIALISATION
-  initDateTime();
-  refreshDepartures(true);
-  runSearch();
-
-  // Mise à jour automatique des passages en direct toutes les 30 secondes
-  setInterval(() => {
-    if (document.getElementById("panePlanner").classList.contains("active")) {
-      refreshDepartures(false);
-    }
-  }, 30000);
-</script>
-
-<script src="site-nav.js" defer></script>
 </body>
 </html>

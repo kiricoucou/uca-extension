@@ -1081,11 +1081,13 @@ async function syncMoodleQuietly() {
 }
 async function syncMoodleInner() {
   const result = { read: 0, pending: 0, issue: null, detail: null };
-  const { uca_moodle, uca_releve_notes } = await chrome.storage.local.get(["uca_moodle", "uca_releve_notes"]);
-  const r = await scrapeMoodle(uca_releve_notes);
+  const before = await chrome.storage.local.get(["uca_releve_notes"]);
+  const r = await scrapeMoodle(before.uca_releve_notes);
   if (r.data) await moodleProgress({ phase: "analyse", done: 1, total: 1, label: "Analyse des notes…" });
   await recordScrapeIssue("moodle", r);
   if (!r.data) { result.issue = r.issue; result.detail = r.detail || null; return result; }
+  // Relu APRÈS la lecture (longue) : une note validée ou refusée pendant la recherche ne doit pas être écrasée.
+  const { uca_moodle, uca_releve_notes } = await chrome.storage.local.get(["uca_moodle", "uca_releve_notes"]);
   const { store, fresh, firstRun } = UCA_MOODLE.diff(uca_moodle, r.data, uca_releve_notes, Date.now());
   await chrome.storage.local.set({ uca_moodle: store });
   await diag("moodle-ok", `${r.data.length} notes lues · ${fresh.length} nouvelle(s)`);

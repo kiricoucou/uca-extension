@@ -36,6 +36,8 @@ jobs:
         run: python -I -X utf8 tests/grades.py
       - name: Notes Moodle (lecture, validation, fusion)
         run: python -I -X utf8 tests/moodle.py
+      - name: Question première connexion (Odin / Moodle)
+        run: python -I -X utf8 tests/usage_question.py
       - name: Notes Moodle dans l'app web (téléphone)
         run: python -I -X utf8 tests/moodle_app.py
       - name: Agenda (raccourcis, couleurs, design automatique)
@@ -50,6 +52,8 @@ jobs:
         run: python -I -X utf8 tests/security.py
       - name: Statut des sites
         run: python -I -X utf8 tests/status.py
+      - name: Transports (aucune donnée inventée, réponses factices, copie de l'APK)
+        run: python -I -X utf8 tests/test_transport_t2c.py
       - name: App Android (texte d'Odin -> cours)
         run: python -I -X utf8 tests/android_sync.py
       - name: Mise à jour automatique de l'app (paquet)

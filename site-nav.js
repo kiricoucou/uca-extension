@@ -75,6 +75,7 @@
       ['Accueil', '', 'home', 'My UCA en une minute : ce que ça fait.', 'presentation site demo'],
       ['Agenda en ligne', 'app/shell.html#home', 'agenda', 'Ton emploi du temps, sans rien installer.', 'edt cours planning odin calendrier web'],
       ['Aide', 'aide.html', 'help', 'Questions fréquentes et premiers pas.', 'faq probleme question support connexion'],
+      ['Notes Moodle', 'synchro-moodle.html', 'guide', 'Ajoute tes notes Moodle à ton relevé.', 'moodle synchro synchronisation notes valider refuser corbeille coefficient matiere'],
       ['Nouveautés', 'nouveautes.html', 'news', 'Ce qui change à chaque version.', 'version changelog quoi de neuf historique']
     ]],
     ['Installer', [

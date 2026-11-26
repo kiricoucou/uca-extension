@@ -19,7 +19,7 @@ from harness import ROOT, launch  # noqa: E402
 
 results = []
 HOSTS = ("odin.iut.uca.fr", "ent.uca.fr", "edt.uca.fr", "moodle.uca.fr", "mail.uca.fr", "kiricoucou.github.io", "raw.githubusercontent.com")
-NOT_PACKAGED = ("index.html", "aide.html", "install.html", "app-download.html", "mise-a-jour.html", "statut.html", "appli.html", "404.html", "confidentialite.html", "site.css", "site-demo.js", "nouveautes.html", "sitemap.xml", "robots.txt", "en/index.html", "sw.js", "app.webmanifest", "transport.html")
+NOT_PACKAGED = ("index.html", "aide.html", "install.html", "app-download.html", "mise-a-jour.html", "statut.html", "appli.html", "404.html", "confidentialite.html", "site.css", "site-demo.js", "nouveautes.html", "sitemap.xml", "robots.txt", "en/index.html", "sw.js", "app.webmanifest", "synchro-moodle.html", "RAPPORT-PARCOURS-UTILISATEUR.md")
 
 
 def check(name, ok, detail=""):
@@ -114,7 +114,10 @@ def main():
         st = ctx.new_page()
         st.goto(f"{base}/settings.html")
         st.wait_for_timeout(1500)
-        check("paquet magasin : Paramètres sans bouton de mise à jour", not st.locator("#checkUpdBtn").is_visible() and "automatiques" in st.locator("#updState").inner_text(), st.locator("#updState").inner_text())
+        check("paquet magasin : Paramètres avec le bouton « Vérifier la mise à jour » (le navigateur met à jour tout seul)", st.locator("#checkUpdBtn").is_visible() and "Vérifier la mise à jour" in st.locator("#checkUpdBtn").inner_text() and "Installée" in st.locator("#updState").inner_text() and "automatique" in st.locator("#updState").inner_text(), st.locator("#updState").inner_text())
+        st.locator("#checkUpdBtn").click(); st.wait_for_timeout(1500)
+        note = st.locator("#updNote").inner_text()
+        check("paquet magasin : le bouton répond par un message clair (à jour, trouvée, ou extension chargée à la main), sans aucune requête GitHub", bool(note.strip()) and st.locator("#checkUpdBtn").is_enabled() and not any("/main/manifest.json?t=" in u for u in fetched), note)
         check("paquet magasin : pas de bloc « Nouvelle version »", st.locator("#updBlock").count() == 0)
         ctx.close()
 

@@ -244,11 +244,50 @@ $("agendaBtn").addEventListener("click", () => {
 
 /* Mises à jour : même mécanisme que le bandeau de l'agenda (background.js pour l'extension,
    core/env.js pour l'app). Version périmée : la page est bloquée, seul "Mettre à jour" reste. */
+let storeBuild = false;
+const CHECK_BTN_LABEL_STORE = "Vérifier la mise à jour";
+/* Paquet des magasins : le navigateur met l'extension à jour tout seul ; ce bouton lui demande de vérifier tout de suite
+   (chrome.runtime.requestUpdateCheck). Extension chargée à la main (dossier) ou navigateur sans cette API : message clair. */
+async function isSideloaded() {
+  // management.getSelf ne demande aucune permission : « development » = dossier chargé à la main. Les magasins Firefox
+  // n'ajoutent pas d'« update_url » au manifeste, son absence seule ne prouve donc rien.
+  try { if (chrome.management && chrome.management.getSelf) return (await chrome.management.getSelf()).installType === "development"; } catch (e) { /* repli ci-dessous */ }
+  const m = chrome.runtime.getManifest && chrome.runtime.getManifest();
+  return !(m && m.update_url) && !/firefox/i.test(navigator.userAgent);
+}
+async function checkStoreUpdate() {
+  const b = $("checkUpdBtn"), note = $("updNote"), ver = (chrome.runtime.getManifest && chrome.runtime.getManifest().version) || "—";
+  if (b.dataset.reload) { chrome.runtime.reload(); return; }
+  b.disabled = true; b.textContent = "Vérification…"; note.textContent = "";
+  let msg, again = true, link = false;
+  try {
+    if (!chrome.runtime.requestUpdateCheck) throw new Error("no-api");
+    // Une extension venue d'un magasin a un « update_url » dans son manifeste ; sans lui (dossier chargé à la main), le navigateur
+    // répond « à jour » quoi qu'il arrive : on le dit plutôt que d'afficher un faux « à jour ».
+    if (await isSideloaded()) throw new Error("sideload");
+    let r = await chrome.runtime.requestUpdateCheck();
+    const status = Array.isArray(r) ? r[0] : r && r.status, details = Array.isArray(r) ? r[1] : r;
+    if (status === "update_available") { msg = `Mise à jour trouvée${details && details.version ? " (v" + details.version + ")" : ""} : elle s'installe toute seule. Recharge l'extension pour l'appliquer tout de suite.`; b.dataset.reload = "1"; b.textContent = "Recharger l'extension"; b.disabled = false; again = false; }
+    else if (status === "no_update") msg = `À jour ✓ (version ${ver}).`;
+    else if (status === "throttled") msg = "Le navigateur a déjà vérifié il y a peu : réessaie dans quelques minutes.";
+    else msg = `Vérification faite (${status || "réponse vide"}).`;
+  } catch (e) {
+    msg = /no-api/.test(String(e && e.message)) ? `Ton navigateur met cette extension à jour tout seul (version ${ver}).`
+      : `Extension chargée à la main (dossier) : le navigateur ne la met pas à jour tout seul. Version ${ver}. Pour la renouveler, remplace le dossier puis « Recharger » dans la page des extensions.`;
+    link = !/no-api/.test(String(e && e.message));
+  }
+  note.textContent = msg;
+  if (link) { const a = el("a", "", "Page de téléchargement"); a.href = "https://kiricoucou.github.io/uca-extension/extension/"; a.target = "_blank"; a.rel = "noopener noreferrer"; note.append(" ", a); }
+  if (again) { b.disabled = false; b.textContent = CHECK_BTN_LABEL_STORE; }
+}
 function renderUpdate(d) {
   if (d.uca_store_build) {
     // Paquet du magasin : mises à jour automatiques, rien à vérifier ni à appliquer ici.
-    $("updState").textContent = `Installée : ${d.uca_current_version || "—"} · mises à jour automatiques par ton navigateur`;
-    $("checkUpdBtn").hidden = true; $("updErr").textContent = "";
+    const stateText = (sideloaded) => { $("updState").textContent = `Installée : ${d.uca_current_version || "—"} · ` + (sideloaded ? "chargée à la main (pas de mise à jour automatique)" : "mises à jour automatiques par ton navigateur"); };
+    stateText(false);
+    if (chrome.runtime.requestUpdateCheck) isSideloaded().then((v) => { if (v) stateText(true); });
+    storeBuild = true;
+    $("checkUpdBtn").hidden = false; $("checkUpdBtn").textContent = $("checkUpdBtn").dataset.reload ? "Recharger l'extension" : CHECK_BTN_LABEL_STORE; $("updErr").textContent = "";
     const old = $("updBlock"); if (old) old.remove();
     return;
   }
@@ -272,6 +311,7 @@ chrome.storage.local.get(UPD_KEYS).then(renderUpdate);
 chrome.storage.onChanged.addListener((c, area) => { if (area === "local" && UPD_KEYS.some((k) => c[k])) chrome.storage.local.get(UPD_KEYS).then(renderUpdate); });
 const CHECK_BTN_LABEL = "Vérifier les mises à jour";
 $("checkUpdBtn").addEventListener("click", () => {
+  if (storeBuild) { checkStoreUpdate(); return; }
   const b = $("checkUpdBtn"); b.disabled = true; b.textContent = "Vérification…";
   chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" });
   // Jusqu'à 2 essais côté background.js/env.js (environ 1,2 s entre les deux) : on laisse la marge.

@@ -1,22 +1,35 @@
 {
   "app_name": "My UCA",
-  "version": "1.4.30",
-  "version_code": 22,
-  "bundle_version": "1.4.30",
+  "version": "1.4.33",
+  "version_code": 23,
+  "bundle_version": "1.4.33",
   "commit_sha": "main",
   "branch": "main",
-  "published_at": "2026-11-25T19:30:03Z",
+  "published_at": "2026-11-26T09:13:52Z",
   "min_apk_version_code": 16,
   "raw_base_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/",
   "apk_download_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/EdtUca.apk",
   "github_repo_url": "https://github.com/kiricoucou/uca-extension",
   "changelog": [
-    "Nouveau : tes notes Moodle arrivent dans ton relevé. Chaque nouvelle note te propose sa matière et son coefficient : tu la valides ou la refuses, rien n'entre dans tes moyennes sans ton accord.",
-    "Notes validées modifiables, corbeille pour les refusées (restaurables), barre de progression en pourcentage. « Notes Moodle » est activé par défaut (Paramètres pour le désactiver)."
+    "Tes notes Moodle dans ton relevé : l'extension les cherche, tu valides ou refuses chacune avec sa matière et son coefficient. Dans l'app, elles arrivent avec le lien de partage ou le fichier .ucasync.",
+    "Transports refaits : uniquement de vrais passages de bus et de tram, sinon « Indisponible ». Notes Moodle expliquées et corrigées. Première connexion : « Odin, Moodle ou les deux ? »."
   ],
-  "ota_version": "1.4.32",
-  "ota_base_version_code": 22,
+  "ota_version": "1.4.33",
+  "ota_base_version_code": 23,
   "history": [
+    {
+      "version": "1.47.2",
+      "app": "1.4.33",
+      "title": "transports plus clairs, notes Moodle expliquées",
+      "items": [
+        "Transports refaits : uniquement de vrais passages (« En direct » ou « Prévu », sinon « Indisponible »). Les anciens horaires, trajets, trains et covoiturages inventés sont supprimés ;…",
+        "Notes Moodle expliquées : une nouvelle page simple (comment la note, le barème, le commentaire et la matière sont trouvés, et ce que deviennent tes données), reliée à l'aide et à…",
+        "Première connexion : une seule question, « Odin, Moodle ou les deux ? ». Ta réponse reste sur ton appareil.",
+        "Notes Moodle corrigées : le menu des matières ne se referme plus tout seul ; une note validée pendant une recherche n'est plus effacée ; un avertissement signale une note déjà présente…",
+        "Nouvel APK 1.4.33 : à installer par-dessus l'ancien. L'écran Transports y affiche les vrais passages et ouvre les sites officiels dans ton navigateur.",
+        "Une seule extension : l'ancienne « Édition Moodle » de test est retirée. Les paquets installés par un magasin ont aussi un bouton « Vérifier la mise à jour »."
+      ]
+    },
     {
       "version": "1.47.1",
       "app": "1.4.32",
@@ -78,16 +91,6 @@
       "title": "contraste du badge « En cours » (Lumen)",
       "items": [
         "Design Lumen : le vert du badge « En cours » et du statut « justifiée » est plus foncé en thème clair, pour un contraste lisible (norme d'accessibilité), sur l'extension, l'app web et l'APK."
-      ]
-    },
-    {
-      "version": "1.46.43",
-      "app": "1.4.25",
-      "title": "25 widgets, nouvelle page d'installation de l'app",
-      "items": [
-        "App Android : 25 widgets pour l'écran d'accueil (prochain cours, journée, 3 jours, charge de la semaine, devoirs, examens, moyenne, graphique des notes, absences, connexion…). Toucher un…",
-        "Nouvelle page app-download.html (Installer l'app) : choix de l'appareil puis du système, installateur automatique ou ZIP avec tutoriel en images, APK avec confirmation et PWA « non…",
-        "Page de téléchargement de l'extension : bouton « Voir le tutoriel en images » plus visible et animé, étapes plus larges avec moins de texte."
       ]
     }
   ]

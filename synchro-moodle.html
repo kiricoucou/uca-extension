@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notes Moodle — Emploi du temps UCA</title>
+<meta name="description" content="Récupérer tes notes Moodle avec l'extension Emploi du temps UCA : étapes, validation ou refus de chaque note, corbeille, transfert vers le téléphone, confidentialité et dépannage.">
+<link rel="canonical" href="https://kiricoucou.github.io/uca-extension/synchro-moodle.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Emploi du temps UCA">
+<meta property="og:locale" content="fr_FR">
+<meta property="og:title" content="Notes Moodle — Emploi du temps UCA">
+<meta property="og:description" content="Tes notes Moodle dans ton relevé, après ton accord : mode d'emploi pas à pas.">
+<meta property="og:url" content="https://kiricoucou.github.io/uca-extension/synchro-moodle.html">
+<meta property="og:image" content="https://kiricoucou.github.io/uca-extension/app/icons/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="app/icons/icon-192.png">
+<link rel="stylesheet" href="site.css">
+<link rel="stylesheet" href="site-theme.css">
+<style>
+.mdl-page{overflow-wrap:break-word}
+.mdl-page section{scroll-margin-top:80px}
+.mdl-page section > h2{scroll-margin-top:80px;font-size:26px}
+.mdl-page section > h3{font-size:20px;margin:22px 0 8px;scroll-margin-top:80px}
+.mdl-page section > p{color:var(--text-dim)}
+.mdl-flow{list-style:none;margin:0 0 8px;padding:0;display:grid;grid-template-columns:minmax(0,1fr);gap:26px}
+.mdl-flow li{position:relative;background:var(--accent-tint);border:1px solid var(--border);border-radius:14px;padding:10px 14px;text-align:center}
+.mdl-flow li b{display:block}
+.mdl-flow li span{display:block;color:var(--text-dim);font-size:14.5px}
+.mdl-flow li + li::before{content:"\2193";position:absolute;left:0;right:0;top:-25px;color:var(--accent);font-weight:800;font-size:18px;line-height:24px}
+.mdl-ex{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px;margin:0 0 12px}
+.mdl-ex p{margin:0 0 8px;font-weight:700}
+.mdl-ex dl{display:grid;grid-template-columns:minmax(110px,max-content) minmax(0,1fr);gap:4px 14px;margin:0}
+.mdl-ex dt{color:var(--text-dim)}
+.mdl-ex dd{margin:0;min-width:0}
+.mdl-steps{list-style:none;counter-reset:mdl;margin:0;padding:0;display:grid;gap:10px}
+.mdl-steps > li{counter-increment:mdl;position:relative;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:14px 16px 14px 62px}
+.mdl-steps > li::before{content:counter(mdl);position:absolute;left:16px;top:13px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font-weight:800}
+.mdl-steps h3{margin:3px 0 6px;font-size:20px}
+.mdl-steps p,.mdl-steps ul{margin:0 0 8px;color:var(--text-dim)}
+.mdl-steps ul{padding-left:20px}
+.mdl-steps li li{margin:3px 0}
+.mdl-steps > li > :last-child{margin-bottom:0}
+.mdl-page .list{color:var(--text-dim);padding-left:22px}
+.mdl-page .list li{margin:5px 0}
+.mdl-page a:not(.btn){color:var(--accent)}
+.mdl-page .note a{font-weight:600}
+@media (max-width:520px){
+  .mdl-steps > li{padding:56px 14px 14px}
+  .mdl-steps > li::before{left:14px;top:14px}
+  .mdl-ex dl{grid-template-columns:minmax(0,1fr)}
+  .mdl-ex dd{margin-bottom:6px}
+}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Emploi du temps UCA"><img src="app/icons/icon-192.png" alt=""><span>Emploi du temps UCA</span></a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="index.html" class="hide-sm">Accueil</a>
+      <a href="index.html#comparatif">Comparatif</a>
+      <a href="nouveautes.html" class="hide-sm">Nouveautés</a>
+      <a href="aide.html">Aide</a>
+      <a href="app/index.html">Agenda en ligne</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap help-layout">
+  <nav class="toc" aria-label="Sommaire">
+    <h2>Sommaire</h2>
+    <a href="#principe">En bref</a>
+    <a href="#etapes">Pas à pas</a>
+    <a href="#comment-ca-marche">Comment ça marche</a>
+    <a href="#gerer">Modifier et corbeille</a>
+    <a href="#automatique">Synchro automatique</a>
+    <a href="#telephone">Sur le téléphone</a>
+    <a href="#premiere-connexion">Première connexion</a>
+    <a href="#confidentialite">Confidentialité</a>
+    <a href="#depannage">Dépannage</a>
+    <a href="#faq">Questions fréquentes</a>
+  </nav>
+
+  <main class="help mdl-page">
+    <h1>Notes Moodle</h1>
+    <p class="lead">Retrouve tes notes Moodle dans ton relevé. Tu vérifies chaque note avant qu'elle compte.</p>
+
+    <section id="principe" aria-labelledby="h-principe">
+      <h2 id="h-principe">En bref</h2>
+      <ul class="list">
+        <li>L'<b>extension</b> lit tes notes sur Moodle, avec la session ouverte dans ton navigateur. Elle ne modifie rien sur Moodle ni sur Odin.</li>
+        <li>Chaque note trouvée est d'abord <b>en attente</b>. Tu la <b>valides</b> ou tu la <b>refuses</b>.</li>
+        <li>Seules les notes <b>validées</b> entrent dans ton tableau de notes et peuvent compter dans tes moyennes (si Odin a déjà publié la note d'une UE, c'est la sienne qui reste utilisée). Cela permet d'écarter, par exemple, les contrôles fictifs présents sur Moodle.</li>
+        <li>Chaque note est ramenée <b>sur 20</b> (note ÷ barème × 20). Dans le tableau, son nom se termine par « · Moodle (sur 20.0) ».</li>
+      </ul>
+      <p class="note">La recherche sur Moodle se fait <b>uniquement dans l'extension</b>. L'app Android (APK), l'app installée et l'agenda en ligne ne cherchent pas sur Moodle : ils <a href="#telephone">reçoivent tes notes depuis l'extension</a>. Les moyennes affichées sont des estimations : seules les notes officielles de l'université font foi.</p>
+    </section>
+
+    <section id="etapes" aria-labelledby="h-etapes">
+      <h2 id="h-etapes">Pas à pas</h2>
+      <ol class="mdl-steps">
+        <li>
+          <h3>Installe ou mets à jour l'extension</h3>
+          <p>Sur ton ordinateur : <a href="extension/">télécharge l'extension</a> (<a href="installation.html">installation en images</a>). Si tu l'as déjà, <a href="statut.html">vérifie qu'elle est à jour</a>.</p>
+          <p>Vérifie que le réglage est activé : <b>Paramètres</b> → <b>Alertes</b> → <b>Notes Moodle</b>. Il est activé par défaut, sauf si tu as répondu « Odin » à la <a href="#premiere-connexion">question de première connexion</a>.</p>
+        </li>
+        <li>
+          <h3>Connecte-toi à Moodle dans le même navigateur</h3>
+          <p>Utilise le navigateur où l'extension est installée et connecte-toi à Moodle comme d'habitude. L'adresse change selon l'année universitaire. Les adresses prises en charge sont <code>moodle2026.uca.fr</code>, <code>moodle2027.uca.fr</code> et <code>moodle2028.uca.fr</code>.</p>
+        </li>
+        <li>
+          <h3>Clique sur « Chercher sur Moodle »</h3>
+          <p>Dans l'agenda de l'extension, ouvre la fenêtre <b>Notes</b>, puis clique sur <b>Chercher sur Moodle</b>.</p>
+          <ul>
+            <li>Si le navigateur demande l'accès au site Moodle, accepte.</li>
+            <li>Une barre de progression montre l'avancement. L'extension peut utiliser un onglet Moodle déjà ouvert, ou en ouvrir un en arrière-plan puis le refermer.</li>
+            <li>À la fin, un message indique le nombre de notes lues et le nombre de notes à confirmer. Près du bouton, « Dernière recherche » indique de quand date la dernière lecture réussie.</li>
+          </ul>
+        </li>
+        <li>
+          <h3>Vérifie la matière et le coefficient</h3>
+          <p>Chaque note en attente a sa carte, avec son nom, sa valeur et, s'il existe, le commentaire laissé sur Moodle.</p>
+          <ul>
+            <li><b>Matière</b> : l'extension en propose une d'après le code du cours (R1.07, SAE1.05…), sinon d'après la ressemblance des noms. Si rien ne correspond, elle propose <b>Créer une nouvelle matière</b>. Tu peux toujours changer.</li>
+            <li><b>Coefficient</b> : il vaut <b>1 par défaut</b>. Il n'est pas lu sur Moodle : saisis le bon (celui annoncé par ton enseignant, par exemple).</li>
+          </ul>
+          <p>Une nouvelle matière est rangée à part, dans « Matières ajoutées (Moodle) ». Ce groupe compte dans la moyenne générale avec un coefficient 1.</p>
+        </li>
+        <li>
+          <h3>Valide ou refuse</h3>
+          <ul>
+            <li><b>Valider la note</b> : elle entre dans le tableau et dans les calculs.</li>
+            <li><b>Refuser la note</b> : elle va dans la corbeille et ne compte pas.</li>
+          </ul>
+          <p>La fenêtre affiche jusqu'à 20 notes en attente à la fois. Les suivantes apparaissent au fur et à mesure.</p>
+        </li>
+      </ol>
+      <p class="note" style="margin-top:12px"><b>Évite les doublons.</b> Si une note validée apparaît ensuite aussi dans ton relevé Odin, les deux sont comptées. Retire alors la note Moodle avec <b>Ignorer la note</b> (voir ci-dessous).</p>
+    </section>
+
+    <section id="comment-ca-marche" aria-labelledby="h-how">
+      <h2 id="h-how">Comment ça marche, expliqué simplement</h2>
+      <p>Cette partie explique ce que fait le programme. Tu n'as pas besoin de la lire pour t'en servir.</p>
+      <ol class="mdl-flow" aria-label="Schéma de la recherche, en six étapes">
+        <li><b>1. Ta session Moodle</b><span>Déjà ouverte dans ton navigateur</span></li>
+        <li><b>2. La page « Notes » de ton profil</b><span>Elle donne la liste de tes cours</span></li>
+        <li><b>3. Le rapport de notes de chaque cours</b><span>Un cours après l'autre</span></li>
+        <li><b>4. Lecture du tableau</b><span>Nom, note, barème, commentaire</span></li>
+        <li><b>5. Comparaison</b><span>Nouvelle, modifiée ou déjà connue ?</span></li>
+        <li><b>6. Ta décision</b><span>Tu vérifies, puis tu valides ou tu refuses</span></li>
+      </ol>
+
+      <div class="mdl-ex" role="group" aria-label="Exemple inventé">
+        <p>Exemple inventé (ce n'est pas une vraie note)</p>
+        <dl>
+          <dt>Cours</dt><dd>« R1.99 - Cuisine des réseaux »</dd>
+          <dt>Évaluation</dt><dd>« Contrôle gâteau »</dd>
+          <dt>Note</dt><dd>7,5</dd>
+          <dt>Barème</dt><dd>de 0 à 10</dd>
+          <dt>Commentaire</dt><dd>« Bonne recette. »</dd>
+          <dt>Sur 20</dt><dd>7,5 ÷ 10 × 20 = <b>15 / 20</b></dd>
+        </dl>
+      </div>
+
+      <h3>1. Quelles pages sont lues, et dans quel ordre</h3>
+      <p>L'extension se sert de la session que tu as déjà ouverte : pour Moodle, la demande vient de ton navigateur, comme quand tu ouvres la page toi-même.</p>
+      <ol class="list">
+        <li>Elle choisit l'adresse de Moodle : d'abord celle de l'année universitaire en cours.</li>
+        <li>Elle utilise un onglet Moodle déjà ouvert et connecté, ou en ouvre un en arrière-plan. Le programme de lecture s'exécute dans cet onglet.</li>
+        <li>Elle lit la page « Notes » de ton profil (<code>/grade/report/overview/index.php</code>). Elle y trouve tes cours et ton numéro d'utilisateur Moodle.</li>
+        <li>Elle lit ensuite, un par un, le rapport de notes de chaque cours (<code>/course/user.php?mode=grade</code>), avec une courte pause entre deux cours, pour 60 cours au maximum.</li>
+      </ol>
+      <p>Si cette méthode échoue, l'extension peut demander les deux mêmes types de pages directement, sans passer par un onglet. Une session expirée ou un site indisponible arrête la recherche.</p>
+
+      <h3>2. Comment le programme trouve la note</h3>
+      <p>Une page web est écrite en code HTML. Dans le rapport d'un cours, le programme cherche le tableau des notes de Moodle, puis le lit ligne par ligne. Dans chaque ligne, il prend le nom de l'activité et les cases « note », « plage » (le barème) et « feedback » (le commentaire).</p>
+      <p>Il ignore les lignes sans note (« - »), sans chiffre ou sans barème utilisable, ainsi que les catégories et les totaux. Dans l'exemple, il retient « Contrôle gâteau » et 7,5.</p>
+
+      <h3>3. Le barème et la conversion sur 20</h3>
+      <p>La case « plage » donne par exemple « 0–10 ». Le programme prend le second nombre, ici 10 : c'est le barème. Il calcule ensuite <b>note ÷ barème × 20</b>. Le résultat est gardé avec trois décimales au maximum. Si la note est écrite en pourcentage, il retrouve d'abord les points : 75 % de 10 donne 7,5, soit 15 / 20.</p>
+
+      <h3>4. Le commentaire</h3>
+      <p>Le texte de la case « feedback », s'il y en a un, est recopié sans la mise en forme. Il s'affiche avec la note et peut apparaître dans la notification (son début seulement). Il ne change aucun calcul.</p>
+
+      <h3>5. La matière</h3>
+      <ol class="list">
+        <li><b>Le code du cours</b> : le programme cherche un code comme R1.99 ou SAE1.05, dans le nom du cours puis dans celui de l'évaluation. Il cherche la matière qui porte le même code.</li>
+        <li><b>La ressemblance des noms</b> : sinon, il compare les mots importants des noms. Il propose la matière la plus proche seulement si elle ressemble assez.</li>
+        <li><b>Une nouvelle matière</b> : sinon, il propose d'en créer une, à partir du nom du cours.</li>
+      </ol>
+      <p>Les matières comparées sont celles de ton relevé Odin et celles que tu as déjà créées avec des notes Moodle validées. Ce n'est qu'une proposition : <b>c'est toi qui confirmes</b>, et tu choisis aussi le coefficient.</p>
+
+      <h3>6. Nouvelle note ou note modifiée ?</h3>
+      <p>L'extension reconnaît une évaluation grâce au numéro du cours sur Moodle et au nom de l'activité. Elle compare ce qu'elle lit avec ce qu'elle a gardé.</p>
+      <ul class="list">
+        <li><b>Évaluation inconnue</b> : nouvelle note, en attente.</li>
+        <li><b>Même note et même barème</b> : ta décision est conservée. Un commentaire modifié est mis à jour sans nouvelle validation.</li>
+        <li><b>Note ou barème différent</b> (7,5 devient 8) : la note repasse en attente.</li>
+        <li><b>Activité renommée</b> : elle est vue comme une nouvelle note. L'ancienne reste enregistrée : vérifie qu'elle n'est pas comptée deux fois.</li>
+      </ul>
+      <p>L'extension mémorise au maximum 400 notes Moodle. Au-delà, elle oublie les plus anciennes, même validées : elles sortent des calculs et peuvent revenir en attente à la recherche suivante.</p>
+
+      <h3 id="mes-donnees">« Et mes données ? »</h3>
+      <ul class="list">
+        <li><b>Mot de passe</b> : pour les notes Moodle, l'extension ne te le demande pas et son programme de lecture ne le lit pas. Tu te connectes sur la page de connexion de l'université. Après <b>Me connecter à Moodle</b>, elle surveille l'adresse de cet onglet pour savoir quand tu es arrivé sur Moodle.</li>
+        <li><b>Cookies</b> : avant une recherche automatique par onglet, elle demande au navigateur la liste des cookies de l'adresse Moodle et regarde <b>leur nom</b>, pour savoir si un cookie <code>MoodleSession</code> existe. Le navigateur lui donne accès aux cookies complets, mais ce code n'utilise pas leur valeur, ne l'enregistre pas et ne l'envoie pas. Pendant la lecture, c'est le navigateur qui joint les cookies à ses demandes vers Moodle. La déconnexion de l'extension ne supprime pas les cookies Moodle.</li>
+        <li><b>Modifications sur Moodle</b> : la recherche demande à lire des pages. Elle ne remplit aucun formulaire et n'envoie aucune modification de note. Ces visites se font avec ton compte, et Moodle peut les enregistrer comme les autres.</li>
+        <li><b>Autres pages</b> : le programme de lecture demande la page « Notes » et les rapports de notes des cours, pas tes messages ni tes devoirs rendus.</li>
+        <li><b>Stockage</b> : les notes sont gardées dans le stockage de l'extension, dans ton navigateur. Le journal d'activité (la cloche) peut aussi contenir le texte d'une nouvelle note. L'historique de ta moyenne tient compte des notes validées. Si tu importes tes données sur un autre appareil, il en garde une copie.</li>
+        <li><b>Envoi</b> : la recherche Moodle n'envoie pas tes notes à un serveur du projet ni à un tiers. Le pont entre l'extension et le site ne transmet pas la liste des notes Moodle.</li>
+        <li><b>Partage</b> : le lien de partage, le QR code animé et le fichier <code>.ucasync</code> <b>contiennent tes notes</b>. C'est toi qui les envoies. Ne les partage pas avec d'autres personnes. Le lien est chiffré, mais celui qui a le lien et le code peut le lire pendant sa durée de validité. Le QR code et le fichier ne sont pas chiffrés. Une messagerie ou un service de stockage que tu utilises pour les envoyer les reçoit aussi.</li>
+        <li><b>Vérifier</b> : le <a href="https://github.com/kiricoucou/uca-extension">code est public</a>. La lecture de Moodle se trouve dans <code>core/moodle.js</code> et <code>background.js</code>, le partage dans <code>core/transfer.js</code>, les autorisations dans <code>manifest.json</code>.</li>
+      </ul>
+
+      <h3>Les limites</h3>
+      <p class="note">Le programme dépend de la présentation des pages de Moodle. Si elle change, ou si un cours ne se charge pas, une note peut être <b>mal lue ou ne pas être détectée, parfois sans message d'erreur</b>. Vérifie toujours tes notes sur Moodle. La liste de l'extension n'est pas un relevé officiel.</p>
+    </section>
+
+    <section id="gerer" aria-labelledby="h-gerer">
+      <h2 id="h-gerer">Modifier une note et utiliser la corbeille</h2>
+      <p>Dans la fenêtre <b>Notes</b>, clique sur <b>Notes Moodle déjà traitées</b>. Le bouton apparaît dès qu'une note est validée ou refusée.</p>
+      <details class="qa" open><summary>Modifier une note validée</summary><div class="a">
+        <p>Change la matière ou le coefficient, puis choisis :</p>
+        <ul>
+          <li><b>Enregistrer les changements</b> ;</li>
+          <li><b>Ignorer la note</b> : elle va dans la corbeille ;</li>
+          <li><b>Remettre en attente</b> : elle sort des calculs jusqu'à une nouvelle validation.</li>
+        </ul>
+      </div></details>
+      <details class="qa" open><summary>Restaurer ou supprimer une note refusée</summary><div class="a">
+        <p>Ouvre la <b>Corbeille</b> (bouton 🗑).</p>
+        <ul>
+          <li><b>Restaurer</b> : la note repasse en attente. Tu peux la valider dans la fenêtre Notes.</li>
+          <li><b>Supprimer</b> : elle disparaît de la corbeille et ne peut plus être restaurée depuis celle-ci.</li>
+          <li><b>Vider la corbeille</b> : supprime toutes les notes de la corbeille, après un second clic sur « Confirmer : tout supprimer ».</li>
+        </ul>
+        <p>Une note refusée ou supprimée n'est pas proposée à nouveau tant que son nom, sa valeur et son barème restent les mêmes sur Moodle.</p>
+      </div></details>
+    </section>
+
+    <section id="automatique" aria-labelledby="h-auto">
+      <h2 id="h-auto">Ce qui se passe à la synchro automatique</h2>
+      <ul class="list">
+        <li>Quand le réglage <b>Notes Moodle</b> est activé, la recherche Moodle suit chaque synchro <b>Odin réussie</b>, manuelle ou automatique. Si la synchro Odin échoue (session expirée, par exemple), Moodle n'est pas consulté : utilise <b>Chercher sur Moodle</b>.</li>
+        <li>En synchro automatique, si le navigateur n'a pas de session Moodle, aucun onglet n'est ouvert. Un message dans la fenêtre Notes te propose de te connecter.</li>
+        <li>Avec une session, l'extension peut ouvrir un onglet Moodle en arrière-plan, puis le refermer.</li>
+        <li>Aucune note n'est jamais validée automatiquement.</li>
+        <li>Une note nouvelle, ou dont la valeur ou le barème a changé, passe <b>en attente</b>, même si tu l'avais validée, refusée ou supprimée. Une note validée qui change <b>sort donc des moyennes</b> jusqu'à ce que tu la valides à nouveau.</li>
+        <li>Après une synchro automatique, si la notification <b>Nouvelle note</b> est activée et que ton système l'autorise, tu es prévenu. À la première lecture, ou au-delà de 3 nouveautés, une seule notification les résume. Après une synchro ou une recherche lancée à la main, aucune notification de note Moodle n'est affichée par le système.</li>
+        <li>Sur Chrome et Edge (ordinateur), la notification d'une seule note a deux boutons. <b>Refuser la note</b> la refuse directement. <b>Valider la note</b> ouvre sa carte : vérifie la matière et le coefficient, puis valide.</li>
+      </ul>
+    </section>
+
+    <section id="telephone" aria-labelledby="h-tel">
+      <h2 id="h-tel">Avoir ses notes Moodle sur le téléphone</h2>
+      <p class="note">L'APK et l'app installée (PWA) <b>ne cherchent pas sur Moodle</b>. Fais la recherche dans l'extension, sur ton ordinateur, puis envoie tes données. Les notes validées, les notes en attente et la corbeille sont transférées.</p>
+      <p>Pour ce transfert, ton emploi du temps Odin doit déjà avoir été synchronisé dans l'extension.</p>
+      <ol class="mdl-steps">
+        <li>
+          <h3>Sur l'ordinateur : cherche et valide</h3>
+          <p>Lance la recherche et traite tes notes <b>avant</b> de créer le lien ou le fichier : il contient l'état du moment.</p>
+        </li>
+        <li>
+          <h3>Choisis comment envoyer tes données</h3>
+          <ul>
+            <li><b>Lien de partage</b> (APK et app installée) : dans la fenêtre de l'extension, <b>Générer le lien</b> ; ou, dans l'agenda, <b>Exporter</b> → <b>Copier un lien pour l'app</b>.</li>
+            <li><b>QR code animé</b> (app installée) : <b>Exporter</b> → <b>Afficher le QR code</b>, puis <b>Afficher le code animé</b>.</li>
+            <li><b>Fichier <code>.ucasync</code></b> (app installée) : dans la même fenêtre, <b>Fichier de secours (.ucasync)</b>.</li>
+          </ul>
+        </li>
+        <li>
+          <h3>Sur le téléphone : importe</h3>
+          <ul>
+            <li><b>APK Android</b> : dans le menu de l'agenda, <b>Importer un lien de partage</b>, puis colle le lien et saisis le code de partage.</li>
+            <li><b>App installée</b> : <b>Importer</b>, puis ouvre ou colle le lien, scanne le code animé ou choisis le fichier. Un lien chiffré demande ton code de partage.</li>
+          </ul>
+        </li>
+      </ol>
+      <p style="margin-top:12px">Sur le téléphone, tu peux valider, modifier ou refuser les notes reçues. Mais ces choix <b>ne reviennent pas sur l'ordinateur</b>, et un nouvel import contenant des notes Moodle les remplace. Fais de préférence tes choix sur l'ordinateur. Après chaque changement, crée un nouveau lien ou un nouveau fichier.</p>
+      <p><a href="aide.html#partage">Tout savoir sur les liens de partage</a></p>
+    </section>
+
+    <section id="premiere-connexion" aria-labelledby="h-first">
+      <h2 id="h-first">La question « Odin, Moodle ou les deux ? »</h2>
+      <p>La question « Tu utilises quoi à l'UCA ? » apparaît au premier clic sur <b>Synchroniser</b> dans l'agenda (sur l'APK, à la première ouverture de l'agenda). Ta réponse reste sur l'appareil.</p>
+      <ul class="list">
+        <li><b>Odin</b> : le réglage <b>Notes Moodle</b> est désactivé.</li>
+        <li><b>Moodle</b> ou <b>Les deux</b> : le réglage <b>Notes Moodle</b> est activé.</li>
+        <li><b>Plus tard</b> : rien n'est enregistré, la question reviendra.</li>
+      </ul>
+      <p>La réponse « Moodle » ne désactive pas Odin : le bouton <b>Synchroniser</b> continue de s'adresser à Odin. Pour ne lire que Moodle, utilise <b>Chercher sur Moodle</b>. Sans relevé de notes Odin, tu peux traiter les notes Moodle, mais le tableau et les moyennes ne s'affichent pas.</p>
+      <p>Pour changer d'avis : <b>Paramètres</b> → <b>Alertes</b> → <b>Notes Moodle</b>.</p>
+    </section>
+
+    <section id="confidentialite" aria-labelledby="h-priv">
+      <h2 id="h-priv">Confidentialité</h2>
+      <ul class="list">
+        <li>Tes pages de notes Moodle sont <b>lues dans ton navigateur</b>, avec ta propre session. L'extension ne te demande pas ton mot de passe : tu te connectes sur la page de connexion habituelle.</li>
+        <li>Avant une recherche automatique, l'extension regarde s'il existe un cookie de session Moodle. <a href="#mes-donnees">Détail de ce qu'elle lit</a>.</li>
+        <li>Les informations conservées (cours, nom de l'évaluation, note, barème, commentaire, matière, coefficient et ta décision) sont enregistrées sur ton appareil.</li>
+        <li><b>Rien n'est envoyé au projet ni à un tiers.</b> Tes notes ne quittent l'appareil que si tu les transfères toi-même.</li>
+        <li>Le <b>lien de partage</b> est chiffré. Le <b>fichier <code>.ucasync</code></b> ne l'est pas, et le <b>QR code animé</b> non plus : ne les montre pas et ne les envoie pas à d'autres personnes. Ces trois moyens contiennent aussi tes autres données (emploi du temps, notes…).</li>
+        <li>La réinitialisation de l'agenda, dans les Paramètres, efface aussi les notes Moodle et tes décisions.</li>
+      </ul>
+      <p><a href="confidentialite.html">Politique de confidentialité</a></p>
+    </section>
+
+    <section id="depannage" aria-labelledby="h-fix">
+      <h2 id="h-fix">Dépannage</h2>
+      <details class="qa" open id="session"><summary>« Session Moodle introuvable »</summary><div class="a">
+        <ol>
+          <li>Dans le message, clique sur <b>Me connecter à Moodle</b>. La page de connexion s'ouvre dans un nouvel onglet.</li>
+          <li>Connecte-toi, avec la double authentification si elle est demandée. La recherche reprend toute seule à ton arrivée sur Moodle, si la connexion prend moins de 20 minutes. Garde le même onglet.</li>
+          <li>Sinon, clique sur <b>Relancer la recherche</b>.</li>
+        </ol>
+        <p>Utilise bien le même navigateur et le même profil que ceux de l'extension.</p>
+      </div></details>
+      <details class="qa"><summary>Je ne vois pas le bouton « Chercher sur Moodle »</summary><div class="a">
+        <ul>
+          <li>Vérifie que tu es dans l'agenda de l'<b>extension</b>. Le bouton n'existe pas dans l'APK, l'app installée ni l'agenda en ligne.</li>
+          <li>Active <b>Paramètres</b> → <b>Alertes</b> → <b>Notes Moodle</b>.</li>
+          <li><a href="statut.html">Mets l'extension à jour</a>.</li>
+        </ul>
+      </div></details>
+      <details class="qa"><summary>« Autorisation d'accès à Moodle manquante »</summary><div class="a">
+        <p>Clique sur <b>Autoriser l'accès à Moodle</b> et accepte. Si cela ne suffit pas, ouvre la page des extensions de ton navigateur (<code>chrome://extensions</code> sur Chrome), puis les détails de l'extension, et autorise l'accès au site Moodle.</p>
+      </div></details>
+      <details class="qa"><summary>Mon Moodle a une autre adresse</summary><div class="a">
+        <p>Seules les adresses <code>moodle2026.uca.fr</code>, <code>moodle2027.uca.fr</code> et <code>moodle2028.uca.fr</code> sont prises en charge. L'extension essaie en priorité celle de l'année universitaire en cours (elle change au 1<sup>er</sup> août). Les notes d'un autre Moodle ne sont pas lues.</p>
+      </div></details>
+      <details class="qa"><summary>« Moodle est indisponible », « Lecture de Moodle impossible » ou « Moodle semble avoir changé sa page de notes »</summary><div class="a">
+        <p>Vérifie que ta page de notes s'ouvre sur Moodle, puis clique sur <b>Réessayer</b> un peu plus tard. Si Moodle a changé sa page et que le message persiste, <a href="aide.html#contact">signale le problème</a>.</p>
+      </div></details>
+      <details class="qa"><summary>Une note manque</summary><div class="a">
+        <ul>
+          <li>Elle doit apparaître dans le rapport de notes d'un de tes cours sur Moodle, avec une valeur chiffrée et un barème.</li>
+          <li>Les activités sans note, les notes sans chiffre, les catégories et les totaux sont ignorés.</li>
+          <li>La recherche porte sur 60 cours au maximum. Un cours qui ne se charge pas est ignoré pour cette fois : relance la recherche.</li>
+          <li>Regarde aussi dans les notes déjà traitées et dans la corbeille.</li>
+        </ul>
+      </div></details>
+    </section>
+
+    <section id="faq" aria-labelledby="h-faq">
+      <h2 id="h-faq">Questions fréquentes</h2>
+      <details class="qa"><summary>Une note Moodle peut-elle modifier ma moyenne sans mon accord ?</summary><div class="a"><p>Non : une note n'est ajoutée que si tu la valides. En revanche, une note validée dont la valeur ou le barème change sur Moodle est retirée des calculs jusqu'à ta nouvelle validation.</p></div></details>
+      <details class="qa"><summary>Comment la moyenne est-elle calculée après une validation ?</summary><div class="a"><p>La moyenne de la matière est recalculée à partir de ses évaluations et de leurs coefficients. Si Odin a déjà publié la note de l'UE, cette note d'UE reste utilisée. C'est une estimation.</p></div></details>
+      <details class="qa"><summary>Le coefficient vient-il de Moodle ?</summary><div class="a"><p>Non. Il vaut 1 par défaut : vérifie-le avant de valider. Tu peux le modifier ensuite.</p></div></details>
+      <details class="qa"><summary>L'extension peut-elle changer mes notes sur Moodle ?</summary><div class="a"><p>Non. Elle lit les pages de notes. Valider ou refuser ne change que ce que tu vois dans l'outil.</p></div></details>
+      <details class="qa"><summary>Puis-je tout faire depuis mon téléphone ?</summary><div class="a"><p>Pas avec l'APK ni l'app installée : elles ne cherchent pas sur Moodle. <a href="#telephone">Envoie-leur tes données depuis l'extension</a>.</p></div></details>
+      <details class="qa"><summary>Est-ce un service officiel ?</summary><div class="a"><p>Non. Emploi du temps UCA est un projet étudiant, non affilié à l'Université Clermont Auvergne.</p></div></details>
+      <p style="margin-top:14px"><a href="aide.html">Voir toute l'aide</a></p>
+    </section>
+  </main>
+</div>
+
+<footer class="site">
+  <div class="wrap">
+    <span>Emploi du temps UCA — projet étudiant, non affilié à l'Université Clermont Auvergne.</span>
+    <span><a href="index.html">Accueil</a> · <a href="aide.html">Aide</a> · <a href="confidentialite.html">Confidentialité</a> · <a href="https://github.com/kiricoucou/uca-extension">Code source</a></span>
+  </div>
+</footer>
+
+<script>
+/* Lien direct vers une question repliée (#session…) : l'ouvrir. */
+(function () {
+  function openTarget() {
+    var t = location.hash && document.getElementById(location.hash.slice(1));
+    if (t && t.tagName === "DETAILS") t.open = true;
+  }
+  window.addEventListener("hashchange", openTarget);
+  openTarget();
+})();
+</script>
+<script src="site-fx.js"></script>
+<script src="site-nav.js" defer></script>
+</body>
+</html>

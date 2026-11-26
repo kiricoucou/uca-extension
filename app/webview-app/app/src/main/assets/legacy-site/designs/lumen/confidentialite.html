@@ -41,7 +41,7 @@
   <ul>
     <li><strong>Extension :</strong> dans le stockage local de ton profil navigateur
       (<code>chrome.storage.local</code> ou l'équivalent Firefox) : emploi du temps, notes
-      personnelles, devoirs que tu saisis, absences, relevé de notes, réglages, couleurs de matières.</li>
+      personnelles, devoirs que tu saisis, absences, relevé de notes, notes Moodle et tes décisions, historique de moyenne, réglages, couleurs de matières.</li>
     <li><strong>Site et application web :</strong> dans le <code>localStorage</code> de ton navigateur
       (ou celui de l'application installée), sur ton appareil. Les pages du site sont servies par
       GitHub Pages ; elles ne reçoivent jamais tes données.</li>
@@ -69,6 +69,9 @@
     <li><strong>Mises à jour</strong> (paquet de développement seulement) : lecture du fichier public
       <code>manifest.json</code> sur <code>raw.githubusercontent.com</code> pour connaître la dernière version.
       Les paquets des magasins (addons.mozilla.org, Chrome Web Store) ne le font pas : le magasin met à jour tout seul.</li>
+    <li><code>api.t2c.fr</code> (page « Transports » seulement) : quand tu choisis un arrêt (ou à l'ouverture de la page si tu as un arrêt favori, puis toutes les 30 secondes tant qu'elle est affichée), le code de l'arrêt et l'heure sont envoyés au serveur de T2C, qui voit aussi ton adresse IP comme tout site visité. Aucune donnée de ton compte, de tes notes ou de ton emploi du temps n'est envoyée.</li>
+    <li><code>edt.uca.fr</code> : lire l'emploi du temps de ta classe, si tu utilises cette fonction.</li>
+    <li><strong>Mises à jour hors magasin :</strong> lecture du numéro de version et téléchargement de l'extension (avec sa signature) depuis <code>raw.githubusercontent.com</code>, et ouverture éventuelle de la page de mise à jour sur <code>kiricoucou.github.io</code>. L'application Android télécharge aussi les mises à jour de ses pages depuis <code>raw.githubusercontent.com</code>.</li>
     <li>Aucune autre requête. Aucun service d'analyse, aucune police ou bibliothèque chargée depuis Internet.</li>
   </ul>
 </div>
@@ -76,7 +79,7 @@
 <h2>Partage vers le téléphone</h2>
 <div class="card">
   <p>Le bouton « Envoyer vers le téléphone » crée un lien dont les données sont <strong>chiffrées</strong>
-  (AES-GCM 256, clé dérivée du code de partage choisi par toi) et placées après le <code>#</code> de l'adresse :
+  (AES-GCM 256, clé dérivée de ton code de partage) et placées après le <code>#</code> de l'adresse :
   cette partie n'est jamais envoyée dans une requête HTTP, GitHub Pages ne la voit pas. Sans le code de partage,
   le lien est illisible ; il expire après la durée que tu choisis (1 heure à 7 jours). Tu décides à qui tu envoies le lien.</p>
 </div>
@@ -85,7 +88,7 @@
 <div class="card">
   <ul>
     <li><code>storage</code> : enregistrer tes données et réglages sur ton appareil.</li>
-    <li>Accès à <code>moodle2026.uca.fr</code> (et 2027, 2028) : lire tes pages de notes Moodle, uniquement quand tu lances la recherche.</li>
+    <li>Accès à <code>moodle2026.uca.fr</code> (et 2027, 2028) : lire tes pages de notes Moodle quand tu cliques sur « Chercher sur Moodle » et après chaque synchro réussie, automatique comprise (désactivable avec le réglage « Notes Moodle »). Pour la recherche automatique, l'extension vérifie seulement qu'un cookie de session Moodle existe, sans utiliser sa valeur.</li>
     <li><code>scripting</code> + accès à <code>ent.uca.fr</code> et <code>odin.iut.uca.fr</code> : ouvrir ces pages en
       arrière-plan et lire leur texte.</li>
     <li><code>cookies</code> : lire la durée restante de ta session UCA et, quand tu cliques sur « Déconnexion »,
@@ -93,13 +96,13 @@
     <li><code>alarms</code> : rappels de cours, synchronisation automatique, pastille de l'icône.</li>
     <li><code>notifications</code> : rappels et alertes (désactivables dans Paramètres). Absente de Firefox pour Android.</li>
     <li>Script sur <code>kiricoucou.github.io/uca-extension/</code> : relier le site/app à l'extension (bouton
-      « Synchroniser » du site). Il ne transmet rien d'autre.</li>
+      « Synchroniser » du site). Il relie le site à l'extension : synchronisation, état de la session, passages T2C et, avec ton autorisation, version installée et mise à jour. Il ne transmet pas la liste des notes Moodle.</li>
   </ul>
 </div>
 
 <h2>Suppression de tes données</h2>
 <div class="card">
-  <p>Paramètres → Données → « Réinitialiser l'agenda » efface cours, notes, absences et relevé (annulable 10 minutes).
+  <p>Paramètres → Données → « Réinitialiser l'agenda » efface cours, notes (Moodle comprises, avec tes décisions), devoirs, absences et relevé (annulable 10 minutes).
   Désinstaller l'extension, ou effacer les données du site dans les réglages du navigateur, supprime tout
   immédiatement : rien n'est conservé ailleurs.</p>
 </div>
@@ -112,6 +115,6 @@
   ouvre un ticket sur le dépôt.</p>
 </div>
 
-<footer>Dernière mise à jour : 2026-10-22.</footer>
+<footer>Dernière mise à jour : 2026-11-26.</footer>
 </body>
 </html>

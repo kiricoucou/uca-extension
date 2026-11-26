@@ -1,6 +1,7 @@
 index.html
 404.html
 aide.html
+synchro-moodle.html
 install.html
 app-download.html
 mise-a-jour.html

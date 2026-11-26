@@ -166,8 +166,10 @@ function diff(store, scraped, releve, now) {
   const firstRun = !store || !store.items;
   const items = Object.assign({}, firstRun ? {} : store.items);
   const fresh = [];
+  const seen = new Map();   // évaluations de même nom dans un même cours : « …|2 », « …|3 » (la première garde son identifiant)
   scraped.forEach((g) => {
-    const id = itemId(g.courseId, g.title), old = items[id];
+    const base = itemId(g.courseId, g.title), n = (seen.get(base) || 0) + 1; seen.set(base, n);
+    const id = n === 1 ? base : base + "|" + n, old = items[id];
     if (old && old.raw === g.raw && old.max === g.max) {
       // Même note : on rafraîchit seulement les champs informatifs (commentaire, rattachement non choisi).
       items[id] = Object.assign({}, old, { feedback: g.feedback, type: g.type || old.type });
@@ -227,6 +229,17 @@ function mergeReleve(releve, store) {
   return Object.assign({}, releve, { ue });
 }
 
+/* La même note (sur 20) figure-t-elle déjà, venant d'Odin, dans cette matière ? Si oui, la valider la compterait deux fois. */
+function sameAsOdin(releve, it) {
+  if (!releve || !Array.isArray(releve.ue) || !it || !it.matiere) return null;
+  const m = matieres(releve).find((x) => x.label === it.matiere);
+  const raw = m && releve.ue.flatMap((u) => u.matieres || []).find((x) => x.label === it.matiere);
+  const close = (x) => Math.abs(x - it.note20) < 0.01;
+  // releve = relevé avec les barèmes choisis appliqués ; tant qu'un barème « sur N » n'est pas choisi, on compare aussi ramené sur 20.
+  return ((raw && raw.evals) || []).find((e) => !e.moodle && typeof e.note === "number" &&
+    (close(e.note) || (e.max && e.max !== 20 && e.choice == null && close(e.note * 20 / e.max)))) || null;
+}
+
 function fmt(n) { return String(Math.round(n * 100) / 100).replace(".", ","); }
 
 /* Texte de la notification : « Nouvelle note détectée sur Moodle : R1.07 · 19 / 20 — commentaire ». */
@@ -236,5 +249,5 @@ function describe(it) {
   return { title: `Nouvelle note détectée sur Moodle`, subject, line: `${subject} : ${it.title} — ${fmt(it.raw)} / ${sur}`, feedback: it.feedback || "" };
 }
 
-root.UCA_MOODLE = { parseOverview, parseCourseGrades, codeOf, matieres, matchMatiere, suggestMatiere, similarity, cleanCourseName, customMatieres, CUSTOM_UE, itemId, diff, decide, list, mergeReleve, describe, fmt };
+root.UCA_MOODLE = { parseOverview, parseCourseGrades, codeOf, matieres, matchMatiere, suggestMatiere, similarity, cleanCourseName, customMatieres, CUSTOM_UE, itemId, diff, decide, list, mergeReleve, sameAsOdin, describe, fmt };
 })(typeof self !== "undefined" ? self : globalThis);

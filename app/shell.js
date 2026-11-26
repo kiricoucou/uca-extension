@@ -156,7 +156,7 @@ const SCREENS = {
         ${row("mail", "Messagerie Zimbra UCA", "Ouvre ta boîte de réception", { href: MAIL })}
         ${row("book", "Bibliothèques universitaires", "Compte lecteur, catalogue, horaires", { go: "livres" })}
         ${row("food", "Restaurants U et lieux", "Carte des campus et itinéraires", { go: "tab:lieux" })}
-        ${row("bus", "Transports & mobilité", "T2C tram et bus, TER, covoiturage", { go: "transport" })}
+        ${row("bus", "Transports & mobilité", "Bus et tram T2C · liens train, cars, covoiturage", { go: "transport" })}
       </div></div></div>`;
   }, after() { checkStatus(); } },
 
@@ -304,7 +304,6 @@ const SCREENS = {
 
   widgets: { title: "Mes widgets", sub: true, render() { return widgetsScreen(); }, after() { widgetsAfter(); } },
 
-  transport: { title: "Transports", sub: true, render() { return '<iframe class="lieu-map" style="height:calc(100dvh - 160px)" src="../transport.html" title="Transports"></iframe>'; } },
 };
 
 /* ------------------------------ navigation ------------------------------ */
@@ -339,6 +338,7 @@ window.addEventListener("popstate", () => { if (stack.length) { stack.pop(); sho
 function go(target) {
   if (!target) return;
   if (target === "import") { location.href = "import.html"; return; }
+  if (target === "transport") { location.href = "../transport.html"; return; }
   if (target.startsWith("tab:")) return goTab(target.slice(4));
   if (target.startsWith("agenda:")) { show.agendaParams = "?open=" + target.slice(7); return goTab("agenda"); }
   open(target);

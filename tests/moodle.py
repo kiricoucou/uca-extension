@@ -321,6 +321,13 @@ def main():
             first_opt = ag.locator(".mdl-opt").first
             check(f"{did} : menu à couleurs : « Créer une nouvelle matière » en tête, recommandée", pop.is_visible() and "Créer une nouvelle matière" in first_opt.inner_text() and "Recommandée" in first_opt.inner_text(), first_opt.inner_text())
             check(f"{did} : menu à couleurs : matières rangées par UE, chacune avec sa couleur", ag.locator(".mdl-opt").count() == 3 and "UE" in pop.inner_text() and all(ag.locator(".mdl-opt").nth(i).evaluate("(e) => getComputedStyle(e).borderLeftWidth") == "6px" for i in range(3)), pop.inner_text())
+            # Événement « scroll » arrivé en retard (bouton resté en place) : le menu reste ouvert (bug vu sous Linux, design lumen).
+            ag.evaluate("() => document.getElementById('notesPanel').dispatchEvent(new Event('scroll'))"); ag.wait_for_timeout(100)
+            check(f"{did} : menu à couleurs : un défilement tardif sans déplacement ne ferme pas le menu", ag.locator(".mdl-pop").count() == 1)
+            moved = ag.evaluate("() => { const t = [...document.querySelectorAll('.mdl-pick')].find((b) => b.getAttribute('aria-expanded') === 'true'); const before = t.getBoundingClientRect().top; t.closest('.mdl-picker').style.top = '30px'; document.getElementById('notesPanel').dispatchEvent(new Event('scroll')); t.closest('.mdl-picker').style.top = ''; return Math.round(30 + before - before); }")
+            ag.wait_for_timeout(100)
+            check(f"{did} : menu à couleurs : quand la page défile vraiment (bouton déplacé), le menu se ferme", moved == 30 and ag.locator(".mdl-pop").count() == 0)
+            pk.click(); ag.wait_for_timeout(250)
             ag.locator(".mdl-search").fill("signal"); ag.wait_for_timeout(150)
             check(f"{did} : menu à couleurs : la recherche filtre les matières", ag.locator(".mdl-opt:visible").count() == 1 and "Maths du signal" in ag.locator(".mdl-opt:visible").first.inner_text(), str(ag.locator(".mdl-opt:visible").count()))
             ag.keyboard.press("Escape"); ag.wait_for_timeout(150)

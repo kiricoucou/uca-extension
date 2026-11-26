@@ -579,8 +579,10 @@ def site_demo(browser, base, errors):
     check("démo : le stockage réel de l'app n'est pas touché", page.evaluate("() => localStorage.getItem('uca_store')") is None)
     check("démo : aucune requête hors de ce site", not foreign, str(foreign[:3]))
     page.locator("#demo [data-device=phone]").click(); page.wait_for_timeout(2000)
-    w = page.evaluate("() => document.querySelector('#demo iframe').getBoundingClientRect().width")
-    check("démo : mode téléphone (390 px)", abs(w - 390) < 2, str(w))
+    # La démo voit un vrai écran de 390 px ; à l'affichage, le cadre est réduit si besoin pour tenir en hauteur (site-demo.js).
+    w, shown, tall, vh = page.evaluate("() => { const f = document.querySelector('#demo iframe'), r = f.getBoundingClientRect(); return [f.offsetWidth, r.width, r.height, window.innerHeight]; }")
+    check("démo : mode téléphone (390 px)", w == 390 and shown <= 391, f"{w} / affiché {shown}")
+    check("démo : le téléphone tient en entier dans la hauteur de l'écran", tall <= vh - 100, f"{tall} / {vh}")
     shot(page, "accueil-demo-telephone")
     check("accueil : FAQ de six questions", page.locator("#faq details.qa").count() >= 6)
     ld = page.evaluate("() => JSON.parse(document.querySelector('script[type=\"application/ld+json\"]').textContent)['@type']")

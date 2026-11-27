@@ -16,6 +16,7 @@ import java.util.Properties;
  *   java tools/SignBundle.java sign   <ota-bundle.zip> <ota-bundle.sig> <keystore.properties>
  *   java tools/SignBundle.java verify <ota-bundle.zip> <ota-bundle.sig> <keystore.properties>
  *   java tools/SignBundle.java sign-ext|verify-ext <uca-extension-chrome.zip> <.zip.sig> <keystore.properties>
+ *   java tools/SignBundle.java sign-pilot|verify-pilot <maj-extension.bat> <.bat.sig> <keystore.properties>   (« UCA-PILOT-V1:<sha256> »)
  *   java tools/SignBundle.java pubkey - - <keystore.properties>   (clé publique SPKI en base64, embarquée dans core/selfupdate.js)
  * Paquet de l'extension : on signe « UCA-EXT-PKG-V1:<sha256 hex du ZIP> » (séparation de domaine : une signature du paquet
  * de l'app ne vaut jamais pour l'extension, et inversement).
@@ -37,7 +38,14 @@ public class SignBundle {
         String alias = p.getProperty("keyAlias");
         if (a[0].equals("pubkey")) { System.out.println(Base64.getEncoder().encodeToString(store.getCertificate(alias).getPublicKey().getEncoded())); return; }
         byte[] data = Files.readAllBytes(Path.of(a[1]));
-        if (a[0].endsWith("-ext")) {
+        if (a[0].endsWith("-pilot")) {
+            java.io.ByteArrayOutputStream lf = new java.io.ByteArrayOutputStream();
+            for (byte b : data) if (b != '\r') lf.write(b);
+            StringBuilder hex = new StringBuilder();
+            for (byte b : java.security.MessageDigest.getInstance("SHA-256").digest(lf.toByteArray())) hex.append(String.format("%02x", b));
+            data = ("UCA-PILOT-V1:" + hex).getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+            a[0] = a[0].substring(0, a[0].length() - 6);
+        } else if (a[0].endsWith("-ext")) {
             StringBuilder hex = new StringBuilder();
             for (byte b : java.security.MessageDigest.getInstance("SHA-256").digest(data)) hex.append(String.format("%02x", b));
             data = ("UCA-EXT-PKG-V1:" + hex).getBytes(java.nio.charset.StandardCharsets.US_ASCII);

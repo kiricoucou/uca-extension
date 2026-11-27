@@ -158,7 +158,7 @@ bash maj-extension.sh --browser firefox --os linux --version 1.46.54 --yes</span
 <script>
 (function () {
   "use strict";
-  var PILOT_VERSION = "2.1";   // écrit par tests/gen_extension_page.py d'après le pilote
+  var PILOT_VERSION = "2.4";   // écrit par tests/gen_extension_page.py d'après le pilote
   var ua = navigator.userAgent || "";
   var det = /Windows/i.test(ua) ? "windows" : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? "linux" : "windows";
   var detB = /Firefox\//.test(ua) ? "firefox" : /Edg\//.test(ua) ? "edge" : /OPR\//.test(ua) ? "other" : /Vivaldi/i.test(ua) ? "other" : navigator.brave ? "brave" : "chrome";

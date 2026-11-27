@@ -253,6 +253,10 @@ def main():
         j = str(ROOT / "tools" / "SignBundle.java")
         subprocess.run(["java", j, "sign-ext", str(OUT / ZIP), str(sigf), str(ks)], check=True, stdout=subprocess.DEVNULL)
         subprocess.run(["java", j, "verify-ext", str(OUT / ZIP), str(sigf), str(ks)], check=True, stdout=subprocess.DEVNULL)
+        # Pilotes : signés à part (une version périmée ne se remplace que par un fichier portant cette signature).
+        for name in ("maj-extension.bat", "maj-extension.sh", "maj-extension.command"):
+            for mode in ("sign-pilot", "verify-pilot"):
+                subprocess.run(["java", j, mode, str(OUT / name), str(OUT / (name + ".sig")), str(ks)], check=True, stdout=subprocess.DEVNULL)
     else:
         print("ATTENTION : keystore.properties introuvable, ZIP non signé : la mise à jour automatique de l'extension sera refusée.")
     mo = lambda f: f"{f.stat().st_size / 1048576:.1f}".replace(".", ",") + " Mo"

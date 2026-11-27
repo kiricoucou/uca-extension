@@ -16,7 +16,7 @@
 # (pas de « set -u » : bash 3.2 de macOS refuse les tableaux vides)
 
 # Version du pilote : à monter à chaque changement de ce script (elle figure dans le nom du fichier téléchargé).
-PILOT_VERSION="2.1"
+PILOT_VERSION="2.4"
 printf 'Pilote de mise à jour My UCA, version %s\n' "$PILOT_VERSION"
 
 URL_CHROME="${UCA_URL_CHROME:-https://kiricoucou.github.io/uca-extension/extension/uca-extension-chrome.zip}"
@@ -31,6 +31,7 @@ SELFDIR="$(cd "$(dirname "$SELF")" 2>/dev/null && pwd)"
 if [ "$OS" = "Darwin" ]; then CFGDIR="$HOME/Library/Application Support/MyUCA"; else CFGDIR="${XDG_CONFIG_HOME:-$HOME/.config}/MyUCA"; fi
 CFG="$CFGDIR/dossier-extension.txt"
 
+ORIG_ARGS=("$@")
 BROWSER=""; WANT_VER=""; ARG_OS=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -50,6 +51,7 @@ done
 say()  { printf '%s\n' "$*"; }
 warn() { printf '! %s\n' "$*" >&2; }
 have() { command -v "$1" >/dev/null 2>&1; }
+vnum() { printf '%s' "$1" | awk -F. '{ printf "%d%06d%06d%06d", 0, $1, $2, $3 }'; }
 
 # ---------------------------------------------------------------- reconnaître le dossier de l'extension
 manifest_version() { sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$1/manifest.json" 2>/dev/null | head -n1; }
@@ -81,6 +83,8 @@ add_cand() {
       return
     fi
   done
+  # ancienne édition de test (numérotation à part) : jamais mise à jour
+  grep -qi 'MOODLE (test)' "$p/manifest.json" 2>/dev/null && return
   is_ext_dir "$p" && { CPATH+=("$p"); CORIGIN+=("$o"); CBROWS+=("$bn"); }
 }
 
@@ -234,13 +238,21 @@ choose_index() {   # plusieurs dossiers trouvés : lequel ? -> IDX
   [ "$IDX" -ge 0 ] && [ "$IDX" -lt "${#CPATH[@]}" ]
 }
 
+latest_version() {
+  have curl || return 0
+  curl -fsSL -m 20 "${UCA_URL_MANIFEST:-https://kiricoucou.github.io/uca-extension/manifest.json}" 2>/dev/null | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([0-9.]*\)".*/\1/p' | head -n1
+}
 confirm() {   # -> CHOSEN ; code 3 = annulé
+  LATEST="$(latest_version)"
+  [ -n "$LATEST" ] || LATEST="(la dernière publiée)"
   choose_index || return 3
   local i="$IDX" out rc txt
   while :; do
     case "$GUI" in
       osa)
-        txt="Je l’ai retrouvé dans ton navigateur :
+        txt="Version qui va être installée : $LATEST
+
+Je l’ai retrouvé dans ton navigateur :
 
 $(describe "$i")
 
@@ -253,7 +265,7 @@ Clique sur « Ouvrir le dossier » pour vérifier que c’est le bon, puis sur �
           *) return 3 ;;
         esac ;;
       zenity)
-        txt="Je l'ai retrouvé dans ton navigateur :\n\n<b>${CPATH[$i]}</b>\n(${CORIGIN[$i]}, version $(manifest_version "${CPATH[$i]}"))\n\nClique sur « Ouvrir le dossier » pour vérifier que c'est le bon, puis sur « Valider » : je cherche une nouvelle version et je mets l'extension à jour toute seule."
+        txt="<big><b>Version qui va être installée : $LATEST</b></big>\n\nJe l'ai retrouvé dans ton navigateur :\n\n<b>${CPATH[$i]}</b>\n(${CORIGIN[$i]}, version $(manifest_version "${CPATH[$i]}"))\n\nClique sur « Ouvrir le dossier » pour vérifier que c'est le bon, puis sur « Valider » : je cherche une nouvelle version et je mets l'extension à jour toute seule."
         out="$(zenity --question --title="Mise à jour de l'extension My UCA" --width=560 --text="$txt" --ok-label="Valider" --cancel-label="Annuler" --extra-button="Ouvrir le dossier" --extra-button="Autre dossier…" 2>/dev/null)"; rc=$?
         case "$out" in
           "Ouvrir le dossier") open_dir "${CPATH[$i]}"; continue ;;
@@ -262,10 +274,10 @@ Clique sur « Ouvrir le dossier » pour vérifier que c’est le bon, puis sur �
         [ "$rc" -eq 0 ] && { CHOSEN="${CPATH[$i]}"; return 0; }
         return 3 ;;
       kdialog)
-        kdialog --title "Mise à jour de l'extension My UCA" --yes-label "Valider" --no-label "Ouvrir le dossier" --cancel-label "Annuler" --yesnocancel "Je l'ai retrouvé dans ton navigateur :\n\n${CPATH[$i]}\n(${CORIGIN[$i]}, version $(manifest_version "${CPATH[$i]}"))\n\n« Ouvrir le dossier » pour vérifier, puis « Valider »." 2>/dev/null; rc=$?
+        kdialog --title "Mise à jour de l'extension My UCA" --yes-label "Valider" --no-label "Ouvrir le dossier" --cancel-label "Annuler" --yesnocancel "Version qui va être installée : $LATEST\n\nJe l'ai retrouvé dans ton navigateur :\n\n${CPATH[$i]}\n(${CORIGIN[$i]}, version $(manifest_version "${CPATH[$i]}"))\n\n« Ouvrir le dossier » pour vérifier, puis « Valider »." 2>/dev/null; rc=$?
         case "$rc" in 0) CHOSEN="${CPATH[$i]}"; return 0 ;; 1) open_dir "${CPATH[$i]}"; continue ;; *) return 3 ;; esac ;;
       *)
-        say ""; say "C'est bien le dossier de ton extension ?"; say "  $(describe "$i" | tr '\n' ' ')"
+        say ""; say "Version qui va être installée : $LATEST"; say "C'est bien le dossier de ton extension ?"; say "  $(describe "$i" | tr '\n' ' ')"
         printf '  [V] Valider   [O] Ouvrir le dossier   [A] Autre dossier   [Q] Quitter : '
         read -r out || return 3
         out="${out%$'\r'}"
@@ -326,6 +338,63 @@ if [ "${UNINSTALL:-0}" = "1" ]; then
   say "Pilote désinstallé."; exit 0
 fi
 
+# ---------------------------------------------------------------- l'outil se met à jour lui-même ; une version périmée est BLOQUÉE
+PILOT_SOURCE="${UCA_PILOT_URL:-https://kiricoucou.github.io/uca-extension/extension/maj-extension.sh}"
+PILOT_PAGE="https://kiricoucou.github.io/uca-extension/mise-a-jour.html"
+pilot_public() {
+  cat <<'PEM'
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAonKu45jPQjfHM+Cd9QAj
+IvEnRkG3SJP1W88Ok0OLyWR7K7DlwVxBPxz1WhEeKrNWyVVf5blUe4+4iiU9gLVD
+o55T+k8oVp3x14sblS09oN7QE/dTKeGS3GfKF0oTYZAcAwlj6BQadjfyAhf98rim
+Ddt8EdyCGzEO5+yyxVsCwIkBlzvbCPAZvzQWioIzY4hhuYGaYGNpqTnGWnb2BjGO
+WCsgEGJLFqWknSvkdHEmh+jZQBzGYGmXhetAeJHe4yAw5SaTsi92P9FwFJ46C1+I
+CnVI/7QnpBYp6pDJ93biCpOoiyICRTcnhTDKtV2gc3REw1paQAauM03nyHGo8b33
+UQIDAQAB
+-----END PUBLIC KEY-----
+PEM
+}
+blocked() {   # fenêtre (si possible) puis arrêt : rien n'est modifié
+  say "OUTIL BLOQUÉ : $1"
+  say "Dernière version : $PILOT_PAGE"
+  if [ "$YES" != "1" ]; then
+    if [ "$OS" = "Darwin" ] && have osascript; then osascript -e 'on run argv' -e 'display dialog (item 1 of argv) with title "Mise à jour de My UCA" buttons {"Fermer"} with icon stop' -e 'end run' "Cet outil est bloqué. $1 Dernière version : $PILOT_PAGE" >/dev/null 2>&1
+    elif have zenity; then zenity --error --width=520 --title="Mise à jour de My UCA" --text="Cet outil est bloqué.\n\n$1\n\nDernière version : $PILOT_PAGE" 2>/dev/null
+    elif have kdialog; then kdialog --title "Mise à jour de My UCA" --error "Cet outil est bloqué. $1 $PILOT_PAGE" 2>/dev/null; fi
+  fi
+  exit 5
+}
+confirm_latest_pilot() {
+  local dir published hash new ext
+  have curl || blocked "Impossible de vérifier la version de l'outil (curl absent)."
+  dir="$(mktemp -d)" || blocked "Impossible de créer un dossier temporaire."
+  curl -fsSL -m 30 "$PILOT_SOURCE" -o "$dir/new" 2>/dev/null || { rm -rf "$dir"; blocked "Impossible de vérifier que cet outil est à jour (connexion Internet ?)."; }
+  published="$(sed -n 's/^PILOT_VERSION="\([0-9.]*\)".*/\1/p' "$dir/new" | head -n1)"
+  # un pilote Windows publié à cette adresse (essais) porte le numéro sous l'autre forme
+  [ -n "$published" ] || { rm -rf "$dir"; blocked "La version publiée de l'outil est illisible."; }
+  if [ "$(vnum "$published")" -le "$(vnum "$PILOT_VERSION")" ]; then rm -rf "$dir"; return 0; fi
+  say "Nouvelle version de l'outil : $published. La version $PILOT_VERSION est périmée."
+  [ "${UCA_UPDATED_TO:-}" = "$published" ] && { rm -rf "$dir"; blocked "La version $published reste introuvable après téléchargement."; }
+  have openssl || { rm -rf "$dir"; blocked "La version $published est disponible, mais openssl manque pour vérifier sa signature."; }
+  curl -fsSL -m 30 "$PILOT_SOURCE.sig" -o "$dir/sig64" 2>/dev/null || { rm -rf "$dir"; blocked "La signature de la version $published est introuvable."; }
+  hash="$(tr -d '\r' < "$dir/new" | openssl dgst -sha256 -r | cut -d' ' -f1)"
+  printf 'UCA-PILOT-V1:%s' "$hash" > "$dir/message"
+  pilot_public > "$dir/public.pem"
+  tr -d '\r\n' < "$dir/sig64" | openssl base64 -d -A > "$dir/sig" 2>/dev/null
+  openssl dgst -sha256 -verify "$dir/public.pem" -signature "$dir/sig" "$dir/message" >/dev/null 2>&1 || { rm -rf "$dir"; blocked "La version $published téléchargée n'a pas la signature du projet : elle n'est pas exécutée."; }
+  ext="${SELF##*.}"; [ "$ext" = "command" ] || ext="sh"
+  new="$SELFDIR/maj-extension-v$published.$ext"
+  local replace=0 d="$SELFDIR"
+  case "$(basename "$SELF")" in maj-extension*) replace=1 ;; esac
+  while [ -n "$d" ] && [ "$d" != "/" ] && [ "$d" != "." ]; do [ -e "$d/.git" ] && replace=0; d="$(dirname "$d")"; done
+  { [ "$replace" = "1" ] && tr -d '\r' < "$dir/new" > "$new" 2>/dev/null; } || { new="$dir/maj-extension-v$published.$ext"; tr -d '\r' < "$dir/new" > "$new"; replace=0; }
+  chmod +x "$new"
+  if [ "$replace" = "1" ] && [ "$new" != "$SELF" ]; then rm -f "$SELF"; say "Ancien outil supprimé : $SELF"; fi
+  say "Lancement de l'outil $published..."
+  UCA_UPDATED_TO="$published" exec bash "$new" "${ORIG_ARGS[@]}"
+}
+[ "${UNINSTALL:-0}" = "1" ] || confirm_latest_pilot
+
 # ---------------------------------------------------------------- 1) quel dossier ?
 TMPCAND="$(mktemp 2>/dev/null || echo "/tmp/myuca-cand.$$")"
 TMP=""
@@ -352,8 +421,11 @@ else
     # Les dossiers chargés par les navigateurs passent AVANT la mémoire.
     find_in_browsers
     limit_to_browser
-    [ -f "$CFG" ] && add_cand "$(head -n1 "$CFG")" "dossier utilisé la dernière fois"
-    add_cand "$SELFDIR" "dossier de ce script"
+    # La mémoire et le dossier du script ne servent que si aucun navigateur ne charge l'extension.
+    if [ "${#CPATH[@]}" -eq 0 ]; then
+      [ -f "$CFG" ] && add_cand "$(head -n1 "$CFG")" "dossier utilisé la dernière fois"
+      add_cand "$SELFDIR" "dossier de ce script"
+    fi
   fi
   if [ "${#CPATH[@]}" -eq 0 ]; then
     say "Je n'ai pas retrouvé l'extension automatiquement."
@@ -368,19 +440,11 @@ else
     DEST="$CHOSEN"
   fi
 fi
-# Dossier de développement (git) : jamais écrit sans accord.
-if [ -e "$DEST/.git" ] && [ "$FORCE" != "1" ]; then
-  say "ATTENTION : $DEST est un dossier de développement (git). La mise à jour pourrait faire perdre des modifications."
-  if [ "$YES" = "1" ]; then say "Rien n'a été modifié. Ajoute --force pour écrire quand même."; exit 3; fi
-  printf 'Écrire quand même dans ce dossier ? Tape OUI pour confirmer : '; read -r ANSWER || ANSWER=""
-  [ "$ANSWER" = "OUI" ] || { say "Annulé : rien n'a été modifié."; end; exit 3; }
-fi
 mkdir -p "$CFGDIR" 2>/dev/null && printf '%s\n' "$DEST" > "$CFG"
 install_pilot
 
 # ---------------------------------------------------------------- 2) y a-t-il une nouvelle version ? 3) mise à jour
 TMP="$(mktemp -d 2>/dev/null || { mkdir -p "/tmp/myuca.$$" && echo "/tmp/myuca.$$"; })"
-vnum() { printf '%s' "$1" | awk -F. '{ printf "%d%06d%06d%06d", 0, $1, $2, $3 }'; }
 fetch_pkg() {   # $1 = 1 pour Firefox -> PKGDIR = dossier du paquet décompressé (téléchargé une seule fois par type)
   local ff="$1" url="$URL_CHROME" sub="xc" q=""
   [ "$ff" = "1" ] && { url="$URL_FF"; sub="xf"; }
@@ -426,8 +490,14 @@ for T in "${TARGETS[@]}"; do
     say "Déjà à jour (utilise --force pour réinstaller quand même)."
   else
     rm -f "$PKGDIR"/maj-extension.*   # le script en cours n'est jamais écrasé
+    SAVE="$CFGDIR/sauvegardes/$(date +%Y%m%d-%H%M%S)-$(basename "$T")-$OLD"
+    ( cd "$PKGDIR" && find . -type f ) | while IFS= read -r f; do
+      if [ -f "$T/$f" ] && ! cmp -s "$T/$f" "$PKGDIR/$f"; then mkdir -p "$SAVE/$(dirname "$f")" && cp -p "$T/$f" "$SAVE/$f"; fi
+    done
+    [ -d "$SAVE" ] && say "Copie de sécurité des fichiers remplacés : $SAVE"
     cp -R "$PKGDIR/." "$T/" || { say "Erreur : copie impossible. Ferme les fichiers ouverts puis réessaie. L'ancienne version est toujours en place."; end; exit 1; }
     find "$T" \( -name desktop.ini -o -name Thumbs.db -o -name .DS_Store \) -type f -delete 2>/dev/null
+    [ "$(manifest_version "$T")" = "$NEW" ] || { say "Erreur : le dossier est resté en version $(manifest_version "$T") au lieu de $NEW."; end; exit 1; }
     say "OK : $OLD -> $NEW"
   fi
   if [ "$ff" = "1" ]; then ANY_FF=1; else CH_NAMES="${CH_NAMES:+$CH_NAMES, }$names"; fi

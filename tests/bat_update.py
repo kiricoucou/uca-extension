@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 import tempfile
 import urllib.request
 from pathlib import Path
@@ -98,7 +99,10 @@ def main():
         rnone = subprocess.run(["cmd", "/c", str(det / "maj-extension.bat")], cwd=det, env=dict(envx, LOCALAPPDATA=str(tmp / "vide")), capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=180)
         check("aucune extension trouvée (mode sans fenêtre) : échec propre", rnone.returncode == 2 and "introuvable" in rnone.stdout, f"rc={rnone.returncode} {rnone.stdout[-200:]!r}")
         src_ok = src.decode("utf-8")
-        check("le script propose « Ouvrir le dossier » et « Valider »", "Ouvrir le dossier" in src_ok and "'Valider'" in src_ok and "Autre dossier" in src_ok)
+        check("le script propose « Ouvrir le dossier » et « Mettre à jour »", "Ouvrir le dossier" in src_ok and "'Mettre à jour'" in src_ok and "Autre dossier" in src_ok)
+        check("aucune question dans le terminal pendant la mise à jour", "Read-Host" not in src_ok)
+        check("page des extensions : une adresse par navigateur, touches envoyées seulement au navigateur au premier plan",
+              all(x in src_ok for x in ("chrome://extensions", "edge://extensions", "brave://extensions", "about:debugging#/runtime/this-firefox")) and "if ((Get-Foreground).Proc -ine $b.Proc) { return 'copiee' }" in src_ok)
         # dossier pointé = parent (le manifest.json est dans un sous-dossier), puis dossier voisin
         par = tmp / "uca-extension"; sub = par / "extension_uca_firefox"; sub.mkdir(parents=True)
         mm = dict(m); (sub / "manifest.json").write_text(json.dumps(mm), encoding="utf-8")
@@ -156,7 +160,41 @@ def main():
         check("sans identifiant : le dossier chargé par le navigateur passe avant le dossier mémorisé", ver_of(loaded) != "1.0.0" and ver_of(remembered) == "1.0.0", f"{ver_of(loaded)} {ver_of(remembered)} {rl.stdout[-500:]!r}")
         make(loaded); (loaded / ".git").mkdir(exist_ok=True)
         rg = go("/id", wanted, "/yes")
-        check("dossier git : rien n'est écrit sans accord, et c'est dit", rg.returncode == 0 and ver_of(loaded) == "1.0.0" and "developpement (git)" in rg.stdout, f"rc={rg.returncode} {ver_of(loaded)} {rg.stdout[-400:]!r}")
+        saved = sorted((la / "MyUCA" / "sauvegardes").glob("*-vraie-1.0.0"))
+        check("dossier git : mis à jour sans question, après copie des anciens fichiers", rg.returncode == 0 and ver_of(loaded) != "1.0.0" and bool(saved) and ver_of(saved[-1]) == "1.0.0", f"rc={rg.returncode} {ver_of(loaded)} {saved} {rg.stdout[-400:]!r}")
+
+        # ---- le cas réel : une extension chargée, l'ancienne édition de test chargée, un vieux dossier en mémoire
+        make(loaded)
+        old_edition = lab / "edition"; make(old_edition, "2.0.0")
+        em = json.loads((old_edition / "manifest.json").read_text(encoding="utf-8")); em["name"] = "EDT UCA — ÉDITION MOODLE (test)"
+        (old_edition / "manifest.json").write_text(json.dumps(em, ensure_ascii=False), encoding="utf-8")
+        (prof / "Secure Preferences").write_text(json.dumps({"extensions": {"settings": {wanted: {"path": str(loaded)}, other: {"path": str(old_edition)}}}}, separators=(",", ":")), encoding="utf-8")
+        make(remembered, "0.9.0"); (la / "MyUCA" / "dossier-extension.txt").write_text(str(remembered), encoding="ascii")
+        shots = tmp / "photos"; shots.mkdir(exist_ok=True)
+        gui_env = {k: v for k, v in envi.items() if k not in ("MYUCA_NOPAUSE", "MYUCA_AUTO")}
+        gui_env.update(MYUCA_SHOTDIR=str(shots))
+        rw = subprocess.run(["cmd", "/c", str(ext / "maj-extension.bat")], cwd=tmp, env=gui_env, capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=240)
+        names = sorted(p.name for p in shots.glob("*.png"))
+        check("fenêtres : choix puis résultat affichés (photographiés), aucune question dans le terminal", names == ["choix.png", "resultat-ok.png"] and rw.returncode == 0, f"{names} rc={rw.returncode} {rw.stdout[-400:]!r}")
+        check("fenêtres : seule la vraie extension est mise à jour (ni l'édition de test, ni le dossier en mémoire)", ver_of(loaded) not in ("1.0.0",) and ver_of(old_edition) == "2.0.0" and ver_of(remembered) == "0.9.0", f"{ver_of(loaded)} {ver_of(old_edition)} {ver_of(remembered)}")
+        keep = os.environ.get("UCA_KEEP_SHOTS")
+        if keep:
+            shutil.copytree(shots, keep, dirs_exist_ok=True)
+        # lancement comme au double-clic : la console rend la main aussitôt, les fenêtres vivent dans un processus sans console
+        make(loaded); shots2 = tmp / "photos2"; shots2.mkdir(exist_ok=True)
+        t0 = time.time()
+        subprocess.run(["cmd", "/c", str(ext / "maj-extension.bat")], cwd=tmp, env=dict(gui_env, MYUCA_SHOTDIR=str(shots2), MYUCA_HEADLESS="1"), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60)
+        returned = time.time() - t0
+        for _ in range(180):
+            if (shots2 / "resultat-ok.png").exists():
+                break
+            time.sleep(1)
+        time.sleep(3)
+        check("double-clic : la console se ferme aussitôt et les fenêtres s'affichent sans terminal", returned < 20 and sorted(p.name for p in shots2.glob("*.png")) == ["choix.png", "resultat-ok.png"] and ver_of(loaded) != "1.0.0", f"{returned:.1f}s {sorted(p.name for p in shots2.glob('*.png'))} {ver_of(loaded)}")
+
+        make(loaded)
+        rl2 = go("/yes")
+        check("liste : un seul dossier proposé quand une seule vraie extension est chargée", ver_of(loaded) != "1.0.0" and ver_of(remembered) == "0.9.0" and ver_of(old_edition) == "2.0.0" and "Dossier detecte" in rl2.stdout and "memorise" not in rl2.stdout, rl2.stdout[-500:])
         make(remembered)
         rn = go("/yes", str(remembered))
         check("dossier qu'aucun navigateur ne charge : mis à jour sur demande, mais signalé clairement", ver_of(remembered) != "1.0.0" and "ATTENTION" in rn.stdout, rn.stdout[-400:])

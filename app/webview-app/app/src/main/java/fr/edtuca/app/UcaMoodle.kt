@@ -24,8 +24,8 @@ object UcaMoodle {
     private const val PAGE = "/grade/report/overview/index.php"
     private const val LOAD_TIMEOUT_MS = 30_000L
     private const val LOGIN_GRACE_MS = 8_000L      // le temps d'une redirection automatique par le CAS
-    private const val STALL_TIMEOUT_MS = 45_000L
-    private const val TOTAL_TIMEOUT_MS = 5 * 60_000L
+    private const val STALL_TIMEOUT_MS = 90_000L   // un cours peut demander 3 essais de 20 s
+    private const val TOTAL_TIMEOUT_MS = 10 * 60_000L
     private const val POLL_MS = 600L
 
     private val handler = Handler(Looper.getMainLooper())
@@ -33,6 +33,25 @@ object UcaMoodle {
 
     /** Dernière adresse qui a répondu : celle qu'on propose pour la connexion. */
     private var lastBase: String? = null
+
+    /** Point de reprise fourni par la page (JSON) : les cours déjà lus ne sont pas relus. */
+    @Volatile var checkpoint: String = ""
+
+    /** Écran qui attend les résultats. Si l'agenda est fermé pendant la recherche, le résultat est gardé pour son retour. */
+    private var sink: ((JSONObject) -> Unit)? = null
+    private var parked: JSONObject? = null
+
+    fun attach(listener: (JSONObject) -> Unit) {
+        sink = listener
+        parked?.let { parked = null; listener(it) }
+    }
+
+    fun detach() { sink = null }
+
+    private fun publish(result: JSONObject) {
+        val target = sink
+        if (target != null) target(result) else parked = result
+    }
 
     /** L'adresse change chaque année (rentrée en septembre) : année en cours, puis la suivante, puis la précédente. */
     fun bases(): List<String> {
@@ -56,15 +75,15 @@ object UcaMoodle {
     /**
      * @param manual recherche demandée par l'utilisateur. Sinon, sans session Moodle, on ne charge rien.
      * @param onProgress { done, total, label } pendant la lecture des cours.
-     * @param onResult { data: [...] } ou { issue, detail? }. Appelé une seule fois.
+     * Le résultat ({ data?, report?, read?, checkpoint?, issue?, detail? }) est remis à l'écran attaché par [attach].
      */
-    fun scrape(context: Context, manual: Boolean, onProgress: (JSONObject) -> Unit, onResult: (JSONObject) -> Unit) {
-        if (running) { onResult(issue("busy")); return }
-        if (!manual && bases().none { hasSessionCookie(it) }) { onResult(issue("session")); return }
+    fun scrape(context: Context, manual: Boolean, onProgress: (JSONObject) -> Unit) {
+        if (running) { publish(issue("busy")); return }
+        if (!manual && bases().none { hasSessionCookie(it) }) { publish(issue("session")); return }
         running = true
         Run(context.applicationContext, onProgress) { result ->
             running = false
-            onResult(result)
+            publish(result)
         }.start()
     }
 
@@ -76,7 +95,11 @@ object UcaMoodle {
         private val bases = bases()
         private var web: WebView? = null
         private var finished = false
-        private val totalTimeout = Runnable { finish(issue("error", "recherche trop longue")) }
+        /** Cours déjà lus, gardés au fil de l'eau pour reprendre après un arrêt. */
+        private var partial: JSONObject? = null
+        private val totalTimeout = Runnable { finish(stopped("recherche trop longue")) }
+
+        private fun stopped(detail: String) = issue("error", detail).apply { partial?.let { put("checkpoint", it) } }
 
         fun start() {
             handler.postDelayed(totalTimeout, TOTAL_TIMEOUT_MS)
@@ -143,7 +166,9 @@ object UcaMoodle {
                     handler.removeCallbacks(loadTimeout)
                     lastBase = base
                     reading = true
-                    val code = try { script("moodle.js") + "\n" + script("moodle-app.js") }
+                    // Le point de reprise est réécrit par JSONObject : jamais de texte libre injecté dans la page.
+                    val resume = try { if (checkpoint.isEmpty()) "null" else JSONObject(checkpoint).toString() } catch (e: Exception) { "null" }
+                    val code = try { "window.__ucaMoodleCheckpoint = " + resume + ";\n" + script("moodle.js") + "\n" + script("moodle-scan.js") + "\n" + script("moodle-app.js") }
                     catch (e: Exception) { finish(issue("error", "fichiers de lecture introuvables")); return }
                     v.evaluateJavascript(code) { poll(view, host, "", System.currentTimeMillis()) }
                 }
@@ -165,7 +190,7 @@ object UcaMoodle {
         private fun poll(view: WebView, host: String?, seen: String, seenAt: Long) {
             if (finished || web !== view) return
             // On ne relit que la page Moodle : si elle est partie ailleurs, la lecture s'arrête.
-            if (Uri.parse(view.url.orEmpty()).host != host) { finish(issue("session")); return }
+            if (Uri.parse(view.url.orEmpty()).host != host) { finish(issue("session").apply { partial?.let { put("checkpoint", it) } }); return }
             view.evaluateJavascript("(function(){return JSON.stringify(window.__ucaMoodleJob||null);})()") { raw ->
                 if (finished || web !== view) return@evaluateJavascript
                 val job = try {
@@ -176,14 +201,15 @@ object UcaMoodle {
                 var mark = seen
                 var at = seenAt
                 if (job != null) {
-                    val now = "${job.optInt("done")}/${job.optInt("total")}/${job.optString("label")}"
+                    job.optJSONObject("checkpoint")?.let { partial = it }
+                    val now = "${job.optInt("done")}/${job.optInt("total")}/${job.optString("label")}/${job.optInt("beat")}"
                     if (now != seen) {
                         mark = now
                         at = System.currentTimeMillis()
                         if (job.optInt("total") > 0) onProgress(job)
                     }
                 }
-                if (System.currentTimeMillis() - at > STALL_TIMEOUT_MS) { finish(issue("error", "Moodle ne répond plus")); return@evaluateJavascript }
+                if (System.currentTimeMillis() - at > STALL_TIMEOUT_MS) { finish(stopped("Moodle ne répond plus")); return@evaluateJavascript }
                 handler.postDelayed({ poll(view, host, mark, at) }, POLL_MS)
             }
         }

@@ -123,7 +123,7 @@
           <p>Chaque note en attente a sa carte, avec son nom, sa valeur et, s'il existe, le commentaire laissé sur Moodle.</p>
           <ul>
             <li><b>Matière</b> : l'extension en propose une d'après le code du cours (R1.07, SAE1.05…), sinon d'après la ressemblance des noms. Si rien ne correspond, elle propose <b>Créer une nouvelle matière</b>. Tu peux toujours changer.</li>
-            <li><b>Coefficient</b> : il vaut <b>1 par défaut</b>. Il n'est pas lu sur Moodle : saisis le bon (celui annoncé par ton enseignant, par exemple).</li>
+            <li><b>Coefficient</b> : Moodle ne le donne pas, la case est <b>vide</b>. Saisis le bon (celui annoncé par ton enseignant, par exemple) : sans lui, la note ne peut pas être validée.</li>
           </ul>
           <p>Une nouvelle matière est rangée à part, dans « Matières ajoutées (Moodle) ». Ce groupe compte dans la moyenne générale avec un coefficient 1.</p>
         </li>
@@ -212,6 +212,17 @@
         <li><b>Application Android</b> : la recherche se fait dans une page invisible de l'application, avec la session que tu as ouverte sur la page de connexion officielle. L'application vérifie qu'un cookie <code>MoodleSession</code> existe, sans enregistrer ni envoyer sa valeur ; les notes restent sur ton téléphone. La lecture est dans <code>UcaMoodle.kt</code> et <code>core/moodle-app.js</code>.</li>
         <li><b>Partage</b> : le lien de partage, le QR code animé et le fichier <code>.ucasync</code> <b>contiennent tes notes</b>. C'est toi qui les envoies. Ne les partage pas avec d'autres personnes. Le lien est chiffré, mais celui qui a le lien et le code peut le lire pendant sa durée de validité. Le QR code et le fichier ne sont pas chiffrés. Une messagerie ou un service de stockage que tu utilises pour les envoyer les reçoit aussi.</li>
         <li><b>Vérifier</b> : le <a href="https://github.com/kiricoucou/uca-extension">code est public</a>. La lecture de Moodle se trouve dans <code>core/moodle.js</code> et <code>background.js</code>, le partage dans <code>core/transfer.js</code>, les autorisations dans <code>manifest.json</code>.</li>
+      </ul>
+
+      <h3 id="fiabilite">Fiabilité d'une recherche</h3>
+      <ul class="list">
+        <li><b>Rapport</b> : après chaque recherche, la fenêtre Notes indique les cours lus, en échec ou non lus, et les lignes illisibles. Si quelque chose manque, la recherche est annoncée <b>incomplète</b>.</li>
+        <li><b>Note modifiée</b> : une note déjà validée garde son ancienne valeur dans ta moyenne. Tu choisis <b>Prendre la nouvelle note</b> ou <b>Garder l'ancienne</b>.</li>
+        <li><b>Activité renommée ou disparue</b> : elle est reconnue par l'identifiant que Moodle lui donne. Une note disparue est signalée et conservée.</li>
+        <li><b>Coupure</b> : la recherche réessaie, puis reprend pendant 30 minutes là où elle s'était arrêtée.</li>
+        <li><b>Coefficients</b> : Moodle ne les donne pas. La pondération qu'il affiche dans un cours est montrée à part ; le coefficient est à saisir par toi.</li>
+        <li><b>Historique</b> : sur la carte d'une note, <b>Historique</b> montre ses changements (note, barème, nom, pondération, disparition).</li>
+        <li><b>Page « Notes » modifiée</b> : la liste des cours est alors demandée à Moodle par un autre moyen et la recherche est marquée incomplète.</li>
       </ul>
 
       <h3>Les limites</h3>
@@ -350,7 +361,7 @@
       <h2 id="h-faq">Questions fréquentes</h2>
       <details class="qa"><summary>Une note Moodle peut-elle modifier ma moyenne sans mon accord ?</summary><div class="a"><p>Non : une note n'est ajoutée que si tu la valides. En revanche, une note validée dont la valeur ou le barème change sur Moodle est retirée des calculs jusqu'à ta nouvelle validation.</p></div></details>
       <details class="qa"><summary>Comment la moyenne est-elle calculée après une validation ?</summary><div class="a"><p>La moyenne de la matière est recalculée à partir de ses évaluations et de leurs coefficients. Si Odin a déjà publié la note de l'UE, cette note d'UE reste utilisée. C'est une estimation.</p></div></details>
-      <details class="qa"><summary>Le coefficient vient-il de Moodle ?</summary><div class="a"><p>Non. Il vaut 1 par défaut : vérifie-le avant de valider. Tu peux le modifier ensuite.</p></div></details>
+      <details class="qa"><summary>Le coefficient vient-il de Moodle ?</summary><div class="a"><p>Non. La case est vide tant que tu ne l'as pas saisi, et il faut le saisir pour valider. Tu peux le modifier ensuite.</p></div></details>
       <details class="qa"><summary>L'extension peut-elle changer mes notes sur Moodle ?</summary><div class="a"><p>Non. Elle lit les pages de notes. Valider ou refuser ne change que ce que tu vois dans l'outil.</p></div></details>
       <details class="qa"><summary>Puis-je tout faire depuis mon téléphone ?</summary><div class="a"><p>Oui avec l'application Android (APK 1.4.34 ou plus) : elle cherche sur Moodle et tu valides les notes sur place. L'app installée ne cherche pas sur Moodle : <a href="#telephone">envoie-lui tes données depuis l'extension</a>.</p></div></details>
       <details class="qa"><summary>Est-ce un service officiel ?</summary><div class="a"><p>Non. Emploi du temps UCA est un projet étudiant, non affilié à l'Université Clermont Auvergne.</p></div></details>

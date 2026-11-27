@@ -16,6 +16,7 @@ interface UcaSyncRequestListener {
     fun handleMoodleRequest(manual: Boolean)
     fun handleMoodleLogin()
     fun onMoodlePending(count: Int)
+    fun onMoodleCheckpoint(json: String)
 }
 
 class UcaBridge(private val host: Activity, private val listener: UcaSyncRequestListener) {
@@ -45,6 +46,12 @@ class UcaBridge(private val host: Activity, private val listener: UcaSyncRequest
     @JavascriptInterface
     fun requestMoodle(manual: Boolean) {
         host.runOnUiThread { listener.handleMoodleRequest(manual) }
+    }
+
+    /** Point de reprise d'une recherche interrompue (taille bornée), donné avant requestMoodle. */
+    @JavascriptInterface
+    fun setMoodleCheckpoint(json: String) {
+        if (json.length <= 2_000_000) host.runOnUiThread { listener.onMoodleCheckpoint(json) }
     }
 
     @JavascriptInterface

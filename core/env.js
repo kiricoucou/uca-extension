@@ -223,9 +223,12 @@ function moodleSearch(manual) {
   if (moodleJob) return moodleJob.promise;
   const job = { manual };
   job.promise = new Promise((resolve) => { job.resolve = resolve; });
-  job.timer = setTimeout(() => applyMoodleResult({ issue: "error", detail: "application sans réponse" }), 6 * 60 * 1000);
+  job.timer = setTimeout(() => applyMoodleResult({ issue: "error", detail: "application sans réponse" }), 12 * 60 * 1000);
   moodleJob = job;
   if (manual) moodleProgressSet({ label: "Connexion à Moodle…" });
+  // Point de reprise d'une recherche interrompue : les cours déjà lus ne sont pas relus.
+  const saved = readAll().uca_moodle_checkpoint;
+  if (window.AndroidUCA.setMoodleCheckpoint) window.AndroidUCA.setMoodleCheckpoint(saved ? JSON.stringify(saved) : "");
   window.AndroidUCA.requestMoodle(!!manual);
   return job.promise;
 }
@@ -239,15 +242,21 @@ async function applyMoodleResult(r) {
     const found = Array.isArray(r.data);
     if (found && !window.UCA_MOODLE) await loadScriptOnce("core/moodle.js");
     const all = readAll(), issues = Object.assign({}, all.uca_scrape_issues);
-    if (!found) {
-      answer.issue = r.issue || "error"; answer.detail = r.detail || null;
-      issues.moodle = { issue: answer.issue, at: Date.now(), detail: r.detail ? String(r.detail).slice(0, 120) : undefined };
-      await local.set({ uca_scrape_issues: issues });
-      return;
+    // Recherche incomplète = problème affiché, même si des notes ont été lues.
+    answer.issue = r.issue || (found ? null : "error"); answer.detail = r.detail || null;
+    if (answer.issue) issues.moodle = { issue: answer.issue, at: Date.now(), detail: r.detail ? String(r.detail).slice(0, 120) : undefined };
+    else delete issues.moodle;
+    const extra = { uca_scrape_issues: issues };
+    if (r.report) {
+      extra.uca_moodle_report = r.report;
+      Object.assign(answer, { courses: r.report.total, coursesRead: r.report.read, coursesFailed: r.report.failed, complete: r.report.complete });
     }
-    delete issues.moodle;
-    const { store, fresh, firstRun } = window.UCA_MOODLE.diff(all.uca_moodle, r.data, all.uca_releve_notes, Date.now());
-    await local.set({ uca_moodle: store, uca_scrape_issues: issues });
+    if (r.checkpoint) extra.uca_moodle_checkpoint = r.checkpoint;
+    await local.set(extra);
+    if (!r.checkpoint && found) await local.remove("uca_moodle_checkpoint");
+    if (!found) return;
+    const { store, fresh, firstRun } = window.UCA_MOODLE.diff(readAll().uca_moodle, r.data, all.uca_releve_notes, Date.now(), { read: r.read || {}, host: r.report && r.report.host, listed: r.listed });
+    await local.set({ uca_moodle: store });
     answer.read = r.data.length; answer.pending = window.UCA_MOODLE.list(store, "pending").length;
     const news = firstRun ? answer.pending : fresh.length;
     if (news && window.AndroidUCA.notifyMoodle) window.AndroidUCA.notifyMoodle(news);

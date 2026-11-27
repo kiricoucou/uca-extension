@@ -127,6 +127,39 @@ def main():
         vv = [json.loads((d / "manifest.json").read_text(encoding="utf-8"))["version"] for d in (e_c, e_e, e_f)]
         check("trois dossiers côte à côte (Chrome, Edge, Firefox) : tous mis à jour", all(v != "1.0.0" for v in vv), f"{vv} {r3.stdout[-500:]!r}")
         check("les navigateurs sont nommés (Edge et Firefox reconnus)", "(Edge)" in r3.stdout and "(Firefox)" in r3.stdout, r3.stdout[-500:])
+        # ---- le dossier réellement chargé passe avant la mémoire ; l'identifiant désigne le dossier exact ; git protégé
+        def make(dd, ver="1.0.0"):
+            dd.mkdir(parents=True, exist_ok=True)
+            mj = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8")); mj["version"] = ver
+            (dd / "manifest.json").write_text(json.dumps(mj), encoding="utf-8")
+        def ver_of(dd):
+            return json.loads((dd / "manifest.json").read_text(encoding="utf-8"))["version"]
+        lab = tmp / "labo"; remembered = lab / "ancien" / "memorise"; loaded = lab / "charge" / "vraie"; second = lab / "autre" / "copie"
+        for dd in (remembered, loaded):
+            make(dd)
+        make(second, "999.0.0")
+        la = tmp / "appdata-id"
+        prof = la / "Google" / "Chrome" / "User Data" / "Default"; prof.mkdir(parents=True)
+        wanted, other = "abcdefghijklmnopabcdefghijklmnop", "ponmlkjihgfedcbaponmlkjihgfedcba"
+        prefs = {"extensions": {"pinned": [wanted], "settings": {other: {"manifest": {"name": "x {piege} \"UCA\""}, "path": str(second)}, wanted: {"manifest": {"name": "UCA {v}"}, "path": str(loaded)}}}}
+        (prof / "Secure Preferences").write_text(json.dumps(prefs, separators=(",", ":")), encoding="utf-8")
+        (la / "MyUCA").mkdir(parents=True); (la / "MyUCA" / "dossier-extension.txt").write_text(str(remembered), encoding="ascii")
+        envi = dict(os.environ, MYUCA_NOLAUNCH="1", MYUCA_NOPAUSE="1", MYUCA_NOINSTALL="1", LOCALAPPDATA=str(la), APPDATA=str(tmp / "roaming-id"))
+        def go(*args):
+            return subprocess.run(["cmd", "/c", str(ext / "maj-extension.bat"), *args], cwd=tmp, env=envi, capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=180)
+        ri = go("/browser", "chrome", "/id", wanted, "/yes")
+        check("identifiant de l'extension : SON dossier est mis à jour, pas le dossier mémorisé ni l'autre copie", ver_of(loaded) != "1.0.0" and ver_of(remembered) == "1.0.0" and ver_of(second) == "999.0.0", f"{ver_of(loaded)} {ver_of(remembered)} {ri.stdout[-500:]!r}")
+        make(loaded)
+        (prof / "Secure Preferences").write_text(json.dumps({"extensions": {"settings": {wanted: {"path": str(loaded)}}}}, separators=(",", ":")), encoding="utf-8")
+        (la / "MyUCA" / "dossier-extension.txt").write_text(str(remembered), encoding="ascii")
+        rl = go("/yes")
+        check("sans identifiant : le dossier chargé par le navigateur passe avant le dossier mémorisé", ver_of(loaded) != "1.0.0" and ver_of(remembered) == "1.0.0", f"{ver_of(loaded)} {ver_of(remembered)} {rl.stdout[-500:]!r}")
+        make(loaded); (loaded / ".git").mkdir(exist_ok=True)
+        rg = go("/id", wanted, "/yes")
+        check("dossier git : rien n'est écrit sans accord, et c'est dit", rg.returncode == 0 and ver_of(loaded) == "1.0.0" and "developpement (git)" in rg.stdout, f"rc={rg.returncode} {ver_of(loaded)} {rg.stdout[-400:]!r}")
+        make(remembered)
+        rn = go("/yes", str(remembered))
+        check("dossier qu'aucun navigateur ne charge : mis à jour sur demande, mais signalé clairement", ver_of(remembered) != "1.0.0" and "ATTENTION" in rn.stdout, rn.stdout[-400:])
         r4 = run(ext / "maj-extension.bat", tmp, str(tmp / "n-existe-pas"))
         check("mauvais dossier : échec propre, rien cassé", r4.returncode != 0 and (ext / "manifest.json").exists(), r4.stdout[-300:])
     finally:

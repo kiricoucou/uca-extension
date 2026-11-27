@@ -77,13 +77,19 @@ def windows():
             # reproduit Windows : %1 remplacé par le lien dans la commande enregistrée, sans interpréteur de commandes
             return subprocess.run(command.replace("%1", link), env=dict(env, **(extra or {})), capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=240)
 
-        for link, expected in (("uca-maj:chrome", "/browser chrome /yes"), ("uca-maj://edge/", "/browser edge /yes"), ("uca-maj:firefox", "/browser firefox /yes")):
+        for link, expected in (("uca-maj:chrome", "[/browser chrome]"), ("uca-maj://edge/", "[/browser edge]"), ("uca-maj:firefox", "[/browser firefox]")):
             out = open_link(link, {"MYUCA_DRYRUN": "1"}).stdout.strip()
             check(f"Windows : {link} -> {expected}", out == expected, out)
+        ident = "abcdefghijklmnopabcdefghijklmnop"
+        out = open_link("uca-maj:chrome/" + ident, {"MYUCA_DRYRUN": "1"}).stdout.strip()
+        check("Windows : le lien transmet l'identifiant de l'extension (32 lettres a-p)", out == "[/browser chrome /id " + ident + "]", out)
+        out = open_link("uca-maj:chrome/" + ident[:-1] + "z", {"MYUCA_DRYRUN": "1"}).stdout.strip()
+        check("Windows : identifiant de forme incorrecte : rien n'est transmis", out == "[]", out)
         outs = {link: open_link(link, {"MYUCA_DRYRUN": "1"}).stdout.strip() for link in BAD_LINKS}
-        check("Windows : un lien piégé ne transmet rien (au pire /yes seul)", all(o in ("/yes", "") for o in outs.values()), str(outs))
+        check("Windows : un lien piégé ne transmet rien (et aucun lien ne peut demander le mode sans fenêtre)", all(o == "[]" for o in outs.values()), str(outs))
         old_extension(ext)
-        r = open_link("uca-maj:chrome")
+        # MYUCA_AUTO : remplace ici le clic sur « Valider » dans les fenêtres que le pilote affiche en vrai.
+        r = open_link("uca-maj:chrome", {"MYUCA_AUTO": "1", "MYUCA_NOPAUSE": "1"})
         check("Windows : lancement par le lien, sans fichier téléchargé : extension mise à jour", r.returncode == 0 and version(ext) != "1.0.0", (r.stdout + r.stderr)[-500:])
         r = sh(["cmd", "/c", str(pilot / "maj-extension.bat"), "/desinstaller"], env)
         gone = ps(f"Test-Path '{TEST_KEY}'")
@@ -122,9 +128,9 @@ def linux():
         def dry(link):
             return sh([bash, posix(pilot / "lancer.sh"), link], dict(env, UCA_DRYRUN="1")).stdout.strip()
 
-        check("Linux : uca-maj:brave -> --browser brave --yes", dry("uca-maj:brave") == "--browser brave --yes", dry("uca-maj:brave"))
+        check("Linux : uca-maj:brave -> --browser brave, avec fenêtres", dry("uca-maj:brave") == "[--browser brave]", dry("uca-maj:brave"))
         outs = {link: dry(link) for link in BAD_LINKS}
-        check("Linux : un lien piégé ne transmet rien", all(o == "--yes" for o in outs.values()), str(outs))
+        check("Linux : un lien piégé ne transmet rien", all(o == "[]" for o in outs.values()), str(outs))
         r = sh([bash, posix(pilot / "maj-extension.sh"), "--desinstaller"], env)
         check("Linux : --desinstaller retire le pilote", r.returncode == 0 and not desktop.exists() and not (pilot / "lancer.sh").exists(), r.stdout[-300:])
     finally:
@@ -181,7 +187,7 @@ def extension():
                 page.click("#ucaGateApply")
                 page.wait_for_timeout(500)
             n = page.evaluate("() => [window.__downloads, window.__links]")
-            check("extension, pilote installé : lancé par uca-maj:<navigateur>, aucun téléchargement (3 clics)", not n[0] and len(n[1]) == 3 and n[1][0] in ("uca-maj:chrome", "uca-maj:edge"), str(n))
+            check("extension, pilote installé : lancé par uca-maj:<navigateur>, aucun téléchargement (3 clics)", not n[0] and len(n[1]) == 3 and n[1][0].split("/")[0] in ("uca-maj:chrome", "uca-maj:edge") and len(n[1][0].split("/")[1]) == 32, str(n))
             check("extension : lien de secours « Réinstaller le pilote »", "Réinstaller le pilote" in page.inner_text("#ucaUpdateGate"))
             page.click("text=Réinstaller le pilote")
             page.wait_for_timeout(900)

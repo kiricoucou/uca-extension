@@ -11,6 +11,21 @@ L'extension vérifie au démarrage, puis toutes les 5 minutes, si `manifest.json
 
 # Historique des versions
 
+## 1.47.4 — app Android 1.4.35 : notes Moodle fiabilisées
+
+- **Plus d'échec silencieux :** rapport après chaque recherche (cours lus, en échec, non lus, lignes illisibles). Une recherche incomplète n'est jamais annoncée réussie ; une page mal chargée n'est plus prise pour « aucune note ».
+- **Notes modifiées :** une note validée garde sa valeur dans ta moyenne jusqu'à ce que tu acceptes la nouvelle.
+- **Doublons et renommages :** chaque note est suivie par son identifiant Moodle ; les activités renommées, disparues ou en double probable sont signalées, rien n'est effacé tout seul.
+- **Reprise :** nouvelles tentatives automatiques, et après une coupure les cours déjà lus ne sont pas relus.
+- **Coefficients :** jamais inventés : la case est vide et il faut la remplir pour valider ; la pondération affichée par Moodle est montrée à part.
+- **Historique et sécurité :** historique de chaque note à l'écran ; les années (adresses Moodle) ne se mélangent plus ; « Réinitialiser » efface aussi le rapport et le point de reprise.
+- **Import d'un lien ou d'un fichier :** les décisions déjà prises sur l'appareil ne sont plus remplacées.
+- **Mise à jour en un seul bouton :** plus de dossier à choisir ; le bouton ouvre le pilote, qui retrouve le dossier tout seul et affiche ses fenêtres de validation (la première fois, il faut l'ouvrir soi-même).
+- **Connexion unique (application) :** après la connexion à Odin, Moodle est ouvert avec la même connexion de l'université (et inversement), sans enregistrer d'identifiant.
+- **Écran « Mise à jour obligatoire » :** le titre n'est plus coupé dans la petite fenêtre.
+- **Plus de faux succès :** « Vérifier si la mise à jour est faite » ne recharge que si les fichiers ont vraiment changé ; le pilote met à jour le dossier de CETTE extension (retrouvé grâce à son identifiant), préfère les dossiers réellement chargés au dossier gardé en mémoire, ne touche pas un dossier git sans accord et prévient s'il écrit dans un dossier qu'aucun navigateur ne charge.
+- **Nouvel APK 1.4.35 :** à installer par-dessus l'ancien.
+
 ## 1.47.3 — app Android 1.4.34 : notes Moodle dans l'application, bus et tram en direct
 
 - **Moodle dans l'application Android :** dans la fenêtre Notes, « Chercher sur Moodle » lit tes notes sur Moodle (« Me connecter à Moodle » la première fois) ; chaque note reste à valider ou à refuser. Après la synchro d'Odin, la recherche se fait aussi toute seule si ta session Moodle est ouverte, avec une notification pour les nouvelles notes.

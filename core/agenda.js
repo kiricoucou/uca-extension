@@ -11,6 +11,7 @@ let events = [];
 let notes = {};
 let absences = null;
 let scrapeIssues = {};
+let moodleReport = null;           // rapport de la dernière recherche Moodle (uca_moodle_report)
 let releveNotes = null;          // relevé avec les barèmes choisis appliqués (voir UCA_GRADES.applyScales)
 let releveRaw = null, scales = {}; // relevé tel que lu sur Odin ; barèmes choisis par évaluation (uca_scales)
 let moodleStore = null;            // notes Moodle (uca_moodle) : en attente, validées ou refusées
@@ -863,7 +864,7 @@ async function updatePinnedNext() {
   } catch (e) { /* notification indisponible : sans conséquence */ }
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_class_events", "uca_my_groups", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks", "uca_activity", "uca_activity_seen", "uca_scales", "uca_moodle", "uca_moodle_progress"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_class_events", "uca_my_groups", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks", "uca_activity", "uca_activity_seen", "uca_scales", "uca_moodle", "uca_moodle_progress", "uca_moodle_report"], (data) => {
     // Hors Android natif (qui a sa propre synchro CAS en arrière-plan) : sans données, écran d'import.
     if (window.UCA_APP && !window.AndroidUCA && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) {
       location.href = chrome.runtime.getURL("app/import.html");
@@ -882,7 +883,7 @@ function loadFromStorage() {
     scrapeIssues = data.uca_scrape_issues || {};
     notesHistory = data.uca_notes_history || [];
     subjectColors = data.uca_subject_colors || {};
-    moodleStore = data.uca_moodle || null; moodleProgressState = data.uca_moodle_progress || null;
+    moodleStore = data.uca_moodle || null; moodleProgressState = data.uca_moodle_progress || null; moodleReport = data.uca_moodle_report || null;
     setReleve(data.uca_releve_notes, data.uca_scales || {});
     notesSeen = data.uca_notes_seen || {};
     setEdtChanges(data.uca_edt_changes);
@@ -1002,6 +1003,7 @@ const MOODLE_ISSUE_TEXT = {
   serviceDown: "Moodle est indisponible : réessaie plus tard.",
   structure: "Moodle semble avoir changé sa page de notes : aucune note n'a pu être lue.",
   error: "Lecture de Moodle impossible cette fois.",
+  partial: "Recherche INCOMPLÈTE : certaines notes peuvent manquer. Les cours non lus sont listés dans le rapport ci-dessous.",
 };
 function scrapeIssueNode(kind) {
   const i = scrapeIssues[kind];
@@ -2145,6 +2147,7 @@ function avoidMoodleSide(panel, side) {
   panel._lastW = panel.offsetWidth; panel._lastH = panel.offsetHeight;
 }
 const MOODLE_HOW = {
+  memoire: "Matière que tu as déjà choisie pour ce cours",
   code: "Matière proposée d'après le code du cours",
   proche: "Matière la plus proche du cours Moodle : vérifie-la",
   nouvelle: "Ce cours ne ressemble à aucune matière du relevé : créer une nouvelle matière est recommandé",
@@ -2301,6 +2304,75 @@ function moodlePicker(it, matieres, suggestion, onChange) {
    Une note en attente propose Valider / Refuser ; une note déjà validée ou refusée reste modifiable à tout moment :
    changer la matière ou le coefficient, la valider (à nouveau), l'ignorer, ou la remettre en attente.
    Couleurs : en attente = bleu, validée = vert, refusée / ignorée = rouge. */
+/* Informations qu'on ne doit pas cacher : valeur modifiée, note disparue, doublon probable, pondération et coefficient. */
+function moodleNote(textContent, strong, cls) {
+  const n = npEl("div", cls || "np-moodle-note", textContent);
+  n.style.cssText = strong ? "margin-top:6px;padding:6px 8px;border:1px solid #b25e00;border-radius:8px;background:rgba(178,94,0,.14);font-size:.85em;font-weight:700;" : "opacity:.85;font-size:.85em;margin-top:4px;";
+  return n;
+}
+function moodleCardNotes(it) {
+  const out = [], f = UCA_MOODLE.fmt;
+  if (it.change) {
+    const box = moodleNote(`Moodle affiche maintenant ${f(it.change.raw)} / ${f(it.change.max)} (avant : ${f(it.raw)} / ${f(it.max)}). Ta moyenne garde l'ancienne valeur tant que tu n'as pas choisi.`, true, "np-moodle-change");
+    const row = npEl("div"); row.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;";
+    const mk = (label, css, accept) => { const b = npEl("button", "", label); b.type = "button"; b.style.cssText = css; b.addEventListener("click", () => resolveMoodleChange(it.id, accept)); return b; };
+    row.append(mk("Prendre la nouvelle note", mdlSolid(MDL_GREEN), true), mk("Garder l'ancienne", MOODLE_BTN_CSS, false));
+    box.appendChild(row); out.push(box);
+  }
+  if (it.missingSince) out.push(moodleNote(`⚠ Depuis le ${new Date(it.missingSince).toLocaleDateString("fr-FR")}, ${it.missingWhy || "cette note n'est plus sur Moodle"}. Elle est conservée ici : à toi de décider.`, true, "np-moodle-missing"));
+  const twin = it.dupOf && it.status === "pending" && moodleStore && moodleStore.items && moodleStore.items[it.dupOf];
+  if (twin && twin.status === "validated") out.push(moodleNote(`⚠ Doublon possible : « ${twin.title} », même note, est déjà validée. Si c'est le même contrôle, refuse celle-ci.`, true, "np-moodle-twin"));
+  if (it.computed) out.push(moodleNote("Note calculée par Moodle : vérifie qu'elle ne reprend pas des notes déjà comptées.", true, "np-moodle-computed"));
+  if (typeof it.weight === "number") out.push(moodleNote(`Pondération affichée par Moodle dans ce cours : ${f(it.weight)} %. Ce n'est pas forcément le coefficient de ta matière.`, false, "np-moodle-weight"));
+  if (Array.isArray(it.history) && it.history.length) out.push(moodleHistory(it));
+  if (!it.coeffConfirmed && it.status === "pending") out.push(moodleNote("Coefficient inconnu : Moodle ne le donne pas. Saisis-le pour pouvoir valider la note.", false, "np-moodle-coeff"));
+  return out;
+}
+/* Ce qui est arrivé à cette note sur Moodle (les 20 derniers événements). */
+function moodleHistory(it) {
+  const box = npEl("details", "np-moodle-history"); box.style.cssText = "margin-top:4px;font-size:.85em;";
+  const sum = npEl("summary", "", `Historique (${it.history.length})`); sum.style.cssText = "cursor:pointer;min-height:28px;"; box.appendChild(sum);
+  const f = UCA_MOODLE.fmt, grade = (v) => v && typeof v === "object" ? `${f(v.raw)} / ${f(v.max)}` : String(v === null || v === undefined ? "aucune" : v);
+  it.history.slice().reverse().forEach((h) => {
+    let what = String(h.kind || "");
+    if (h.kind === "note") what = `Note : ${grade(h.from)} devient ${grade(h.to)}`;
+    else if (h.kind === "renommée") what = `Renommée : « ${h.from} » devient « ${h.to} »`;
+    else if (h.kind === "pondération") what = `Pondération : ${h.from === null ? "aucune" : h.from + " %"} devient ${h.to === null ? "aucune" : h.to + " %"}`;
+    else if (h.kind === "disparue") what = `Signalée disparue : ${h.why || ""}`;
+    box.appendChild(npEl("div", "", `${new Date(h.at).toLocaleString("fr-FR")} · ${what}`));
+  });
+  return box;
+}
+function resolveMoodleChange(id, accept) {
+  chrome.storage.local.get("uca_moodle", (d) => {
+    const next = UCA_MOODLE.resolveChange(d.uca_moodle, id, accept, Date.now());
+    if (next && next !== d.uca_moodle) chrome.storage.local.set({ uca_moodle: next });
+  });
+}
+/* Rapport de la dernière recherche : ce qui a été lu, ce qui ne l'a pas été, et à quel point on peut s'y fier. */
+function moodleReportNode() {
+  const r = moodleReport;
+  if (!r || !Array.isArray(r.courses)) return null;
+  const box = npEl("details", "np-moodle-report"); box.id = "moodleReport"; box.dataset.level = r.level;
+  const tone = r.complete ? MDL_GREEN : r.level === "échec" ? MDL_RED : MDL_AMBER;
+  box.style.cssText = `margin-top:8px;border:1px solid ${tone};border-radius:10px;padding:8px 10px;font-size:.88em;max-width:100%;box-sizing:border-box;overflow-wrap:anywhere;`;
+  if (!r.complete) box.open = true;
+  const sum = npEl("summary", "", `${r.complete ? "✓ Recherche complète" : "⚠ Recherche incomplète"} : ${r.read} cours lus sur ${r.total}`); sum.style.cssText = "cursor:pointer;font-weight:800;min-height:28px;";
+  box.appendChild(sum);
+  const line = (t) => { const n = npEl("div", "", t); n.style.marginTop = "3px"; box.appendChild(n); };
+  line(`${r.notes} note${r.notes > 1 ? "s" : ""} chiffrée${r.notes > 1 ? "s" : ""} lue${r.notes > 1 ? "s" : ""} · ${r.failed} cours en échec · ${r.notRead} non lu${r.notRead > 1 ? "s" : ""}${r.resumed ? ` · ${r.resumed} repris de la recherche interrompue` : ""}`);
+  line(`Le ${new Date(r.at).toLocaleString("fr-FR")}. « Complète » veut dire : chaque page a été reconnue et lue en entier. Cela ne remplace pas la vérification sur Moodle.`);
+  const expected = moodleCandidateOrigin().replace("https://", "").replace("/*", "");
+  if (r.host && r.host !== expected) line(`⚠ Notes lues sur ${r.host}, alors que l'adresse de cette année universitaire est ${expected} : vérifie qu'il s'agit de la bonne année.`);
+  if (r.fallback) line("⚠ La page « Notes » de Moodle a changé : la liste des cours vient d'un moyen de secours. Vérifie sur Moodle.");
+  r.courses.filter((c) => c.status !== "lu").slice(0, 60).forEach((c) => line(`✗ ${c.name} : ${c.status}${c.reason ? " (" + c.reason + ")" : ""}`));
+  r.courses.forEach((c) => (c.anomalies || []).slice(0, 10).forEach((a) => line(`✗ ${c.name} — « ${a.title} » : ${a.reason}`)));
+  const ignored = r.courses.flatMap((c) => (c.ignored || []).map((a) => `${c.name} — « ${a.title} » : ${a.reason}`));
+  if (ignored.length) { line(`${ignored.length} note${ignored.length > 1 ? "s" : ""} sans valeur chiffrée, non reprise${ignored.length > 1 ? "s" : ""} :`); ignored.slice(0, 20).forEach((t) => line("• " + t)); }
+  r.courses.filter((c) => c.warning).slice(0, 5).forEach((c) => line(`⚠ ${c.name} : ${c.warning}`));
+  if (r.truncated) line(`✗ ${r.truncated} cours au-delà de la limite n'ont pas été lus.`);
+  return box;
+}
 function moodleCard(it, matieres) {
   const d = UCA_MOODLE.describe(it), done = it.status !== "pending";
   const tone = it.status === "validated" ? MDL_GREEN : it.status === "refused" ? MDL_RED : MDL_BLUE;
@@ -2323,19 +2395,23 @@ function moodleCard(it, matieres) {
     dup.textContent = twin ? "⚠ La même note est déjà dans cette matière (Odin : « " + twin.label + " »). Si c'est le même contrôle, " + (it.status === "validated" ? "ignore" : "refuse") + " celle-ci : sinon elle compterait deux fois." : "";
   };
   paintDup(it.matiere); card.appendChild(dup);
-  const suggestion = UCA_MOODLE.suggestMatiere(releveRaw, it.course, it.title, moodleStore);
+  moodleCardNotes(it).forEach((n) => card.appendChild(n));
+  const suggestion = UCA_MOODLE.suggestMatiere(releveRaw, it.course, it.title, moodleStore, it.courseId);
   const howKey = it.how && MOODLE_HOW[it.how] ? it.how : suggestion.how;
   if (!done && MOODLE_HOW[howKey]) { const h = npEl("div", "", MOODLE_HOW[howKey]); h.style.cssText = "opacity:.85;font-size:.85em;margin-top:6px;"; card.appendChild(h); }
   const row = npEl("div", ""); row.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;";
   const picker = moodlePicker(it, matieres, suggestion, (matiere) => paintDup(matiere));
   const coeffLbl = npEl("label", "", "Coeff"); coeffLbl.style.cssText = "font-size:.85em;font-weight:700;flex:none;white-space:nowrap;";
-  const coeff = npEl("input"); coeff.id = picker.trigger.id + "-c"; coeffLbl.htmlFor = coeff.id; coeff.type = "number"; coeff.min = "0.5"; coeff.max = "100"; coeff.step = "0.5"; coeff.value = String(it.coeff || 1);
+  const coeff = npEl("input"); coeff.id = picker.trigger.id + "-c"; coeffLbl.htmlFor = coeff.id; coeff.type = "number"; coeff.min = "0.5"; coeff.max = "100"; coeff.step = "0.5";
+  // Moodle ne donne pas le coefficient : rien n'est prérempli tant que tu ne l'as pas choisi toi-même.
+  coeff.value = it.status === "validated" || it.coeffConfirmed ? String(it.coeff || 1) : ""; coeff.placeholder = "?";
   coeff.setAttribute("aria-label", "Coefficient de cette note dans la matière"); coeff.title = "Coefficient"; coeff.style.cssText = "width:64px;font:inherit;min-height:34px;";
   const btn = (label, css, fn) => { const b = npEl("button", "", label); b.type = "button"; b.style.cssText = css; b.addEventListener("click", fn); return b; };
   const opts = () => { const v = picker.get(); return { matiere: v.matiere || null, isNew: v.isNew, coeff: coeff.value }; };
   const validate = () => {
     const v = picker.get();
     if (!v.matiere) { picker.focus(); toast(v.isNew ? "Donne un nom à la nouvelle matière" : "Choisis d'abord la matière de cette note", "err"); return; }
+    if (!(Number(coeff.value) > 0 && Number(coeff.value) <= 100)) { coeff.focus(); toast("Saisis le coefficient de cette note : Moodle ne le donne pas", "err"); return; }
     saveMoodleDecision(it.id, "validated", opts());
   };
   const refuse = () => { saveMoodleDecision(it.id, "refused", opts()); toast("Note mise à la corbeille (🗑 dans la fenêtre de droite) : tu peux la restaurer", "ok"); };
@@ -2354,11 +2430,13 @@ function moodleBlock() {
   const pending = UCA_MOODLE.list(moodleStore, "pending"), validated = UCA_MOODLE.list(moodleStore, "validated"), trash = UCA_MOODLE.list(moodleStore, "refused"), done = validated.concat(trash);
   // Extension, ou application Android assez récente pour lire Moodle. Pas l'app web : un navigateur isole les cookies de Moodle.
   const canSync = settings.moodleNotes && chrome.runtime && chrome.runtime.sendMessage && (!window.UCA_APP || moodleInApp());
+  const changed = validated.filter((x) => x.change);
   if (!pending.length && !done.length && !canSync) { moodleSideData = { validated: [], trash: [], matieres: [] }; renderMoodleSide(); return null; }
   const box = npEl("div", "np-moodle"); box.style.cssText = "margin:8px 16px;max-width:100%;box-sizing:border-box;";
   const mIssue = !moodleProgressActive() && scrapeIssueNode("moodle"); if (mIssue) box.appendChild(mIssue);
   if (moodleProgressActive()) box.appendChild(moodleProgressNode());
   const matieres = UCA_MOODLE.matieres(releveRaw);
+  changed.slice(0, 20).forEach((it) => { const c = moodleCard(it, matieres); c.classList.add("np-moodle-changed-card"); box.appendChild(c); });
   pending.slice(0, 20).forEach((it) => box.appendChild(moodleCard(it, matieres)));
   if (pending.length > 20) box.appendChild(npEl("div", "", `… et ${pending.length - 20} autre(s) en attente`));
   const acts = npEl("div", "np-moodle-actions"); acts.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:8px;";
@@ -2371,6 +2449,7 @@ function moodleBlock() {
     acts.append(sync, ago);
   }
   if (acts.childNodes.length) box.appendChild(acts);
+  const reportNode = !moodleProgressActive() && moodleReportNode(); if (reportNode) box.appendChild(reportNode);
   if (done.length) {
     const nv = validated.length, nr = trash.length;
     const head = npEl("button", "np-moodle-toggle"); head.type = "button"; head.id = "moodleDoneToggle";
@@ -2386,7 +2465,8 @@ function moodleBlock() {
     head.addEventListener("click", () => { moodleSideOpen = !moodleSideOpen; renderMoodleSide(); });
     box.appendChild(head);
   }
-  moodleSideData = { validated, trash, matieres };
+  // Une note dont la valeur a changé est montrée en tête de la fenêtre Notes seulement (jamais deux cartes pour la même note).
+  moodleSideData = { validated: validated.filter((x) => !x.change), trash, matieres };
   renderMoodleSide();
   return box;
 }
@@ -2954,6 +3034,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
   if (changes.uca_scales) { scales = changes.uca_scales.newValue || {}; setReleve(releveRaw); renderNotesPanel(); }
   if (changes.uca_moodle) { moodleStore = changes.uca_moodle.newValue || null; setReleve(releveRaw); renderNotesPanel(); }
+  if (changes.uca_moodle_report) { moodleReport = changes.uca_moodle_report.newValue || null; renderNotesPanel(); }
   if (changes.uca_moodle_progress) {
     const was = moodleProgressActive();
     moodleProgressState = changes.uca_moodle_progress.newValue || null;

@@ -63,13 +63,22 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
 
     override fun handleMoodleRequest(manual: Boolean) {
         val ctx = context ?: return
+        attachMoodle()
         UcaMoodle.scrape(ctx, manual, onProgress = { p ->
             deliver(mapOf("type" to "UCA_MOODLE_PROGRESS", "done" to p.optInt("done"), "total" to p.optInt("total"), "label" to p.optString("label")))
-        }) { r ->
-            deliver(mapOf("type" to "UCA_MOODLE_RESULT", "data" to r.optJSONArray("data"),
-                "issue" to r.optString("issue").ifEmpty { null }, "detail" to r.optString("detail").ifEmpty { null }))
+        })
+    }
+
+    private fun attachMoodle() {
+        UcaMoodle.attach { r ->
+            val payload = HashMap<String, Any?>()
+            for (key in r.keys()) if (!r.isNull(key)) payload[key] = r.get(key)
+            payload["type"] = "UCA_MOODLE_RESULT"
+            deliver(payload)
         }
     }
+
+    override fun onMoodleCheckpoint(json: String) { UcaMoodle.checkpoint = json }
 
     override fun handleMoodleLogin() {
         if (!isAdded) return
@@ -138,6 +147,8 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
             override fun onPageFinished(view: WebView, url: String?) {
                 if (url != null && Uri.parse(url).host == ASSET_HOST) {
                     view.evaluateJavascript(bridgeScript, null)
+                    // Résultat d'une recherche terminée pendant que l'agenda était fermé : livré maintenant.
+                    view.postDelayed({ if (isAdded) attachMoodle() }, 1500)
                     applyChosenDesign(view, url)
                 }
             }
@@ -368,6 +379,7 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
     }
 
     override fun onDestroyView() {
+        UcaMoodle.detach()
         webView.destroy()
         super.onDestroyView()
     }

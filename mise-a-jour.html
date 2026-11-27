@@ -140,7 +140,7 @@ summary{cursor:pointer;font-weight:700;padding:12px 0}details p{margin:0 0 14px;
 
   <h2>Pour les curieux</h2>
   <details id="commande"><summary>La commande complète et ses arguments</summary>
-    <p>L'écran « Mise à jour obligatoire » de l'extension propose « Appliquer la mise à jour » : il télécharge ce fichier et te donne une commande à coller dans un terminal. Elle met à jour sans aucune question, puis rouvre ton navigateur.</p>
+    <p>L'écran « Mise à jour obligatoire » de l'extension a un bouton « Télécharger et appliquer la mise à jour » : il ouvre le pilote (la première fois, il le télécharge et tu l'ouvres toi-même). Le pilote retrouve ton dossier tout seul et te demande de valider. La commande ci-dessous, avec <code>/yes</code>, fait la même chose sans aucune question.</p>
     <span class="cmd-box">maj-extension.bat /browser firefox /os windows /version 1.46.54 /yes
 bash maj-extension.sh --browser firefox --os linux --version 1.46.54 --yes</span>
     <p><b>/browser</b> (<code>--browser</code>) : chrome, edge, brave, vivaldi, chromium ou firefox. <b>/version</b> : version attendue, vérifiée à la fin. <b>/yes</b> : sans fenêtre. <b>/force</b> : réinstalle même à jour. Un <b>chemin</b> en dernier si le dossier n'est pas retrouvé (l'extension ne connaît pas son propre dossier : le pilote le cherche).</p>
@@ -158,7 +158,7 @@ bash maj-extension.sh --browser firefox --os linux --version 1.46.54 --yes</span
 <script>
 (function () {
   "use strict";
-  var PILOT_VERSION = "2.0";   // écrit par tests/gen_extension_page.py d'après le pilote
+  var PILOT_VERSION = "2.1";   // écrit par tests/gen_extension_page.py d'après le pilote
   var ua = navigator.userAgent || "";
   var det = /Windows/i.test(ua) ? "windows" : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? "linux" : "windows";
   var detB = /Firefox\//.test(ua) ? "firefox" : /Edg\//.test(ua) ? "edge" : /OPR\//.test(ua) ? "other" : /Vivaldi/i.test(ua) ? "other" : navigator.brave ? "brave" : "chrome";

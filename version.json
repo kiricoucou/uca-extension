@@ -1,23 +1,36 @@
 {
   "app_name": "My UCA",
-  "version": "1.4.34",
-  "version_code": 24,
-  "bundle_version": "1.4.34",
+  "version": "1.4.35",
+  "version_code": 25,
+  "bundle_version": "1.4.35",
   "commit_sha": "main",
   "branch": "main",
-  "published_at": "2026-11-27T10:42:21Z",
+  "published_at": "2026-11-27T18:02:52Z",
   "min_apk_version_code": 16,
   "raw_base_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/",
   "apk_download_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/EdtUca.apk",
   "github_repo_url": "https://github.com/kiricoucou/uca-extension",
   "changelog": [
-    "Notes Moodle directement dans l'application : « Chercher sur Moodle » dans la fenêtre Notes, puis tu valides ou refuses chaque note.",
-    "L'application n'efface plus de vraies notes ni de vrais devoirs en les prenant pour des données de démonstration.",
-    "Bus et tram en direct sur tous les appareils, sans extension : données ouvertes officielles de T2C."
+    "Une seule connexion : après Odin, Moodle est lu tout seul (connexion de l'université, aucun identifiant enregistré).",
+    "Notes Moodle fiabilisées : rapport après chaque recherche, jamais « réussi » si un cours manque.",
+    "Une note validée ne change plus sans ton accord, et le coefficient n'est jamais inventé."
   ],
-  "ota_version": "1.4.34",
-  "ota_base_version_code": 24,
+  "ota_version": "1.4.35",
+  "ota_base_version_code": 25,
   "history": [
+    {
+      "version": "1.47.4",
+      "app": "1.4.35",
+      "title": "notes Moodle fiabilisées",
+      "items": [
+        "Plus d'échec silencieux : rapport après chaque recherche (cours lus, en échec, non lus, lignes illisibles). Une recherche incomplète n'est jamais annoncée réussie ; une page mal chargée…",
+        "Notes modifiées : une note validée garde sa valeur dans ta moyenne jusqu'à ce que tu acceptes la nouvelle.",
+        "Doublons et renommages : chaque note est suivie par son identifiant Moodle ; les activités renommées, disparues ou en double probable sont signalées, rien n'est effacé tout seul.",
+        "Reprise : nouvelles tentatives automatiques, et après une coupure les cours déjà lus ne sont pas relus.",
+        "Coefficients : jamais inventés : la case est vide et il faut la remplir pour valider ; la pondération affichée par Moodle est montrée à part.",
+        "Historique et sécurité : historique de chaque note à l'écran ; les années (adresses Moodle) ne se mélangent plus ; « Réinitialiser » efface aussi le rapport et le point de reprise."
+      ]
+    },
     {
       "version": "1.47.3",
       "app": "1.4.34",
@@ -89,14 +102,6 @@
       "title": "notes cliquables",
       "items": [
         "Notes : chaque note avec sa barre de progression est cliquable (ordinateur et téléphone) et ouvre un détail : note, coefficient, moyenne de la classe, meilleure et moins bonne note. Dans…"
-      ]
-    },
-    {
-      "version": "1.46.59",
-      "app": "1.4.27",
-      "title": "sécurité, 9 failles corrigées",
-      "items": [
-        "Sécurité (audit attaque/défense) : le pont de l'extension ne répond plus aux pages locales (file://, localhost) ni aux iframes, seulement au site officiel, avec un délai entre deux…"
       ]
     }
   ]

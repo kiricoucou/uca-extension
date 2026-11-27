@@ -12,7 +12,7 @@ const NETWORK_TIMEOUT_MS = 4000;
 const SHELL = [
   "index.html", "install.html", "aide.html", "synchro-moodle.html", "404.html", "site.css", "app/index.html", "app/shell.html", "app/shell.js", "app/shell.css", "core/status.js", "lieux-map.html", "transport.html", "version.json", "app/import.html", "app/install.html", "app/import.js", "app/app.css", "app.webmanifest", "manifest.json",
   "app/icons/icon-192.png", "app/icons/icon-512.png",
-  "core/env.js", "core/settings.js", "core/shared.js", "core/grades.js", "core/moodle.js", "core/tools.js", "core/tasks.js", "core/activity.js", "core/transfer.js", "core/agenda.js", "core/widgets.js",
+  "core/env.js", "core/settings.js", "core/shared.js", "core/grades.js", "core/moodle.js", "core/moodle-scan.js", "core/tools.js", "core/tasks.js", "core/activity.js", "core/transfer.js", "core/agenda.js", "core/widgets.js",
   "choose.html", "choose.js", "settings.html", "settings.js", "designs/designs.json", "vendor/jsQR.js", "vendor/qrcode.js",
 ];
 

@@ -2,7 +2,7 @@
 setlocal EnableExtensions
 chcp 65001 >nul
 rem  Version du pilote : a monter a chaque changement de ce script (elle figure dans le nom du fichier telecharge).
-set "MYUCA_PILOT_VERSION=2.0"
+set "MYUCA_PILOT_VERSION=2.1"
 title Mise a jour de l'extension My UCA - pilote %MYUCA_PILOT_VERSION%
 rem ----------------------------------------------------------------------------------------------
 rem  Met a jour l'extension "My UCA" (Chrome, Edge, Brave, Vivaldi, Firefox) chargee en mode developpeur.
@@ -31,6 +31,7 @@ if /i "%~1"=="/desinstaller" (set "MYUCA_UNINSTALL=1" & shift & goto :args)
 if /i "%~1"=="/force" (set "MYUCA_FORCE=1" & shift & goto :args)
 if /i "%~1"=="/yes" (set "MYUCA_AUTO=1" & set "MYUCA_NOPAUSE=1" & shift & goto :args)
 if /i "%~1"=="/browser" (set "MYUCA_BROWSER=%~2" & shift & shift & goto :args)
+if /i "%~1"=="/id" (set "MYUCA_ID=%~2" & shift & shift & goto :args)
 if /i "%~1"=="/version" (set "MYUCA_VERSION=%~2" & shift & shift & goto :args)
 if /i "%~1"=="/os" (shift & shift & goto :args)
 set "MYUCA_ARGDEST=%~1"
@@ -173,6 +174,42 @@ function Find-InBrowsers {
     }
   }
 }
+# Dossier chargé par le navigateur pour CETTE extension (identifiant donné par l'extension) : la certitude, pas une supposition.
+function Find-ById([string]$id) {
+  if ($id -cnotmatch '^[a-p]{32}$') { return $null }
+  $la = $env:LOCALAPPDATA
+  $roots = @(@('Chrome', "$la\Google\Chrome\User Data"), @('Edge', "$la\Microsoft\Edge\User Data"), @('Brave', "$la\BraveSoftware\Brave-Browser\User Data"), @('Vivaldi', "$la\Vivaldi\User Data"), @('Chromium', "$la\Chromium\User Data"))
+  $label = Browser-Label
+  if ($label) { $roots = @($roots | Sort-Object { if ($_[0] -eq $label) { 0 } else { 1 } }) }
+  foreach ($r in $roots) {
+    if (-not (Test-Path -LiteralPath $r[1])) { continue }
+    foreach ($prof in (Get-ChildItem -LiteralPath $r[1] -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -match '^(Default|Profile \d+)$' })) {
+      foreach ($f in @('Secure Preferences', 'Preferences')) {
+        $p = Join-Path $prof.FullName $f
+        if (-not (Test-Path -LiteralPath $p)) { continue }
+        try { $raw = [IO.File]::ReadAllText($p) } catch { continue }
+        foreach ($m in [regex]::Matches($raw, '"' + $id + '"\s*:\s*\{')) {
+          # fin de l'objet de cette extension : accolades comptees hors des chaines
+          $depth = 0; $inText = $false; $start = $m.Index + $m.Length - 1; $end = -1
+          for ($k = $start; $k -lt $raw.Length -and ($k - $start) -lt 400000; $k++) {
+            $ch = $raw[$k]
+            if ($inText) { if ($ch -eq '\') { $k++ } elseif ($ch -eq '"') { $inText = $false } }
+            elseif ($ch -eq '"') { $inText = $true }
+            elseif ($ch -eq '{') { $depth++ }
+            elseif ($ch -eq '}') { $depth--; if ($depth -eq 0) { $end = $k; break } }
+          }
+          if ($end -lt 0) { continue }
+          $pm = [regex]::Match($raw.Substring($start, $end - $start + 1), '"path"\s*:\s*"([A-Za-z]:\\\\[^"]*)"')
+          if ($pm.Success) {
+            $dir = $pm.Groups[1].Value -replace '\\\\', '\'
+            if (Get-ExtInfo $dir) { return [pscustomobject]@{ Path = $dir; Origin = ($r[0] + ', profil ' + $prof.Name) } }
+          }
+        }
+      }
+    }
+  }
+  return $null
+}
 function Browser-Label { switch ($env:MYUCA_BROWSER) { 'chrome' { 'Chrome' } 'edge' { 'Edge' } 'brave' { 'Brave' } 'vivaldi' { 'Vivaldi' } 'chromium' { 'Chromium' } 'firefox' { 'Firefox' } default { '' } } }
 function Limit-ToBrowser {
   $l = Browser-Label
@@ -197,12 +234,13 @@ $PILOT_DIR = Join-Path $env:LOCALAPPDATA 'MyUCA'
 # N'importe quel site peut ouvrir un lien uca-maj: ; rien de ce lien n'est execute ni transmis, sauf un nom de navigateur de la liste.
 $LAUNCHER = @'
 $u = [string]($args -join ' ')
-$b = ''
-if ($u -match '^uca-maj:(//)?(chrome|edge|brave|vivaldi|chromium|firefox)/?$') { $b = $Matches[2].ToLower() }
-$p = @('/yes'); if ($b) { $p = @('/browser', $b, '/yes') }
-if ($env:MYUCA_DRYRUN -eq '1') { Write-Output ($p -join ' '); exit 0 }
+$b = ''; $i = ''
+# Seules deux choses sont tirees du lien, de forme fixe : un navigateur de la liste et l'identifiant d'une extension (32 lettres a-p).
+if ($u -match '^uca-maj:(//)?(chrome|edge|brave|vivaldi|chromium|firefox)(/([a-p]{32}))?/?$') { $b = $Matches[2].ToLower(); if ($Matches[4]) { $i = $Matches[4].ToLower() } }
+# Sans /yes : le pilote montre ses fenetres (dossier trouve, « Valider ») et attend avant de se fermer.
+$p = @(); if ($b) { $p = @('/browser', $b) }; if ($i) { $p += @('/id', $i) }
+if ($env:MYUCA_DRYRUN -eq '1') { Write-Output (('[' + ($p -join ' ') + ']')); exit 0 }
 & (Join-Path $PSScriptRoot 'maj-extension.bat') @p
-if ($LASTEXITCODE -ne 0) { Start-Sleep -Seconds 60 } else { Start-Sleep -Seconds 10 }
 '@
 function Install-Pilot {
   if ($env:MYUCA_NOINSTALL -eq '1') { return }
@@ -218,7 +256,7 @@ function Install-Pilot {
     Set-Item -Path $PILOT_KEY -Value 'URL:Pilote de mise a jour My UCA'
     New-ItemProperty -Path $PILOT_KEY -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null
     Set-Item -Path "$PILOT_KEY\shell\open\command" -Value $cmd
-    Write-Host "Pilote installe : les prochaines fois, clique sur ""Appliquer la mise a jour"" dans l'extension, rien a telecharger."
+    Write-Host "Pilote installe : les prochaines fois, clique sur ""Telecharger et appliquer la mise a jour"" dans l'extension, rien a telecharger."
     Write-Host "(Tu peux supprimer le fichier telecharge. Desinstaller : maj-extension.bat /desinstaller)"
   } catch { Write-Host ("Pilote non installe (" + $_.Exception.Message + ") : la mise a jour continue.") }
 }
@@ -280,10 +318,20 @@ try {
     if ($cands.Count -eq 0) { exit 2 }
     $dest = $cands[0].Path
   } else {
-    if ($env:MYUCA_CFG -and (Test-Path -LiteralPath $env:MYUCA_CFG)) { Add-Cand ((Get-Content -LiteralPath $env:MYUCA_CFG -Raw).Trim()) 'dossier utilisé la dernière fois' }
-    Add-Cand $env:MYUCA_SELFDIR 'dossier de ce script'
-    Find-InBrowsers
-    Limit-ToBrowser
+    $mine = if ($env:MYUCA_ID) { Find-ById $env:MYUCA_ID } else { $null }
+    if ($mine) {
+      Add-Cand $mine.Path $mine.Origin
+      Write-Host ("Dossier de ton extension, lu dans la configuration du navigateur (" + $mine.Origin + ").")
+    } else {
+      # Les dossiers que les navigateurs chargent passent AVANT la memoire : sinon on mettrait a jour un dossier que
+      # personne ne charge, et l'extension resterait a l'ancienne version.
+      Find-InBrowsers
+      Limit-ToBrowser
+      $loadedCount = $cands.Count
+      if ($env:MYUCA_CFG -and (Test-Path -LiteralPath $env:MYUCA_CFG)) { Add-Cand ((Get-Content -LiteralPath $env:MYUCA_CFG -Raw).Trim()) 'dossier utilisé la dernière fois' }
+      Add-Cand $env:MYUCA_SELFDIR 'dossier de ce script'
+      if ($loadedCount -gt 1) { Write-Host "Plusieurs dossiers sont charges par tes navigateurs : verifie que c'est le bon avant de valider." }
+    }
     if ($cands.Count -eq 0) {
       Write-Host "Je n'ai pas retrouve l'extension automatiquement."
       if ($auto) { exit 2 }
@@ -301,6 +349,18 @@ try {
       if (-not $dest) { exit 3 }
     }
   }
+
+  # Dossier de developpement (git) : on n'y ecrit jamais sans accord, des modifications pourraient etre perdues.
+  if ((Test-Path -LiteralPath (Join-Path $dest '.git')) -and $env:MYUCA_FORCE -ne '1') {
+    $warn = "Le dossier $dest est un dossier de developpement (git). La mise a jour remplacerait ses fichiers et peut faire perdre des modifications non enregistrees."
+    Write-Host ("ATTENTION : " + $warn)
+    if ($auto) { Write-Host "Rien n'a ete modifie. Ajoute /force pour ecrire quand meme."; exit 3 }
+    $answer = Read-Host "Ecrire quand meme dans ce dossier ? Tape OUI pour confirmer"
+    if ($answer -cne 'OUI') { exit 3 }
+  }
+  # Ce dossier est-il charge par un navigateur ? Sinon on le dira clairement a la fin.
+  $loadedDest = $false
+  foreach ($c in $cands) { if ($c.Path -ieq $dest -and ($c.Browsers.Count -gt 0 -or $c.Origin -like '*profil*')) { $loadedDest = $true } }
 
   # memorise le dossier pour la prochaine fois
   if ($env:MYUCA_CFG) { New-Item -ItemType Directory -Force -Path (Split-Path $env:MYUCA_CFG -Parent) | Out-Null; Set-Content -LiteralPath $env:MYUCA_CFG -Value $dest -Encoding ASCII }
@@ -364,7 +424,12 @@ try {
   }
   Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
   if ($env:MYUCA_VERSION -and $firstVersion -ne $env:MYUCA_VERSION) { Write-Host ("Remarque : la version attendue etait " + $env:MYUCA_VERSION + ", le dossier contient maintenant " + $firstVersion + ".") }
-  Open-InBrowser $firstVersion
+  if ($loadedDest) { Open-InBrowser $firstVersion }
+  else {
+    Write-Host ""
+    Write-Host ("ATTENTION : je n'ai pas trouve ce dossier parmi ceux que tes navigateurs chargent : " + $dest)
+    Write-Host "Si ton extension reste a l'ancienne version, ouvre chrome://extensions, ""Details"", et compare le dossier affiche."
+  }
   Write-Host ""
   $opens = @()
   if ($chNames.Count -gt 0) {

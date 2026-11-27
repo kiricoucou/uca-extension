@@ -175,8 +175,14 @@ async function applyImport(snap) {
   validate(snap);
   const out = {};
   KEYS.forEach((k) => { if (snap.data[k] !== undefined) out[k] = snap.data[k]; });
-  const { uca_design } = await chrome.storage.local.get("uca_design");
+  const { uca_design, uca_moodle } = await chrome.storage.local.get(["uca_design", "uca_moodle"]);
   if (uca_design) delete out.uca_design;
+  // Notes Moodle : les décisions prises sur cet appareil ne sont jamais remplacées en bloc.
+  if (uca_moodle && uca_moodle.items) {
+    if (!out.uca_moodle) delete out.uca_moodle;
+    else if (root.UCA_MOODLE) out.uca_moodle = root.UCA_MOODLE.mergeStores(uca_moodle, out.uca_moodle);
+    else delete out.uca_moodle;           // sans le module de fusion, on garde les notes d'ici
+  }
   out.uca_app_imported_at = new Date().toISOString();
   out.uca_app_exported_at = snap.exportedAt || null;
   await chrome.storage.local.set(out);

@@ -132,7 +132,7 @@ def main():
             page.evaluate("""() => { window.__calls = []; window.__reloaded = false; UCA_SELFUPDATE.run = async (o) => { window.__calls.push(!!o.interactive); o.onProgress && o.onProgress(3, 10, 'x'); return '99.0.0'; }; chrome.runtime.reload = () => { window.__reloaded = true; }; }""")
             page.locator("#ucaUpdateGate button", has_text="Télécharger et appliquer").click(); page.wait_for_timeout(1200)
             st = page.evaluate("() => [window.__calls, window.__reloaded, document.getElementById('ucaGateStatus').innerText]")
-            check("clic : lance la mise à jour (interactive), pas l'ouverture d'un lien", st[0] == [True], str(st))
+            check("clic avec un dossier déjà autorisé : mise à jour sans aucune fenêtre (mode silencieux), pas d'ouverture de lien", st[0] == [False], str(st))
             check("après succès : message puis rechargement de l'extension", "Mise à jour installée" in st[2] and st[1] is True, str(st))
             page.close()
         finally:

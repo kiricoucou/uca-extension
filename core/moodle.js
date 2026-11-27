@@ -6,13 +6,15 @@
    valide (elle rejoint le tableau des notes) ou la refuse (ignorée pour toujours, tant que sa valeur ne change
    pas : des contrôles fictifs existent sur Moodle).
 
+   Page lue de travers ≠ aucune note : voir parseReport (ok, anomalies).
+
    Magasin (uca_moodle) :
    { sync: ISO, items: { "MDL|<cours>|<activité>": { id, courseId, course, title, type, raw, max, note20,
      feedback, matiere, coeff, status: "pending" | "validated" | "refused" (= dans la corbeille) | "deleted", at, decidedAt } } } */
 (function (root) {
 "use strict";
 
-const ITEM_MAX = 400;
+const ITEM_MAX = 2000;
 
 const ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", rsquo: "’", lsquo: "‘", laquo: "«", raquo: "»", ndash: "–", mdash: "—", hellip: "…" };
 function decode(s) {
@@ -45,38 +47,176 @@ function parseOverview(html) {
     if (seen.has(p.id)) continue; seen.add(p.id);
     courses.push({ id: p.id, name: text(m[2]) });
   }
-  return { userId, courses };
+  // ok = c'est bien la page « Notes » (sinon une liste vide ne veut rien dire).
+  const ok = courses.length > 0 || /id\s*=\s*["'](overview-grade|page-grade-report-overview-index)["']/i.test(html || "");
+  return { userId, courses, ok };
 }
 
-/* Rapport de notes d'un cours (table.user-grade) : une entrée par activité notée. Ignore catégories, totaux,
-   activités sans note (« - ») et lignes illisibles. Note sur 20 = note / barème × 20. */
-function parseCourseGrades(html) {
-  const out = [];
-  const tm = /<table\b[^>]*user-grade[^>]*>([\s\S]*?)<\/table>/i.exec(html || "");
-  if (!tm) return out;
-  const rows = tm[1].split(/<tr\b/i).slice(1);
-  rows.forEach((row) => {
-    const th = /<th\b[^>]*column-itemname[^>]*>([\s\S]*?)<\/th>/i.exec(row);
-    if (!th) return;
-    const typeM = /text-uppercase[^>]*>([\s\S]*?)<\/span>/i.exec(th[1]);
-    const titleM = /class="[^"]*rowtitle[^"]*"[^>]*>([\s\S]*?)<\/div>/i.exec(th[1]);
-    const type = typeM ? text(typeM[1]) : "";
-    const title = titleM ? text(titleM[1]) : "";
-    if (!title || /tendance centrale|total du cours|^total\b/i.test(type + " " + title)) return;
-    const cell = (cls) => { const c = new RegExp("<td\\b[^>]*" + cls + "[^>]*>([\\s\\S]*?)</td>", "i").exec(row); return c ? text(c[1]) : ""; };
-    const gradeTxt = cell("column-grade").replace(/\bActions\b/gi, "").trim();
-    const rangeTxt = cell("column-range");
-    const raw = num(gradeTxt);
-    if (raw === null || /^[-–—\s]*$/.test(gradeTxt)) return;
-    const nums = (rangeTxt.match(/-?\d+(?:[.,]\d+)?/g) || []).map((x) => parseFloat(x.replace(",", ".")));
-    const max = nums.length >= 2 ? nums[1] : null;
-    let value = raw, scale = max;
-    if (/%/.test(gradeTxt) && max) value = raw / 100 * max;
-    if (!scale || scale <= 0) return;
-    out.push({ title, type, raw: value, max: scale, note20: round3(value / scale * 20), feedback: cell("column-feedback") });
-  });
-  return out;
+/* ---------- Lecture des pages ----------
+   Pas de DOMParser (absent du service worker) : un petit analyseur qui suit l'imbrication des balises. Une page n'est
+   jamais prise pour « aucune note » : parseReport dit si c'est bien un rapport de notes complet, et sinon pourquoi. */
+const TAG_ATTRS = "((?:\"[^\"]*\"|'[^']*'|[^'\">])*)";
+function attr(attrs, name) {
+  const m = new RegExp("(?:^|\\s)" + name + "\\s*=\\s*(\"([^\"]*)\"|'([^']*)')", "i").exec(attrs || "");
+  return m ? decode(m[2] !== undefined ? m[2] : m[3]) : "";
 }
+function hasClass(attrs, cls) { return (" " + attr(attrs, "class").replace(/\s+/g, " ") + " ").includes(" " + cls + " "); }
+function clean(html) { return String(html || "").replace(/<!--[\s\S]*?-->/g, " ").replace(/<script\b[\s\S]*?<\/script>|<style\b[\s\S]*?<\/style>|<template\b[\s\S]*?<\/template>/gi, " "); }
+
+/* Contenu de l'élément ouvert en « start » (juste après sa balise ouvrante), balises de même nom imbriquées comprises. */
+function innerOf(html, tag, start) {
+  const re = new RegExp("<(/?)" + tag + "\\b" + TAG_ATTRS + ">", "gi");
+  re.lastIndex = start; let depth = 1, m;
+  while ((m = re.exec(html))) {
+    if (m[1]) { if (--depth === 0) return { inner: html.slice(start, m.index), end: re.lastIndex, closed: true }; }
+    else if (!/\/$/.test(m[2])) depth++;
+  }
+  return { inner: html.slice(start), end: html.length, closed: false };
+}
+/* Premier élément (div, span, a) portant la classe demandée. */
+function byClass(html, cls) {
+  const re = new RegExp("<(div|span|a)\\b" + TAG_ATTRS + ">", "gi"); let m;
+  while ((m = re.exec(html))) if (hasClass(m[2], cls)) return innerOf(html, m[1], re.lastIndex).inner;
+  return null;
+}
+/* Retire les menus « Actions » que Moodle glisse dans la cellule de la note (leur texte n'est pas la note). */
+function dropMenus(html) {
+  let out = html;
+  for (;;) {
+    const re = new RegExp("<(div)\\b" + TAG_ATTRS + ">", "gi"); let m, hit = null;
+    while ((m = re.exec(out))) if (/(^|\s)(action-menu|dropdown|dropdown-menu)(\s|$)/.test(attr(m[2], "class"))) { hit = { from: m.index, body: re.lastIndex }; break; }
+    if (!hit) return out;
+    out = out.slice(0, hit.from) + " " + out.slice(innerOf(out, "div", hit.body).end);
+  }
+}
+
+/* Lignes et cellules du premier tableau « user-grade » ; les tableaux imbriqués (commentaires) restent dans leur cellule. */
+function readTable(html) {
+  const open = new RegExp("<table\\b" + TAG_ATTRS + ">", "gi"); let m, start = -1;
+  while ((m = open.exec(html))) if (hasClass(m[1], "user-grade")) { start = open.lastIndex; break; }
+  if (start < 0) return null;
+  const re = new RegExp("<(/?)(table|tr|th|td)\\b" + TAG_ATTRS + ">", "gi");
+  re.lastIndex = start;
+  const rows = []; let depth = 1, row = null, cell = null, t;
+  const closeCell = (at) => { if (cell) { cell.html = html.slice(cell.from, at); cell = null; } };
+  while ((t = re.exec(html))) {
+    const closing = !!t[1], tag = t[2].toLowerCase();
+    if (tag === "table") {
+      depth += closing ? -1 : 1;
+      if (depth === 0) { closeCell(t.index); return { rows, closed: true }; }
+      continue;
+    }
+    if (depth !== 1) continue;
+    if (tag === "tr") { closeCell(t.index); row = closing ? null : { attrs: t[3], cells: [] }; if (row) rows.push(row); }
+    else if (closing) closeCell(t.index);
+    else { closeCell(t.index); if (!row) { row = { attrs: "", cells: [] }; rows.push(row); } cell = { tag, attrs: t[3], from: re.lastIndex, html: "" }; row.cells.push(cell); }
+  }
+  closeCell(html.length);
+  return { rows, closed: false };
+}
+
+const COLUMNS = ["itemname", "weight", "grade", "range", "feedback", "contributiontocoursetotal"];
+const HEADER_TEXT = [["itemname", /l[ée]ment d.[ée]valuation|grade item/i], ["weight", /pond[ée]ration|weight/i], ["grade", /^note$|^grade$/i],
+  ["range", /valeurs possibles|bar[èe]me|[ée]tendue|^range$/i], ["feedback", /feedback|commentaire/i], ["contributiontocoursetotal", /contribution/i]];
+/* Trois façons de savoir à quelle colonne appartient une cellule, de la plus sûre à la plus fragile :
+   la classe column-…, l'attribut headers (« … grade123 »), puis la position d'après le texte des en-têtes. */
+function columnReader(rows) {
+  const head = rows.find((r) => r.cells.length > 1 && r.cells.every((c) => c.tag === "th"));
+  const byPosition = [];
+  if (head) head.cells.forEach((c) => {
+    const label = text(c.html), hit = HEADER_TEXT.find(([, re]) => re.test(label));
+    const span = Number(attr(c.attrs, "colspan")) || 1;
+    byPosition.push(hit ? hit[0] : null);
+    if (span > 1 && !(hit && hit[0] === "itemname")) for (let i = 1; i < span; i++) byPosition.push(null);
+  });
+  const used = new Set();
+  return {
+    head, used,
+    cells(row) {
+      const out = {};
+      row.cells.forEach((c, index) => {
+        let name = COLUMNS.find((n) => hasClass(c.attrs, "column-" + n)), how = "classes";
+        if (!name) {
+          const tokens = attr(c.attrs, "headers").split(/\s+/);
+          name = COLUMNS.find((n) => tokens.some((k) => new RegExp("^" + n + "\\d*$").test(k))); how = "attribut headers";
+        }
+        if (!name) { name = byPosition[index] || null; how = "texte des en-têtes"; }
+        if (name && !out[name]) { out[name] = c; used.add(how); }
+      });
+      return out;
+    },
+  };
+}
+
+const NUM = "-?\\d+(?:[.,]\\d+)?";
+function toNum(s) { const n = parseFloat(String(s).replace(",", ".")); return Number.isFinite(n) ? n : null; }
+function cellText(c) { return c ? text(dropMenus(c.html)) : ""; }
+function emptyGrade(s) { return !s || /^[-–—−]+$/.test(s); }
+
+/* Rapport de notes d'un cours.
+   -> { ok, reason, grades, anomalies, ignored, rows: [identifiants des lignes d'activité vues], strategy }
+   ok = false : la page n'est PAS un rapport complet et lisible ; il ne faut rien en conclure.
+   anomalies : lignes avec une note que l'on n'a pas su lire (le cours est alors incomplet).
+   ignored : notes sans valeur chiffrée (« Terminé », « Acquis ») : normales, mais signalées. */
+function parseReport(html, courseId) {
+  const src = clean(html);
+  const fail = (reason) => ({ ok: false, reason, grades: [], anomalies: [], ignored: [], rows: [], strategy: "" });
+  const body = /<body\b((?:"[^"]*"|'[^']*'|[^'">])*)>/i.exec(src);
+  const bodyClass = body ? attr(body[1], "class") : "";
+  const table = readTable(src);
+  if (!table) return fail(/type\s*=\s*["']password["']/i.test(src) ? "session" : "tableau de notes introuvable");
+  if (courseId && /(^|\s)path-/.test(bodyClass) && /(^|\s)course-\d+(\s|$)/.test(bodyClass) && !new RegExp("(^|\\s)course-" + courseId + "(\\s|$)").test(bodyClass)) return fail("la page est celle d'un autre cours");
+  if (!table.closed) return fail("page coupée avant la fin du tableau");
+  const columns = columnReader(table.rows);
+  const grades = [], anomalies = [], ignored = [], rows = [];
+  let category = "", structural = 0, itemRows = 0, noGradeCell = 0;
+  table.rows.forEach((row) => {
+    if (row === columns.head) return;
+    // Une ligne d'activité, de catégorie ou de total a toujours une cellule d'en-tête (les lignes d'espacement n'en ont pas).
+    if (!row.cells.some((c) => c.tag === "th")) return;
+    const named = row.cells.find((c) => c.tag === "th" && (hasClass(c.attrs, "column-itemname") || /^(row|cat)_\d+/.test(attr(c.attrs, "id"))));
+    const cells = columns.cells(row);
+    const th = named || (cells.itemname && cells.itemname.tag === "th" ? cells.itemname : null);
+    if (!th) return;
+    structural++;
+    if (hasClass(th.attrs, "category") || /^cat_/.test(attr(th.attrs, "id"))) { category = text(th.html); return; }
+    const typeM = /<span\b[^>]*text-uppercase[^>]*>([\s\S]*?)<\/span>/i.exec(th.html);
+    const type = typeM ? text(typeM[1]) : "";
+    const titleHtml = byClass(th.html, "gradeitemheader") !== null ? byClass(th.html, "gradeitemheader") : byClass(th.html, "rowtitle");
+    const title = titleHtml !== null ? text(titleHtml) : text(th.html.replace(typeM ? typeM[0] : "", " "));
+    if (hasClass(th.attrs, "baggt") || hasClass(th.attrs, "baggb") || /tendance centrale|total du cours|^total\b/i.test(type + " " + title)) return;
+    itemRows++;
+    const idM = /^row_(\d+)_\d+/.exec(attr(th.attrs, "id"));
+    const modM = /href\s*=\s*["'][^"']*\/mod\/([a-z0-9_]+)\/view\.php\?(?:[^"']*?(?:&|&amp;))?id=(\d+)/i.exec(th.html);
+    const gradeId = idM ? idM[1] : "", cmid = modM ? modM[1].toLowerCase() + ":" + modM[2] : "";
+    const key = gradeId ? "#" + gradeId : cmid ? "@" + cmid : "";
+    rows.push({ ref: key, title });
+    const bad = (reason) => anomalies.push({ ref: key, title: title || "(titre introuvable)", reason });
+    if (!cells.grade) { noGradeCell++; return bad("colonne de la note introuvable"); }
+    const gradeTxt = cellText(cells.grade);
+    if (emptyGrade(gradeTxt) || /^[-–—−]\s/.test(gradeTxt)) return;
+    if (!/\d/.test(gradeTxt)) { ignored.push({ ref: key, title, reason: "note non chiffrée : " + gradeTxt.slice(0, 40) }); return; }
+    if (!title) return bad("titre introuvable");
+    const g = new RegExp("^(" + NUM + ")\\s*(%)?(?:\\s*/\\s*(" + NUM + "))?(?:\\s*\\([^)]*\\))?(?:\\s+[^\\d]*)?$").exec(gradeTxt);
+    if (!g) return bad("note illisible");
+    const raw = toNum(g[1]);
+    const rangeM = new RegExp("(" + NUM + ")\\s*[–—−-]\\s*(\\d+(?:[.,]\\d+)?)").exec(cellText(cells.range));
+    const max = rangeM ? toNum(rangeM[2]) : g[3] !== undefined ? toNum(g[3]) : null;
+    if (!max || max <= 0) return bad("barème introuvable");
+    const value = g[2] ? raw / 100 * max : raw;
+    const weightM = new RegExp("^(" + NUM + ")\\s*%").exec(cellText(cells.weight));
+    const grade = { title, type, raw: value, max, note20: round3(value / max * 20), feedback: cellText(cells.feedback),
+      gradeId, cmid, weight: weightM ? toNum(weightM[1]) : null, category, computed: /note calcul[ée]e|calculated/i.test(type) };
+    grades.push(grade);
+  });
+  const strategy = [...columns.used].join(" + ");
+  // Un vrai rapport contient toujours au moins une catégorie, un total ou une activité.
+  if (!structural) return fail("tableau sans aucune ligne reconnue (structure inconnue)");
+  if (itemRows && noGradeCell === itemRows) return fail("colonne de la note introuvable (structure inconnue)");
+  return { ok: true, reason: "", grades, anomalies, ignored, rows, strategy };
+}
+/* Seulement les notes (ancienne forme, gardée pour les appels existants). */
+function parseCourseGrades(html) { return parseReport(html).grades; }
 
 /* Code de matière dans un intitulé : « R107 - … » -> R1.07, « SAE1.05 » -> SAE1.05, « SAE12 » -> SAE1.02. */
 function codeOf(s) {
@@ -144,11 +284,16 @@ const SIMILAR_MIN = 0.5;
 /* Proposition pour une note : 1) la matière du relevé qui porte le même code (R1.07, SAE1.05…) ; 2) sinon la plus
    proche par le nom du cours (si elle ressemble assez) ; 3) sinon « Créer une nouvelle matière », avec un nom proposé.
    C'est l'utilisateur qui confirme la matière (ou la création) et le coefficient avant l'ajout. */
-function suggestMatiere(releve, courseName, title, store) {
+function suggestMatiere(releve, courseName, title, store, courseId) {
   const known = matieres(releve).map((m) => m.label);
   const extra = customMatieres(store).filter((l) => !known.includes(l));
   const names = known.concat(extra);
   const code = codeOf(courseName) || codeOf(title);
+  if (courseId) {
+    // Mémoire : le choix le plus récent de l'utilisateur pour ce cours (si les notes de ce cours vont toutes dans la même matière).
+    const chosen = list(store, "validated").filter((x) => x.courseId === courseId && x.matiere && names.includes(x.matiere));
+    if (chosen.length && chosen.every((x) => x.matiere === chosen[0].matiere)) return { label: chosen[0].matiere, isNew: false, how: "memoire" };
+  }
   if (code) { const hit = names.find((l) => codeOf(l) === code); if (hit) return { label: hit, isNew: false, how: "code" }; }
   let best = null, bestScore = 0;
   names.forEach((l) => { const sc = Math.max(similarity(courseName, l), similarity(title, l) * 0.8); if (sc > bestScore) { bestScore = sc; best = l; } });
@@ -156,50 +301,180 @@ function suggestMatiere(releve, courseName, title, store) {
   return { label: cleanCourseName(courseName) || "Nouvelle matière", isNew: true, how: "nouvelle" };
 }
 
+/* ---------- Identité, historique et décisions ----------
+   Une note est reconnue par l'identifiant que Moodle donne à la ligne (« #123 »), à défaut par celui de l'activité,
+   à défaut par son nom. L'identifiant enregistré d'une note (item.id) ne change jamais : « ref » porte le lien avec Moodle.
+   Règle absolue : une note VALIDÉE garde sa valeur tant que l'utilisateur n'a pas accepté la nouvelle, et une note
+   décidée n'est jamais supprimée automatiquement. */
+const HISTORY_ITEM_MAX = 20;
 function itemId(courseId, title) { return "MDL|" + courseId + "|" + String(title).toLowerCase().replace(/\s+/g, " ").trim(); }
+function norm(s) { return String(s || "").toLowerCase().replace(/\s+/g, " ").trim(); }
+function refOf(g) { return g.gradeId ? "#" + g.gradeId : g.cmid ? "@" + g.cmid : ""; }
+function sameValue(a, b) { return !!a && !!b && a.raw === b.raw && a.max === b.max; }
+function remember(item, entry) { item.history = (item.history || []).concat(entry).slice(-HISTORY_ITEM_MAX); }
 
-/* Compare les notes lues aux décisions déjà prises. Nouvelle note, ou valeur changée -> « pending ».
-   Notes validées/refusées inchangées -> intactes. Au tout premier passage (aucun magasin), tout est « pending »
-   sans être « fresh » : l'appelant ne notifie qu'une fois (firstRun).
-   scraped : [{ courseId, course, ...parseCourseGrades }] ; renvoie { store, fresh, firstRun }. */
-function diff(store, scraped, releve, now) {
+/* Associe chaque note lue à une note déjà connue : par identifiant Moodle d'abord, puis (anciennes données ou page sans
+   identifiant) par nom, en préférant la même valeur : deux activités de même nom réordonnées gardent leurs décisions. */
+function sameHost(x, host) { return !x.host || !host || x.host === host; }
+function match(items, scraped, host) {
+  const taken = new Set(), found = new Array(scraped.length).fill(null);
+  // Les numéros de cours recommencent d'une année à l'autre : une note d'une autre adresse Moodle n'est jamais la même.
+  const all = Object.values(items).filter((x) => sameHost(x, host));
+  const take = (i, it) => { found[i] = it; taken.add(it.id); };
+  scraped.forEach((g, i) => {
+    const ref = refOf(g); if (!ref) return;
+    const hit = all.find((x) => !taken.has(x.id) && x.courseId === g.courseId && x.ref === ref);
+    if (hit) take(i, hit);
+  });
+  const compatible = (g, x) => !x.ref || !refOf(g) || x.ref[0] !== refOf(g)[0];
+  [true, false].forEach((exact) => scraped.forEach((g, i) => {
+    if (found[i]) return;
+    const candidates = all.filter((x) => !taken.has(x.id) && x.courseId === g.courseId && norm(x.title) === norm(g.title) && compatible(g, x) && (!exact || sameValue(x, g)));
+    if (candidates.length) take(i, candidates[0]);
+  }));
+  return found;
+}
+
+/* Compare les notes lues aux décisions déjà prises.
+   scraped : [{ courseId, course, ...note de parseReport }].
+   opts.read : { <cours lu en entier> : [identifiants de toutes ses lignes] } — seuls ces cours permettent de dire
+   qu'une note a disparu. -> { store, fresh, firstRun, missing } ; fresh = notes nouvelles ou modifiées à examiner. */
+function diff(store, scraped, releve, now, opts) {
   const firstRun = !store || !store.items;
   const items = Object.assign({}, firstRun ? {} : store.items);
-  const fresh = [];
-  const seen = new Map();   // évaluations de même nom dans un même cours : « …|2 », « …|3 » (la première garde son identifiant)
-  scraped.forEach((g) => {
-    const base = itemId(g.courseId, g.title), n = (seen.get(base) || 0) + 1; seen.set(base, n);
-    const id = n === 1 ? base : base + "|" + n, old = items[id];
-    if (old && old.raw === g.raw && old.max === g.max) {
-      // Même note : on rafraîchit seulement les champs informatifs (commentaire, rattachement non choisi).
-      items[id] = Object.assign({}, old, { feedback: g.feedback, type: g.type || old.type });
-      // Proposition recalculée tant que la note attend (relevé ou matières créées ont pu changer) et n'a pas été retouchée.
-      if (old.status === "pending" && (!old.matiere || !old.how || old.how === "defaut" || old.how === "mots")) {
-        const sg = suggestMatiere(releve, g.course, g.title, store); items[id].matiere = sg.label; items[id].isNew = sg.isNew; items[id].how = sg.how;
+  const fresh = [], missing = [], matched = new Set();
+  const host = (opts && opts.host) || "";
+  const found = match(items, scraped, host);
+  const suggest = (g) => suggestMatiere(releve, g.course, g.title, store, g.courseId);
+  const added = [];
+  scraped.forEach((g, i) => {
+    const old = found[i], ref = refOf(g);
+    if (old) {
+      matched.add(old.id);
+      const it = Object.assign({}, old, { ref: ref || old.ref || "", course: g.course || old.course, feedback: g.feedback, type: g.type || old.type });
+      delete it.missingSince; delete it.missingWhy;
+      if (host) it.host = host;
+      if (norm(old.title) !== norm(g.title)) { remember(it, { at: now, kind: "renommée", from: old.title, to: g.title }); it.title = g.title; }
+      if (g.weight !== undefined) {
+        if (old.weight !== undefined && old.weight !== g.weight) remember(it, { at: now, kind: "pondération", from: old.weight, to: g.weight });
+        it.weight = g.weight;
       }
+      if (g.category !== undefined) it.category = g.category;
+      if (g.computed) it.computed = true;
+      if (sameValue(old, g)) {
+        delete it.change;
+        // Proposition recalculée tant que la note attend (relevé ou matières créées ont pu changer) et n'a pas été retouchée.
+        if (it.status === "pending" && (!it.matiere || !it.how || it.how === "defaut" || it.how === "mots")) {
+          const sg = suggest(g); it.matiere = sg.label; it.isNew = sg.isNew; it.how = sg.how;
+        }
+      } else if (it.status === "validated") {
+        // La moyenne ne bouge pas : la nouvelle valeur attend la confirmation de l'utilisateur.
+        const next = { raw: g.raw, max: g.max, note20: g.note20, at: now };
+        if (!sameValue(it.keptAgainst, next) && !sameValue(old.change, next)) {
+          it.change = next; remember(it, { at: now, kind: "note", from: { raw: old.raw, max: old.max }, to: { raw: g.raw, max: g.max } });
+          fresh.push(it);
+        }
+      } else {
+        remember(it, { at: now, kind: "note", from: { raw: old.raw, max: old.max }, to: { raw: g.raw, max: g.max } });
+        Object.assign(it, { raw: g.raw, max: g.max, note20: g.note20, status: "pending", decidedAt: null, at: now });
+        delete it.change;
+        fresh.push(it);
+      }
+      items[it.id] = it;
       return;
     }
-    const sug = old && old.matiere ? { label: old.matiere, isNew: !!old.isNew, how: old.how || null } : suggestMatiere(releve, g.course, g.title, store);
-    const rec = { id, courseId: g.courseId, course: g.course, title: g.title, type: g.type, raw: g.raw, max: g.max, note20: g.note20,
-      feedback: g.feedback, matiere: sug.label, isNew: !!sug.isNew, how: sug.how, coeff: (old && old.coeff) || 1,
-      status: "pending", at: now, decidedAt: null };
-    items[id] = rec;
+    let id = itemId(g.courseId, g.title);
+    for (let n = 2; items[id]; n++) id = itemId(g.courseId, g.title) + "|" + n;
+    const sug = suggest(g);
+    const rec = { id, ref, host, courseId: g.courseId, course: g.course, title: g.title, type: g.type, raw: g.raw, max: g.max, note20: g.note20,
+      feedback: g.feedback, weight: g.weight === undefined ? null : g.weight, category: g.category || "", computed: !!g.computed,
+      matiere: sug.label, isNew: !!sug.isNew, how: sug.how, coeff: 1, coeffConfirmed: false, status: "pending", at: now, decidedAt: null };
+    items[id] = rec; matched.add(id); added.push(rec);
     if (!firstRun) fresh.push(rec);
   });
-  const ids = Object.keys(items);
-  if (ids.length > ITEM_MAX) ids.sort((a, b) => (items[a].at || 0) - (items[b].at || 0)).slice(0, ids.length - ITEM_MAX).forEach((k) => delete items[k]);
-  return { store: { sync: new Date(now).toISOString(), items }, fresh, firstRun };
+  // Notes disparues : seulement dans les cours lus en entier. Rien n'est supprimé.
+  const read = (opts && opts.read) || {};
+  // listed : tous les cours de la page « Notes », quand la liste a été lue en entier.
+  const listed = opts && Array.isArray(opts.listed) && opts.listed.length ? new Set(opts.listed) : null;
+  Object.values(items).forEach((old) => {
+    if (matched.has(old.id) || !sameHost(old, host)) return;
+    const courseRead = Object.prototype.hasOwnProperty.call(read, old.courseId);
+    const courseGone = !!listed && !!old.host && old.host === host && !listed.has(old.courseId);
+    if (!courseRead && !courseGone) return;
+    if (!old.missingSince) {
+      const it = Object.assign({}, old, { missingSince: now });
+      const still = courseRead && (read[old.courseId] || []).some((r) => (old.ref && r.ref === old.ref) || (!old.ref && norm(r.title) === norm(old.title)));
+      it.missingWhy = courseGone ? "son cours n'apparaît plus dans la page Notes" : still ? "la note a été retirée de Moodle" : "l'activité n'apparaît plus dans Moodle";
+      remember(it, { at: now, kind: "disparue", why: it.missingWhy });
+      items[it.id] = it; missing.push(it);
+    }
+  });
+  // Doublon probable : une note nouvelle de même valeur qu'une note validée du même cours (renommée sans identifiant, recréée…).
+  added.forEach((rec) => {
+    const twin = Object.values(items).find((x) => x.id !== rec.id && x.courseId === rec.courseId && x.status === "validated" && sameValue(x, rec) && (x.missingSince || norm(x.title) === norm(rec.title)));
+    if (twin) rec.dupOf = twin.id;
+  });
+  // Place limitée : seules des notes jamais décidées ET disparues peuvent être oubliées.
+  let ids = Object.keys(items);
+  if (ids.length > ITEM_MAX) {
+    ids.filter((k) => items[k].missingSince && items[k].status === "pending").sort((a, b) => items[a].missingSince - items[b].missingSince)
+      .slice(0, ids.length - ITEM_MAX).forEach((k) => delete items[k]);
+  }
+  return { store: { sync: new Date(now).toISOString(), items }, fresh, firstRun, missing };
 }
 
 /* Décision de l'utilisateur. opts : { matiere, coeff }. Renvoie un nouveau magasin (l'ancien est intact). */
 function decide(store, id, status, opts, now) {
   // « deleted » : supprimée définitivement de la corbeille ; elle reste mémorisée (invisible) pour ne pas être redemandée à la synchro suivante.
   if (!store || !store.items || !store.items[id] || (status !== "validated" && status !== "refused" && status !== "pending" && status !== "deleted")) return store;
-  const o = opts || {}, cur = store.items[id], next = Object.assign({}, cur, { status, decidedAt: status === "pending" ? null : now });
+  const o = opts || {}, cur = store.items[id], next = Object.assign({}, cur, { status, decidedAt: status === "pending" ? null : now, updatedAt: now });
   if (o.matiere !== undefined) next.matiere = o.matiere ? String(o.matiere).slice(0, 120) : null;
   if (o.isNew !== undefined) next.isNew = !!o.isNew;
-  const c = Number(o.coeff); if (Number.isFinite(c) && c > 0 && c <= 100) next.coeff = c;
+  const c = Number(o.coeff); if (Number.isFinite(c) && c > 0 && c <= 100) { next.coeff = c; if (status === "validated") next.coeffConfirmed = true; }
+  // Sortie de « validée » avec une nouvelle valeur en attente : la note reprend la valeur actuelle de Moodle.
+  if (status !== "validated" && next.change) { Object.assign(next, { raw: next.change.raw, max: next.change.max, note20: next.change.note20 }); delete next.change; }
   return Object.assign({}, store, { items: Object.assign({}, store.items, { [id]: next }) });
+}
+
+/* Valeur modifiée sur Moodle pour une note validée : l'accepter, ou garder l'ancienne (on ne redemandera que si Moodle change encore). */
+function resolveChange(store, id, accept, now) {
+  const cur = store && store.items && store.items[id];
+  if (!cur || !cur.change) return store;
+  const next = Object.assign({}, cur, { updatedAt: now });
+  if (accept) { Object.assign(next, { raw: cur.change.raw, max: cur.change.max, note20: cur.change.note20 }); delete next.keptAgainst; }
+  else next.keptAgainst = { raw: cur.change.raw, max: cur.change.max };
+  remember(next, { at: now, kind: accept ? "nouvelle valeur acceptée" : "ancienne valeur gardée" });
+  delete next.change;
+  return Object.assign({}, store, { items: Object.assign({}, store.items, { [id]: next }) });
+}
+
+/* Import d'un lien ou d'un fichier : les deux appareils peuvent avoir des décisions. Pour chaque note, la décision la
+   plus récente gagne ; une note sans décision ne remplace jamais une note décidée ; rien n'est supprimé. */
+const STATUSES = ["pending", "validated", "refused", "deleted"];
+/* Une note venue d'un lien ou d'un fichier n'est gardée que si elle a la forme attendue. */
+function validItem(x) {
+  return !!x && typeof x === "object" && typeof x.id === "string" && x.id.startsWith("MDL|") && x.id.length < 500 && typeof x.courseId === "string" &&
+    typeof x.title === "string" && STATUSES.includes(x.status) && Number.isFinite(x.raw) && Number.isFinite(x.max) && x.max > 0 && Number.isFinite(x.note20) &&
+    (x.history === undefined || Array.isArray(x.history));
+}
+function mergeStores(local, incoming) {
+  if (!incoming || !incoming.items) return local || incoming || null;
+  if (!local || !local.items) return incoming;
+  const items = Object.assign({}, local.items);
+  const stamp = (x) => Math.max(x.updatedAt || 0, x.decidedAt || 0);
+  Object.values(incoming.items).filter(validItem).forEach((theirs) => {
+    const same = (x) => x.courseId === theirs.courseId && sameHost(x, theirs.host);
+    const key = items[theirs.id] && same(items[theirs.id]) ? theirs.id : Object.keys(items).find((k) => theirs.ref && same(items[k]) && items[k].ref === theirs.ref);
+    if (!key) {
+      let id = theirs.id; for (let n = 2; items[id]; n++) id = theirs.id + "|" + n;
+      items[id] = Object.assign({}, theirs, { id }); return;
+    }
+    const mine = items[key];
+    const newer = String(incoming.sync || "") > String(local.sync || "");
+    const theirsWins = stamp(theirs) !== stamp(mine) ? stamp(theirs) > stamp(mine) : newer;
+    items[key] = Object.assign({}, theirsWins ? theirs : mine, { id: key });
+  });
+  return { sync: String(incoming.sync || "") > String(local.sync || "") ? incoming.sync : local.sync, items };
 }
 
 function list(store, status) {
@@ -246,8 +521,9 @@ function fmt(n) { return String(Math.round(n * 100) / 100).replace(".", ","); }
 function describe(it) {
   const subject = it.matiere || it.course || "";
   const sur = it.max === 20 ? "20" : fmt(it.max);
+  if (it.change) return { title: "Note modifiée sur Moodle", subject, line: `${subject} : ${it.title} — ${fmt(it.raw)} / ${sur} devient ${fmt(it.change.raw)} / ${fmt(it.change.max)}`, feedback: it.feedback || "" };
   return { title: `Nouvelle note détectée sur Moodle`, subject, line: `${subject} : ${it.title} — ${fmt(it.raw)} / ${sur}`, feedback: it.feedback || "" };
 }
 
-root.UCA_MOODLE = { parseOverview, parseCourseGrades, codeOf, matieres, matchMatiere, suggestMatiere, similarity, cleanCourseName, customMatieres, CUSTOM_UE, itemId, diff, decide, list, mergeReleve, sameAsOdin, describe, fmt };
+root.UCA_MOODLE = { parseOverview, parseReport, parseCourseGrades, resolveChange, mergeStores, codeOf, matieres, matchMatiere, suggestMatiere, similarity, cleanCourseName, customMatieres, CUSTOM_UE, itemId, diff, decide, list, mergeReleve, sameAsOdin, describe, fmt };
 })(typeof self !== "undefined" ? self : globalThis);

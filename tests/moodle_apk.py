@@ -22,6 +22,9 @@ from fixtures import seed  # noqa: E402
 results = []
 
 
+EMPTY_REPORT = '<table class="user-grade"><tbody><tr><th class="baggt column-itemname">Total du cours</th><td class="column-grade">-</td></tr></tbody></table>'
+
+
 def check(name, ok, detail=""):
     results.append(bool(ok))
     print(("PASS " if ok else "FAIL ") + name + ("" if ok else f" — {detail}"))
@@ -49,20 +52,22 @@ def run_inpage(browser, errors):
         u = route.request.url
         if state["expired"] and "/login/" not in u:
             return route.fulfill(status=302, headers={"location": "https://moodle2026.uca.fr/login/index.php"}, body="")
-        body = overview if "/grade/report/overview/" in u else course if "id=1111" in u else "Pas de notes"
+        body = overview if "/grade/report/overview/" in u else course if "id=1111" in u else EMPTY_REPORT
         route.fulfill(status=200, content_type="text/html; charset=utf-8", body="<html><body>" + body + "</body></html>")
 
     ctx = browser.new_context()
     ctx.route("https://moodle2026.uca.fr/**", moodle)
     pg = ctx.new_page(); pg.on("pageerror", lambda e: errors.append(f"[moodle] {e}"))
     pg.goto("https://moodle2026.uca.fr/grade/report/overview/index.php")
-    code = (SITE / "core" / "moodle.js").read_text(encoding="utf-8") + "\n" + (SITE / "core" / "moodle-app.js").read_text(encoding="utf-8")
+    code = "\n".join((SITE / "core" / n).read_text(encoding="utf-8") for n in ("moodle.js", "moodle-scan.js", "moodle-app.js"))
     pg.evaluate(code)
     pg.wait_for_function("() => window.__ucaMoodleJob && window.__ucaMoodleJob.result", timeout=30000)
     job = pg.evaluate("() => window.__ucaMoodleJob")
     data = job["result"].get("data") or []
     check("page Moodle : les notes sont lues depuis la page (3 notes du cours 1111)", len(data) == 3 and {g["courseId"] for g in data} == {"1111"}, json.dumps(job)[:300])
     check("page Moodle : progression complète (cours lus / cours à lire)", job["total"] > 1 and job["done"] == job["total"], json.dumps(job)[:200])
+    rep = job["result"].get("report") or {}
+    check("page Moodle : rapport complet (tous les cours lus, aucune ligne illisible)", job["result"].get("issue") is None and rep.get("complete") is True and rep.get("read") == rep.get("total"), json.dumps(rep)[:400])
     state["expired"] = False
     pg.goto("https://moodle2026.uca.fr/my/")
     state["expired"] = True
@@ -146,6 +151,8 @@ def run_app(browser, base, data, errors):
         check(f"{design} APK : le message d'erreur disparaît après réussite", pg.locator("#moodleLoginBtn").count() == 0 and "moodle" not in store(pg).get("uca_scrape_issues", {}))
         ctx.close()
 
+    run_reliability(browser, base, designs, data, errors)
+
     # De vraies notes et de vrais devoirs aux noms ordinaires (« UE 1.1 », « SAE 1.01 ») survivent à l'ouverture de l'app.
     design = designs[0]
     ctx, pg = open_app(browser, base, design, True, errors, {"uca_tasks": [{"id": "task1", "title": "Rendu SAE 1.01", "date": "2026-12-01", "done": False}]})
@@ -168,6 +175,84 @@ def run_app(browser, base, data, errors):
     ctx, pg = open_app(browser, base, design, True, errors, {"uca_moodle_progress": {"active": True, "at": 9999999999999}})
     check("page rechargée pendant une recherche : la progression ne reste pas bloquée", store(pg)["uca_moodle_progress"]["active"] is False)
     ctx.close()
+
+
+def report(complete, courses):
+    read = sum(1 for c in courses if c["status"] == "lu")
+    return {"at": 1795000000000, "startedAt": 1795000000000, "host": "moodle2026.uca.fr", "total": len(courses), "read": read,
+            "failed": sum(1 for c in courses if c["status"] == "échec"), "notRead": sum(1 for c in courses if c["status"] == "non lu"),
+            "resumed": 0, "notes": 3, "anomalies": 0, "ignored": 1, "truncated": 0, "complete": complete,
+            "level": "complet" if complete else "incomplet", "courses": courses}
+
+
+def course(i, name, status, reason="", ignored=None):
+    return {"id": str(i), "name": name, "status": status, "notes": 0, "reason": reason, "attempts": 1, "anomalies": [], "ignored": ignored or []}
+
+
+def run_reliability(browser, base, designs, data, errors):
+    for design in designs:
+        ctx, pg = open_app(browser, base, design, True, errors)
+        open_notes(pg)
+        read = {g["courseId"]: [{"ref": "", "title": x["title"]} for x in data] for g in data[:1]}
+        rep = report(False, [course(1111, "Cours lu", "lu", ignored=[{"title": "Compétence", "reason": "note non chiffrée : Terminé"}]), course(2222, "Cours en panne", "échec", "HTTP 503"), course(3333, "Cours restant", "non lu", "connexion à Moodle perdue")])
+        pg.locator("#moodleSyncBtn").click(); pg.wait_for_timeout(500)
+        deliver(pg, {"type": "UCA_MOODLE_RESULT", "data": data, "issue": "partial", "detail": "1/3 cours lus", "report": rep, "read": read,
+                     "checkpoint": {"userId": "900", "host": "moodle2026.uca.fr", "at": 1795000000000, "courses": {}}})
+        txt = pg.locator("#notesPanel").inner_text()
+        check(f"{design} APK : synchro partielle annoncée INCOMPLÈTE, jamais réussie", "INCOMPLÈTE" in txt and "Recherche incomplète : 1 cours lus sur 3" in txt, txt[:400])
+        check(f"{design} APK : rapport : cours en échec et non lu nommés avec la raison", "Cours en panne : échec (HTTP 503)" in txt and "Cours restant : non lu" in txt, txt[:900])
+        check(f"{design} APK : rapport : note non chiffrée signalée", "Terminé" in txt)
+        check(f"{design} APK : coefficient inconnu signalé sur les cartes", pg.locator(".np-moodle-coeff").count() == 3)
+        check(f"{design} APK : point de reprise gardé", (store(pg).get("uca_moodle_checkpoint") or {}).get("userId") == "900")
+        overflow = pg.evaluate("() => { const p = document.getElementById('notesPanel'); return p.scrollWidth - p.clientWidth; }")
+        check(f"{design} APK : le rapport ne fait pas déborder la fenêtre en largeur (390 px)", overflow <= 1, str(overflow))
+        pg.evaluate("() => { window.__cp = []; window.AndroidUCA.setMoodleCheckpoint = (j) => window.__cp.push(j); }")
+        pg.locator("#moodleSyncBtn").click(); pg.wait_for_timeout(500)
+        check(f"{design} APK : la recherche suivante transmet le point de reprise à l'application", pg.evaluate("() => window.__cp.length === 1 && JSON.parse(window.__cp[0]).userId === '900'"))
+        ok_rep = report(True, [course(1111, "Cours lu", "lu")])
+        deliver(pg, {"type": "UCA_MOODLE_RESULT", "data": data, "report": ok_rep, "read": read})
+        check(f"{design} APK : recherche complète : erreur levée, point de reprise effacé", pg.locator("#moodleReport").get_attribute("data-level") == "complet" and "uca_moodle_checkpoint" not in store(pg) and "moodle" not in store(pg).get("uca_scrape_issues", {}))
+
+        # note validée puis modifiée sur Moodle : confirmation obligatoire
+        pg.locator(".np-moodle-card").first.get_by_role("button", name="Valider la note").click(); pg.wait_for_timeout(500)
+        check(f"{design} APK : sans coefficient saisi, la note n'est pas validée", not [i for i in store(pg)["uca_moodle"]["items"].values() if i["status"] == "validated"])
+        pg.locator(".np-moodle-card").first.locator("input[type=number]").fill("2")
+        pg.locator(".np-moodle-card").first.get_by_role("button", name="Valider la note").click(); pg.wait_for_timeout(700)
+        valid = [i for i in store(pg)["uca_moodle"]["items"].values() if i["status"] == "validated"]
+        check(f"{design} APK : une note validée", len(valid) == 1, str(len(valid)))
+        target = valid[0]
+        modified = [dict(g, raw=3, note20=3 / g["max"] * 20) if g["title"] == target["title"] else g for g in data]
+        avg0 = pg.locator(".notes-avg .na-val").inner_text()
+        deliver(pg, {"type": "UCA_MOODLE_RESULT", "data": modified, "report": ok_rep, "read": read})
+        item = store(pg)["uca_moodle"]["items"][target["id"]]
+        check(f"{design} APK : note modifiée : validation conservée, moyenne inchangée, nouvelle valeur à confirmer", item["status"] == "validated" and item["raw"] == target["raw"] and item["change"]["raw"] == 3 and pg.locator(".notes-avg .na-val").inner_text() == avg0 and pg.locator(".np-moodle-change").count() == 1, json.dumps(item)[:300])
+        pg.locator(".np-moodle-change").get_by_role("button", name="Garder l'ancienne").click(); pg.wait_for_timeout(600)
+        item = store(pg)["uca_moodle"]["items"][target["id"]]
+        check(f"{design} APK : « Garder l'ancienne » : ancienne valeur, plus de demande", item["raw"] == target["raw"] and "change" not in item and pg.locator(".np-moodle-change").count() == 0)
+        deliver(pg, {"type": "UCA_MOODLE_RESULT", "data": [dict(g, raw=4, note20=4 / g["max"] * 20) if g["title"] == target["title"] else g for g in data], "report": ok_rep, "read": read})
+        pg.locator(".np-moodle-change").get_by_role("button", name="Prendre la nouvelle note").click(); pg.wait_for_timeout(600)
+        item = store(pg)["uca_moodle"]["items"][target["id"]]
+        check(f"{design} APK : « Prendre la nouvelle note » : appliquée, toujours validée", item["raw"] == 4 and item["status"] == "validated" and "change" not in item)
+        pg.locator("#moodleDoneToggle").click(); pg.wait_for_timeout(500)
+        hist = pg.locator("#moodleSide .np-moodle-history")
+        if hist.count():
+            hist.first.locator("summary").click(); pg.wait_for_timeout(200)
+        check(f"{design} APK : historique des modifications consultable à l'écran", hist.count() >= 1 and "devient" in hist.first.inner_text() and "nouvelle valeur acceptée" in hist.first.inner_text(), hist.first.inner_text() if hist.count() else "absent")
+        pg.locator("#moodleSideClose").click(); pg.wait_for_timeout(300)
+
+        # import d'un lien / fichier : les décisions prises ici ne sont pas écrasées
+        res = pg.evaluate("""async (id) => {
+          const load = (src) => new Promise((ok, ko) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = ko; document.head.appendChild(s); });
+          if (!window.UCA_TRANSFER) await load('../../core/transfer.js');
+          const snap = await UCA_TRANSFER.snapshot();
+          const theirs = JSON.parse(JSON.stringify(snap.data.uca_moodle));
+          Object.values(theirs.items).forEach((x) => { x.status = 'pending'; x.decidedAt = null; delete x.updatedAt; });
+          snap.data.uca_moodle = theirs; snap.data.uca_events = snap.data.uca_events || [];
+          await UCA_TRANSFER.applyImport(snap);
+          return JSON.parse(localStorage.getItem('uca_store')).uca_moodle.items[id].status;
+        }""", target["id"])
+        check(f"{design} APK : importer un lien où la note est « en attente » ne remet pas en cause la validation faite ici", res == "validated", str(res))
+        ctx.close()
 
 
 def main():

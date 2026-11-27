@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="t">
+<title id="t">Design Animé</title>
+<style>
+.ring{transform-origin:48px 48px;animation:spin 14s linear infinite}
+.sp{transform-box:fill-box;transform-origin:center;animation:tw 2.6s ease-in-out infinite}
+.sp2{animation-delay:-1.3s}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pl 3.2s ease-in-out infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes tw{0%,100%{transform:scale(.55) rotate(0);opacity:.55}50%{transform:scale(1.15) rotate(25deg);opacity:1}}
+@keyframes pl{0%,100%{opacity:.9}50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.ring,.sp,.pulse{animation:none}}
+</style>
+<defs>
+<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2fd6cd"/><stop offset="1" stop-color="#18b7b0"/></linearGradient>
+<radialGradient id="bg" cx=".3" cy=".25" r="1"><stop offset="0" stop-color="#1d2733"/><stop offset="1" stop-color="#0c0f14"/></radialGradient>
+</defs>
+<rect x="4" y="4" width="88" height="88" rx="24" fill="url(#bg)"/>
+<g class="ring" fill="none" stroke="#2fd6cd" stroke-width="2" stroke-linecap="round" stroke-dasharray="10 14" opacity=".75"><circle cx="48" cy="48" r="38"/></g>
+<g class="pulse"><rect x="24" y="28" width="48" height="42" rx="9" fill="none" stroke="url(#g)" stroke-width="4"/></g>
+<path d="M24 41h48" stroke="url(#g)" stroke-width="4"/>
+<path d="M36 24v10M60 24v10" stroke="url(#g)" stroke-width="4" stroke-linecap="round"/>
+<g fill="#2fd6cd"><circle cx="37" cy="53" r="3"/><circle cx="48" cy="53" r="3"/><circle cx="59" cy="53" r="3" opacity=".45"/><circle cx="37" cy="63" r="3" opacity=".45"/></g>
+<path class="sp" d="M70 18l2.6 6.4L79 27l-6.4 2.6L70 36l-2.6-6.4L61 27l6.4-2.6z" fill="#fff"/>
+<path class="sp sp2" d="M20 66l1.8 4.2L26 72l-4.2 1.8L20 78l-1.8-4.2L14 72l4.2-1.8z" fill="#2fd6cd"/>
+</svg>

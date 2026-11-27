@@ -16,7 +16,7 @@
 # (pas de « set -u » : bash 3.2 de macOS refuse les tableaux vides)
 
 # Version du pilote : à monter à chaque changement de ce script (elle figure dans le nom du fichier téléchargé).
-PILOT_VERSION="2.0"
+PILOT_VERSION="2.1"
 printf 'Pilote de mise à jour My UCA, version %s\n' "$PILOT_VERSION"
 
 URL_CHROME="${UCA_URL_CHROME:-https://kiricoucou.github.io/uca-extension/extension/uca-extension-chrome.zip}"
@@ -39,6 +39,7 @@ while [ $# -gt 0 ]; do
     --desinstaller) UNINSTALL=1 ;;
     --browser) BROWSER="$(printf '%s' "${2:-}" | tr 'A-Z' 'a-z')"; shift ;;
     --version) WANT_VER="${2:-}"; shift ;;
+    --id) EXT_ID="${2:-}"; shift ;;
     --os) ARG_OS="${2:-}"; shift ;;
     --help|-h) sed -n '2,15p' "$SELF" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) ARGDEST="$1" ;;
@@ -118,6 +119,18 @@ find_in_browsers() {
   done
   local path origin
   while IFS=$'\t' read -r path origin; do add_cand "$path" "$origin"; done < "$TMPCAND"
+}
+
+# Dossier chargé par le navigateur pour CETTE extension (identifiant donné par l'extension) : la certitude.
+find_by_id() {
+  [[ "${1:-}" =~ ^[a-p]{32}$ ]] || return 1
+  local base f p
+  if [ "$OS" = "Darwin" ]; then base="$HOME/Library/Application Support"; else base="$HOME/.config"; fi
+  while IFS= read -r f; do
+    p="$(tr -d '\n' < "$f" | grep -o "\"$1\"[[:space:]]*:[[:space:]]*{.\{0,8000\}" | head -n1 | grep -o '"path"[[:space:]]*:[[:space:]]*"/[^"]*"' | head -n1 | sed 's/^"path"[[:space:]]*:[[:space:]]*"//; s/"$//')"
+    if [ -n "$p" ] && is_ext_dir "$p"; then printf '%s' "$p"; return 0; fi
+  done < <(find "$base" -maxdepth 5 \( -name "Preferences" -o -name "Secure Preferences" \) -type f 2>/dev/null)
+  return 1
 }
 
 # ---------------------------------------------------------------- fenêtres (zenity / kdialog / terminal, ou osascript sur Mac)
@@ -273,10 +286,11 @@ write_launcher() {   # n'importe quel site peut ouvrir un lien uca-maj: ; seul u
   cat > "$PILOT_DIR/lancer.sh" <<'LAUNCH'
 #!/usr/bin/env bash
 DIR="$(cd "$(dirname "$0")" && pwd)"
-re='^uca-maj:(//)?(chrome|edge|brave|vivaldi|chromium|firefox)/?$'
-args=(--yes)
-if [[ "${1:-}" =~ $re ]]; then args=(--browser "${BASH_REMATCH[2]}" --yes); fi
-if [ "${UCA_DRYRUN:-0}" = "1" ]; then printf '%s\n' "${args[*]}"; exit 0; fi
+re='^uca-maj:(//)?(chrome|edge|brave|vivaldi|chromium|firefox)(/([a-p]{32}))?/?$'
+# Sans --yes : le pilote montre ses fenêtres (dossier trouvé, « Valider »).
+args=()
+if [[ "${1:-}" =~ $re ]]; then args=(--browser "${BASH_REMATCH[2]}"); [ -n "${BASH_REMATCH[4]}" ] && args+=(--id "${BASH_REMATCH[4]}"); fi
+if [ "${UCA_DRYRUN:-0}" = "1" ]; then printf '[%s]\n' "${args[*]}"; exit 0; fi
 bash "$DIR/maj-extension.sh" "${args[@]}"
 printf '\nEntrée pour fermer (fermeture automatique dans 20 s). '; read -r -t 20 _ || true
 LAUNCH
@@ -303,7 +317,7 @@ install_pilot() {
     have xdg-mime && xdg-mime default uca-maj.desktop x-scheme-handler/uca-maj >/dev/null 2>&1
     have update-desktop-database && update-desktop-database "$(dirname "$DESKTOP_FILE")" >/dev/null 2>&1
   fi
-  say "Pilote installé : les prochaines fois, clique sur « Appliquer la mise à jour » dans l'extension, rien à télécharger."
+  say "Pilote installé : les prochaines fois, clique sur « Télécharger et appliquer la mise à jour » dans l'extension, rien à télécharger."
   say "(Tu peux supprimer le fichier téléchargé. Désinstaller : bash maj-extension.sh --desinstaller)"
 }
 if [ "${UNINSTALL:-0}" = "1" ]; then
@@ -329,10 +343,18 @@ if [ -n "$ARGDEST" ]; then
   [ "${#CPATH[@]}" -eq 0 ] && { say ""; say "Dossier de l'extension introuvable (pas de manifest.json) : $ARGDEST"; say "  bash maj-extension.sh /chemin/vers/le/dossier"; end; exit 2; }
   DEST="${CPATH[0]}"
 else
-  [ -f "$CFG" ] && add_cand "$(head -n1 "$CFG")" "dossier utilisé la dernière fois"
-  add_cand "$SELFDIR" "dossier de ce script"
-  find_in_browsers
-  limit_to_browser
+  MINE=""
+  [ -n "${EXT_ID:-}" ] && MINE="$(find_by_id "$EXT_ID")"
+  if [ -n "$MINE" ]; then
+    add_cand "$MINE" "extension qui demande la mise à jour, profil du navigateur"
+    say "Dossier de ton extension, lu dans la configuration du navigateur."
+  else
+    # Les dossiers chargés par les navigateurs passent AVANT la mémoire.
+    find_in_browsers
+    limit_to_browser
+    [ -f "$CFG" ] && add_cand "$(head -n1 "$CFG")" "dossier utilisé la dernière fois"
+    add_cand "$SELFDIR" "dossier de ce script"
+  fi
   if [ "${#CPATH[@]}" -eq 0 ]; then
     say "Je n'ai pas retrouvé l'extension automatiquement."
     [ "$YES" = "1" ] && { say "Dossier de l'extension introuvable : relance avec le chemin du dossier en argument."; exit 2; }
@@ -345,6 +367,13 @@ else
     [ "$rc" -ne 0 ] && { say ""; say "Annulé : rien n'a été modifié."; end; exit 3; }
     DEST="$CHOSEN"
   fi
+fi
+# Dossier de développement (git) : jamais écrit sans accord.
+if [ -e "$DEST/.git" ] && [ "$FORCE" != "1" ]; then
+  say "ATTENTION : $DEST est un dossier de développement (git). La mise à jour pourrait faire perdre des modifications."
+  if [ "$YES" = "1" ]; then say "Rien n'a été modifié. Ajoute --force pour écrire quand même."; exit 3; fi
+  printf 'Écrire quand même dans ce dossier ? Tape OUI pour confirmer : '; read -r ANSWER || ANSWER=""
+  [ "$ANSWER" = "OUI" ] || { say "Annulé : rien n'a été modifié."; end; exit 3; }
 fi
 mkdir -p "$CFGDIR" 2>/dev/null && printf '%s\n' "$DEST" > "$CFG"
 install_pilot

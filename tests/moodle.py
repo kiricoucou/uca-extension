@@ -21,6 +21,9 @@ root = Path(__file__).resolve().parent
 results = []
 
 
+EMPTY_REPORT = '<table class="user-grade"><tbody><tr><th class="baggt column-itemname">Total du cours</th><td class="column-grade">-</td></tr></tbody></table>'
+
+
 def check(name, ok, detail=""):
     results.append(ok)
     print(("PASS " if ok else "FAIL ") + name + (f" — {detail}" if detail and not ok else ""))
@@ -65,7 +68,7 @@ FAKE_FETCH = """(args) => {
     if (expired) return mk("https://ent.uca.fr/cas/login?service=x", "<form></form>");
     if (url.includes("/grade/report/overview/")) return mk(url, overview);
     if (url.includes("id=1111")) return mk(url, course);
-    return mk(url, "<html><body>Pas de notes</body></html>");
+    return mk(url, '<table class="user-grade"><tbody><tr><th class="baggt column-itemname">Total du cours</th><td class="column-grade">-</td></tr></tbody></table>');
   };
 }"""
 
@@ -140,6 +143,16 @@ def main():
         check("session expirée : problème signalé, notes déjà vues conservées", iss and iss["issue"] == "session" and len(st2["items"]) == len(st["items"]), str(iss))
         sw.evaluate("() => chrome.storage.local.remove('uca_scrape_issues')")
 
+        # --- point de reprise arrivé en retard : ignoré s'il date d'avant une recherche complète
+        stale = sw.evaluate("""async () => {
+          await chrome.storage.local.set({ uca_moodle_report: { complete: true, startedAt: 5000, courses: [] }, uca_moodle_checkpoint: { at: 5000, courses: { 1: {} } } });
+          const old = await moodleCheckpoint();
+          await chrome.storage.local.set({ uca_moodle_checkpoint: { at: 9000, courses: { 1: {} } } });
+          const recent = await moodleCheckpoint();
+          await chrome.storage.local.remove(["uca_moodle_report", "uca_moodle_checkpoint"]);
+          return [old, recent && recent.at]; }""")
+        check("reprise : un point de reprise en retard est ignoré, un point plus récent est gardé", stale == [None, 9000], str(stale))
+
         # --- réglage désactivé : aucune requête
         sw.evaluate("() => UCA_saveSettings({ moodleNotes: false })")
         sw.evaluate(FAKE_FETCH, [OVERVIEW, COURSE, False])
@@ -150,14 +163,14 @@ def main():
         # --- secours : lecture DEPUIS une page Moodle (même origine : cookies de l'utilisateur) quand la lecture directe échoue
         def fake_moodle(route):
             u = route.request.url
-            body = OVERVIEW if "/grade/report/overview/" in u else COURSE if "id=1111" in u else "Pas de notes"
+            body = OVERVIEW if "/grade/report/overview/" in u else COURSE if "id=1111" in u else EMPTY_REPORT
             route.fulfill(status=200, content_type="text/html; charset=utf-8", body="<html><body>" + body + "</body></html>")
         ctx.route("https://moodle2026.uca.fr/**", fake_moodle)
         mp = ctx.new_page(); mp.goto("https://moodle2026.uca.fr/grade/report/overview/index.php"); mp.wait_for_timeout(500)
         inpage = sw.evaluate("""async () => {
           const [tab] = await chrome.tabs.query({ url: "https://moodle2026.uca.fr/*" });
-          await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["core/moodle.js"] });
-          const [r] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, args: [60], func: moodleInPageScrape });
+          await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["core/moodle.js", "core/moodle-scan.js"] });
+          const [r] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, args: [null], func: moodleInPageScrape });
           return r.result; }""")
         check("secours : lecture depuis la page Moodle (3 notes, cours retrouvés dans la page)", inpage.get("data") and len(inpage["data"]) == 3 and {g["courseId"] for g in inpage["data"]} == {"1111"}, str(inpage)[:200])
         check("secours : notes avec barème et note sur 20", any(g["title"] == "Résultats évaluation 1" and g["note20"] == 19 for g in inpage.get("data", [])))
@@ -241,7 +254,7 @@ def main():
             store = sw.evaluate("() => chrome.storage.local.get('uca_moodle').then((d) => d.uca_moodle)")
             for it in store["items"].values():
                 if it["courseId"] in ("1111", "3333"):
-                    it["status"] = "pending"; it["decidedAt"] = None; it["coeff"] = 1
+                    it["status"] = "pending"; it["decidedAt"] = None; it["coeff"] = 1; it.pop("coeffConfirmed", None); it.pop("history", None)
                     if it["courseId"] == "1111":
                         it["matiere"], it["isNew"], it["how"] = "R1.07 : Programmation", False, "code"
                     else:
@@ -304,6 +317,11 @@ def main():
             check(f"{did} : rien dans les moyennes avant validation", ag.locator(".notes-table").inner_text().count("Moodle") == 0)
             check(f"{did} : boutons Valider la note et Refuser la note", first.get_by_role("button", name="Valider la note").count() == 1 and first.get_by_role("button", name="Refuser la note").count() == 1)
             check(f"{did} : matière R1.07 choisie d'après le code du cours, marquée Recommandée", first.locator(".mdl-pick").get_attribute("data-value") == "R1.07 : Programmation" and "Recommandée" in first.locator(".mdl-pick").inner_text(), first.locator(".mdl-pick").inner_text())
+            blank = first.locator("input[type=number]").input_value()
+            first.get_by_role("button", name="Valider la note").click(); ag.wait_for_timeout(400)
+            statuses = sw.evaluate("() => chrome.storage.local.get('uca_moodle').then((d) => Object.values(d.uca_moodle.items).filter((x) => x.status === 'validated').length)")
+            check(f"{did} : coefficient jamais prérempli ; valider sans le saisir est refusé", blank == "" and statuses == 0, f"champ={blank!r} validées={statuses}")
+            first.locator("input[type=number]").fill("1")
             first.get_by_role("button", name="Valider la note").click(); ag.wait_for_timeout(500)
             table = ag.locator(".notes-table").inner_text()
             check(f"{did} : note validée ajoutée au tableau des notes", "Résultats évaluation 1" in table and "Moodle" in table, table[:200])
@@ -482,6 +500,7 @@ def main():
             nc.locator(".mdl-pick").click(); ag2.locator(".mdl-opt", has_text="Créer une nouvelle matière").first.click(); ag2.wait_for_timeout(150)
             check(f"{did} : « Créer une nouvelle matière » : champ du nom affiché", nc.locator(".mdl-newname").is_visible() and nc.locator(".mdl-pick").get_attribute("data-new") == "1")
             nc.locator(".mdl-newname").fill("Anglais S1")
+            nc.locator("input[type=number]").fill("1")
             nc.get_by_role("button", name="Valider la note").click(); ag2.wait_for_timeout(500)
             stn = sw.evaluate("() => chrome.storage.local.get('uca_moodle').then((d) => d.uca_moodle)")
             itn = next(i for i in stn["items"].values() if i["title"] == "Contrôle surprise")

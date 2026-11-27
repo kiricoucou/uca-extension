@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Emploi du temps UCA (non officiel)",
-  "version": "1.47.3",
+  "version": "1.47.4",
   "description": "Emploi du temps, notes et absences de l'UCA (Odin) dans ton navigateur. Non officiel, aucune donnée envoyée à un tiers.",
   "permissions": [
     "scripting",
@@ -34,6 +34,7 @@
       "core/settings.js",
       "core/grades.js",
       "core/moodle.js",
+      "core/moodle-scan.js",
       "core/status.js",
       "core/ade.js",
       "core/activity.js",

@@ -57,6 +57,7 @@ def run(browser, base, errors):
         check(f"{design} app : pas de « Chercher sur Moodle » (recherche réservée à l'extension)", fr.locator("#moodleSyncBtn").count() == 0)
         check(f"{design} app : la note validée est déjà dans le tableau, la refusée non", "Contrôle 2" in fr.locator(".notes-table").inner_text() and "Quiz refusé" not in fr.locator(".notes-table").inner_text())
         avg0 = fr.locator(".notes-avg .na-val").inner_text()
+        fr.locator(".np-moodle-card", has_text="Contrôle 1").locator("input[type=number]").fill("1")
         fr.locator(".np-moodle-card", has_text="Contrôle 1").get_by_role("button", name="Valider la note").click(); pg.wait_for_timeout(600)
         avg1 = fr.locator(".notes-avg .na-val").inner_text()
         check(f"{design} app : valider une note la met dans le tableau et change la moyenne", "Contrôle 1" in fr.locator(".notes-table").inner_text() and avg0 != avg1, f"{avg0} -> {avg1}")

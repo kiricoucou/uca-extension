@@ -26,18 +26,16 @@
     function build() {
       var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
       var bg = dark ? "#0f1218" : "#f5f7fb", fg = dark ? "#e9edf5" : "#18202e", dim = dark ? "#a0a9ba" : "#5a6478", accent = dark ? "#8ab4f8" : "#0b57d0";
-      var g = el("div", "position:fixed;inset:0;z-index:2147483647;background:" + bg + ";color:" + fg + ";display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;");
+      var g = el("div", "position:fixed;inset:0;z-index:2147483647;background:" + bg + ";color:" + fg + ";display:flex;align-items:flex-start;justify-content:center;box-sizing:border-box;padding:40px 20px 20px;overflow:auto;font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;");
       g.id = "ucaUpdateGate"; g.setAttribute("role", "alertdialog"); g.setAttribute("aria-modal", "true"); g.setAttribute("aria-labelledby", "ucaGateTitle"); g.setAttribute("aria-describedby", "ucaGateDesc");
-      var box = el("div", "max-width:460px;width:100%;text-align:center;");
+      var box = el("div", "max-width:460px;width:100%;text-align:center;margin:auto 0;");
       var h = el("h1", "font-size:24px;margin:0 0 10px;letter-spacing:-.02em;", "Mise à jour obligatoire"); h.id = "ucaGateTitle";
       var p = el("p", "margin:0 0 6px;color:" + dim + ";"); p.id = "ucaGateDesc";
       p.textContent = "Cette version de l'extension est périmée : elle est verrouillée tant qu'elle n'est pas à jour (rien ne fonctionne en attendant).";
       var v = el("p", "margin:0 0 18px;font-weight:700;"); v.id = "ucaGateVersions";
       var btn = el("button", "font:inherit;font-weight:700;border:0;border-radius:12px;padding:13px 22px;min-height:46px;background:" + accent + ";color:" + (dark ? "#0b1d3a" : "#fff") + ";cursor:pointer;width:100%;", "Télécharger et appliquer la mise à jour");
       btn.type = "button";
-      // Recharge l'extension : relit les fichiers du disque (utile quand ils sont déjà à jour mais que le navigateur, Firefox surtout, garde l'ancienne version).
-      var apply = el("button", "font:inherit;font-weight:700;border-radius:12px;padding:12px 22px;min-height:46px;margin-top:10px;background:transparent;color:" + accent + ";border:2px solid " + accent + ";cursor:pointer;width:100%;", "Appliquer la mise à jour");
-      apply.type = "button"; apply.id = "ucaGateApply";
+      btn.id = "ucaGateApply";
       var cmdBox = el("div", "display:none;margin-top:12px;text-align:left;");
       function fromUA() {
         var ua = navigator.userAgent || "";
@@ -45,10 +43,13 @@
         var br = /Firefox\//.test(ua) ? "firefox" : /Edg\//.test(ua) ? "edge" : /Vivaldi/i.test(ua) ? "vivaldi" : (navigator.brave ? "brave" : "chrome");
         return { os: os, browser: br };
       }
-      /* « Appliquer la mise à jour » :
+      /* UN seul bouton, et jamais de dossier à choisir (une extension ne connaît pas son propre dossier : c'est le pilote
+         qui le retrouve). Au clic :
          1. fichiers déjà à jour sur le disque : on recharge ;
-         2. pilote déjà installé : on le lance (lien uca-maj:), rien à télécharger ;
-         3. sinon, première fois : on télécharge le pilote du système, une seule fois ; il s'installe tout seul au premier lancement.
+         2. dossier déjà autorisé autrefois (autorisation toujours valable) : mise à jour sans aucune fenêtre ;
+         3. pilote installé : on le lance (lien uca-maj:) ; il affiche ses fenêtres, l'utilisateur valide ;
+         4. sinon, première fois : on télécharge le pilote du système ; l'utilisateur l'ouvre une fois, il s'installe.
+         Une extension ne peut pas exécuter un fichier elle-même : seul le lien enregistré par le pilote le permet.
          Après un lancement ou un téléchargement, on relit le manifeste sur le disque et on recharge dès que la version change. */
       function diskVersion() {
         return fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (m) { return String(m.version || ""); }).catch(function () { return ""; });
@@ -69,13 +70,24 @@
         var x = el("button", "font:inherit;margin:8px 8px 0 0;border:0;background:none;color:" + accent + ";text-decoration:underline;cursor:pointer;padding:8px 0;min-height:40px;", label);
         x.type = "button"; x.addEventListener("click", onClick); return x;
       }
-      function reloadButton() { return textButton("C'est fait : recharger l'extension", function () { chrome.runtime.reload(); }); }
+      // Recharger ne sert que si les fichiers du dossier chargé ont vraiment changé : on le vérifie au lieu de croire sur parole.
+      function reloadButton() {
+        return textButton("Vérifier si la mise à jour est faite", function () {
+          say("Vérification des fichiers de l'extension…");
+          diskVersion().then(function (v) {
+            if (v && cmp(v, CURRENT) > 0) { say("Nouvelle version " + v + " trouvée dans le dossier. Rechargement de l'extension…"); setTimeout(function () { chrome.runtime.reload(); }, 600); return; }
+            status.style.color = dark ? "#f28b82" : "#b3261e";
+            status.textContent = "La mise à jour N'EST PAS faite : le dossier que ton navigateur charge est toujours en version " + (v || CURRENT) + ". Le pilote n'a pas été lancé, ou il a mis à jour un autre dossier (compare avec le dossier affiché dans chrome://extensions, « Détails »).";
+          });
+        });
+      }
+      function ownId() { var id = String((chrome.runtime && chrome.runtime.id) || ""); return /^[a-p]{32}$/.test(id) ? id : ""; }
       function launchPilot(info) {
-        say("Lancement du pilote de mise à jour… Si le navigateur demande l'autorisation de l'ouvrir, accepte.");
-        var a = document.createElement("a"); a.href = "uca-maj:" + info.browser; a.id = "ucaPilotLink"; document.body.appendChild(a); a.click(); a.remove();
+        say("Ouverture du pilote de mise à jour… Si le navigateur demande l'autorisation, accepte, puis suis ses fenêtres (vérifie le dossier proposé, puis « Valider »).");
+        var a = document.createElement("a"); a.href = "uca-maj:" + info.browser + (ownId() ? "/" + ownId() : ""); a.id = "ucaPilotLink"; document.body.appendChild(a); a.click(); a.remove();
         cmdBox.textContent = ""; cmdBox.style.display = "block";
         cmdBox.append(
-          el("p", "margin:0;font-size:14px;color:" + dim + ";", "L'extension se rechargera toute seule quand le pilote aura fini."),
+          el("p", "margin:0;font-size:14px;color:" + dim + ";", "Garde cette page ouverte : l'extension se rechargera toute seule quand le pilote aura fini."),
           textButton("Rien ne s'est ouvert ? Réinstaller le pilote", function () { chrome.storage.local.remove("uca_pilot_ok", function () { installPilot(info); }); }),
           reloadButton());
         watch();
@@ -106,11 +118,11 @@
           var ver = (d && d.uca_latest_version) || "";
           if (!/^\d{1,4}(\.\d{1,5}){1,3}$/.test(String(ver))) ver = "";   // jamais de texte libre dans une commande de terminal
           var cmd = info.os === "windows"
-            ? "\"%USERPROFILE%\\Downloads\\" + file + "\" /browser " + info.browser + " /os windows /version " + ver + " /yes"
-            : "bash ~/Downloads/" + file + " --browser " + info.browser + " --os " + info.os + " --version " + ver + " --yes";
+            ? "\"%USERPROFILE%\\Downloads\\" + file + "\" /browser " + info.browser + " /os windows /version " + ver + (ownId() ? " /id " + ownId() : "")
+            : "bash ~/Downloads/" + file + " --browser " + info.browser + " --os " + info.os + " --version " + ver + (ownId() ? " --id " + ownId() : "");
           cmdBox.textContent = "";
           cmdBox.style.display = "block";
-          cmdBox.appendChild(el("p", "margin:0 0 6px;font-size:14px;color:" + dim + ";", "Une seule fois : lance " + file + ", ou colle cette commande dans un terminal. Il met à jour et installe le pilote : les prochaines fois, ce bouton le lancera directement."));
+          cmdBox.appendChild(el("p", "margin:0 0 6px;font-size:14px;color:" + dim + ";", "Une seule fois : ouvre " + file + " (liste des téléchargements du navigateur) et suis ses fenêtres. Il retrouve le dossier tout seul, met à jour et installe le pilote : les prochaines fois, ce bouton l'ouvrira directement. Autre moyen, la commande ci-dessous dans un terminal :"));
           if (pilotVersion) cmdBox.appendChild(el("p", "margin:0 0 6px;font-size:13px;color:" + dim + ";", "Pilote version " + pilotVersion + ". Un ancien fichier avec un autre numéro peut être supprimé."));
           var code = el("code", "display:block;padding:10px 12px;border-radius:10px;background:" + (dark ? "#171b23" : "#e8edf6") + ";font:12.5px/1.5 ui-monospace,Consolas,monospace;word-break:break-all;user-select:all;", cmd);
           var copy = el("button", "font:inherit;font-weight:600;margin:8px 8px 0 0;border:1px solid " + accent + ";background:transparent;color:" + accent + ";border-radius:10px;padding:8px 14px;min-height:40px;cursor:pointer;", "Copier la commande"); copy.type = "button";
@@ -118,46 +130,38 @@
           cmdBox.append(code, copy, textButton("J'ai déjà installé le pilote : le lancer", function () { chrome.storage.local.set({ uca_pilot_ok: true }, function () { launchPilot(info); }); }), reloadButton());
         });
       }
-      apply.addEventListener("click", function () {
-        // Le popup se ferme au premier téléchargement ou lancement : la suite se passe dans un onglet.
-        if (/popup\.html$/.test(location.pathname)) { chrome.tabs.create({ url: chrome.runtime.getURL("settings.html") }); window.close(); return; }
-        var info = fromUA();
-        diskVersion().then(function (v) {
-          if (v && cmp(v, CURRENT) > 0) { chrome.runtime.reload(); return; }
-          chrome.storage.local.get("uca_pilot_ok", function (d) { if (d.uca_pilot_ok) launchPilot(info); else installPilot(info); });
-        });
-      });
       var status = el("p", "min-height:22px;margin:12px 0 0;font-size:14px;font-weight:600;"); status.id = "ucaGateStatus"; status.setAttribute("role", "status");
       var busy = false;
+      function free() { busy = false; btn.disabled = false; }
+      function usePilot(info) {
+        chrome.storage.local.get("uca_pilot_ok", function (d) { free(); if (d.uca_pilot_ok) launchPilot(info); else installPilot(info); });
+      }
       btn.addEventListener("click", function () {
         if (busy) return;
-        var SU = window.UCA_SELFUPDATE;
-        // Le popup se ferme dès qu'une boîte de sélection s'ouvre : la mise à jour se fait dans un onglet.
+        // Le popup se ferme au premier téléchargement ou lancement : la suite se passe dans un onglet.
         if (/popup\.html$/.test(location.pathname)) { chrome.tabs.create({ url: chrome.runtime.getURL("settings.html") }); window.close(); return; }
-        if (!SU || !SU.supported(true)) { status.textContent = "Mise à jour automatique indisponible ici : suis les étapes manuelles ci-dessous."; chrome.runtime.sendMessage({ type: "UCA_APPLY_UPDATE" }); return; }
         busy = true; btn.disabled = true; status.style.color = dim;
-        SU.run({ interactive: true, onProgress: function (n, total, label) { status.textContent = total > 1 ? "Application des changements : " + n + " / " + total : label; } })
-          .then(function (v) {
-            status.textContent = "Mise à jour installée (" + v + "). Rechargement de l'extension…";
-            setTimeout(function () { chrome.runtime.reload(); }, 600);
-          })
-          .catch(function (e) {
-            busy = false; btn.disabled = false;
-            status.style.color = dark ? "#f28b82" : "#b3261e";
-            status.textContent = e && e.name === "AbortError" ? "Choix du dossier annulé : réessaie." : "Échec : " + ((e && e.message) || e);
-          });
+        var info = fromUA(), SU = window.UCA_SELFUPDATE;
+        diskVersion().then(function (v) {
+          if (v && cmp(v, CURRENT) > 0) { chrome.runtime.reload(); return; }
+          if (!SU || !SU.supported(false)) { usePilot(info); return; }
+          // interactive: false = aucune fenêtre, aucune demande de dossier : renvoie null si ce n'est pas possible.
+          SU.run({ interactive: false, onProgress: function (n, total, label) { say(total > 1 ? "Application des changements : " + n + " / " + total : label); } })
+            .then(function (done) {
+              if (!done) { usePilot(info); return; }
+              say("Mise à jour installée (" + done + "). Rechargement de l'extension…");
+              setTimeout(function () { chrome.runtime.reload(); }, 600);
+            })
+            .catch(function () { usePilot(info); });
+        });
       });
-      var how = el("p", "margin:14px 0 6px;font-size:14px;color:" + dim + ";", "Première fois : choisis le dossier de l'extension (celui chargé dans chrome://extensions) et autorise l'écriture. La dernière version est téléchargée, appliquée, puis l'extension se recharge. Ensuite, les mises à jour suivantes se font avec ce même dossier. Firefox ou échec : remplace le dossier à la main puis « Recharger ».");
-      // Firefox n'a pas de sélecteur de dossier : parcours en deux temps (script, puis un nouveau clic sur le bouton).
-      if (typeof window.showDirectoryPicker !== "function") {
-        how.textContent = "Firefox : télécharge et lance maj-extension.bat (lien ci-dessous) en lui donnant le dossier de l'extension. Il remplace les fichiers, puis reviens ici et clique sur « Appliquer la mise à jour » : l'extension se recharge et relit ses fichiers (la version change).";
-      }
+      var how = el("p", "margin:14px 0 6px;font-size:14px;color:" + dim + ";", "Aucun dossier à choisir : le pilote de mise à jour retrouve l'extension tout seul. La première fois, tu dois l'ouvrir toi-même (le navigateur interdit à une extension de lancer un fichier). Le fichier maj-extension qui est dans le dossier de l'extension convient aussi.");
       var link = el("a","display:inline-block;margin:4px 0;color:" + accent + ";font-weight:600;", "Page de téléchargement (ZIP et script maj-extension.bat)");
       link.href = "https://kiricoucou.github.io/uca-extension/extension/#maj"; link.target = "_blank"; link.rel = "noopener";
       var again = el("button", "display:block;margin:10px auto 0;font:inherit;border:0;background:none;color:" + accent + ";text-decoration:underline;cursor:pointer;padding:8px;min-height:36px;", "Vérifier à nouveau");
       again.type = "button";
       again.addEventListener("click", function () { again.textContent = "Vérification…"; chrome.runtime.sendMessage({ type: "UCA_FORCE_UPDATE_CHECK" }); setTimeout(function () { again.textContent = "Vérifier à nouveau"; evaluate(); }, 3500); });
-      box.append(h, p, v, btn, apply, status, cmdBox, how, link, again);
+      box.append(h, p, v, btn, status, cmdBox, how, link, again);
       g.appendChild(box);
       // Ni Échap ni Tab ne permettent de sortir de la fenêtre.
       g.addEventListener("keydown", function (e) {

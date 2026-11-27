@@ -124,7 +124,9 @@
     '.nv-burger{width:44px;padding:0;justify-content:center}.nv-burger svg{width:22px;height:22px}' +
     '.topbar .nv-burger{margin-left:6px;flex-shrink:0}' +
     '.topbar .nav a .nv-i{width:18px;height:18px;margin-right:6px;vertical-align:-4px}' +
-    '@media (max-width:1280px){.topbar .brand span{display:none}}' +
+    '.topbar .wrap{max-width:1480px}.topbar .brand{flex-shrink:0}.topbar .brand span{display:inline}.topbar .nav{min-width:0}' +
+    '@media (max-width:420px){.topbar .wrap{gap:8px;padding:0 10px}.topbar .brand{gap:7px;font-size:14px}}' +
+    '@media (max-width:340px){.topbar .brand img{display:none}}' +
     '.nv-overlay{position:fixed;inset:0;z-index:950;background:rgba(9,9,11,.5);display:none}.nv-overlay.open{display:block}' +
     '.nv-panel{position:fixed;top:0;right:0;bottom:0;width:min(350px,90vw);z-index:960;background:var(--surface,#fff);color:var(--text,#09090b);border-left:1px solid var(--border,#e4e4e7);transform:translateX(100%);visibility:hidden;transition:transform .25s ease,visibility .25s;display:flex;flex-direction:column;font-family:var(--font,system-ui,sans-serif)}' +
     '.nv-panel.open{transform:none;visibility:visible;box-shadow:-12px 0 32px rgba(9,9,11,.22)}' +
@@ -252,6 +254,15 @@
       a.insertAdjacentHTML('afterbegin', svg(k));
     });
   }
+  // Barre du haut : le titre reste entier ; un lien qui ne tient pas en entier est masqué (il reste dans le menu).
+  function fitTop() {
+    var nav = document.querySelector('.topbar .nav');
+    if (!nav) return;
+    var links = nav.querySelectorAll('a'), i;
+    for (i = 0; i < links.length; i++) links[i].style.display = '';
+    if (getComputedStyle(nav).position === 'absolute') return;   // liste déroulante : rien à masquer
+    for (i = links.length - 1; i >= 0 && nav.scrollWidth > nav.clientWidth + 1; i--) links[i].style.display = 'none';
+  }
   function init() {
     var openSearch = buildSearch();
     var set = build(openSearch);
@@ -260,7 +271,12 @@
     var b = document.createElement('button'); b.type = 'button'; b.className = 'nv-burger'; b.setAttribute('aria-label', 'Ouvrir le menu'); b.setAttribute('aria-controls', 'nvPanel'); b.innerHTML = svg('burger');
     b.addEventListener('click', function () { set(true); });
     var tb = document.querySelector('.topbar .wrap');
-    if (tb) { tb.appendChild(findBtn(openSearch)); tb.appendChild(b); return; }
+    if (tb) {
+      tb.appendChild(findBtn(openSearch)); tb.appendChild(b); fitTop();
+      window.addEventListener('resize', fitTop); window.addEventListener('load', fitTop);
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTop);
+      return;
+    }
     if (document.body.hasAttribute('data-nv-none')) return;   // pages qui ont leur propre barre (application)
     var bar = document.createElement('header'); bar.className = 'nv-bar';
     bar.innerHTML = '<a class="nv-home" href="' + root + '">' + svg('home') + 'Accueil</a><span class="nv-spacer"></span>';

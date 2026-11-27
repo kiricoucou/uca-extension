@@ -1,34 +1,12 @@
 /* Données de démonstration et initialisation automatique pour l'application.
-   Activé UNIQUEMENT en mode démo explicite (?demo=1). En production, aucune donnée
-   factice n'est injectée, et les éventuelles anciennes données de test sont purgées. */
+   Activé UNIQUEMENT en mode démo explicite (?demo=1). En production, aucune donnée factice n'est injectée et rien n'est
+   effacé : une ancienne purge reconnaissait les données de test à des noms (« UE 1.1 », « SAE 1.01 »…) que portent aussi
+   les vraies notes et les vrais devoirs. La démo a son propre stockage (core/env.js). */
 (function () {
 "use strict";
 
 const isDemo = /[?&]demo=1(?:&|$)/.test(location.search) || (window.UCA_APP && window.UCA_APP.demo);
-
-if (!isDemo) {
-  // Mode production : nettoyer impérativement les restes de données de test si présentes
-  if (window.chrome && window.chrome.storage && window.chrome.storage.local) {
-    window.chrome.storage.local.get(["uca_events", "uca_tasks", "uca_absences", "uca_releve_notes"], (res) => {
-      if (!res) return;
-      const hasMockEvents = res.uca_events && res.uca_events.some(e => e.title && e.title.includes("R1.01 Initiation au développement"));
-      const hasMockTasks = res.uca_tasks && res.uca_tasks.some(t => t.id === "task1" || t.title.includes("SAE 1.01"));
-      const hasMockAbsences = res.uca_absences && res.uca_absences.declarations && res.uca_absences.declarations.some(d => d.motif && d.motif.includes("Certificat médical"));
-      const hasMockNotes = res.uca_releve_notes && res.uca_releve_notes.ue && res.uca_releve_notes.ue.some(u => u.label && u.label.includes("UE 1.1"));
-      
-      const toRemove = [];
-      if (hasMockEvents) toRemove.push("uca_events");
-      if (hasMockTasks) toRemove.push("uca_tasks");
-      if (hasMockAbsences) toRemove.push("uca_absences");
-      if (hasMockNotes) toRemove.push("uca_releve_notes");
-      
-      if (toRemove.length > 0) {
-        window.chrome.storage.local.remove(toRemove);
-      }
-    });
-  }
-  return;
-}
+if (!isDemo) return;
 
 const pad = (n) => String(n).padStart(2, "0");
 const now = new Date();

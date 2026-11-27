@@ -94,7 +94,7 @@
         <li>Seules les notes <b>validées</b> entrent dans ton tableau de notes et peuvent compter dans tes moyennes (si Odin a déjà publié la note d'une UE, c'est la sienne qui reste utilisée). Cela permet d'écarter, par exemple, les contrôles fictifs présents sur Moodle.</li>
         <li>Chaque note est ramenée <b>sur 20</b> (note ÷ barème × 20). Dans le tableau, son nom se termine par « · Moodle (sur 20.0) ».</li>
       </ul>
-      <p class="note">La recherche sur Moodle se fait <b>uniquement dans l'extension</b>. L'app Android (APK), l'app installée et l'agenda en ligne ne cherchent pas sur Moodle : ils <a href="#telephone">reçoivent tes notes depuis l'extension</a>. Les moyennes affichées sont des estimations : seules les notes officielles de l'université font foi.</p>
+      <p class="note">La recherche sur Moodle se fait dans l'<b>extension</b> et dans l'<b>application Android (APK 1.4.34 ou plus)</b>. L'app installée (PWA) et l'agenda en ligne ne cherchent pas sur Moodle : ils <a href="#telephone">reçoivent tes notes depuis l'extension</a>. Les moyennes affichées sont des estimations : seules les notes officielles de l'université font foi.</p>
     </section>
 
     <section id="etapes" aria-labelledby="h-etapes">
@@ -209,6 +209,7 @@
         <li><b>Autres pages</b> : le programme de lecture demande la page « Notes » et les rapports de notes des cours, pas tes messages ni tes devoirs rendus.</li>
         <li><b>Stockage</b> : les notes sont gardées dans le stockage de l'extension, dans ton navigateur. Le journal d'activité (la cloche) peut aussi contenir le texte d'une nouvelle note. L'historique de ta moyenne tient compte des notes validées. Si tu importes tes données sur un autre appareil, il en garde une copie.</li>
         <li><b>Envoi</b> : la recherche Moodle n'envoie pas tes notes à un serveur du projet ni à un tiers. Le pont entre l'extension et le site ne transmet pas la liste des notes Moodle.</li>
+        <li><b>Application Android</b> : la recherche se fait dans une page invisible de l'application, avec la session que tu as ouverte sur la page de connexion officielle. L'application vérifie qu'un cookie <code>MoodleSession</code> existe, sans enregistrer ni envoyer sa valeur ; les notes restent sur ton téléphone. La lecture est dans <code>UcaMoodle.kt</code> et <code>core/moodle-app.js</code>.</li>
         <li><b>Partage</b> : le lien de partage, le QR code animé et le fichier <code>.ucasync</code> <b>contiennent tes notes</b>. C'est toi qui les envoies. Ne les partage pas avec d'autres personnes. Le lien est chiffré, mais celui qui a le lien et le code peut le lire pendant sa durée de validité. Le QR code et le fichier ne sont pas chiffrés. Une messagerie ou un service de stockage que tu utilises pour les envoyer les reçoit aussi.</li>
         <li><b>Vérifier</b> : le <a href="https://github.com/kiricoucou/uca-extension">code est public</a>. La lecture de Moodle se trouve dans <code>core/moodle.js</code> et <code>background.js</code>, le partage dans <code>core/transfer.js</code>, les autorisations dans <code>manifest.json</code>.</li>
       </ul>
@@ -254,7 +255,10 @@
 
     <section id="telephone" aria-labelledby="h-tel">
       <h2 id="h-tel">Avoir ses notes Moodle sur le téléphone</h2>
-      <p class="note">L'APK et l'app installée (PWA) <b>ne cherchent pas sur Moodle</b>. Fais la recherche dans l'extension, sur ton ordinateur, puis envoie tes données. Les notes validées, les notes en attente et la corbeille sont transférées.</p>
+      <h3>Avec l'application Android (APK 1.4.34 ou plus)</h3>
+      <p>L'application cherche elle-même sur Moodle. Ouvre la fenêtre <b>Notes</b> et touche <b>Chercher sur Moodle</b>. La première fois, touche <b>Me connecter à Moodle</b> : tu te connectes sur la page officielle, puis la recherche reprend toute seule. Ensuite, après chaque synchro d'Odin, l'application cherche aussi les nouvelles notes si ta session Moodle est toujours ouverte. Chaque note reste à valider ou à refuser.</p>
+      <h3>Avec l'app installée (PWA), ou sans refaire la recherche</h3>
+      <p class="note">L'app installée (PWA) <b>ne cherche pas sur Moodle</b>. Fais la recherche dans l'extension, sur ton ordinateur, puis envoie tes données (cela marche aussi vers l'APK). Les notes validées, les notes en attente et la corbeille sont transférées.</p>
       <p>Pour ce transfert, ton emploi du temps Odin doit déjà avoir été synchronisé dans l'extension.</p>
       <ol class="mdl-steps">
         <li>
@@ -318,7 +322,7 @@
       </div></details>
       <details class="qa"><summary>Je ne vois pas le bouton « Chercher sur Moodle »</summary><div class="a">
         <ul>
-          <li>Vérifie que tu es dans l'agenda de l'<b>extension</b>. Le bouton n'existe pas dans l'APK, l'app installée ni l'agenda en ligne.</li>
+          <li>Vérifie que tu es dans l'agenda de l'<b>extension</b>. Dans l'APK, il faut la version 1.4.34 ou plus. Le bouton n'existe pas dans l'app installée ni dans l'agenda en ligne.</li>
           <li>Active <b>Paramètres</b> → <b>Alertes</b> → <b>Notes Moodle</b>.</li>
           <li><a href="statut.html">Mets l'extension à jour</a>.</li>
         </ul>
@@ -348,7 +352,7 @@
       <details class="qa"><summary>Comment la moyenne est-elle calculée après une validation ?</summary><div class="a"><p>La moyenne de la matière est recalculée à partir de ses évaluations et de leurs coefficients. Si Odin a déjà publié la note de l'UE, cette note d'UE reste utilisée. C'est une estimation.</p></div></details>
       <details class="qa"><summary>Le coefficient vient-il de Moodle ?</summary><div class="a"><p>Non. Il vaut 1 par défaut : vérifie-le avant de valider. Tu peux le modifier ensuite.</p></div></details>
       <details class="qa"><summary>L'extension peut-elle changer mes notes sur Moodle ?</summary><div class="a"><p>Non. Elle lit les pages de notes. Valider ou refuser ne change que ce que tu vois dans l'outil.</p></div></details>
-      <details class="qa"><summary>Puis-je tout faire depuis mon téléphone ?</summary><div class="a"><p>Pas avec l'APK ni l'app installée : elles ne cherchent pas sur Moodle. <a href="#telephone">Envoie-leur tes données depuis l'extension</a>.</p></div></details>
+      <details class="qa"><summary>Puis-je tout faire depuis mon téléphone ?</summary><div class="a"><p>Oui avec l'application Android (APK 1.4.34 ou plus) : elle cherche sur Moodle et tu valides les notes sur place. L'app installée ne cherche pas sur Moodle : <a href="#telephone">envoie-lui tes données depuis l'extension</a>.</p></div></details>
       <details class="qa"><summary>Est-ce un service officiel ?</summary><div class="a"><p>Non. Emploi du temps UCA est un projet étudiant, non affilié à l'Université Clermont Auvergne.</p></div></details>
       <p style="margin-top:14px"><a href="aide.html">Voir toute l'aide</a></p>
     </section>

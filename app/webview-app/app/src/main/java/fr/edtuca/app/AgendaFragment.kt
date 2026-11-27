@@ -54,6 +54,38 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
         }
     }
 
+    private val moodleLoginLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result: ActivityResult ->
+        // Connecté : la page relance la recherche. Fenêtre fermée avant : rien à faire.
+        if (result.resultCode == android.app.Activity.RESULT_OK) deliver(mapOf("type" to "UCA_MOODLE_LOGIN_DONE"))
+    }
+
+    override fun handleMoodleRequest(manual: Boolean) {
+        val ctx = context ?: return
+        UcaMoodle.scrape(ctx, manual, onProgress = { p ->
+            deliver(mapOf("type" to "UCA_MOODLE_PROGRESS", "done" to p.optInt("done"), "total" to p.optInt("total"), "label" to p.optString("label")))
+        }) { r ->
+            deliver(mapOf("type" to "UCA_MOODLE_RESULT", "data" to r.optJSONArray("data"),
+                "issue" to r.optString("issue").ifEmpty { null }, "detail" to r.optString("detail").ifEmpty { null }))
+        }
+    }
+
+    override fun handleMoodleLogin() {
+        if (!isAdded) return
+        val url = UcaMoodle.loginUrl()
+        moodleLoginLauncher.launch(Intent(requireContext(), LoginActivity::class.java)
+            .putExtra(LoginActivity.EXTRA_CAS_URL, url)
+            .putExtra(LoginActivity.EXTRA_SUCCESS_HOST, Uri.parse(url).host)
+            .putExtra(LoginActivity.EXTRA_SKIP_LOGIN_PAGES, true))
+    }
+
+    override fun onMoodlePending(count: Int) {
+        val ctx = context?.applicationContext ?: return
+        NotifStore.post(ctx, "note", if (count > 1) "$count notes Moodle à valider" else "1 note Moodle à valider",
+            "Ouvre la fenêtre Notes de l'agenda pour la valider ou la refuser")
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {

@@ -1,7 +1,9 @@
 @echo off
 setlocal EnableExtensions
 chcp 65001 >nul
-title Mise a jour de l'extension My UCA
+rem  Version du pilote : a monter a chaque changement de ce script (elle figure dans le nom du fichier telecharge).
+set "MYUCA_PILOT_VERSION=2.0"
+title Mise a jour de l'extension My UCA - pilote %MYUCA_PILOT_VERSION%
 rem ----------------------------------------------------------------------------------------------
 rem  Met a jour l'extension "My UCA" (Chrome, Edge, Brave, Vivaldi, Firefox) chargee en mode developpeur.
 rem  1. Il retrouve tout seul le dossier de l'extension dans ton navigateur (ou le dossier memorise, ou celui du script).
@@ -25,6 +27,7 @@ set "MYUCA_CFG=%LOCALAPPDATA%\MyUCA\dossier-extension.txt"
 
 :args
 if "%~1"=="" goto :argsdone
+if /i "%~1"=="/desinstaller" (set "MYUCA_UNINSTALL=1" & shift & goto :args)
 if /i "%~1"=="/force" (set "MYUCA_FORCE=1" & shift & goto :args)
 if /i "%~1"=="/yes" (set "MYUCA_AUTO=1" & set "MYUCA_NOPAUSE=1" & shift & goto :args)
 if /i "%~1"=="/browser" (set "MYUCA_BROWSER=%~2" & shift & shift & goto :args)
@@ -36,6 +39,7 @@ goto :args
 :argsdone
 
 echo.
+echo Pilote de mise a jour My UCA, version %MYUCA_PILOT_VERSION%
 echo Recherche de l'extension My UCA...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=[IO.File]::ReadAllText($env:SELFBAT); $i=$s.IndexOf([string][char]10+'#PS-START'); Invoke-Expression $s.Substring($i)"
 set "RC=%ERRORLEVEL%"
@@ -187,6 +191,42 @@ function Open-InBrowser([string]$ver) {
   $url = 'https://kiricoucou.github.io/uca-extension/merci.html?v=' + $ver + '&open=1'
   try { if (-not $path) { throw 'introuvable' }; Start-Process -FilePath $path -ArgumentList $url; Write-Host ($l + " s'ouvre sur la nouvelle version de l'extension.") } catch { Write-Host ("Ouvre " + $l + " toi-meme : l'extension est a jour.") }
 }
+# Pilote installe : une seule copie dans %LOCALAPPDATA%\MyUCA, lancee par le lien uca-maj: (aucun droit administrateur).
+$PILOT_KEY = if ($env:MYUCA_REGKEY) { $env:MYUCA_REGKEY } else { 'HKCU:\Software\Classes\uca-maj' }
+$PILOT_DIR = Join-Path $env:LOCALAPPDATA 'MyUCA'
+# N'importe quel site peut ouvrir un lien uca-maj: ; rien de ce lien n'est execute ni transmis, sauf un nom de navigateur de la liste.
+$LAUNCHER = @'
+$u = [string]($args -join ' ')
+$b = ''
+if ($u -match '^uca-maj:(//)?(chrome|edge|brave|vivaldi|chromium|firefox)/?$') { $b = $Matches[2].ToLower() }
+$p = @('/yes'); if ($b) { $p = @('/browser', $b, '/yes') }
+if ($env:MYUCA_DRYRUN -eq '1') { Write-Output ($p -join ' '); exit 0 }
+& (Join-Path $PSScriptRoot 'maj-extension.bat') @p
+if ($LASTEXITCODE -ne 0) { Start-Sleep -Seconds 60 } else { Start-Sleep -Seconds 10 }
+'@
+function Install-Pilot {
+  if ($env:MYUCA_NOINSTALL -eq '1') { return }
+  try {
+    New-Item -ItemType Directory -Force -Path $PILOT_DIR | Out-Null
+    $target = Join-Path $PILOT_DIR 'maj-extension.bat'
+    if ($env:SELFBAT -ine $target) { Copy-Item -LiteralPath $env:SELFBAT -Destination $target -Force }
+    $launch = Join-Path $PILOT_DIR 'lancer.ps1'
+    Set-Content -LiteralPath $launch -Value $LAUNCHER -Encoding ASCII
+    $ps = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
+    $cmd = '"' + $ps + '" -NoProfile -ExecutionPolicy Bypass -File "' + $launch + '" "%1"'
+    New-Item -Path "$PILOT_KEY\shell\open\command" -Force | Out-Null
+    Set-Item -Path $PILOT_KEY -Value 'URL:Pilote de mise a jour My UCA'
+    New-ItemProperty -Path $PILOT_KEY -Name 'URL Protocol' -Value '' -PropertyType String -Force | Out-Null
+    Set-Item -Path "$PILOT_KEY\shell\open\command" -Value $cmd
+    Write-Host "Pilote installe : les prochaines fois, clique sur ""Appliquer la mise a jour"" dans l'extension, rien a telecharger."
+    Write-Host "(Tu peux supprimer le fichier telecharge. Desinstaller : maj-extension.bat /desinstaller)"
+  } catch { Write-Host ("Pilote non installe (" + $_.Exception.Message + ") : la mise a jour continue.") }
+}
+function Uninstall-Pilot {
+  Remove-Item -Path $PILOT_KEY -Recurse -Force -ErrorAction SilentlyContinue
+  foreach ($f in 'lancer.ps1', 'maj-extension.bat') { $x = Join-Path $PILOT_DIR $f; if ($env:SELFBAT -ine $x) { Remove-Item -LiteralPath $x -Force -ErrorAction SilentlyContinue } }
+  Write-Host "Pilote desinstalle."
+}
 function Pick-Folder {
   Add-Type -AssemblyName System.Windows.Forms
   $d = New-Object System.Windows.Forms.FolderBrowserDialog
@@ -232,6 +272,7 @@ function Show-Confirm {
 }
 
 try {
+  if ($env:MYUCA_UNINSTALL -eq '1') { Uninstall-Pilot; exit 0 }
   $dest = $null
   if ($env:MYUCA_ARGDEST) {
     # dossier donné explicitement : pas de recherche ni de confirmation
@@ -263,6 +304,8 @@ try {
 
   # memorise le dossier pour la prochaine fois
   if ($env:MYUCA_CFG) { New-Item -ItemType Directory -Force -Path (Split-Path $env:MYUCA_CFG -Parent) | Out-Null; Set-Content -LiteralPath $env:MYUCA_CFG -Value $dest -Encoding ASCII }
+
+  Install-Pilot
 
   # cibles : le dossier choisi + les dossiers des autres navigateurs rangés a cote (extension_uca_chrome / _edge / _firefox...)
   $targets = New-Object System.Collections.ArrayList

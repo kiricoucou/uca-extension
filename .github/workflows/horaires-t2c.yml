@@ -1,0 +1,42 @@
+name: Horaires T2C
+
+# Découpe chaque jour les horaires officiels de T2C (données ouvertes, Licence Ouverte) en un fichier par arrêt,
+# publiés sur la branche « gtfs-data ». Cette branche ne garde qu'un seul commit : le dépôt ne grossit pas.
+# La page Transports les lit sur raw.githubusercontent.com. Rien d'autre n'est envoyé nulle part.
+on:
+  schedule:
+    - cron: "20 3 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["tools/build_t2c_schedules.py", ".github/workflows/horaires-t2c.yml"]
+
+concurrency:
+  group: horaires-t2c
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  horaires:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fabriquer les fichiers d'horaires
+        # En cas de fichier officiel illisible ou incomplet, le script échoue : la version précédente reste en ligne.
+        run: python -I -X utf8 tools/build_t2c_schedules.py "$RUNNER_TEMP/gtfs"
+      - name: Publier sur la branche gtfs-data (un seul commit)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd "$RUNNER_TEMP/gtfs"
+          git init -q -b gtfs-data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Horaires T2C (données ouvertes)"
+          git push -q --force "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" gtfs-data

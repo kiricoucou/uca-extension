@@ -1,22 +1,36 @@
 {
   "app_name": "My UCA",
-  "version": "1.4.33",
-  "version_code": 23,
-  "bundle_version": "1.4.33",
+  "version": "1.4.34",
+  "version_code": 24,
+  "bundle_version": "1.4.34",
   "commit_sha": "main",
   "branch": "main",
-  "published_at": "2026-11-26T09:13:52Z",
+  "published_at": "2026-11-27T10:42:21Z",
   "min_apk_version_code": 16,
   "raw_base_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/",
   "apk_download_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/EdtUca.apk",
   "github_repo_url": "https://github.com/kiricoucou/uca-extension",
   "changelog": [
-    "Tes notes Moodle dans ton relevé : l'extension les cherche, tu valides ou refuses chacune avec sa matière et son coefficient. Dans l'app, elles arrivent avec le lien de partage ou le fichier .ucasync.",
-    "Transports refaits : uniquement de vrais passages de bus et de tram, sinon « Indisponible ». Notes Moodle expliquées et corrigées. Première connexion : « Odin, Moodle ou les deux ? »."
+    "Notes Moodle directement dans l'application : « Chercher sur Moodle » dans la fenêtre Notes, puis tu valides ou refuses chaque note.",
+    "L'application n'efface plus de vraies notes ni de vrais devoirs en les prenant pour des données de démonstration.",
+    "Bus et tram en direct sur tous les appareils, sans extension : données ouvertes officielles de T2C."
   ],
-  "ota_version": "1.4.33",
-  "ota_base_version_code": 23,
+  "ota_version": "1.4.34",
+  "ota_base_version_code": 24,
   "history": [
+    {
+      "version": "1.47.3",
+      "app": "1.4.34",
+      "title": "notes Moodle dans l'application, bus et tram en direct",
+      "items": [
+        "Moodle dans l'application Android : dans la fenêtre Notes, « Chercher sur Moodle » lit tes notes sur Moodle (« Me connecter à Moodle » la première fois) ; chaque note reste à valider ou…",
+        "Application Android, données conservées : elle n'efface plus à l'ouverture un relevé, un emploi du temps, des absences ou des devoirs dont les noms ressemblaient à ceux de la démo.",
+        "Un seul pilote de mise à jour : il s'installe au premier lancement ; ensuite « Appliquer la mise à jour » le lance directement, sans nouveau téléchargement.",
+        "Transports partout : les passages marchent maintenant sans extension : site, iPhone, app web, application Android et extension.",
+        "Données officielles : horaires et temps réel viennent des données ouvertes de T2C (transport.data.gouv.fr, Licence Ouverte). « En direct » = temps réel ; « Prévu » = horaire officiel.",
+        "Plus de coupure : si le temps réel ne répond pas, les horaires prévus restent affichés, et la page le dit."
+      ]
+    },
     {
       "version": "1.47.2",
       "app": "1.4.33",
@@ -83,14 +97,6 @@
       "title": "sécurité, 9 failles corrigées",
       "items": [
         "Sécurité (audit attaque/défense) : le pont de l'extension ne répond plus aux pages locales (file://, localhost) ni aux iframes, seulement au site officiel, avec un délai entre deux…"
-      ]
-    },
-    {
-      "version": "1.46.46",
-      "app": "1.4.26",
-      "title": "contraste du badge « En cours » (Lumen)",
-      "items": [
-        "Design Lumen : le vert du badge « En cours » et du statut « justifiée » est plus foncé en thème clair, pour un contraste lisible (norme d'accessibilité), sur l'extension, l'app web et l'APK."
       ]
     }
   ]

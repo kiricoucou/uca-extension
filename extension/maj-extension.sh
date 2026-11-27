@@ -15,6 +15,10 @@
 #  Usage : bash maj-extension.sh  |  bash maj-extension.sh /chemin/du/dossier  |  --force (réinstalle même à jour)  |  --yes (sans fenêtre)
 # (pas de « set -u » : bash 3.2 de macOS refuse les tableaux vides)
 
+# Version du pilote : à monter à chaque changement de ce script (elle figure dans le nom du fichier téléchargé).
+PILOT_VERSION="2.0"
+printf 'Pilote de mise à jour My UCA, version %s\n' "$PILOT_VERSION"
+
 URL_CHROME="${UCA_URL_CHROME:-https://kiricoucou.github.io/uca-extension/extension/uca-extension-chrome.zip}"
 URL_FF="${UCA_URL_FF:-https://kiricoucou.github.io/uca-extension/extension/uca-extension-firefox.zip}"
 GECKO="uca-connecteur@site-emploi-du-temps.local"
@@ -32,6 +36,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --force|-f|/force) FORCE=1 ;;
     --yes|-y) YES=1 ;;
+    --desinstaller) UNINSTALL=1 ;;
     --browser) BROWSER="$(printf '%s' "${2:-}" | tr 'A-Z' 'a-z')"; shift ;;
     --version) WANT_VER="${2:-}"; shift ;;
     --os) ARG_OS="${2:-}"; shift ;;
@@ -261,6 +266,52 @@ Clique sur « Ouvrir le dossier » pour vérifier que c’est le bon, puis sur �
   done
 }
 
+# ---------------------------------------------------------------- pilote installé : une seule copie, lancée par le lien uca-maj:
+if [ "$OS" = "Darwin" ]; then PILOT_DIR="$CFGDIR/pilote"; else PILOT_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/MyUCA"; fi
+DESKTOP_FILE="${XDG_DATA_HOME:-$HOME/.local/share}/applications/uca-maj.desktop"
+write_launcher() {   # n'importe quel site peut ouvrir un lien uca-maj: ; seul un nom de navigateur de la liste en est tiré
+  cat > "$PILOT_DIR/lancer.sh" <<'LAUNCH'
+#!/usr/bin/env bash
+DIR="$(cd "$(dirname "$0")" && pwd)"
+re='^uca-maj:(//)?(chrome|edge|brave|vivaldi|chromium|firefox)/?$'
+args=(--yes)
+if [[ "${1:-}" =~ $re ]]; then args=(--browser "${BASH_REMATCH[2]}" --yes); fi
+if [ "${UCA_DRYRUN:-0}" = "1" ]; then printf '%s\n' "${args[*]}"; exit 0; fi
+bash "$DIR/maj-extension.sh" "${args[@]}"
+printf '\nEntrée pour fermer (fermeture automatique dans 20 s). '; read -r -t 20 _ || true
+LAUNCH
+  chmod +x "$PILOT_DIR/lancer.sh"
+}
+install_pilot() {
+  [ "${UCA_NOINSTALL:-0}" = "1" ] && return 0
+  mkdir -p "$PILOT_DIR" || return 0
+  [ "$SELF" -ef "$PILOT_DIR/maj-extension.sh" ] || cp "$SELF" "$PILOT_DIR/maj-extension.sh" || return 0
+  write_launcher
+  if [ "$OS" = "Darwin" ]; then
+    have osacompile || return 0
+    local app="$PILOT_DIR/Pilote My UCA.app" src="$PILOT_DIR/pilote.applescript" plist
+    printf '%s\n' 'on open location u' \
+      "  tell application \"Terminal\" to do script \"bash \" & quoted form of \"$PILOT_DIR/lancer.sh\" & \" \" & quoted form of u" \
+      '  tell application "Terminal" to activate' 'end open location' > "$src"
+    rm -rf "$app"; osacompile -o "$app" "$src" >/dev/null 2>&1 || return 0
+    plist="$app/Contents/Info.plist"
+    plutil -insert CFBundleURLTypes -json '[{"CFBundleURLName":"Pilote My UCA","CFBundleURLSchemes":["uca-maj"]}]' "$plist" >/dev/null 2>&1 || return 0
+    /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$app" >/dev/null 2>&1
+  else
+    mkdir -p "$(dirname "$DESKTOP_FILE")" || return 0
+    printf '%s\n' '[Desktop Entry]' 'Type=Application' 'Name=Pilote de mise à jour My UCA' "Exec=\"$PILOT_DIR/lancer.sh\" %u" 'Terminal=true' 'NoDisplay=true' 'MimeType=x-scheme-handler/uca-maj;' > "$DESKTOP_FILE"
+    have xdg-mime && xdg-mime default uca-maj.desktop x-scheme-handler/uca-maj >/dev/null 2>&1
+    have update-desktop-database && update-desktop-database "$(dirname "$DESKTOP_FILE")" >/dev/null 2>&1
+  fi
+  say "Pilote installé : les prochaines fois, clique sur « Appliquer la mise à jour » dans l'extension, rien à télécharger."
+  say "(Tu peux supprimer le fichier téléchargé. Désinstaller : bash maj-extension.sh --desinstaller)"
+}
+if [ "${UNINSTALL:-0}" = "1" ]; then
+  rm -f "$DESKTOP_FILE" "$PILOT_DIR/lancer.sh" "$PILOT_DIR/maj-extension.sh" "$PILOT_DIR/pilote.applescript"
+  [ "$OS" = "Darwin" ] && rm -rf "$PILOT_DIR/Pilote My UCA.app"
+  say "Pilote désinstallé."; exit 0
+fi
+
 # ---------------------------------------------------------------- 1) quel dossier ?
 TMPCAND="$(mktemp 2>/dev/null || echo "/tmp/myuca-cand.$$")"
 TMP=""
@@ -296,6 +347,7 @@ else
   fi
 fi
 mkdir -p "$CFGDIR" 2>/dev/null && printf '%s\n' "$DEST" > "$CFG"
+install_pilot
 
 # ---------------------------------------------------------------- 2) y a-t-il une nouvelle version ? 3) mise à jour
 TMP="$(mktemp -d 2>/dev/null || { mkdir -p "/tmp/myuca.$$" && echo "/tmp/myuca.$$"; })"

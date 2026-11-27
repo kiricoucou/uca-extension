@@ -53,8 +53,7 @@ def permissions_check():
     hosts = manifest.get("host_permissions", [])
     check("host_permissions : pas de <all_urls>", "<all_urls>" not in hosts and not any(h in ("*://*/*", "https://*/*", "http://*/*") for h in hosts), str(hosts))
     check("host_permissions : seulement les domaines attendus", set(hosts) <= {
-        "https://ent.uca.fr/*", "https://odin.iut.uca.fr/*", "http://odin.iut.uca.fr/*", "https://moodle2026.uca.fr/*", "https://moodle2027.uca.fr/*", "https://moodle2028.uca.fr/*", "https://edt.uca.fr/*", "https://raw.githubusercontent.com/*",
-        "https://api.t2c.fr/*", "https://www.t2c.fr/*"
+        "https://ent.uca.fr/*", "https://odin.iut.uca.fr/*", "http://odin.iut.uca.fr/*", "https://moodle2026.uca.fr/*", "https://moodle2027.uca.fr/*", "https://moodle2028.uca.fr/*", "https://edt.uca.fr/*", "https://raw.githubusercontent.com/*"
     }, str(hosts))
 
 

@@ -995,6 +995,7 @@ const SCRAPE_ISSUE_TEXT = {
   structure: "Odin semble avoir changé sa page : ces données datent de la dernière synchro réussie. Signale-le dans l'aide si ça dure.",
   error: "Lecture impossible cette fois : ces données datent de la dernière synchro réussie.",
 };
+function moodleInApp() { return !!(window.AndroidUCA && typeof window.AndroidUCA.requestMoodle === "function"); }
 const MOODLE_ISSUE_TEXT = {
   session: "Session Moodle introuvable : ouvre Moodle dans ce navigateur, connecte-toi, puis relance la recherche.",
   permission: "Autorisation d'accès à Moodle manquante : ouvre chrome://extensions, « Détails » de cette extension, et autorise l'accès au site.",
@@ -1008,13 +1009,14 @@ function scrapeIssueNode(kind) {
     const n = document.createElement("div");
     n.className = "scrape-issue"; n.setAttribute("role", "status");
     n.style.cssText = "margin:0 0 8px;padding:8px 10px;border:1px solid var(--danger);border-radius:8px;color:var(--danger);font-size:12.5px;line-height:1.4;";
-    n.textContent = MOODLE_ISSUE_TEXT[i.issue] + (i.detail ? " [" + i.detail + "]" : "");
+    const why = i.issue === "session" && moodleInApp() ? "Pas encore connecté à Moodle dans l'application : touche « Me connecter à Moodle »." : MOODLE_ISSUE_TEXT[i.issue];
+    n.textContent = why + (i.detail ? " [" + i.detail + "]" : "");
     // Boutons d'action : se connecter à Moodle (la recherche reprend toute seule une fois connecté) ou relancer la recherche.
     const acts = document.createElement("div"); acts.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;";
     const mk = (label, bg, id, fn) => { const b = document.createElement("button"); b.type = "button"; b.id = id; b.textContent = label; b.style.cssText = mdlSolid(bg); b.addEventListener("click", (e) => { e.stopPropagation(); fn(); }); return b; };
     if (i.issue === "session") {
       acts.append(
-        mk("🔑 Me connecter à Moodle", MDL_BLUE, "moodleLoginBtn", () => { try { chrome.runtime.sendMessage({ type: "UCA_MOODLE_LOGIN" }, () => { void chrome.runtime.lastError; }); } catch (e) { window.open(moodleCandidateOrigin().replace("/*", "") + "/login/index.php", "_blank", "noopener"); } toast("Connecte-toi à Moodle dans l'onglet qui s'ouvre : la recherche reprendra toute seule", "ok"); }),
+        mk("🔑 Me connecter à Moodle", MDL_BLUE, "moodleLoginBtn", () => { try { chrome.runtime.sendMessage({ type: "UCA_MOODLE_LOGIN" }, () => { void chrome.runtime.lastError; }); } catch (e) { window.open(moodleCandidateOrigin().replace("/*", "") + "/login/index.php", "_blank", "noopener"); } toast("Connecte-toi à Moodle dans " + (moodleInApp() ? "l'écran" : "l'onglet") + " qui s'ouvre : la recherche reprendra toute seule", "ok"); }),
         mk("↻ Relancer la recherche", MDL_GREEN, "moodleRetryBtn", () => runMoodleSearch()));
     } else if (i.issue === "permission") {
       acts.append(mk("Autoriser l'accès à Moodle", MDL_BLUE, "moodleAllowBtn", () => runMoodleSearch()));
@@ -1843,7 +1845,7 @@ function runMoodleSearch() {
       chrome.runtime.sendMessage({ type: "UCA_MOODLE_SYNC" }, (res) => {
         void chrome.runtime.lastError;
         if (res && res.ok && !res.issue) toast(`${res.read} note${res.read > 1 ? "s" : ""} lue${res.read > 1 ? "s" : ""} sur Moodle · ${res.pending} à confirmer`, "ok");
-        else if (res && res.issue) toast("Moodle : " + (MOODLE_ISSUE_TEXT[res.issue] || "lecture impossible"), "err");
+        else if (res && res.issue) toast(res.issue === "session" && moodleInApp() ? "Moodle : connecte-toi avec « Me connecter à Moodle » dans la fenêtre Notes" : "Moodle : " + (MOODLE_ISSUE_TEXT[res.issue] || "lecture impossible"), "err");
       });
     } catch (e) { moodleProgressState = null; renderNotesPanel(); }
   });
@@ -2350,7 +2352,8 @@ function moodleCard(it, matieres) {
 }
 function moodleBlock() {
   const pending = UCA_MOODLE.list(moodleStore, "pending"), validated = UCA_MOODLE.list(moodleStore, "validated"), trash = UCA_MOODLE.list(moodleStore, "refused"), done = validated.concat(trash);
-  const canSync = settings.moodleNotes && chrome.runtime && chrome.runtime.sendMessage && !window.UCA_APP;
+  // Extension, ou application Android assez récente pour lire Moodle. Pas l'app web : un navigateur isole les cookies de Moodle.
+  const canSync = settings.moodleNotes && chrome.runtime && chrome.runtime.sendMessage && (!window.UCA_APP || moodleInApp());
   if (!pending.length && !done.length && !canSync) { moodleSideData = { validated: [], trash: [], matieres: [] }; renderMoodleSide(); return null; }
   const box = npEl("div", "np-moodle"); box.style.cssText = "margin:8px 16px;max-width:100%;box-sizing:border-box;";
   const mIssue = !moodleProgressActive() && scrapeIssueNode("moodle"); if (mIssue) box.appendChild(mIssue);

@@ -92,7 +92,8 @@ dialog.ask .btns{justify-content:flex-end}
   var $ = function (id) { return document.getElementById(id); };
   var ua = navigator.userAgent || "";
   var OS = /Windows/i.test(ua) ? "windows" : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? "linux" : "windows";
-  var SCRIPT = { windows: "maj-extension.bat", mac: "maj-extension.command", linux: "maj-extension.sh" };
+  var PILOT_VERSION = "2.0";   // écrit par tests/gen_extension_page.py d'après le pilote
+  var SCRIPT = { windows: "maj-extension-v" + PILOT_VERSION + ".bat", mac: "maj-extension-v" + PILOT_VERSION + ".command", linux: "maj-extension-v" + PILOT_VERSION + ".sh" };
   var PILOT = "mise-a-jour.html#" + OS;
   var canWrite = typeof window.showDirectoryPicker === "function" && !!window.UCA_SELFUPDATE && window.UCA_SELFUPDATE.supported(true);
   var FLAG = "uca_statut_detect_on", AFTER = "uca_statut_after_update";

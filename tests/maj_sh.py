@@ -41,7 +41,7 @@ def mp(p):
 
 
 def run(bash, script, home, args=(), env_extra=None, stdin_text=None):
-    env = dict(os.environ, HOME=posix(home), UCA_URL_CHROME=(ROOT / "extension" / "uca-extension-chrome.zip").as_uri(),
+    env = dict(os.environ, UCA_NOINSTALL="1", HOME=posix(home), UCA_URL_CHROME=(ROOT / "extension" / "uca-extension-chrome.zip").as_uri(),
                UCA_URL_FF=(ROOT / "extension" / "uca-extension-firefox.zip").as_uri())
     for k in ("DISPLAY", "WAYLAND_DISPLAY", "UCA_YES", "UCA_FAKE_OS", "XDG_CONFIG_HOME"):
         env.pop(k, None)

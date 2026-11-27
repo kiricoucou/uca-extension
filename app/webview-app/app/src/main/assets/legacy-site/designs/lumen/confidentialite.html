@@ -69,7 +69,7 @@
     <li><strong>Mises à jour</strong> (paquet de développement seulement) : lecture du fichier public
       <code>manifest.json</code> sur <code>raw.githubusercontent.com</code> pour connaître la dernière version.
       Les paquets des magasins (addons.mozilla.org, Chrome Web Store) ne le font pas : le magasin met à jour tout seul.</li>
-    <li><code>api.t2c.fr</code> (page « Transports » seulement) : quand tu choisis un arrêt (ou à l'ouverture de la page si tu as un arrêt favori, puis toutes les 30 secondes tant qu'elle est affichée), le code de l'arrêt et l'heure sont envoyés au serveur de T2C, qui voit aussi ton adresse IP comme tout site visité. Aucune donnée de ton compte, de tes notes ou de ton emploi du temps n'est envoyée.</li>
+    <li><strong>Page « Transports » :</strong> quand tu choisis un arrêt (ou à l'ouverture si tu as un favori, puis chaque minute tant que la page est affichée), elle charge le fichier des horaires de cet arrêt sur <code>raw.githubusercontent.com</code> (GitHub voit donc le code de l'arrêt) et le flux en temps réel de tout le réseau sur <code>proxy.transport.data.gouv.fr</code> (qui ne reçoit pas le code de l'arrêt). Comme pour tout site, ces serveurs voient ton adresse IP. Aucune donnée de ton compte, de tes notes ou de ton emploi du temps n'est envoyée.</li>
     <li><code>edt.uca.fr</code> : lire l'emploi du temps de ta classe, si tu utilises cette fonction.</li>
     <li><strong>Mises à jour hors magasin :</strong> lecture du numéro de version et téléchargement de l'extension (avec sa signature) depuis <code>raw.githubusercontent.com</code>, et ouverture éventuelle de la page de mise à jour sur <code>kiricoucou.github.io</code>. L'application Android télécharge aussi les mises à jour de ses pages depuis <code>raw.githubusercontent.com</code>.</li>
     <li>Aucune autre requête. Aucun service d'analyse, aucune police ou bibliothèque chargée depuis Internet.</li>
@@ -96,7 +96,7 @@
     <li><code>alarms</code> : rappels de cours, synchronisation automatique, pastille de l'icône.</li>
     <li><code>notifications</code> : rappels et alertes (désactivables dans Paramètres). Absente de Firefox pour Android.</li>
     <li>Script sur <code>kiricoucou.github.io/uca-extension/</code> : relier le site/app à l'extension (bouton
-      « Synchroniser » du site). Il relie le site à l'extension : synchronisation, état de la session, passages T2C et, avec ton autorisation, version installée et mise à jour. Il ne transmet pas la liste des notes Moodle.</li>
+      « Synchroniser » du site). Il relie le site à l'extension : synchronisation, état de la session et, avec ton autorisation, version installée et mise à jour. Il ne transmet pas la liste des notes Moodle.</li>
   </ul>
 </div>
 

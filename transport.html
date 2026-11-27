@@ -228,10 +228,10 @@
     <section class="card" aria-labelledby="legendTitle">
       <h2 id="legendTitle">Ce que veulent dire les mentions</h2>
       <ul class="legend">
-        <li><span class="badge live">En direct</span>le serveur T2C a transmis une heure en temps réel pour ce passage. Elle peut encore changer.</li>
-        <li><span class="badge planned">Prévu</span>heure théorique donnée par le serveur T2C, sans suivi en temps réel.</li>
-        <li><span class="badge none">Aucun passage annoncé</span>le serveur a répondu et n'annonce aucun passage à venir pour cet arrêt.</li>
-        <li><span class="badge down">Indisponible</span>la page n'a pas obtenu de réponse lisible. Cela ne veut pas dire qu'aucun bus ne passe.</li>
+        <li><span class="badge live">En direct</span>heure du flux officiel en temps réel de T2C, publié depuis moins de 5 minutes. Elle peut encore changer.</li>
+        <li><span class="badge planned">Prévu</span>horaire officiel prévu, sans suivi en temps réel pour ce passage.</li>
+        <li><span class="badge none">Aucun passage annoncé</span>les horaires officiels ne prévoient aucun passage dans les 3 prochaines heures à cet arrêt.</li>
+        <li><span class="badge down">Indisponible</span>la page n'a pas pu lire les horaires officiels. Cela ne veut pas dire qu'aucun bus ne passe.</li>
       </ul>
     </section>
 
@@ -239,12 +239,13 @@
       <summary>Comment ça marche ?</summary>
       <ol>
         <li>Choisissez l'arrêt où vous allez monter. Plusieurs arrêts peuvent avoir des noms proches : vérifiez le nom complet et les lignes.</li>
-        <li>La page demande les prochains passages de cet arrêt au serveur de T2C (api.t2c.fr), directement ou par l'extension si elle est installée. La demande contient le code de l'arrêt et l'heure.</li>
+        <li>La page charge les horaires officiels de cet arrêt (préparés chaque jour sur GitHub), puis le flux en temps réel de tout le réseau sur transport.data.gouv.fr. Elle fonctionne sans extension.</li>
         <li>Les passages sont classés par ligne et par direction, avec jusqu'à trois horaires chacun. Vérifiez la direction avant de monter.</li>
-        <li>Tant que la page est visible, l'arrêt affiché est redemandé toutes les 30 secondes.</li>
+        <li>Tant que la page est visible, l'arrêt affiché est actualisé toutes les minutes (environ 300 Ko par actualisation).</li>
         <li>Vos favoris restent dans ce navigateur ou cette application, sur cet appareil.</li>
-        <li>Si le serveur ne répond pas, la page n'affiche aucun horaire de remplacement. Consultez alors le site officiel.</li>
+        <li>Si le temps réel ne répond pas, seuls les horaires prévus sont affichés, et la page le dit. Sans horaires officiels lisibles, rien n'est inventé : consultez le site de T2C.</li>
       </ol>
+      <p class="sub">Source : <a href="https://transport.data.gouv.fr/datasets/syndicat-mixte-des-transports-en-commun-de-lagglomeration-clermontoise-smtc-ac-reseau-t2c-gtfs-gtfs-rt" target="_blank" rel="noopener noreferrer">données ouvertes du réseau T2C (transport.data.gouv.fr)</a>, Clermont Auvergne Métropole, Licence Ouverte.</p>
       <p class="sub">Tarifs, titres de transport, travaux et perturbations : voir <a href="https://www.t2c.fr/" target="_blank" rel="noopener noreferrer">le site officiel de T2C (t2c.fr)</a>.</p>
     </details>
   </div>
@@ -284,6 +285,7 @@
 </main>
 
 <script src="core/t2c_data.js"></script>
+<script src="core/t2c_open.js"></script>
 <script src="core/mobility.js"></script>
 <script src="core/transport-page.js"></script>
 

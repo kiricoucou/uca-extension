@@ -11,6 +11,17 @@ L'extension vérifie au démarrage, puis toutes les 5 minutes, si `manifest.json
 
 # Historique des versions
 
+## 1.47.3 — app Android 1.4.34 : notes Moodle dans l'application, bus et tram en direct
+
+- **Moodle dans l'application Android :** dans la fenêtre Notes, « Chercher sur Moodle » lit tes notes sur Moodle (« Me connecter à Moodle » la première fois) ; chaque note reste à valider ou à refuser. Après la synchro d'Odin, la recherche se fait aussi toute seule si ta session Moodle est ouverte, avec une notification pour les nouvelles notes.
+- **Application Android, données conservées :** elle n'efface plus à l'ouverture un relevé, un emploi du temps, des absences ou des devoirs dont les noms ressemblaient à ceux de la démo.
+- **Un seul pilote de mise à jour :** il s'installe au premier lancement ; ensuite « Appliquer la mise à jour » le lance directement, sans nouveau téléchargement.
+- **Transports partout :** les passages marchent maintenant sans extension : site, iPhone, app web, application Android et extension.
+- **Données officielles :** horaires et temps réel viennent des données ouvertes de T2C (transport.data.gouv.fr, Licence Ouverte). « En direct » = temps réel ; « Prévu » = horaire officiel.
+- **Plus de coupure :** si le temps réel ne répond pas, les horaires prévus restent affichés, et la page le dit.
+- **Moins d'autorisations :** l'extension ne demande plus d'accès aux sites t2c.fr.
+- **Nouvel APK 1.4.34 :** à installer par-dessus l'ancien.
+
 ## 1.47.2 — app Android 1.4.33 : transports plus clairs, notes Moodle expliquées
 
 - **Transports refaits :** uniquement de vrais passages (« En direct » ou « Prévu », sinon « Indisponible »). Les anciens horaires, trajets, trains et covoiturages inventés sont supprimés ; pour ceux-là, des liens vers les sites officiels.

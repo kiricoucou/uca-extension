@@ -45,9 +45,63 @@
         var br = /Firefox\//.test(ua) ? "firefox" : /Edg\//.test(ua) ? "edge" : /Vivaldi/i.test(ua) ? "vivaldi" : (navigator.brave ? "brave" : "chrome");
         return { os: os, browser: br };
       }
-      // Télécharge le script de mise à jour du système et propose la commande complète (navigateur, OS, nouvelle version) à coller dans un terminal.
-      apply.addEventListener("click", function () {
-        var info = fromUA(), file = info.os === "windows" ? "maj-extension.bat" : info.os === "macos" ? "maj-extension.command" : "maj-extension.sh";
+      /* « Appliquer la mise à jour » :
+         1. fichiers déjà à jour sur le disque : on recharge ;
+         2. pilote déjà installé : on le lance (lien uca-maj:), rien à télécharger ;
+         3. sinon, première fois : on télécharge le pilote du système, une seule fois ; il s'installe tout seul au premier lancement.
+         Après un lancement ou un téléchargement, on relit le manifeste sur le disque et on recharge dès que la version change. */
+      function diskVersion() {
+        return fetch(chrome.runtime.getURL("manifest.json"), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (m) { return String(m.version || ""); }).catch(function () { return ""; });
+      }
+      var watching = null;
+      function watch() {
+        clearInterval(watching);
+        var n = 0;
+        watching = setInterval(function () {
+          if (++n > 200) { clearInterval(watching); return; }
+          diskVersion().then(function (v) {
+            if (v && cmp(v, CURRENT) > 0) { clearInterval(watching); say("Mise à jour détectée (" + v + "). Rechargement de l'extension…"); setTimeout(function () { chrome.runtime.reload(); }, 800); }
+          });
+        }, 3000);
+      }
+      function say(t) { status.style.color = dim; status.textContent = t; }
+      function textButton(label, onClick) {
+        var x = el("button", "font:inherit;margin:8px 8px 0 0;border:0;background:none;color:" + accent + ";text-decoration:underline;cursor:pointer;padding:8px 0;min-height:40px;", label);
+        x.type = "button"; x.addEventListener("click", onClick); return x;
+      }
+      function reloadButton() { return textButton("C'est fait : recharger l'extension", function () { chrome.runtime.reload(); }); }
+      function launchPilot(info) {
+        say("Lancement du pilote de mise à jour… Si le navigateur demande l'autorisation de l'ouvrir, accepte.");
+        var a = document.createElement("a"); a.href = "uca-maj:" + info.browser; a.id = "ucaPilotLink"; document.body.appendChild(a); a.click(); a.remove();
+        cmdBox.textContent = ""; cmdBox.style.display = "block";
+        cmdBox.append(
+          el("p", "margin:0;font-size:14px;color:" + dim + ";", "L'extension se rechargera toute seule quand le pilote aura fini."),
+          textButton("Rien ne s'est ouvert ? Réinstaller le pilote", function () { chrome.storage.local.remove("uca_pilot_ok", function () { installPilot(info); }); }),
+          reloadButton());
+        watch();
+      }
+      // Première fois : télécharge le pilote du système et propose la commande complète (navigateur, OS, nouvelle version).
+      function installPilot(info) {
+        var source = info.os === "windows" ? "maj-extension.bat" : info.os === "macos" ? "maj-extension.command" : "maj-extension.sh";
+        say("Téléchargement du pilote de mise à jour…");
+        fetch("https://kiricoucou.github.io/uca-extension/extension/" + source, { cache: "no-store" })
+          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.blob(); })
+          .then(function (b) { return b.text().then(function (code) {
+            // Le nom porte la version écrite DANS le pilote reçu (chiffres et points seulement) : maj-extension-v2.0.bat.
+            var m = /PILOT_VERSION="?(\d{1,3}(?:\.\d{1,3}){1,2})"/.exec(code);
+            var file = m ? source.replace("maj-extension.", "maj-extension-v" + m[1] + ".") : source;
+            var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = file; document.body.appendChild(a); a.click(); a.remove();
+            chrome.storage.local.set({ uca_pilot_pending: CURRENT });
+            say(file + " téléchargé dans tes Téléchargements.");
+            showCommand(info, file, m ? m[1] : "");
+            watch();
+          }); })
+          .catch(function () {
+            status.textContent = "Téléchargement automatique impossible : ouvre la page de mise à jour.";
+            window.open("https://kiricoucou.github.io/uca-extension/mise-a-jour.html", "_blank", "noopener");
+          });
+      }
+      function showCommand(info, file, pilotVersion) {
         chrome.storage.local.get("uca_latest_version", function (d) {
           var ver = (d && d.uca_latest_version) || "";
           if (!/^\d{1,4}(\.\d{1,5}){1,3}$/.test(String(ver))) ver = "";   // jamais de texte libre dans une commande de terminal
@@ -56,25 +110,22 @@
             : "bash ~/Downloads/" + file + " --browser " + info.browser + " --os " + info.os + " --version " + ver + " --yes";
           cmdBox.textContent = "";
           cmdBox.style.display = "block";
-          cmdBox.appendChild(el("p", "margin:0 0 6px;font-size:14px;color:" + dim + ";", "Script téléchargé (" + file + "). Ouvre un terminal, colle cette commande : il retrouve le dossier, met à jour, puis rouvre " + info.browser + " sur la nouvelle version."));
+          cmdBox.appendChild(el("p", "margin:0 0 6px;font-size:14px;color:" + dim + ";", "Une seule fois : lance " + file + ", ou colle cette commande dans un terminal. Il met à jour et installe le pilote : les prochaines fois, ce bouton le lancera directement."));
+          if (pilotVersion) cmdBox.appendChild(el("p", "margin:0 0 6px;font-size:13px;color:" + dim + ";", "Pilote version " + pilotVersion + ". Un ancien fichier avec un autre numéro peut être supprimé."));
           var code = el("code", "display:block;padding:10px 12px;border-radius:10px;background:" + (dark ? "#171b23" : "#e8edf6") + ";font:12.5px/1.5 ui-monospace,Consolas,monospace;word-break:break-all;user-select:all;", cmd);
-          var copy = el("button", "font:inherit;font-weight:600;margin-top:8px;border:1px solid " + accent + ";background:transparent;color:" + accent + ";border-radius:10px;padding:8px 14px;min-height:40px;cursor:pointer;", "Copier la commande"); copy.type = "button";
+          var copy = el("button", "font:inherit;font-weight:600;margin:8px 8px 0 0;border:1px solid " + accent + ";background:transparent;color:" + accent + ";border-radius:10px;padding:8px 14px;min-height:40px;cursor:pointer;", "Copier la commande"); copy.type = "button";
           copy.addEventListener("click", function () { try { navigator.clipboard.writeText(cmd).then(function () { copy.textContent = "Copiée"; }, function () { copy.textContent = "Sélectionne et copie à la main"; }); } catch (e) { copy.textContent = "Sélectionne et copie à la main"; } });
-          var reload = el("button", "font:inherit;margin:8px 0 0 8px;border:0;background:none;color:" + accent + ";text-decoration:underline;cursor:pointer;padding:8px;min-height:40px;", "C'est fait : recharger l'extension"); reload.type = "button";
-          reload.addEventListener("click", function () { chrome.runtime.reload(); });
-          cmdBox.append(code, copy, reload);
+          cmdBox.append(code, copy, textButton("J'ai déjà installé le pilote : le lancer", function () { chrome.storage.local.set({ uca_pilot_ok: true }, function () { launchPilot(info); }); }), reloadButton());
         });
-        status.style.color = dim; status.textContent = "Téléchargement de " + file + "…";
-        fetch("https://kiricoucou.github.io/uca-extension/extension/" + file, { cache: "no-store" })
-          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.blob(); })
-          .then(function (b) {
-            var a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = file; document.body.appendChild(a); a.click(); a.remove();
-            status.textContent = file + " téléchargé dans tes Téléchargements.";
-          })
-          .catch(function () {
-            status.textContent = "Téléchargement automatique impossible : ouvre la page de mise à jour.";
-            window.open("https://kiricoucou.github.io/uca-extension/mise-a-jour.html", "_blank", "noopener");
-          });
+      }
+      apply.addEventListener("click", function () {
+        // Le popup se ferme au premier téléchargement ou lancement : la suite se passe dans un onglet.
+        if (/popup\.html$/.test(location.pathname)) { chrome.tabs.create({ url: chrome.runtime.getURL("settings.html") }); window.close(); return; }
+        var info = fromUA();
+        diskVersion().then(function (v) {
+          if (v && cmp(v, CURRENT) > 0) { chrome.runtime.reload(); return; }
+          chrome.storage.local.get("uca_pilot_ok", function (d) { if (d.uca_pilot_ok) launchPilot(info); else installPilot(info); });
+        });
       });
       var status = el("p", "min-height:22px;margin:12px 0 0;font-size:14px;font-weight:600;"); status.id = "ucaGateStatus"; status.setAttribute("role", "status");
       var busy = false;
@@ -149,6 +200,10 @@
       });
     }
 
+    // La version a avancé après le téléchargement du pilote : il a été lancé, donc installé. La prochaine fois on le lance directement.
+    chrome.storage.local.get("uca_pilot_pending", function (d) {
+      if (d.uca_pilot_pending && cmp(CURRENT, d.uca_pilot_pending) > 0) { chrome.storage.local.set({ uca_pilot_ok: true }); chrome.storage.local.remove("uca_pilot_pending"); }
+    });
     evaluate();
     chrome.storage.onChanged.addListener(function (c, area) { if (area === "local" && (c.uca_latest_version || c.uca_store_build || c.uca_update_available)) evaluate(); });
     ["pageshow", "focus", "visibilitychange"].forEach(function (ev) { window.addEventListener(ev, evaluate); document.addEventListener(ev, evaluate); });

@@ -211,6 +211,55 @@ function parseScheduleText(raw) {
 
 const msgListeners = [];
 let hasExtensionBridge = false;
+
+/* ---------- Notes Moodle dans l'app Android ----------
+   L'application lit Moodle dans une WebView invisible (UcaMoodle.kt) ; ici, comme dans background.js : progression,
+   comparaison avec les notes déjà connues, problème signalé. Rien n'entre dans les moyennes sans validation. */
+function moodleNative() { return !!(window.AndroidUCA && typeof window.AndroidUCA.requestMoodle === "function"); }
+let moodleJob = null;    // { promise, resolve, timer, manual }
+function moodleIdle() { return local.set({ uca_moodle_progress: { active: false, at: Date.now() } }); }
+function moodleProgressSet(p) { return local.set({ uca_moodle_progress: Object.assign({ active: true, phase: "connexion", done: 0, total: 0, label: "" }, p, { at: Date.now() }) }); }
+function moodleSearch(manual) {
+  if (moodleJob) return moodleJob.promise;
+  const job = { manual };
+  job.promise = new Promise((resolve) => { job.resolve = resolve; });
+  job.timer = setTimeout(() => applyMoodleResult({ issue: "error", detail: "application sans réponse" }), 6 * 60 * 1000);
+  moodleJob = job;
+  if (manual) moodleProgressSet({ label: "Connexion à Moodle…" });
+  window.AndroidUCA.requestMoodle(!!manual);
+  return job.promise;
+}
+async function applyMoodleResult(r) {
+  const job = moodleJob; moodleJob = null;
+  if (job) clearTimeout(job.timer);
+  const answer = { ok: true, read: 0, pending: 0, issue: null, detail: null };
+  try {
+    // Une recherche est déjà en cours côté application : on ne touche à rien.
+    if (r.issue === "busy") { answer.ok = false; return; }
+    const found = Array.isArray(r.data);
+    if (found && !window.UCA_MOODLE) await loadScriptOnce("core/moodle.js");
+    const all = readAll(), issues = Object.assign({}, all.uca_scrape_issues);
+    if (!found) {
+      answer.issue = r.issue || "error"; answer.detail = r.detail || null;
+      issues.moodle = { issue: answer.issue, at: Date.now(), detail: r.detail ? String(r.detail).slice(0, 120) : undefined };
+      await local.set({ uca_scrape_issues: issues });
+      return;
+    }
+    delete issues.moodle;
+    const { store, fresh, firstRun } = window.UCA_MOODLE.diff(all.uca_moodle, r.data, all.uca_releve_notes, Date.now());
+    await local.set({ uca_moodle: store, uca_scrape_issues: issues });
+    answer.read = r.data.length; answer.pending = window.UCA_MOODLE.list(store, "pending").length;
+    const news = firstRun ? answer.pending : fresh.length;
+    if (news && window.AndroidUCA.notifyMoodle) window.AndroidUCA.notifyMoodle(news);
+  } catch (e) {
+    answer.issue = "error";
+  } finally {
+    await moodleIdle();
+    if (job) job.resolve(answer);
+  }
+}
+// Page rechargée pendant une recherche : la barre de progression ne doit pas rester bloquée.
+if (window.AndroidUCA) setTimeout(() => { const p = readAll().uca_moodle_progress; if (p && p.active && !moodleJob) moodleIdle(); }, 0);
 // La démo et l'app Android se comportent comme l'app avec l'extension : bouton « Synchroniser ».
 window.UCA_APP.extensionReady = DEMO || !!window.AndroidUCA;
 if (window.AndroidUCA) {
@@ -268,6 +317,13 @@ window.addEventListener("message", (ev) => {
   } else if (msg.type === "UCA_SESSION_STATE") {
     local.set({ uca_session_expired: !!msg.expired });
   }
+  if (moodleNative()) {
+    if (msg.type === "UCA_MOODLE_PROGRESS" && moodleJob) moodleProgressSet({ phase: "cours", done: msg.done, total: msg.total, label: msg.label });
+    else if (msg.type === "UCA_MOODLE_RESULT") applyMoodleResult(msg);
+    else if (msg.type === "UCA_MOODLE_LOGIN_DONE") moodleSearch(true);
+    // Après la synchro d'Odin : recherche silencieuse, comme l'extension (sans session Moodle, rien n'est chargé).
+    else if (msg.type === "UCA_NOTES_RESULT" && msg.ok && (readAll().uca_settings || {}).moodleNotes !== false) moodleSearch(false);
+  }
   msgListeners.forEach((fn) => fn(msg));
 });
 
@@ -292,6 +348,8 @@ async function handle(msg) {
     }
     return undefined; // mise à jour de l'app, design, alarmes : sans objet dans la démo
   }
+  if (msg.type === "UCA_MOODLE_SYNC" && moodleNative()) return moodleSearch(true);
+  if (msg.type === "UCA_MOODLE_LOGIN" && moodleNative()) { window.AndroidUCA.requestMoodleLogin(); return { ok: true }; }
   if (msg.type === "UCA_SYNC_REQUEST") {
     // 1. Mode Android natif (WebView MyUCA)
     if (window.AndroidUCA && window.AndroidUCA.requestSync) {

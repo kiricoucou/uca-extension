@@ -158,23 +158,24 @@ bash maj-extension.sh --browser firefox --os linux --version 1.46.54 --yes</span
 <script>
 (function () {
   "use strict";
+  var PILOT_VERSION = "2.0";   // écrit par tests/gen_extension_page.py d'après le pilote
   var ua = navigator.userAgent || "";
   var det = /Windows/i.test(ua) ? "windows" : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? "mac" : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? "linux" : "windows";
   var detB = /Firefox\//.test(ua) ? "firefox" : /Edg\//.test(ua) ? "edge" : /OPR\//.test(ua) ? "other" : /Vivaldi/i.test(ua) ? "other" : navigator.brave ? "brave" : "chrome";
   var dl = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></svg>';
   var OS = [
     { id: "windows", name: "Windows", ico: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.6 10.5 4.5v6.9H3zM11.6 4.4 21 3v8.4h-9.4zM3 12.6h7.5v6.9L3 18.4zM11.6 12.6H21V21l-9.4-1.3z"/></svg>',
-      file: "maj-extension.bat", size: "9 Ko",
-      open: "Double-clique sur <b>maj-extension.bat</b> dans tes Téléchargements. Si Windows avertit : « Informations complémentaires » puis « Exécuter quand même ».",
-      cmd: function (b) { return '"%USERPROFILE%\\Downloads\\maj-extension.bat" /browser ' + b + ' /yes'; } },
+      file: "maj-extension-v" + PILOT_VERSION + ".bat", source: "maj-extension.bat", size: "9 Ko",
+      open: "Double-clique sur <b>maj-extension-v" + PILOT_VERSION + ".bat</b> dans tes Téléchargements. Si Windows avertit : « Informations complémentaires » puis « Exécuter quand même ».",
+      cmd: function (b) { return '"%USERPROFILE%\\Downloads\\maj-extension-v' + PILOT_VERSION + '.bat" /browser ' + b + ' /yes'; } },
     { id: "mac", name: "macOS", ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>',
-      file: "maj-extension.command", size: "13 Ko",
-      open: "Fais un <b>clic droit</b> sur <b>maj-extension.command</b>, puis <b>Ouvrir</b> (la première fois seulement).",
-      cmd: function (b) { return 'bash ~/Downloads/maj-extension.command --browser ' + b + ' --yes'; } },
+      file: "maj-extension-v" + PILOT_VERSION + ".command", source: "maj-extension.command", size: "13 Ko",
+      open: "Fais un <b>clic droit</b> sur <b>maj-extension-v" + PILOT_VERSION + ".command</b>, puis <b>Ouvrir</b> (la première fois seulement).",
+      cmd: function (b) { return 'bash ~/Downloads/maj-extension-v' + PILOT_VERSION + '.command --browser ' + b + ' --yes'; } },
     { id: "linux", name: "Linux", ico: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7.500 9 3 3-3 3M13 15h4"/></svg>',
-      file: "maj-extension.sh", size: "13 Ko",
+      file: "maj-extension-v" + PILOT_VERSION + ".sh", source: "maj-extension.sh", size: "13 Ko",
       open: "Ouvre un terminal et colle la commande ci-dessous (bouton « Copier »).",
-      cmd: function (b) { return 'bash ~/Downloads/maj-extension.sh --browser ' + b + ' --yes'; } }
+      cmd: function (b) { return 'bash ~/Downloads/maj-extension-v' + PILOT_VERSION + '.sh --browser ' + b + ' --yes'; } }
   ];
   var BR = [
     { id: "chrome", name: "Chrome", page: "chrome://extensions", logo: '<svg viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="lgC"><circle cx="12" cy="12" r="11"/></clipPath></defs><g clip-path="url(#lgC)"><path fill="#ea4335" d="M12 12L29.3 2V-8H-5.3V2z"/><path fill="#34a853" d="M12 12L-5.3 2V32H12z"/><path fill="#fbbc04" d="M12 12V32H29.3V2z"/></g><circle cx="12" cy="12" r="5.2" fill="#fff"/><circle cx="12" cy="12" r="3.9" fill="#4285f4"/></svg>' },
@@ -194,8 +195,9 @@ bash maj-extension.sh --browser firefox --os linux --version 1.46.54 --yes</span
     tabs.appendChild(b);
     var p = document.createElement("div"); p.className = "panel"; p.id = "p-" + o.id; p.setAttribute("role", "tabpanel"); p.setAttribute("aria-labelledby", "tab-" + o.id); p.hidden = true;
     p.innerHTML = '<div class="card-x res"><h3>Ton pilote : ' + o.file + '</h3>'
-      + '<a class="btn-dl big-dl" id="dl-' + o.id + '" href="extension/' + o.file + '" download>' + dl + 'Télécharger le pilote</a>'
-      + '<p class="meta">' + o.file + ' · ' + o.size + ' · aucun mot de passe demandé · <a href="https://github.com/kiricoucou/uca-extension/blob/main/extension/' + o.file + '" target="_blank" rel="noopener">voir le code</a></p></div>'
+      + '<a class="btn-dl big-dl" id="dl-' + o.id + '" href="extension/' + o.source + '" download="' + o.file + '">' + dl + 'Télécharger le pilote</a>'
+      + '<p class="meta">Version du pilote : <b>' + PILOT_VERSION + '</b>. Si ton fichier porte un autre numéro (ou aucun), télécharge celui-ci.</p>'
+      + '<p class="meta">' + o.file + ' · ' + o.size + ' · aucun mot de passe demandé · <a href="https://github.com/kiricoucou/uca-extension/blob/main/extension/' + o.source + '" target="_blank" rel="noopener">voir le code</a></p></div>'
       + '<div class="card-x"><h3>Ensuite</h3><ol class="todo">'
       + '<li>' + o.open + '</li>'
       + '<li>Clique sur <b>Valider</b> dans la fenêtre.</li>'

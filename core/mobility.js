@@ -4,8 +4,8 @@
 
    Règle unique : AUCUNE DONNÉE INVENTÉE.
      - les arrêts et les lignes viennent de core/t2c_data.js (copie datée, voir generatedAt) ;
-     - les passages viennent uniquement de la réponse de api.t2c.fr ;
-     - si le serveur ne répond pas, ou répond dans un format inconnu, le résultat est « unavailable ».
+     - les passages viennent uniquement des données ouvertes officielles de T2C (core/t2c_open.js) ;
+     - sans horaires lisibles, le résultat est « unavailable ».
    Les textes renvoyés ici viennent du réseau : la page doit les insérer comme du texte, jamais comme du HTML.
    ========================================================================= */
 (function (root) {
@@ -140,70 +140,7 @@
     return describeRoute(String(shortName == null ? "" : shortName));
   }
 
-  // --- PROCHAINS PASSAGES ---
-  function text(value, max) {
-    if (typeof value !== "string" && typeof value !== "number") return "";
-    return String(value).trim().slice(0, max || 80);
-  }
-
-  function parseDate(value) {
-    if (typeof value !== "string" || !value) return null;
-    const t = Date.parse(value);
-    return Number.isNaN(t) ? null : t;
-  }
-
-  /**
-   * Convertit la réponse de l'API. Renvoie null si le format n'est pas reconnu : on ne peut alors ni
-   * afficher des passages ni affirmer qu'il n'y en a aucun.
-   */
-  function parseDepartures(raw, now) {
-    if (!Array.isArray(raw)) return null;
-    if (!raw.length) return [];
-
-    const departures = [];
-    let recognised = 0;
-    let unreadable = 0;
-
-    raw.forEach((entry) => {
-      if (!entry || !Array.isArray(entry.next_departures)) return;
-      recognised++;
-      const line = text(entry.route_short_name || entry.route_id, 12);
-      const known = describeRoute(line);
-      let type = entry.route_type === 0 ? "tram" : entry.route_type === 3 ? "bus" : "";
-      if (!type && known) type = known.type;
-      const colors = safeColors(
-        hexOrNull(entry.route_color) || (known && known.color),
-        hexOrNull(entry.route_text_color) || (known && known.textColor)
-      );
-
-      entry.next_departures.forEach((dep) => {
-        if (!dep) { unreadable++; return; }
-        const planned = parseDate(dep.theorical_departure_datetime);
-        // « En direct » exige les deux : l'indicateur temps réel ET une heure temps réel lisible.
-        const flagged = dep.real_time === true || dep.real_time === 1;
-        const live = flagged ? parseDate(dep.real_time_stop_time) : null;
-        const time = live !== null ? live : planned;
-        if (time === null || !line) { unreadable++; return; }
-        if (time < now - PAST_TOLERANCE_MS) return;
-        departures.push({
-          line,
-          type,
-          color: colors.color,
-          textColor: colors.textColor,
-          destination: text(dep.trip_headsign) || "Direction non précisée",
-          time,
-          plannedTime: planned,
-          realtime: live !== null
-        });
-      });
-    });
-
-    // Rien à afficher alors qu'une partie de la réponse est illisible : on ne peut pas affirmer « aucun passage ».
-    if (!departures.length && (unreadable || recognised < raw.length)) return null;
-    departures.sort((a, b) => a.time - b.time);
-    return departures;
-  }
-
+  // --- PROCHAINS PASSAGES (données ouvertes officielles : voir core/t2c_open.js) ---
   /** Regroupe par ligne et direction ; chaque groupe garde au plus `perGroup` passages. */
   function groupDepartures(departures, perGroup) {
     const limit = perGroup || 3;
@@ -219,83 +156,26 @@
     return Array.from(groups.values());
   }
 
-  // Dans l'extension : le script d'arrière-plan fait la requête.
-  function requestViaRuntime(stopId) {
-    if (typeof chrome === "undefined" || !chrome.runtime || !chrome.runtime.sendMessage) return Promise.resolve(null);
-    return new Promise((resolve) => {
-      const timer = setTimeout(() => resolve(null), REQUEST_TIMEOUT_MS);
-      const done = (value) => { clearTimeout(timer); resolve(value); };
-      try {
-        chrome.runtime.sendMessage({ type: "UCA_T2C_DEPARTURES_REQUEST", stopId }, (res) => {
-          done(!chrome.runtime.lastError && res && res.ok ? res.data : null);
-        });
-      } catch (_) { done(null); }
-    });
-  }
-
-  // Sur le site : content-bridge.js (extension) relaie la demande. On n'accepte que les messages de
-  // cette même fenêtre, de la même origine et signés par le pont.
-  function requestViaBridge(stopId) {
-    if (typeof window === "undefined" || !window.postMessage || window.top !== window) return Promise.resolve(null);
-    const isFile = window.location.protocol === "file:";
-    const reqId = "t2c_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
-    return new Promise((resolve) => {
-      const finish = (value) => {
-        clearTimeout(timer);
-        window.removeEventListener("message", onMessage);
-        resolve(value);
-      };
-      const wait = window.location.hostname === "kiricoucou.github.io" ? BRIDGE_TIMEOUT_SITE_MS : BRIDGE_TIMEOUT_MS;
-      let timer = setTimeout(() => finish(null), wait);
-      function onMessage(ev) {
-        if (ev.source !== window) return;
-        if (!isFile && ev.origin !== window.location.origin) return;
-        const msg = ev.data;
-        if (!msg || msg.source !== "uca-extension" || msg.reqId !== reqId) return;
-        if (msg.type === "UCA_T2C_DEPARTURES_PENDING") { clearTimeout(timer); timer = setTimeout(() => finish(null), REQUEST_TIMEOUT_MS + 1000); return; }
-        if (msg.type !== "UCA_T2C_DEPARTURES_RESPONSE") return;
-        finish(msg.res && msg.res.ok ? msg.res.data : null);
-      }
-      window.addEventListener("message", onMessage);
-      window.postMessage({ source: "uca-site", type: "UCA_T2C_DEPARTURES_REQUEST", reqId, stopId }, isFile ? "*" : window.location.origin);
-    });
-  }
-
-  async function requestDirect(stopId) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-    try {
-      const url = "https://api.t2c.fr/siv/stops/" + encodeURIComponent(stopId) +
-        "/departures?dateTime=" + encodeURIComponent(new Date().toUTCString());
-      const res = await fetch(url, { headers: { Accept: "application/json" }, cache: "no-store", signal: controller.signal });
-      return res.ok ? await res.json() : null;
-    } catch (_) {
-      return null;
-    } finally {
-      clearTimeout(timer);
-    }
-  }
-
   /**
    * Prochains passages d'un arrêt. Ne rejette jamais.
-   * { state: "ok" | "empty" | "unavailable", departures: [...], fetchedAt: <ms, heure de la tentative terminée> }
+   * { state: "ok" | "empty" | "unavailable", reason, departures: [...], realtime: bool, fetchedAt: <ms> }
    */
   async function fetchDepartures(stopId) {
+    const none = (reason) => ({ state: "unavailable", reason, departures: [], realtime: false, fetchedAt: Date.now() });
     const stop = getStopById(stopId);
-    let departures = null;
-    if (stop) {
-      try {
-        const id = String(stop.id);
-        let raw = await requestViaRuntime(id);
-        if (!raw) raw = await requestViaBridge(id);
-        if (!raw) raw = await requestDirect(id);
-        departures = parseDepartures(raw, Date.now());
-      } catch (_) {
-        departures = null;
-      }
+    if (!stop) return none("arret");
+    if (!root.UCA_T2C_OPEN) return none("reseau");
+    try {
+      const result = await root.UCA_T2C_OPEN.departures(String(stop.id));
+      result.departures = result.departures.map((d) => {
+        const line = String(d.line).slice(0, 12), known = describeRoute(line);
+        const colors = safeColors(hexOrNull(d.color) || (known && known.color), hexOrNull(d.textColor) || (known && known.textColor));
+        return Object.assign({}, d, { line, color: colors.color, textColor: colors.textColor, destination: String(d.destination).slice(0, 80) });
+      });
+      return result;
+    } catch (_) {
+      return none("reseau");
     }
-    const state = departures === null ? "unavailable" : departures.length ? "ok" : "empty";
-    return { state, departures: departures || [], fetchedAt: Date.now() };
   }
 
   const UCA_MOBILITY = {
@@ -307,7 +187,6 @@
     getAllRoutes,
     getRouteDetails,
     safeColors,
-    parseDepartures,
     groupDepartures,
     fetchDepartures
   };

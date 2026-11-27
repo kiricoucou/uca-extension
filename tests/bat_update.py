@@ -22,7 +22,7 @@ def check(name, ok, detail=""):
 
 
 def run(bat, cwd, *args):
-    env = dict(os.environ, MYUCA_NOPAUSE="1", LOCALAPPDATA=str(cwd / "appdata"))
+    env = dict(os.environ, MYUCA_NOPAUSE="1", MYUCA_NOINSTALL="1", LOCALAPPDATA=str(cwd / "appdata"))
     return subprocess.run(["cmd", "/c", str(bat), *args], cwd=cwd, env=env, capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=180)
 
 
@@ -77,7 +77,7 @@ def main():
         prefs = tmp / "appdata" / "Google" / "Chrome" / "User Data" / "Default"; prefs.mkdir(parents=True)
         (prefs / "Secure Preferences").write_text(json.dumps({"extensions": {"settings": {"aaa": {"location": 4, "path": str(extd)}, "bbb": {"location": 4, "path": str(autre)}, "ccc": {"location": 1, "path": "ccc\1.0_0"}}}}), encoding="utf-8")
         (tmp / "appdata" / "MyUCA" / "dossier-extension.txt").unlink()
-        envx = dict(os.environ, MYUCA_NOPAUSE="1", LOCALAPPDATA=str(tmp / "appdata"), APPDATA=str(tmp / "roaming"))
+        envx = dict(os.environ, MYUCA_NOPAUSE="1", MYUCA_NOINSTALL="1", LOCALAPPDATA=str(tmp / "appdata"), APPDATA=str(tmp / "roaming"))
         rd = subprocess.run(["cmd", "/c", str(det / "maj-extension.bat")], cwd=det, env=envx, capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=180)
         newd = json.loads((extd / "manifest.json").read_text(encoding="utf-8"))["version"]
         check("détection : l'extension est retrouvée dans les préférences de Chrome et mise à jour (sans dossier donné)", rd.returncode == 0 and newd != "1.0.0" and "Dossier detecte" in rd.stdout, f"rc={rd.returncode} v={newd} out={rd.stdout[-300:]!r}")
@@ -120,10 +120,10 @@ def main():
             (dd / "manifest.json").write_text(json.dumps(mj), encoding="utf-8")
         (tmp / "appdata" / "MyUCA").mkdir(parents=True, exist_ok=True)
         r3 = run(ext / "maj-extension.bat", tmp, str(e_c), "/yes")
-        r3 = subprocess.run(["cmd", "/c", str(ext / "maj-extension.bat"), "/yes"], cwd=tmp, env=dict(os.environ, MYUCA_NOLAUNCH="1", MYUCA_NOPAUSE="1", LOCALAPPDATA=str(tmp / "appdata3")), capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=180)
+        r3 = subprocess.run(["cmd", "/c", str(ext / "maj-extension.bat"), "/yes"], cwd=tmp, env=dict(os.environ, MYUCA_NOLAUNCH="1", MYUCA_NOPAUSE="1", MYUCA_NOINSTALL="1", LOCALAPPDATA=str(tmp / "appdata3")), capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=180)
         (tmp / "appdata3" / "MyUCA").mkdir(parents=True, exist_ok=True)
         (tmp / "appdata3" / "MyUCA" / "dossier-extension.txt").write_text(str(e_c), encoding="ascii")
-        r3 = subprocess.run(["cmd", "/c", str(ext / "maj-extension.bat"), "/yes"], cwd=tmp, env=dict(os.environ, MYUCA_NOLAUNCH="1", MYUCA_NOPAUSE="1", LOCALAPPDATA=str(tmp / "appdata3")), capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=180)
+        r3 = subprocess.run(["cmd", "/c", str(ext / "maj-extension.bat"), "/yes"], cwd=tmp, env=dict(os.environ, MYUCA_NOLAUNCH="1", MYUCA_NOPAUSE="1", MYUCA_NOINSTALL="1", LOCALAPPDATA=str(tmp / "appdata3")), capture_output=True, stdin=subprocess.DEVNULL, text=True, encoding="utf-8", errors="replace", timeout=180)
         vv = [json.loads((d / "manifest.json").read_text(encoding="utf-8"))["version"] for d in (e_c, e_e, e_f)]
         check("trois dossiers côte à côte (Chrome, Edge, Firefox) : tous mis à jour", all(v != "1.0.0" for v in vv), f"{vv} {r3.stdout[-500:]!r}")
         check("les navigateurs sont nommés (Edge et Firefox reconnus)", "(Edge)" in r3.stdout and "(Firefox)" in r3.stdout, r3.stdout[-500:])

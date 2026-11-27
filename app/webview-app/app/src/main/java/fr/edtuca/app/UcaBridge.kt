@@ -13,6 +13,9 @@ interface UcaSyncRequestListener {
     fun onDesignChanged(id: String)
     fun handleClassRequest()
     fun onWidgetData(json: String)
+    fun handleMoodleRequest(manual: Boolean)
+    fun handleMoodleLogin()
+    fun onMoodlePending(count: Int)
 }
 
 class UcaBridge(private val host: Activity, private val listener: UcaSyncRequestListener) {
@@ -36,6 +39,23 @@ class UcaBridge(private val host: Activity, private val listener: UcaSyncRequest
     @JavascriptInterface
     fun onWidgetData(json: String) {
         host.runOnUiThread { listener.onWidgetData(json) }
+    }
+
+    /** Recherche des notes sur Moodle (UcaMoodle.kt) ; le résultat revient par un message UCA_MOODLE_RESULT. */
+    @JavascriptInterface
+    fun requestMoodle(manual: Boolean) {
+        host.runOnUiThread { listener.handleMoodleRequest(manual) }
+    }
+
+    @JavascriptInterface
+    fun requestMoodleLogin() {
+        host.runOnUiThread { listener.handleMoodleLogin() }
+    }
+
+    /** La page a trouvé de nouvelles notes à valider : notification de l'application. */
+    @JavascriptInterface
+    fun notifyMoodle(count: Int) {
+        if (count in 1..400) host.runOnUiThread { listener.onMoodlePending(count) }
     }
 
     @JavascriptInterface

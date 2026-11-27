@@ -22,6 +22,8 @@ class LoginActivity : Activity() {
     companion object {
         const val EXTRA_CAS_URL = "cas_url"
         const val EXTRA_SUCCESS_HOST = "success_host"
+        /** Moodle sert aussi sa page de connexion : elle ne compte pas comme une connexion réussie. */
+        const val EXTRA_SKIP_LOGIN_PAGES = "skip_login_pages"
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -32,6 +34,8 @@ class LoginActivity : Activity() {
 
         val casUrl = intent.getStringExtra(EXTRA_CAS_URL) ?: UcaSync.CAS_URL
         val successHost = intent.getStringExtra(EXTRA_SUCCESS_HOST) ?: "odin.iut.uca.fr"
+
+        val skipLoginPages = intent.getBooleanExtra(EXTRA_SKIP_LOGIN_PAGES, false)
 
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -67,7 +71,8 @@ class LoginActivity : Activity() {
             override fun onPageFinished(view: WebView, url: String?) {
                 if (isFinishingLogin) return
                 val u = Uri.parse(url ?: return)
-                if (u.scheme == "https" && u.host == successHost) {
+                val loginPage = skipLoginPages && Regex("/login/|/cas/", RegexOption.IGNORE_CASE).containsMatchIn(u.path.orEmpty())
+                if (u.scheme == "https" && u.host == successHost && !loginPage) {
                     isFinishingLogin = true
                     // Flusher les cookies vers le disque avant de terminer
                     CookieManager.getInstance().flush()

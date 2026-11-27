@@ -3,6 +3,8 @@
 
 Usage : python -I -X utf8 tests/gen_extension_page.py
 """
+import hashlib
+import json
 import re
 import subprocess
 import sys
@@ -162,7 +164,41 @@ LB_CSS = '.sub-steps{margin:8px 0 0;padding-left:20px;font-size:14.5px;color:var
 LB_JS = "\n  var lb = document.getElementById('lightbox'), lbImg = document.getElementById('lbImg'), lbCap = document.getElementById('lbCap'), lastFocus = null;\n  function openLb(b) { lastFocus = b; lbImg.src = b.dataset.full; lbImg.alt = b.querySelector('img').alt; lbCap.textContent = b.dataset.cap || ''; lb.hidden = false; document.body.style.overflow = 'hidden'; document.getElementById('lbClose').focus(); }\n  function closeLb() { lb.hidden = true; lbImg.removeAttribute('src'); document.body.style.overflow = ''; if (lastFocus) lastFocus.focus(); }\n  document.querySelectorAll('button.shot-link').forEach(function (b) { b.addEventListener('click', function () { openLb(b); }); });\n  document.getElementById('lbClose').addEventListener('click', closeLb);\n  lb.addEventListener('click', function (e) { if (e.target === lb) closeLb(); });\n  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !lb.hidden) closeLb(); });\n"
 
 
+def pilot_version():
+    """Numéro écrit dans les deux pilotes. tests/pilote-version.json garde l'empreinte de chaque numéro : modifier un pilote
+    sans changer de numéro est refusé, sinon deux fichiers différents porteraient le même nom."""
+    bat = (ROOT / "tests" / "maj-extension.bat.src").read_text(encoding="utf-8")
+    sh = (ROOT / "tests" / "maj-extension.sh.src").read_text(encoding="utf-8")
+    a = re.search(r'MYUCA_PILOT_VERSION=([\d.]+)"', bat).group(1)
+    b = re.search(r'^PILOT_VERSION="([\d.]+)"', sh, re.M).group(1)
+    if a != b:
+        raise SystemExit(f"pilotes de versions différentes : Windows {a}, Linux / macOS {b}")
+    digest = hashlib.sha256((bat + chr(0) + sh).replace(chr(13), "").encode("utf-8")).hexdigest()
+    lock = ROOT / "tests" / "pilote-version.json"
+    known = json.loads(lock.read_text(encoding="utf-8")) if lock.exists() else {}
+    if known.get(a, digest) != digest:
+        raise SystemExit(f"le pilote a changé mais il porte toujours la version {a} : monte le numéro dans les deux fichiers .src")
+    if a not in known:
+        known[a] = digest
+        lock.write_text(json.dumps(known, indent=2) + chr(10), encoding="utf-8")
+    return a
+
+
+def name_pilot_links(pv):
+    """Pages du site écrites à la main : même numéro que le pilote publié."""
+    for page in ("mise-a-jour.html", "statut.html"):
+        f = ROOT / page
+        raw = f.read_bytes().decode("utf-8")
+        new, n = re.subn(r'var PILOT_VERSION = "[\d.]+"', f'var PILOT_VERSION = "{pv}"', raw)
+        if n != 1:
+            raise SystemExit(f"{page} : variable PILOT_VERSION introuvable")
+        if new != raw:
+            f.write_bytes(new.encode("utf-8"))
+
+
 def main():
+    pv = pilot_version()
+    name_pilot_links(pv)
     s = (ROOT / "telecharger" / "index.html").read_text(encoding="utf-8")
     head = s[: s.index("<body>")]
     head = head.replace("Télécharger My UCA pour Android", "Télécharger l'extension My UCA pour Chrome")
@@ -187,9 +223,12 @@ def main():
     head = head.replace("</style>", LB_CSS + "</style>", 1)
     OUT.mkdir(exist_ok=True)
     page = head + BODY.replace("@ZIP@", ZIP).replace("@DL@", DL) + tail
+    # Fichier publié à adresse fixe (les anciennes extensions la connaissent), enregistré sous un nom qui porte sa version.
+    for ext in ("bat", "command", "sh"):
+        page = page.replace(f'href="maj-extension.{ext}" download>maj-extension.{ext}</a>', f'href="maj-extension.{ext}" download="maj-extension-v{pv}.{ext}">maj-extension-v{pv}.{ext}</a>')
+    page = page.replace("var a = document.createElement('a'); a.href = f; a.download = f;", "var a = document.createElement('a'); a.href = f; f = f.replace('maj-extension.', 'maj-extension-v" + pv + ".'); a.download = f;")
     (OUT / "index.html").write_text(page, encoding="utf-8")
     subprocess.run([sys.executable, "-I", "-X", "utf8", str(ROOT / "tests" / "build_chrome.py")], check=True, stdout=subprocess.DEVNULL)
-    import json
     ver = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))["version"]
     shutil.copyfile(ROOT / "dist" / f"uca-extension-chrome-{ver}.zip", OUT / ZIP)
     subprocess.run([sys.executable, "-I", "-X", "utf8", str(ROOT / "tests" / "build_firefox.py")], check=True, stdout=subprocess.DEVNULL)

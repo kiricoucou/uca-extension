@@ -4,7 +4,7 @@
   const M = window.UCA_MOBILITY;
   const FAV_KEY = "uca_transport_favoris";
   const MAX_FAVORITES = 8;
-  const REFRESH_MS = 30000;
+  const REFRESH_MS = 60000;
   const SEARCH_PAGE = 8;
   const OFFICIAL_T2C = "https://www.t2c.fr/";
   // Raccourcis : uniquement des arrêts présents dans core/t2c_data.js (un code absent n'est pas affiché).
@@ -216,7 +216,7 @@
       box.replaceChildren(el("div", { class: "state-box", "data-state": "unavailable" }, [
         el("span", { class: "badge down", text: "Indisponible" }),
         el("p", { text: "Les prochains passages n'ont pas pu être obtenus. Cela ne veut pas dire qu'aucun bus ou tram ne passe." }),
-        location.hostname === "appassets.androidplatform.net" ? el("p", { text: "Vérifie ta connexion Internet, puis réessaie." }) : el("p", { text: "Sur un navigateur, ces horaires s'affichent avec l'extension installée : sans elle, le serveur de T2C bloque les pages web. Ils s'affichent aussi dans l'application Android." }),
+        el("p", { text: result.reason === "arret" ? "T2C ne publie pas d'horaire officiel pour cet arrêt." : result.reason === "perime" ? "Les horaires officiels disponibles sont périmés : la mise à jour n'a pas encore eu lieu." : "Vérifie ta connexion Internet, puis réessaie." }),
         el("div", { class: "btn-row" }, [
           el("button", { type: "button", class: "btn primary", id: "retryBtn", text: "Réessayer", onClick: () => { $("stopName").focus(); loadDepartures({ reset: true, announce: true }); } })
         ]),
@@ -226,11 +226,11 @@
       return;
     }
 
-    $("fetchTime").textContent = "Réponse du serveur T2C reçue à " + stamp + ".";
+    $("fetchTime").textContent = "Actualisé à " + stamp + (result.realtime ? " · temps réel officiel T2C." : " · temps réel indisponible pour le moment : horaires prévus uniquement.");
     if (result.state === "empty") {
       box.replaceChildren(el("div", { class: "state-box", "data-state": "empty" }, [
         el("span", { class: "badge none", text: "Aucun passage annoncé" }),
-        el("p", { text: "Le serveur a répondu sans annoncer de passage à venir pour cet arrêt." }),
+        el("p", { text: "Aucun passage prévu dans les 3 prochaines heures à cet arrêt." }),
         el("p", {}, [officialLink()])
       ]));
       return;

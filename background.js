@@ -1295,24 +1295,6 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true;
 });
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (!msg || msg.type !== "UCA_T2C_DEPARTURES_REQUEST") return false;
-  const stopId = String(msg.stopId || "").trim();
-  if (!stopId) {
-    sendResponse({ ok: false, error: "Missing stopId" });
-    return false;
-  }
-  const nowGmt = new Date().toUTCString();
-  const url = "https://api.t2c.fr/siv/stops/" + encodeURIComponent(stopId) + "/departures?dateTime=" + encodeURIComponent(nowGmt);
-  fetch(url, { headers: { "Accept": "application/json" } })
-    .then((r) => {
-      if (!r.ok) throw new Error("HTTP " + r.status);
-      return r.json();
-    })
-    .then((data) => sendResponse({ ok: true, data }))
-    .catch((err) => sendResponse({ ok: false, error: String((err && err.message) || err) }));
-  return true;
-});
 chrome.runtime.onMessage.addListener((msg) => {
   if (!msg) return false;
   if (msg.type === "UCA_FORCE_UPDATE_CHECK") { checkForUpdate(); return false; }

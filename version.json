@@ -1,23 +1,37 @@
 {
   "app_name": "My UCA",
-  "version": "1.4.35",
-  "version_code": 25,
-  "bundle_version": "1.4.35",
+  "version": "1.4.36",
+  "version_code": 26,
+  "bundle_version": "1.4.36",
   "commit_sha": "main",
   "branch": "main",
-  "published_at": "2026-11-27T18:02:52Z",
+  "published_at": "2026-11-27T21:42:39Z",
   "min_apk_version_code": 16,
   "raw_base_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/",
   "apk_download_url": "https://raw.githubusercontent.com/kiricoucou/uca-extension/main/EdtUca.apk",
   "github_repo_url": "https://github.com/kiricoucou/uca-extension",
   "changelog": [
-    "Une seule connexion : après Odin, Moodle est lu tout seul (connexion de l'université, aucun identifiant enregistré).",
-    "Notes Moodle fiabilisées : rapport après chaque recherche, jamais « réussi » si un cours manque.",
-    "Une note validée ne change plus sans ton accord, et le coefficient n'est jamais inventé."
+    "Commentaires personnels sur tes notes, enregistrés sur ton appareil, avec une icône sur les notes commentées.",
+    "Graphique des moyennes en grand, avec la plus haute, la plus basse et les stats de chaque UE.",
+    "Coefficient des notes Moodle : boutons − et +, et tes coefficients fréquents à un appui.",
+    "Absences : une page Odin mal chargée ne les remplace plus par des zéros."
   ],
-  "ota_version": "1.4.35",
-  "ota_base_version_code": 25,
+  "ota_version": "1.4.36",
+  "ota_base_version_code": 26,
   "history": [
+    {
+      "version": "1.47.5",
+      "app": "1.4.36",
+      "title": "commentaires sur les notes et graphique en grand",
+      "items": [
+        "Commentaires sur les notes : dans le détail d'une note, écris un commentaire personnel. Il reste sur ton appareil (et dans tes sauvegardes ou partages, quand tu les lances). Une icône…",
+        "Détail d'une note : boutons « Retour » et fermer, titre sur une ligne sur ordinateur et bien présenté sur téléphone. Sur Android, le bouton retour ferme la fenêtre au lieu de quitter…",
+        "Graphique en grand : un clic sur le graphique des moyennes l'ouvre en plein écran, avec la date et la moyenne de chaque point, la plus haute, la plus basse, l'actuelle et les mêmes…",
+        "UE cliquables : un appui sur une UE t'amène à sa ligne dans le tableau, désignée par une flèche.",
+        "Coefficients Moodle : boutons − et +, décimales acceptées, et tes coefficients fréquents à un appui (réglables dans les Paramètres).",
+        "Devoirs et Notes côte à côte : sur ordinateur, les deux fenêtres restent ouvertes sans se recouvrir."
+      ]
+    },
     {
       "version": "1.47.4",
       "app": "1.4.35",
@@ -94,14 +108,6 @@
       "title": "la flèche du cours disparaît à l'appui sur le menu",
       "items": [
         "Quand un cours est désigné par la flèche animée (depuis Examens ou Devoirs), un appui sur le bouton menu la fait disparaître tout de suite, même si ses 6 secondes ne sont pas écoulées.…"
-      ]
-    },
-    {
-      "version": "1.46.60",
-      "app": "1.4.28",
-      "title": "notes cliquables",
-      "items": [
-        "Notes : chaque note avec sa barre de progression est cliquable (ordinateur et téléphone) et ouvre un détail : note, coefficient, moyenne de la classe, meilleure et moins bonne note. Dans…"
       ]
     }
   ]

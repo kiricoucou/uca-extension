@@ -11,6 +11,20 @@ L'extension vérifie au démarrage, puis toutes les 5 minutes, si `manifest.json
 
 # Historique des versions
 
+## 1.47.5 — app Android 1.4.36 : commentaires sur les notes et graphique en grand
+
+- **Commentaires sur les notes :** dans le détail d'une note, écris un commentaire personnel. Il reste sur ton appareil (et dans tes sauvegardes ou partages, quand tu les lances). Une icône signale les notes commentées et ouvre directement le commentaire.
+- **Détail d'une note :** boutons « Retour » et fermer, titre sur une ligne sur ordinateur et bien présenté sur téléphone. Sur Android, le bouton retour ferme la fenêtre au lieu de quitter l'application.
+- **Graphique en grand :** un clic sur le graphique des moyennes l'ouvre en plein écran, avec la date et la moyenne de chaque point, la plus haute, la plus basse, l'actuelle et les mêmes repères pour chaque UE. Odin ne date pas les notes : l'historique part du jour où chaque note a été vue.
+- **UE cliquables :** un appui sur une UE t'amène à sa ligne dans le tableau, désignée par une flèche.
+- **Coefficients Moodle :** boutons − et +, décimales acceptées, et tes coefficients fréquents à un appui (réglables dans les Paramètres).
+- **Devoirs et Notes côte à côte :** sur ordinateur, les deux fenêtres restent ouvertes sans se recouvrir.
+- **Mes compétences :** quand des notes Moodle attendent ta validation, le bouton descend directement jusqu'aux compétences.
+- **Absences (application Android) :** si la page d'Odin ne se charge pas, tes absences connues sont gardées au lieu d'être remplacées par des zéros.
+- **Hors connexion :** le bandeau est passé en bas de l'écran ; il ne cache plus le menu ni la navigation.
+- **Site :** sur téléphone, la page d'accueil s'ouvre de nouveau en haut, et non sur la démo.
+- **Où le trouver :** dans l'extension (ordinateur) et dans l'application Android, sauf mention contraire.
+
 ## 1.47.4 — app Android 1.4.35 : notes Moodle fiabilisées
 
 - **Plus d'échec silencieux :** rapport après chaque recherche (cours lus, en échec, non lus, lignes illisibles). Une recherche incomplète n'est jamais annoncée réussie ; une page mal chargée n'est plus prise pour « aucune note ».

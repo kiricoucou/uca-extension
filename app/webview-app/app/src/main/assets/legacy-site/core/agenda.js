@@ -9,6 +9,7 @@ const T = D.t;
 
 let events = [];
 let notes = {};
+let gradeNotes = {};              // commentaires écrits sur des notes (uca_grade_notes) : clé de la note -> { text, at }
 let absences = null;
 let scrapeIssues = {};
 let moodleReport = null;           // rapport de la dernière recherche Moodle (uca_moodle_report)
@@ -564,7 +565,9 @@ function renderMobileDay() {
   });
   view.appendChild(list);
   el.appendChild(view);
-  const sel = strip.querySelector(".selected"); if (sel) sel.scrollIntoView({ inline: "center", block: "nearest" });
+  // Seule la bande des jours défile : scrollIntoView ferait aussi défiler la page du site qui contient la démo.
+  const sel = strip.querySelector(".selected");
+  if (sel) strip.scrollLeft += sel.getBoundingClientRect().left - strip.getBoundingClientRect().left - (strip.clientWidth - sel.offsetWidth) / 2;
 }
 /* Glisser le doigt vers la gauche / la droite change de période (téléphone) : jour, 3 jours, 5 jours, 6 jours, semaine, mois.
    Un geste commencé dans une zone qui défile elle-même à l'horizontale n'est pas pris pour un changement de période. */
@@ -864,7 +867,7 @@ async function updatePinnedNext() {
   } catch (e) { /* notification indisponible : sans conséquence */ }
 }
 function loadFromStorage() {
-  chrome.storage.local.get(["uca_events", "uca_class_events", "uca_my_groups", "uca_last_sync", "uca_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks", "uca_activity", "uca_activity_seen", "uca_scales", "uca_moodle", "uca_moodle_progress", "uca_moodle_report"], (data) => {
+  chrome.storage.local.get(["uca_events", "uca_class_events", "uca_my_groups", "uca_last_sync", "uca_notes", "uca_grade_notes", "uca_absences", "uca_releve_notes", "uca_session_expired", "uca_notes_seen", "uca_settings", "uca_edt_changes", "uca_app_imported_at", "uca_scrape_issues", "uca_notes_history", "uca_subject_colors", "uca_tasks", "uca_activity", "uca_activity_seen", "uca_scales", "uca_moodle", "uca_moodle_progress", "uca_moodle_report"], (data) => {
     // Hors Android natif (qui a sa propre synchro CAS en arrière-plan) : sans données, écran d'import.
     if (window.UCA_APP && !window.AndroidUCA && !(data.uca_events || []).length && !sessionStorage.getItem("uca_import_skip")) {
       location.href = chrome.runtime.getURL("app/import.html");
@@ -879,6 +882,7 @@ function loadFromStorage() {
     classGroups = data.uca_my_groups || [];
     applyScope();
     notes = data.uca_notes || {};
+    gradeNotes = data.uca_grade_notes || {};
     absences = data.uca_absences || null;
     scrapeIssues = data.uca_scrape_issues || {};
     notesHistory = data.uca_notes_history || [];
@@ -1083,7 +1087,7 @@ $("absencesBtn").addEventListener("click", (e) => {
 // Ferme le panneau sur un clic dehors. Le panneau peut être déplacé en feuille (téléphone) :
 // un clic dedans, dans le menu qui l'ouvre ou sur un élément qu'il vient de reconstruire ne compte pas.
 let pressStartedInNotes = false;
-document.addEventListener("pointerdown", (e) => { pressStartedInNotes = !!(e.target && e.target.closest && e.target.closest("#notesPanel, #moodleSide, .mdl-pop")); }, true);
+document.addEventListener("pointerdown", (e) => { pressStartedInNotes = !!(e.target && e.target.closest && e.target.closest("#notesPanel, #moodleSide, .mdl-pop, #chartOverlay")); }, true);
 function closeOnOutsideClick(panelId, wrapId) {
   document.addEventListener("click", (e) => {
     const p = $(panelId);
@@ -1093,6 +1097,8 @@ function closeOnOutsideClick(panelId, wrapId) {
     // Le détail d'une note (fenêtre par-dessus le panneau) fait partie du panneau : sa croix ou un clic à côté ne ferme que lui.
     if (e.target.closest && e.target.closest("#gradeDetailOverlay")) return;
     if (panelId === "notesPanel" && e.target.closest && e.target.closest("#moodleSide, .mdl-pop")) return;
+    if (panelId === "notesPanel" && e.target.closest && e.target.closest("#tasksPanel, #tasksWrap, #chartOverlay")) return;
+    if (panelId === "tasksPanel" && e.target.closest && e.target.closest("#notesPanel, #moodleSide, .mdl-pop")) return;
     p.classList.remove("open");
     if ($("ucaSheetBackdrop")) $("ucaSheetBackdrop").hidden = true;
   });
@@ -1138,7 +1144,59 @@ function noteAgeTitle(cls) {
   return { " note-new": `Nouvelle note (moins de ${n} jour${n > 1 ? "s" : ""})`, " note-recent": `Note récente (moins de ${2 * n} jours)`, " note-week": "Note de cette semaine (moins de 7 jours)",
     " note-fortnight": "Note d'il y a une à deux semaines (moins de 15 jours)", " note-old": "Note ancienne (plus de 15 jours)" }[cls] || "";
 }
-function openGradeDetailModal(label, row) {
+/* ---- Commentaire personnel sur une note : enregistré sur cet appareil seulement (uca_grade_notes). ---- */
+const GRADE_NOTE_MAX = 2000;
+let gradeNoteEdit = null;          // { key, label, area, status, timer, dirty }
+function flushGradeNote() {
+  const ed = gradeNoteEdit;
+  if (!ed || !ed.dirty) return;
+  clearTimeout(ed.timer); ed.dirty = false;
+  const text = ed.area.value.slice(0, GRADE_NOTE_MAX);      // texte brut, jamais interprété comme du HTML
+  chrome.storage.local.get("uca_grade_notes", (d) => {
+    const all = Object.assign({}, d.uca_grade_notes);
+    if (text.trim()) all[ed.key] = { text, at: Date.now(), label: ed.label };
+    else delete all[ed.key];
+    chrome.storage.local.set({ uca_grade_notes: all }, () => { if (!ed.dirty) ed.status.textContent = text.trim() ? "✓ Enregistré sur cet appareil" : "Commentaire supprimé"; });
+  });
+}
+window.addEventListener("pagehide", flushGradeNote);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushGradeNote(); });
+function closeGradeDetail() {
+  const overlay = $("gradeDetailOverlay");
+  if (!overlay || !overlay.classList.contains("open")) return false;
+  flushGradeNote(); gradeNoteEdit = null;
+  overlay.classList.remove("open");
+  return true;
+}
+window.ucaHandleBack = () => {                             // bouton « retour » d'Android : ferme la fenêtre du dessus
+  if (closeGradeDetail()) return true;
+  if ($("chartOverlay")) { closeChartOverlay(); return true; }
+  return false;
+};
+/* Ordinateur : le titre tient sur UNE ligne (la fenêtre s'élargit, puis le texte rétrécit un peu). Téléphone : il passe à la ligne proprement. */
+function fitGradeTitle() {
+  const overlay = $("gradeDetailOverlay"); if (!overlay || !overlay.classList.contains("open")) return;
+  const box = overlay.querySelector(".grade-modal-box"), title = $("gdmTitle");
+  const wide = window.innerWidth > 700 && !(typeof isMobileUI === "function" && isMobileUI());
+  const set = (el, name, value) => el.style.setProperty(name, value, "important");
+  if (!wide) {
+    set(box, "width", "min(94vw, 480px)"); set(box, "max-width", "94vw");
+    set(title, "white-space", "normal"); set(title, "font-size", "clamp(18px, 5.4vw, 24px)"); set(title, "line-height", "1.25");
+    title.style.textWrap = "balance"; set(title, "overflow-wrap", "break-word");
+    return;
+  }
+  set(title, "white-space", "nowrap"); set(title, "line-height", "1.3"); set(title, "overflow", "hidden"); set(title, "text-overflow", "ellipsis");
+  title.style.removeProperty("font-size");
+  const maxWidth = Math.min(1100, Math.round(window.innerWidth * 0.96));
+  let size = Math.min(26, parseFloat(getComputedStyle(title).fontSize) || 22);
+  set(title, "font-size", size + "px"); set(box, "max-width", maxWidth + "px"); set(box, "width", "480px");
+  const missing = () => title.scrollWidth - title.clientWidth;
+  if (missing() > 0) set(box, "width", Math.min(maxWidth, 480 + missing() + 6) + "px");
+  while (missing() > 0 && size > 15) { size -= 1; set(title, "font-size", size + "px"); }
+}
+window.addEventListener("resize", fitGradeTitle);
+function openGradeDetailModal(label, row, seenKey, opts) {
+  flushGradeNote(); gradeNoteEdit = null;
   let overlay = $("gradeDetailOverlay");
   if (!overlay) {
     overlay = document.createElement("div");
@@ -1146,20 +1204,27 @@ function openGradeDetailModal(label, row) {
     overlay.className = "modal-overlay";
     overlay.style.zIndex = "6000"; // au-dessus du panneau Notes (z-index 150) et de ses feuilles : le détail passe au premier plan
     overlay.innerHTML = `
-      <div class="modal grade-modal-box">
-        <div class="modal-head">
-          <h3 id="gdmTitle">Évaluation</h3>
+      <div class="modal grade-modal-box" role="dialog" aria-modal="true" aria-labelledby="gdmTitle">
+        <div class="modal-head gdm-head">
+          <button type="button" id="gdmBack" aria-label="Retour aux notes">← Retour</button>
           <button class="close-x" id="closeGdm" aria-label="Fermer">✕</button>
+          <h3 id="gdmTitle">Évaluation</h3>
         </div>
         <div class="modal-body" id="gdmBody"></div>
       </div>
     `;
     document.body.appendChild(overlay);
-    overlay.querySelector("#closeGdm").onclick = (e) => { e.stopPropagation(); overlay.classList.remove("open"); };
-    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay.classList.contains("open")) { e.stopPropagation(); overlay.classList.remove("open"); } }, true);
-    overlay.onclick = (e) => { e.stopPropagation(); if (e.target === overlay) overlay.classList.remove("open"); };
+    overlay.querySelector("#closeGdm").onclick = (e) => { e.stopPropagation(); closeGradeDetail(); };
+    overlay.querySelector("#gdmBack").onclick = (e) => { e.stopPropagation(); closeGradeDetail(); };
+    overlay.querySelector("#gdmBack").style.cssText = "justify-self:start;font:inherit;font-size:13px;font-weight:700;color:inherit;background:transparent;border:1px solid currentColor;border-radius:999px;padding:6px 14px;min-height:36px;cursor:pointer;white-space:nowrap;";
+    const head = overlay.querySelector(".gdm-head");
+    head.style.cssText = "display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center;";
+    overlay.querySelector("#closeGdm").style.cssText = "justify-self:end;min-width:40px;min-height:40px;cursor:pointer;";
+    const h3 = overlay.querySelector("#gdmTitle"); h3.style.cssText = "grid-column:1 / -1;margin:0;display:block;min-width:0;text-align:left;";
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && overlay.classList.contains("open")) { e.stopPropagation(); closeGradeDetail(); } }, true);
+    overlay.onclick = (e) => { e.stopPropagation(); if (e.target === overlay) closeGradeDetail(); };
   }
-  $("gdmTitle").textContent = label;
+  $("gdmTitle").textContent = label; $("gdmTitle").title = label;
   const note = row.note != null ? fmtNote(row.note) + " / 20" : "En attente de notation";
   const coeff = row.coeff != null ? fmtNote(row.coeff) : "1.0";
   const moy = row.moy != null ? fmtNote(row.moy) + " / 20" : "—";
@@ -1197,6 +1262,65 @@ function openGradeDetailModal(label, row) {
     </div>
   `;
   overlay.classList.add("open");
+  // Sous le titre d'une évaluation : sa matière, pour savoir à quoi se rattache la note (et son commentaire).
+  const parent = seenKey ? seenKey.slice(0, seenKey.indexOf("|")) : "";
+  if (parent && parent !== "UE" && parent !== label) {
+    const sub = npEl("div", "gdm-sub", parent); sub.title = parent; sub.style.cssText = "font-size:12.5px;color:var(--text-dim);margin:0 0 8px;overflow-wrap:break-word;";
+    $("gdmBody").prepend(sub);
+  }
+  if (seenKey) addGradeNoteEditor($("gdmBody"), seenKey, label, !!(opts && opts.editNote));
+  fitGradeTitle(); requestAnimationFrame(fitGradeTitle);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitGradeTitle);
+}
+function addGradeNoteEditor(body, key, label, focus) {
+  const box = npEl("div", "gdm-note"); box.style.cssText = "margin-top:12px;border:1px solid var(--border);border-radius:12px;padding:10px 12px;";
+  const head = npEl("label", "", "📝 Mon commentaire sur cette note"); head.htmlFor = "gdmNote"; head.style.cssText = "display:block;font-weight:700;font-size:13px;margin-bottom:6px;";
+  const area = npEl("textarea"); area.id = "gdmNote"; area.rows = 3; area.maxLength = GRADE_NOTE_MAX;
+  area.placeholder = "Ex. : contrôle de binaire, première année — pourquoi cette note ?";
+  area.style.cssText = "display:block;width:100%;box-sizing:border-box;resize:vertical;min-height:76px;font:inherit;font-size:16px;line-height:1.4;color:var(--text);background:var(--surface);border:1px solid var(--border-strong, var(--border));border-radius:8px;padding:8px 10px;";
+  const stored = gradeNotes[key];
+  area.value = stored ? stored.text : "";
+  const foot = npEl("div"); foot.style.cssText = "display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:6px;";
+  const status = npEl("span", "gdm-note-status", stored && stored.at ? "Enregistré le " + new Date(stored.at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) + " · sur cet appareil" : "Enregistrement automatique, sur cet appareil seulement");
+  status.setAttribute("role", "status"); status.style.cssText = "font-size:11.5px;color:var(--text-dim);flex:1;min-width:0;";
+  const erase = npEl("button", "gdm-note-erase", "Effacer"); erase.type = "button"; erase.hidden = !area.value;
+  erase.style.cssText = "font:inherit;font-size:12.5px;color:inherit;background:transparent;border:1px solid currentColor;border-radius:8px;padding:5px 12px;min-height:34px;cursor:pointer;";
+  const edit = { key, label, area, status, timer: 0, dirty: false };
+  const changed = () => {
+    edit.dirty = true; erase.hidden = !area.value; status.textContent = "Enregistrement…";
+    clearTimeout(edit.timer); edit.timer = setTimeout(flushGradeNote, 400);
+  };
+  area.addEventListener("input", changed);
+  area.addEventListener("blur", flushGradeNote);
+  // Effacer demande un second clic : un commentaire ne disparaît pas par accident.
+  let armed = 0;
+  erase.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!armed) { erase.textContent = "Confirmer l'effacement"; armed = setTimeout(() => { armed = 0; erase.textContent = "Effacer"; }, 4000); return; }
+    clearTimeout(armed); armed = 0; erase.textContent = "Effacer";
+    area.value = ""; changed(); flushGradeNote();
+  });
+  foot.append(status, erase); box.append(head, area, foot);
+  // Les designs imposent une grande hauteur à leurs zones de texte : ici elle reste compacte, pour tout voir sans défiler.
+  area.style.setProperty("height", "78px", "important"); area.style.setProperty("min-height", "78px", "important"); area.style.setProperty("margin", "0", "important");
+  const grid = body.querySelector(":scope > div[style*='grid-template-columns']");
+  if (grid) grid.after(box); else body.appendChild(box);
+  gradeNoteEdit = edit;
+  if (focus) setTimeout(() => { area.focus(); area.setSelectionRange(area.value.length, area.value.length); area.scrollIntoView({ block: "nearest" }); }, 60);
+}
+/* Petit logo « note » dans le tableau, entre le titre et le coefficient : un clic ouvre le commentaire prêt à être modifié. */
+function gradeNoteMark(key, label, row) {
+  const rec = gradeNotes[key];
+  if (!rec) return null;
+  const b = npEl("button", "gn-mark"); b.type = "button"; b.dataset.gnKey = key;
+  // Dessin intégré : tous les designs n'ont pas le symbole « i-note » (le design animé n'en a aucun).
+  b.innerHTML = '<svg class="ic" aria-hidden="true" viewBox="0 0 24 24" style="width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><path d="M5 4.5h14v11l-4.5 4.5H5z"/><path d="M14.5 20v-4.5H19M8.5 9h7M8.5 12.5h4"/></svg>';
+  b.title = "Mon commentaire : " + rec.text;
+  b.setAttribute("aria-label", `${label} : voir et modifier mon commentaire`);
+  b.style.cssText = "flex:none;display:inline-flex;align-items:center;justify-content:center;width:30px;height:28px;padding:0;cursor:pointer;color:#1a1a1a;background:#ffd84d;border:1px solid #8a6d00;border-radius:8px;";
+  b.addEventListener("click", (e) => { e.stopPropagation(); openGradeDetailModal(label, row, key, { editNote: true }); });
+  b.addEventListener("keydown", (e) => e.stopPropagation());
+  return b;
 }
 
 /* Barème d'une évaluation « (sur 12.0) » : tant que l'utilisateur n'a pas dit si la note est déjà sur 20 ou sur 12, deux
@@ -1257,10 +1381,16 @@ function ntRow(cls, label, row, seenKey) {
   tr.className = cls + " clickable-grade-row";
   tr.title = "Cliquer pour voir le détail de cette évaluation";
   tr.addEventListener("click", () => {
-    openGradeDetailModal(label, row);
+    openGradeDetailModal(label, row, seenKey);
   });
   const lblTd = ntCell(label, "lbl");
   if (cls.startsWith("eval-row")) { const sc = scaleBlock(seenKey, row, label, true); if (sc) { lblTd.textContent = ""; lblTd.append(...sc.filter(Boolean)); } }
+  const mark = gradeNoteMark(seenKey, label, row);
+  if (mark) {
+    const line = npEl("div"); line.style.cssText = "display:flex;gap:8px;align-items:center;justify-content:space-between;";
+    const text = npEl("div"); text.style.cssText = "min-width:0;"; text.append(...lblTd.childNodes);
+    line.append(text, mark); lblTd.appendChild(line);
+  }
   tr.appendChild(lblTd);
   tr.appendChild(ntCell(fmtNote(row.coeff), "num"));
   const ageCls = noteAgeClass(seenKey, row.rawNote !== undefined ? row.rawNote : row.note);
@@ -1562,7 +1692,182 @@ function historyChart() {
     if (pts.length <= 12 || i === 0 || i === pts.length - 1) svg.appendChild(svgText(x(i), y(p.avg) - 7, fmtNote(p.avg), "middle"));
   });
   wrap.appendChild(chartScroll(svg));
+  // Un clic sur le graphique l'ouvre en grand.
+  const zoom = npEl("button", "np-chart-zoom", "⛶ Voir le graphique en grand"); zoom.type = "button"; zoom.id = "chartZoomBtn";
+  zoom.style.cssText = MOODLE_BTN_CSS + "margin:6px 0 2px;";
+  zoom.addEventListener("click", (e) => { e.stopPropagation(); openChartOverlay(zoom); });
+  svg.style.cursor = "zoom-in";
+  svg.addEventListener("click", (e) => { e.stopPropagation(); openChartOverlay(zoom); });
+  wrap.appendChild(zoom);
   return wrap;
+}
+
+/* ---- Évolution de la moyenne, en grand, par-dessus tout : plus haute, plus basse, actuelle ; détail de chaque point ---- */
+function historyPoints() {
+  const pts = UCA_GRADES.reconstructHistory(releveNotes, notesSeen, notesHistory);
+  const cur = generalAverage();
+  if (cur != null) { const r = Math.round(cur * 100) / 100; if (!pts.length || pts[pts.length - 1].avg !== r) pts.push({ at: Date.now(), avg: r, now: true }); }
+  return pts;
+}
+/* Notes apparues à ce moment-là (Odin ne les date pas : l'extension retient quand elle les a vues pour la première fois). */
+function notesAppearedAt(at) {
+  const out = [], seen = new Set();
+  ((releveNotes && releveNotes.ue) || []).forEach((ue) => (ue.matieres || []).forEach((m) => (m.evals || []).forEach((ev) => {
+    const key = m.label + "|" + (ev.key || ev.label), rec = notesSeen && notesSeen[key];
+    if (ev.note == null || !rec || !rec.at || Math.abs(rec.at - at) > 90000 || seen.has(key)) return;
+    seen.add(key); out.push({ matiere: m.label, label: String(ev.label).replace(/\s*\(sur[^)]*\)/i, ""), note: ev.note });
+  })));
+  return out;
+}
+let chartOverlayTimer = 0;
+function closeChartOverlay() {
+  const o = $("chartOverlay"); if (!o) return;
+  clearInterval(chartOverlayTimer);
+  const from = o._from; o.remove(); document.removeEventListener("keydown", chartOverlayKeys, true);
+  const back = from && document.contains(from) ? from : $("chartZoomBtn"); if (back) back.focus();
+}
+function chartOverlayKeys(e) { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); closeChartOverlay(); } }
+async function openChartOverlay(from) {
+  closeChartOverlay();
+  const pts = historyPoints(); if (pts.length < 2) return;
+  const stored = await new Promise((res) => chrome.storage.local.get(["uca_releve_notes_sync", "uca_last_sync"], res));
+  const syncAt = Date.parse(stored.uca_releve_notes_sync || stored.uca_last_sync || "") || null;
+  const panel = $("notesPanel") || document.body;
+  let bg = getComputedStyle(panel).backgroundColor; if (!bg || /rgba\(0, 0, 0, 0\)|transparent/.test(bg)) bg = getComputedStyle(document.body).backgroundColor;
+  const ink = panelInk();
+  const o = npEl("div", "chart-overlay"); o.id = "chartOverlay"; o._from = from;
+  o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", "Évolution de la moyenne générale");
+  o.style.cssText = "position:fixed;inset:0;z-index:2147483000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box;";
+  const box = npEl("div", "chart-box"); box.style.cssText = `background:${bg};color:${ink};width:min(1200px,100%);max-height:100%;overflow:auto;border-radius:16px;padding:16px;box-sizing:border-box;box-shadow:0 24px 60px rgba(0,0,0,.45);`;
+  const head = npEl("div"); head.style.cssText = "display:flex;align-items:center;gap:12px;flex-wrap:wrap;";
+  const title = npEl("h2", "", "Évolution de la moyenne générale"); title.style.cssText = "margin:0;font-size:1.25em;flex:1;min-width:0;";
+  const close = npEl("button", "", "✕ Fermer le graphique"); close.type = "button"; close.id = "chartOverlayClose"; close.style.cssText = MOODLE_BTN_CSS + "margin-left:auto;min-height:40px;";
+  close.addEventListener("click", closeChartOverlay);
+  head.append(title, close); box.appendChild(head);
+  const day = (t) => new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  const full = (t) => day(t) + " à " + new Date(t).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  const last = pts[pts.length - 1];
+  const high = pts.reduce((a, p) => (p.avg > a.avg ? p : a), pts[0]), low = pts.reduce((a, p) => (p.avg < a.avg ? p : a), pts[0]);
+  const tiles = npEl("div"); tiles.style.cssText = `display:grid;grid-template-columns:repeat(auto-fit,minmax(${window.innerWidth < 700 ? 135 : 190}px,1fr));gap:10px;margin:14px 0;`;
+  const tile = (id, name, value, line, color) => {
+    const t = npEl("div"); t.id = id; t.style.cssText = `border:2px solid ${color};border-radius:12px;padding:10px 12px;`;
+    const n = npEl("div", "", name); n.style.cssText = "font-size:.82em;font-weight:700;opacity:.85;";
+    const v = npEl("div", "chart-tile-value", fmtNote(value) + " / 20"); v.style.cssText = "font-size:1.7em;font-weight:800;";
+    const d = npEl("div", "chart-tile-date", line); d.style.cssText = "font-size:.85em;";
+    t.append(n, v, d); return t;
+  };
+  const current = tile("chartNow", "Moyenne actuelle", last.avg, day(last.now && syncAt ? syncAt : last.at), "var(--accent)");
+  const ago = npEl("div", "chart-tile-ago", ""); ago.id = "chartSyncAgo"; ago.style.cssText = "font-size:.85em;font-weight:700;"; current.appendChild(ago);
+  tiles.append(tile("chartHigh", "Moyenne la plus haute", high.avg, day(high.at), MDL_GREEN), tile("chartLow", "Moyenne la plus basse", low.avg, day(low.at), MDL_RED), current);
+  box.appendChild(tiles);
+  const paintAgo = () => { ago.textContent = syncAt ? "Dernière synchronisation : " + relTimeFr(Date.now() - syncAt) : "Date de la dernière synchronisation inconnue"; };
+  if (window.innerWidth < 700) current.style.gridColumn = "1 / -1";
+  paintAgo(); chartOverlayTimer = setInterval(paintAgo, 1000);
+
+  const stage = npEl("div"); stage.style.cssText = "position:relative;";
+  const detail = npEl("div", "chart-detail"); detail.id = "chartPointDetail"; detail.setAttribute("role", "status");
+  detail.style.cssText = "margin-top:10px;border:1px solid rgba(127,127,127,.55);border-radius:12px;padding:10px 12px;min-height:5.2em;";
+  detail.textContent = "Passe la souris sur un point (ou touche-le) pour voir sa date, ses notes et la moyenne.";
+  const tip = npEl("div"); tip.id = "chartTip"; tip.hidden = true;
+  tip.style.cssText = `position:absolute;pointer-events:none;background:${bg};color:${ink};border:2px solid var(--accent);border-radius:10px;padding:6px 10px;font-size:.85em;font-weight:700;white-space:nowrap;box-shadow:0 8px 20px rgba(0,0,0,.35);z-index:2;`;
+  const narrow = window.innerWidth < 700;
+  const W = narrow ? 360 : 1000, H = narrow ? 300 : 460, L = narrow ? 34 : 46, Rr = narrow ? 14 : 24, T = narrow ? 18 : 26, B = narrow ? 34 : 40;
+  const lo = Math.max(0, Math.floor(low.avg - 1)), hi = Math.min(20, Math.ceil(high.avg + 1));
+  const first = pts[0].at, span = Math.max(1, last.at - first);
+  const x = (i) => L + (W - L - Rr) * i / (pts.length - 1), y = (v) => T + (H - T - B) * (1 - (v - lo) / Math.max(1, hi - lo));
+  void span;
+  const svg = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "group", "aria-label": `Évolution de la moyenne générale : ${pts.length} points, de ${fmtNote(pts[0].avg)} à ${fmtNote(last.avg)}` });
+  svg.style.cssText = "display:block;width:100%;height:auto;min-height:220px;max-height:56vh;";
+  const label = (tx, ty, text, anchor, size) => { const t = svgEl("text", { x: tx, y: ty, "font-size": size || 14, "text-anchor": anchor || "middle", fill: "currentColor", opacity: ".8" }); t.textContent = text; return t; };
+  const ticks = []; for (let v = lo; v <= hi; v += Math.max(1, Math.ceil((hi - lo) / 6))) ticks.push(v);
+  ticks.forEach((v) => { svg.appendChild(svgEl("line", { x1: L, x2: W - Rr, y1: y(v), y2: y(v), stroke: "currentColor", "stroke-opacity": ".15" })); svg.appendChild(label(L - 8, y(v) + 5, fmtNote(v), "end")); });
+  if (lo < 10 && hi > 10) svg.appendChild(svgEl("line", { x1: L, x2: W - Rr, y1: y(10), y2: y(10), stroke: "currentColor", "stroke-opacity": ".4", "stroke-dasharray": "5 5" }));
+  const guide = svgEl("line", { x1: 0, x2: 0, y1: T, y2: H - B, stroke: "currentColor", "stroke-opacity": ".35", "stroke-dasharray": "3 4", visibility: "hidden" });
+  svg.appendChild(guide);
+  svg.appendChild(svgEl("polyline", { points: pts.map((p, i) => `${x(i)},${y(p.avg)}`).join(" "), fill: "none", stroke: "var(--accent)", "stroke-width": 3, "stroke-linejoin": "round" }));
+  const every = Math.max(1, Math.ceil(pts.length / (narrow ? 4 : 9)));
+  pts.forEach((p, i) => {
+    if (i % every === 0 || i === pts.length - 1) {
+      if (i !== pts.length - 1 && pts.length - 1 - i < every) return;
+      svg.appendChild(label(x(i), H - 12, new Date(p.at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" }), i === 0 ? "start" : i === pts.length - 1 ? "end" : "middle", 13));
+    }
+  });
+  const dots = [];
+  const show = (i) => {
+    const p = pts[i], prev = i ? pts[i - 1] : null, added = notesAppearedAt(p.at);
+    dots.forEach((d, k) => { d.setAttribute("r", k === i ? 9 : 5); });
+    guide.setAttribute("x1", x(i)); guide.setAttribute("x2", x(i)); guide.setAttribute("visibility", "visible");
+    const diff = prev ? Math.round((p.avg - prev.avg) * 100) / 100 : null;
+    const synced = (notesHistory || []).some((h) => h.at === p.at);
+    const kind = p.now ? "moyenne actuelle" : synced ? "enregistré lors d'une synchronisation" : "reconstitué d'après la date où les notes sont apparues";
+    detail.textContent = "";
+    const line = (text, strong) => { const n = npEl("div", "", text); if (strong) n.style.fontWeight = "800"; detail.appendChild(n); };
+    line(`Point ${i + 1} sur ${pts.length} · ${full(p.at)} · ${kind}`, true);
+    line(`Moyenne générale : ${fmtNote(p.avg)} / 20` + (diff === null ? "" : ` (${diff > 0 ? "+" : ""}${fmtNote(diff)} depuis le point précédent)`));
+    if (added.length) { line(`${added.length} note${added.length > 1 ? "s" : ""} apparue${added.length > 1 ? "s" : ""} à ce moment :`); added.slice(0, 8).forEach((n) => line(`• ${n.matiere} — ${n.label} : ${fmtNote(n.note)}`)); if (added.length > 8) line(`… et ${added.length - 8} autre(s)`); }
+    else line("Aucune note datée de ce moment (note déjà là au premier relevé, modifiée, ou validation d'une note Moodle).");
+    tip.textContent = `${new Date(p.at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} · ${fmtNote(p.avg)} / 20`;
+    tip.hidden = false;
+    const r = svg.getBoundingClientRect(), s = stage.getBoundingClientRect(), pt = svg.createSVGPoint(); pt.x = x(i); pt.y = y(p.avg);
+    const m = svg.getScreenCTM(), at = m ? pt.matrixTransform(m) : { x: r.left, y: r.top };
+    const half = tip.offsetWidth / 2;
+    tip.style.left = Math.max(0, Math.min(s.width - tip.offsetWidth, at.x - s.left - half)) + "px";
+    tip.style.top = Math.max(0, at.y - s.top - tip.offsetHeight - 14) + "px";
+  };
+  pts.forEach((p, i) => {
+    const dot = svgEl("circle", { cx: x(i), cy: y(p.avg), r: 5, fill: p === high ? MDL_GREEN : p === low ? MDL_RED : "var(--accent)" });
+    dots.push(dot); svg.appendChild(dot);
+  });
+  // Zones sensibles : toute la colonne du point, plus facile à viser que le point lui-même.
+  const colW = (W - L - Rr) / (pts.length - 1);
+  pts.forEach((p, i) => {
+    const hit = svgEl("rect", { x: x(i) - colW / 2, y: T - 10, width: colW, height: H - T - B + 20, fill: "transparent", class: "chart-hit", tabindex: "0", role: "button", "aria-label": `${full(p.at)} : moyenne ${fmtNote(p.avg)} sur 20` });
+    hit.style.cursor = "pointer"; hit.style.outline = "none";     // le repère vertical et le point agrandi montrent la sélection
+    ["pointerenter", "pointermove", "focus", "click"].forEach((ev) => hit.addEventListener(ev, () => show(i)));
+    svg.appendChild(hit);
+  });
+  stage.append(svg, tip); box.append(stage, detail);
+  const ueBlock = chartUeStats(syncAt, day); if (ueBlock) box.appendChild(ueBlock);
+  o.appendChild(box);
+  o.addEventListener("click", (e) => { e.stopPropagation(); if (e.target === o) closeChartOverlay(); });
+  o.addEventListener("pointerdown", (e) => e.stopPropagation());
+  document.body.appendChild(o);
+  document.addEventListener("keydown", chartOverlayKeys, true);
+  close.focus();
+}
+/* Sous le grand graphique : pour chaque UE, la moyenne la plus basse, la plus haute et l'actuelle, avec leurs dates. */
+function chartUeStats(syncAt, day) {
+  const ues = UCA_GRADES.competences(releveNotes).items;
+  const list = ues.length ? ues.map((u) => ({ label: u.label, name: `${u.short} · ${u.title || u.label}` }))
+    : ((releveNotes && releveNotes.ue) || []).map((u) => ({ label: u.label, name: u.label }));
+  const now = Date.now();
+  const rows = list.map((u) => ({ u, pts: UCA_GRADES.ueHistory(releveNotes, notesSeen, u.label, now) })).filter((r) => r.pts.length);
+  if (!rows.length) return null;
+  const sec = npEl("section", "chart-ues"); sec.id = "chartUes"; sec.style.cssText = "margin-top:16px;";
+  const h = npEl("h3", "", "Par UE : la plus basse, la plus haute, l'actuelle"); h.style.cssText = "margin:0 0 4px;font-size:1.05em;";
+  const note = npEl("p", "", "Odin ne date pas les notes : ces valeurs sont reconstituées d'après la date où l'extension a vu chaque note pour la première fois."); note.style.cssText = "margin:0 0 10px;font-size:.82em;opacity:.85;";
+  const grid = npEl("div"); grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:10px;";
+  rows.forEach(({ u, pts }) => {
+    const low = pts.reduce((a, p) => (p.avg < a.avg ? p : a), pts[0]), high = pts.reduce((a, p) => (p.avg > a.avg ? p : a), pts[0]), cur = pts[pts.length - 1];
+    const card = npEl("div", "chart-ue"); card.dataset.ue = u.label; card.style.cssText = "border:1px solid rgba(127,127,127,.55);border-radius:12px;padding:10px 12px;";
+    const name = npEl("div", "chart-ue-name"); name.style.cssText = "display:flex;gap:8px;align-items:center;font-weight:800;min-height:32px;";
+    const text = npEl("span", "", u.name); text.style.cssText = "flex:1;min-width:0;";
+    const go = npEl("span", "", "›"); go.setAttribute("aria-hidden", "true"); go.style.cssText = "font-size:1.5em;line-height:1;color:var(--accent);";
+    name.append(text, go);
+    const cols = npEl("div"); cols.style.cssText = "display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px;";
+    const col = (cls, title, p, color) => {
+      const c = npEl("div", cls); c.style.cssText = `border-top:3px solid ${color};padding-top:4px;`;
+      const t = npEl("div", "", title); t.style.cssText = "font-size:.75em;font-weight:700;opacity:.85;";
+      const v = npEl("div", "", fmtNote(p.avg)); v.style.cssText = "font-size:1.3em;font-weight:800;";
+      const when = p.now ? day(syncAt || p.at) : (p.before ? "avant le " : "") + day(p.at);
+      const d = npEl("div", "", when); d.style.cssText = "font-size:.75em;";
+      c.append(t, v, d); return c;
+    };
+    cols.append(col("ue-low", "Plus basse", low, MDL_RED), col("ue-high", "Plus haute", high, MDL_GREEN), col("ue-cur", "Actuelle", cur, "var(--accent)"));
+    card.append(name, cols); grid.appendChild(ueLink(card, u.label, u.name));
+  });
+  sec.append(h, note, grid);
+  return sec;
 }
 function matiereChart(label) {
   const series = UCA_GRADES.matiereSeries(releveNotes, label), wrap = npEl("div", "np-chart-body");
@@ -1586,13 +1891,13 @@ function matiereChart(label) {
       if (v == null) return;
       const r = svgEl("rect", { x: bx, y: y(v), width: bw, height: Math.max(1, y(0) - y(v)), fill, "fill-opacity": op, rx: 2, class: "np-bar" });
       const tt = svgEl("title"); tt.textContent = `${e.label} — ${what} : ${fmtNote(v)} / 20. Toucher pour le détail`; r.appendChild(tt);
-      r.addEventListener("click", () => openGradeDetailModal(e.label, e));
+      r.addEventListener("click", () => openGradeDetailModal(e.label, e, label + "|" + e.key));
       svg.appendChild(r);
     });
     const t1 = svgText(cx, H - 16, e.label.length > 12 ? e.label.slice(0, 11) + "…" : e.label), t2 = svgText(cx, H - 5, fmtNote(e.note));
     [t1, t2].forEach((tx) => { tx.setAttribute("class", "np-lab"); tx.setAttribute("role", "button"); tx.setAttribute("tabindex", "0"); tx.setAttribute("aria-label", `${e.label} : détail de la note`);
-      tx.addEventListener("click", () => openGradeDetailModal(e.label, e));
-      tx.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openGradeDetailModal(e.label, e); } }); svg.appendChild(tx); });
+      tx.addEventListener("click", () => openGradeDetailModal(e.label, e, label + "|" + e.key));
+      tx.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openGradeDetailModal(e.label, e, label + "|" + e.key); } }); svg.appendChild(tx); });
   });
   wrap.appendChild(chartScroll(svg));
   wrap.appendChild(gradeLegend());
@@ -1698,7 +2003,10 @@ function overviewChart() {
       row.classList.add("np-eval-row"); row.tabIndex = 0; row.setAttribute("role", "button");
       row.title = "Voir le détail : meilleure note, moins bonne note, moyenne de la classe";
       row.setAttribute("aria-label", `${bare} : ${fmtNote(e.note)} sur 20. Voir le détail`);
-      const showDetail = () => openGradeDetailModal(bare, e);
+      const noteKey = m.label + "|" + (e.key || e.label);
+      const mark = gradeNoteMark(noteKey, bare, e);
+      if (mark) { mark.style.marginLeft = "8px"; mark.style.verticalAlign = "middle"; titleLine.appendChild(mark); }
+      const showDetail = () => openGradeDetailModal(bare, e, noteKey);
       row.addEventListener("click", showDetail);
       row.addEventListener("keydown", (ev) => { if (ev.target === row && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); showDetail(); } });
     });
@@ -1741,6 +2049,32 @@ function yearChart(yr) {
   const lab = svgText(W - 8, y(10) - 4, "seuil 10", "end"); lab.setAttribute("fill", "#18b7b0"); lab.setAttribute("opacity", "1"); svg.appendChild(lab);
   return chartScroll(svg);
 }
+/* Depuis « Mes compétences » ou le grand graphique : revient au tableau « Détail des notes », sur la ligne de l'UE. */
+function goToUe(label) {
+  closeChartOverlay();
+  compView = false;
+  renderNotesPanel(true);
+  const show = () => {
+    const row = [...$("npContent").querySelectorAll("tr.ue-row")].find((r) => r.dataset.ue === label);
+    if (!row) return;
+    if (!row.querySelector(".ue-arrow")) {
+      const arrow = npEl("span", "ue-arrow", "➤ "); arrow.setAttribute("aria-hidden", "true"); arrow.style.cssText = "color:var(--accent);font-size:1.15em;";
+      row.firstElementChild.prepend(arrow);
+    }
+    row.classList.add("ue-target"); row.style.outline = "3px solid var(--accent)"; row.style.outlineOffset = "-3px";
+    row.scrollIntoView({ block: "center", inline: "nearest" });
+  };
+  show(); setTimeout(show, 120);
+}
+/* Rend un élément « lien vers une UE » : cliquable, utilisable au clavier. */
+function ueLink(node, label, name) {
+  node.setAttribute("role", "button"); node.setAttribute("tabindex", "0");
+  node.setAttribute("aria-label", `${name} : voir cette UE dans le tableau des notes`);
+  node.style.cursor = "pointer";
+  node.addEventListener("click", (e) => { e.stopPropagation(); goToUe(label); });
+  node.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToUe(label); } });
+  return node;
+}
 function competencesView() {
   const wrap = npEl("div", "np-comp");
   const { years } = UCA_GRADES.competences(releveNotes);
@@ -1751,12 +2085,14 @@ function competencesView() {
     sec.appendChild(npEl("div", "fp-h", `Année ${yr.year} (BUT ${yr.year})${yr.avg != null ? " — moyenne des UE : " + fmtNote(yr.avg) + " / 20" : ""}`));
     sec.appendChild(yearChart(yr));
     sec.appendChild(npEl("div", "fp-empty", "Moyenne par compétence sur l'année : " + yr.comps.map((c) => `UE ${c.idx} ${c.avg != null ? fmtNote(c.avg) + (c.avg >= 10 ? " ✓" : " ✗") : "—"}`).join(" · ")));
-    const ul = npEl("ul", ""); ul.style.cssText = "list-style:none;margin:6px 0 0;padding:0 4px;display:flex;flex-direction:column;gap:5px;font-size:13px;";
+    const ul = npEl("ul", "np-ue-list"); ul.style.cssText = "list-style:none;margin:6px 0 0;padding:0 16px;display:flex;flex-direction:column;gap:2px;font-size:13px;";
     yr.ues.forEach((u) => {
-      const li = npEl("li", ""); li.style.cssText = "display:flex;gap:8px;justify-content:space-between;align-items:baseline;";
-      const t = npEl("span", "", `${u.short} · ${u.title || u.label}`);
+      const li = npEl("li", "");
+      const link = npEl("div", "np-ue-link"); link.style.cssText = "display:flex;gap:8px;align-items:center;min-height:36px;";
+      const t = npEl("span", "", `${u.short} · ${u.title || u.label}`); t.style.cssText = "flex:1 1 auto;min-width:0;";
       const v = npEl("b", "", u.note == null ? "—" : `${fmtNote(u.note)} ${u.note >= 10 ? "✓ validée" : "✗ sous 10"}`); v.style.cssText = `white-space:nowrap;color:${compBarColor(u.note)};`;
-      li.append(t, v); ul.appendChild(li);
+      const arrow = npEl("span", "np-ue-go", "›"); arrow.setAttribute("aria-hidden", "true"); arrow.style.cssText = "flex:none;font-size:1.5em;font-weight:800;line-height:1;color:var(--accent);";
+      link.append(t, v, arrow); li.appendChild(ueLink(link, u.label, `${u.short} ${u.title || ""}`.trim())); ul.appendChild(li);
     });
     sec.appendChild(ul);
     wrap.appendChild(sec);
@@ -2146,6 +2482,50 @@ function avoidMoodleSide(panel, side) {
   if (p.left + 340 > sl - MOODLE_SIDE_GAP) panel.style.left = Math.max(8, Math.floor(sl - MOODLE_SIDE_GAP - Math.max(340, w))) + "px";
   panel._lastW = panel.offsetWidth; panel._lastH = panel.offsetHeight;
 }
+/* Saisie du coefficient : − / + (de 1 en 1), coefficients préenregistrés en un clic, et leur éditeur sur place. */
+const coeffDraft = {};             // saisie en cours, gardée quand la fenêtre se redessine (recherche Moodle en cours…)
+function moodleCoeffControl(it, coeff) {
+  const wrap = npEl("span", "np-coeff-ctl"); wrap.style.cssText = "display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:100%;";
+  const small = "color:inherit;background:transparent;border:1px solid currentColor;border-radius:9px;font:inherit;font-weight:800;cursor:pointer;min-width:36px;min-height:36px;padding:2px 9px;";
+  const chips = npEl("span", "np-coeff-presets"); chips.style.cssText = "display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;"; chips.setAttribute("role", "group"); chips.setAttribute("aria-label", "Coefficients préenregistrés");
+  const paint = () => chips.querySelectorAll("button[data-coeff]").forEach((b) => {
+    const on = coeff.value !== "" && Number(b.dataset.coeff) === Number(coeff.value);
+    b.setAttribute("aria-pressed", String(on)); b.style.cssText = on ? mdlSolid(MDL_BLUE) + "min-width:36px;min-height:36px;padding:2px 9px;" : small;
+  });
+  const set = (v) => { coeff.value = v === "" ? "" : String(Math.round(v * 100) / 100); coeffDraft[it.id] = coeff.value; paint(); };
+  const step = (delta) => {
+    const cur = Number(coeff.value);
+    if (coeff.value === "" || !Number.isFinite(cur)) { if (delta > 0) set(1); return; }
+    const next = cur + delta;
+    if (next > 0 && next <= 100) set(next);
+  };
+  const stepButton = (label, aria, delta) => { const b = npEl("button", "np-coeff-step", label); b.type = "button"; b.style.cssText = small; b.setAttribute("aria-label", aria); b.title = aria; b.addEventListener("click", (e) => { e.stopPropagation(); step(delta); }); return b; };
+  coeff.addEventListener("input", () => { coeffDraft[it.id] = coeff.value; paint(); });
+  UCA_coeffList(settings.coeffPresets === undefined ? UCA_SETTINGS_DEFAULTS.coeffPresets : settings.coeffPresets).forEach((n) => {
+    const b = npEl("button", "np-coeff-chip", UCA_coeffText(n)); b.type = "button"; b.dataset.coeff = String(n); b.title = "Coefficient " + UCA_coeffText(n);
+    b.setAttribute("aria-label", "Choisir le coefficient " + UCA_coeffText(n));
+    b.addEventListener("click", (e) => { e.stopPropagation(); set(n); });
+    chips.appendChild(b);
+  });
+  const edit = npEl("button", "np-coeff-edit", "✎"); edit.type = "button"; edit.style.cssText = small; edit.title = "Modifier mes coefficients préenregistrés"; edit.setAttribute("aria-label", edit.title); edit.setAttribute("aria-expanded", String(coeffEditorOpen === it.id));
+  edit.addEventListener("click", (e) => { e.stopPropagation(); coeffEditorOpen = coeffEditorOpen === it.id ? null : it.id; renderNotesPanel(); renderMoodleSide(); });
+  chips.appendChild(edit);
+  wrap.append(stepButton("−", "Coefficient moins 1", -1), coeff, stepButton("+", "Coefficient plus 1", 1), chips);
+  paint();
+  return wrap;
+}
+let coeffEditorOpen = null;
+function moodleCoeffEditorBlock() {
+  const box = npEl("div", "np-coeff-editor"); box.style.cssText = "margin-top:8px;padding:10px;border:1px dashed currentColor;border-radius:10px;";
+  box.appendChild(npEl("div", "", window.UCA_APP ? "Mes coefficients souvent utilisés" : "Mes coefficients souvent utilisés (aussi dans Paramètres)"));
+  box.addEventListener("click", (e) => e.stopPropagation());
+  box.appendChild(UCA_coeffEditor(settings.coeffPresets === undefined ? UCA_SETTINGS_DEFAULTS.coeffPresets : settings.coeffPresets, (list) => {
+    settings = Object.assign({}, settings, { coeffPresets: list });
+    UCA_saveSettings({ coeffPresets: list });
+    renderNotesPanel(); renderMoodleSide();
+  }));
+  return box;
+}
 const MOODLE_HOW = {
   memoire: "Matière que tu as déjà choisie pour ce cours",
   code: "Matière proposée d'après le code du cours",
@@ -2404,7 +2784,8 @@ function moodleCard(it, matieres) {
   const coeffLbl = npEl("label", "", "Coeff"); coeffLbl.style.cssText = "font-size:.85em;font-weight:700;flex:none;white-space:nowrap;";
   const coeff = npEl("input"); coeff.id = picker.trigger.id + "-c"; coeffLbl.htmlFor = coeff.id; coeff.type = "number"; coeff.min = "0.5"; coeff.max = "100"; coeff.step = "0.5";
   // Moodle ne donne pas le coefficient : rien n'est prérempli tant que tu ne l'as pas choisi toi-même.
-  coeff.value = it.status === "validated" || it.coeffConfirmed ? String(it.coeff || 1) : ""; coeff.placeholder = "?";
+  coeff.value = coeffDraft[it.id] !== undefined ? coeffDraft[it.id] : it.status === "validated" || it.coeffConfirmed ? String(it.coeff || 1) : ""; coeff.placeholder = "?";
+  coeff.step = "any"; coeff.min = "0.1";
   coeff.setAttribute("aria-label", "Coefficient de cette note dans la matière"); coeff.title = "Coefficient"; coeff.style.cssText = "width:64px;font:inherit;min-height:34px;";
   const btn = (label, css, fn) => { const b = npEl("button", "", label); b.type = "button"; b.style.cssText = css; b.addEventListener("click", fn); return b; };
   const opts = () => { const v = picker.get(); return { matiere: v.matiere || null, isNew: v.isNew, coeff: coeff.value }; };
@@ -2412,18 +2793,21 @@ function moodleCard(it, matieres) {
     const v = picker.get();
     if (!v.matiere) { picker.focus(); toast(v.isNew ? "Donne un nom à la nouvelle matière" : "Choisis d'abord la matière de cette note", "err"); return; }
     if (!(Number(coeff.value) > 0 && Number(coeff.value) <= 100)) { coeff.focus(); toast("Saisis le coefficient de cette note : Moodle ne le donne pas", "err"); return; }
-    saveMoodleDecision(it.id, "validated", opts());
+    const chosen = opts();
+    delete coeffDraft[it.id];
+    saveMoodleDecision(it.id, "validated", chosen);
   };
   const refuse = () => { saveMoodleDecision(it.id, "refused", opts()); toast("Note mise à la corbeille (🗑 dans la fenêtre de droite) : tu peux la restaurer", "ok"); };
   const later = () => saveMoodleDecision(it.id, "pending", opts());
   const actions = it.status === "pending" ? [btn("Valider la note", mdlSolid(MDL_GREEN), validate), btn("Refuser la note", mdlSolid(MDL_RED), refuse)]
     : it.status === "validated" ? [btn("Enregistrer les changements", mdlSolid(MDL_GREEN), validate), btn("🗑 Ignorer la note", mdlSolid(MDL_RED), refuse), btn("Remettre en attente", MOODLE_BTN_CSS, later)]
     : [btn("Valider la note", mdlSolid(MDL_GREEN), validate), btn("Remettre en attente", MOODLE_BTN_CSS, later)];
-  const cg = npEl("span", ""); cg.style.cssText = "display:inline-flex;gap:6px;align-items:center;"; cg.append(coeffLbl, coeff);
+  const cg = npEl("span", ""); cg.style.cssText = "display:inline-flex;flex-wrap:wrap;gap:6px;align-items:center;max-width:100%;"; cg.append(coeffLbl, moodleCoeffControl(it, coeff));
   row.appendChild(picker.el);
   const row2 = npEl("div", ""); row2.style.cssText = "display:flex;flex-wrap:wrap;gap:8px;align-items:center;width:100%;";
   [cg].concat(actions).forEach((x) => row2.appendChild(x)); row.appendChild(row2);
   card.appendChild(row);
+  if (coeffEditorOpen === it.id) card.appendChild(moodleCoeffEditorBlock());
   return card;
 }
 function moodleBlock() {
@@ -2521,7 +2905,12 @@ function renderNotesPanelNow() {
       const eye = npEl("button", "np-comp-btn", "👁 Voir mes compétences"); eye.type = "button"; eye.id = "compBtn";
       eye.setAttribute("aria-label", "Voir mes compétences : moyenne de chaque UE, seuil de validation à 10");
       eye.style.cssText = "margin:0;color:inherit;background:transparent;border:1px solid currentColor;padding:6px 12px;border-radius:10px;font:inherit;font-weight:700;cursor:pointer;min-height:32px;";
-      eye.addEventListener("click", () => { compView = true; renderNotesPanel(true); });
+      eye.addEventListener("click", () => {
+        compView = true; renderNotesPanel(true);
+        // Des notes Moodle en attente passent avant les compétences : on descend jusqu'à elles, sinon rien ne semble changer.
+        const top = $("compBack");
+        if (top && $("npContent").querySelector(".np-moodle-card")) { top.parentNode.style.scrollMarginTop = "96px"; top.parentNode.scrollIntoView({ block: "start" }); }
+      });
       const eyeBox = npEl("div", ""); eyeBox.style.cssText = "padding:8px 16px 0;"; eyeBox.appendChild(eye); content.appendChild(inkify(eyeBox));
     }
     // Évolution de la moyenne générale : un point à chaque synchro qui apporte une nouvelle note ; le graphique se construit tout seul.
@@ -2547,7 +2936,7 @@ function renderNotesPanelNow() {
         return true;
       });
       if (!matieres.length) return;
-      tbody.appendChild(ntRow("ue-row", ue.label, ue, "UE|" + ue.label));
+      const ueRow = ntRow("ue-row", ue.label, ue, "UE|" + ue.label); ueRow.dataset.ue = ue.label; tbody.appendChild(ueRow);
       matieres.forEach((m) => {
         tbody.appendChild(ntRow("matiere-row" + (m.note == null ? " no-grade" : ""), m.label, m, m.label + "|"));
         const seenEvals = new Set();
@@ -2713,15 +3102,71 @@ function ensureTasksBack() {
   box.style.cssText = `position:sticky;top:0;z-index:4;padding:10px 16px 8px;background:${bg};border-bottom:1px solid rgba(127,127,127,.35);`;
   const b = npEl("button", "", "← Retour aux notes"); b.type = "button"; b.id = "tasksBackBtn";
   b.style.cssText = MOODLE_BTN_CSS + "min-height:34px;";
-  b.addEventListener("click", (e) => { e.stopPropagation(); tasksBack = false; openToolPanel("notesPanel", isMobileUI()); });
+  b.addEventListener("click", (e) => {
+    e.stopPropagation(); tasksBack = false;
+    const notes = $("notesPanel");
+    if (notes && notes.classList.contains("open")) panel.classList.remove("open");   // les notes sont à côté : elles restent
+    else openToolPanel("notesPanel", isMobileUI());
+  });
   box.appendChild(b); panel.insertBefore(box, panel.firstChild);
 }
 if ($("tasksPanel")) new MutationObserver(ensureTasksBack).observe($("tasksPanel"), { childList: true, attributes: true, attributeFilter: ["class"] });
+/* ---- Devoirs / examens ET Notes ouverts ensemble (ordinateur) : jamais l'une sur l'autre. La liste des devoirs reste sous
+   son bouton et la fenêtre Notes se range à sa droite ; à la fermeture, les Notes reprennent leur place mémorisée. */
+const SIDE_GAP = 12, NOTES_MIN_W = 340;
+const SIDE_PROPS = ["left", "width", "max-width", "min-width"];
+function layoutTasksAndNotes() {
+  const tasksEl = $("tasksPanel"), notes = $("notesPanel");
+  if (!tasksEl || !notes) return;
+  const both = tasksEl.classList.contains("open") && notes.classList.contains("open") && !tasksEl.classList.contains("as-sheet") && notesManaged(notes);
+  if (!both) {
+    if (notes.dataset.besideTasks) {
+      delete notes.dataset.besideTasks;
+      tasksEl.style.left = ""; tasksEl.style.right = "";
+      // Les Notes retrouvent exactement la place et la taille qu'elles avaient avant.
+      notesProgrammaticAt = performance.now();
+      (notes._beforeTasks || []).forEach(([name, value, priority]) => { if (value) notes.style.setProperty(name, value, priority); else notes.style.removeProperty(name); });
+      notes._beforeTasks = null;
+      notes._lastW = notes.offsetWidth; notes._lastH = notes.offsetHeight;
+    }
+    return;
+  }
+  if (!notes.dataset.besideTasks) {
+    notes.dataset.besideTasks = "1";
+    notes._beforeTasks = SIDE_PROPS.map((n) => [n, notes.style.getPropertyValue(n), notes.style.getPropertyPriority(n)]);
+  }
+  const vw = window.innerWidth;
+  // Positions « posées » (offsetLeft / offsetWidth) : une animation d'ouverture ne les fausse pas.
+  const place = () => { const host = tasksEl.offsetParent ? tasksEl.offsetParent.getBoundingClientRect().left : 0; return { left: host + tasksEl.offsetLeft, width: tasksEl.offsetWidth, host }; };
+  let t = place();
+  // Pas assez de place à droite : la liste des devoirs vient se coller au bord gauche.
+  if (vw - (t.left + t.width + SIDE_GAP) - 8 < NOTES_MIN_W || t.left < 8) {
+    tasksEl.style.right = "auto"; tasksEl.style.left = Math.round(8 - t.host) + "px";
+    t = place();
+  }
+  const left = Math.round(t.left + t.width + SIDE_GAP), room = vw - left - 8;
+  if (room < NOTES_MIN_W) return;                       // écran trop étroit : on laisse la liste au-dessus
+  const width = Math.min(room, Math.max(NOTES_MIN_W, Math.max(notes.offsetWidth, 560)));
+  notesProgrammaticAt = performance.now();               // déplacement fait par le code : rien n'est mémorisé
+  notes.style.left = left + "px";
+  notes.style.setProperty("width", width + "px", "important"); notes.style.setProperty("max-width", width + "px", "important");
+  notes.style.setProperty("min-width", NOTES_MIN_W + "px", "important");
+  notes._lastW = notes.offsetWidth; notes._lastH = notes.offsetHeight;
+}
+function scheduleTasksLayout() { requestAnimationFrame(layoutTasksAndNotes); setTimeout(layoutTasksAndNotes, 260); }
+["tasksPanel", "notesPanel"].forEach((id) => {
+  const el = $(id);
+  if (el) new MutationObserver((list) => { if (list.some((m) => (m.oldValue || "").split(/\s+/).includes("open") !== el.classList.contains("open"))) scheduleTasksLayout(); })
+    .observe(el, { attributes: true, attributeFilter: ["class"], attributeOldValue: true });
+});
+window.addEventListener("resize", scheduleTasksLayout);
 function openToolPanel(id, asSheet, opts) {
   const panel = $(id), conf = TOOL_PANELS[id];
   if (!panel) return;
   if (id === "tasksPanel") tasksBack = !!(opts && opts.back);
-  Object.keys(TOOL_PANELS).forEach(o => { if (o !== id && $(o)) $(o).classList.remove("open"); });
+  // Ordinateur : ouvrir les devoirs / examens ne ferme pas les Notes, les deux s'affichent côte à côte (layoutTasksAndNotes).
+  const keepNotes = id === "tasksPanel" && !asSheet && $("notesPanel") && $("notesPanel").classList.contains("open") && notesManaged($("notesPanel")) && window.innerWidth >= 700;
+  Object.keys(TOOL_PANELS).forEach(o => { if (o !== id && !(keepNotes && o === "notesPanel") && $(o)) $(o).classList.remove("open"); });
   if (asSheet) {
     document.body.appendChild(panel);
     panel.classList.add("as-sheet");
@@ -3051,6 +3496,13 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (changes.uca_class_events) { classEvents = (changes.uca_class_events.newValue || []).map(ev => ({ ...ev, color: colorOf(ev.title) })); classBusy = false; applyScope(); render(); }
   if (changes.uca_my_groups) { classGroups = changes.uca_my_groups.newValue || []; }
   if (changes.uca_notes) { notes = changes.uca_notes.newValue || {}; render(); }
+  if (changes.uca_grade_notes) {
+    const next = changes.uca_grade_notes.newValue || {};
+    const sameMarks = Object.keys(next).sort().join("\n") === Object.keys(gradeNotes).sort().join("\n");
+    gradeNotes = next;
+    if (!sameMarks) renderNotesPanel();     // une icône apparaît ou disparaît dans le tableau
+    else document.querySelectorAll(".gn-mark").forEach((b) => { const rec = gradeNotes[b.dataset.gnKey]; if (rec) b.title = "Mon commentaire : " + rec.text; });
+  }
   if (changes.uca_tasks) { tasks = UCA_TASKS.sanitize(changes.uca_tasks.newValue); renderTasksButton(); }
   if (changes.uca_activity) { activity = UCA_ACTIVITY.sanitize(changes.uca_activity.newValue); renderBellButton(); }
   if (changes.uca_activity_seen) { activitySeenAt = Number(changes.uca_activity_seen.newValue) || 0; renderBellButton(); }

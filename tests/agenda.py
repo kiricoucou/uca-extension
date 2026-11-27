@@ -57,7 +57,7 @@ def main():
         check("férié : dates fixes (1er mai, 14 juillet, 11 novembre, 25 décembre)", H(2026, 4, 1) == "Fête du Travail" and H(2026, 6, 14) == "Fête nationale" and H(2026, 10, 11) == "Armistice 1918" and H(2026, 11, 25) == "Noël")
         check("férié : un jour ordinaire n'en est pas un", H(2026, 9, 22) == "")
         # --- prochain cours (calcul pur)
-        base_ev = pg0.evaluate("""() => { const n = new Date(); const mk = (dm, len, t) => { const s = new Date(n.getTime() + dm * 60000), e = new Date(s.getTime() + len * 60000);
+        base_ev = pg0.evaluate("""() => { const n = new Date(); n.setHours(12, 0, 0, 0);   /* midi : près de minuit, les cours d'essai changeaient de jour */ const mk = (dm, len, t) => { const s = new Date(n.getTime() + dm * 60000), e = new Date(s.getTime() + len * 60000);
           return { date: '', year: s.getFullYear(), month: s.getMonth(), day: s.getDate(), startH: s.getHours(), startM: s.getMinutes(), endH: e.getHours(), endM: e.getMinutes(), title: t, room: 'S1', teacher: '' }; };
           const a = UCA_TOOLS.nextCourse([mk(-30, 60, 'EN COURS'), mk(45, 60, 'PLUS TARD')], n.getTime());
           const b = UCA_TOOLS.nextCourse([mk(45, 60, 'PLUS TARD')], n.getTime());
@@ -141,8 +141,11 @@ def main():
             ag.locator("#notesBtn").click(); ag.wait_for_timeout(300)
             check(f"{did} : bouton « Ouvrir les examens à venir » dans la fenêtre Notes", ag.locator("#examsOpenBtn").count() == 1 and "examens à venir" in ag.locator("#examsOpenBtn").inner_text())
             ag.locator("#examsOpenBtn").click(); ag.wait_for_timeout(400)
-            check(f"{did} : le bouton ouvre le panneau des examens (fenêtre Notes refermée)", ag.locator("#notesPanel.open").count() == 0 and ag.locator("#tasksPanel").is_visible() and "DS2" in ag.locator("#tasksPanel").inner_text())
-            ag.keyboard.press("t")
+            tb, nb = ag.locator("#tasksPanel").bounding_box(), ag.locator("#notesPanel").bounding_box()
+            check(f"{did} : le bouton ouvre le panneau des examens, la fenêtre Notes reste à sa droite sans chevauchement", ag.locator("#notesPanel.open").count() == 1 and ag.locator("#tasksPanel").is_visible() and "DS2" in ag.locator("#tasksPanel").inner_text() and bool(tb) and bool(nb) and nb["x"] >= tb["x"] + tb["width"] - 0.5, f"{tb} {nb}")
+            ag.keyboard.press("t"); ag.wait_for_timeout(300)
+            if ag.locator("#notesPanel.open").count():
+                ag.locator("#notesBtn").click(); ag.wait_for_timeout(250)
 
             # menu mobile
             ag.set_viewport_size({"width": 390, "height": 844}); ag.wait_for_timeout(300)

@@ -452,7 +452,8 @@ function initNetworkWatcher() {
       banner = document.createElement("div");
       banner.id = "uca-offline-banner";
       banner.style.cssText =
-        "position:fixed;top:0;left:0;right:0;z-index:99999;display:none;align-items:center;justify-content:center;gap:8px;" +
+        // En bas : en haut, le bandeau recouvrait le menu et la navigation tant que le téléphone restait hors connexion.
+        "position:fixed;bottom:10px;left:10px;right:10px;border-radius:12px;z-index:99999;display:none;align-items:center;justify-content:center;gap:8px;" +
         "padding:7px 14px;font-size:12.5px;font-weight:700;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;" +
         "box-shadow:0 2px 10px rgba(0,0,0,0.3);transition:all 0.3s cubic-bezier(0.16,1,0.3,1);";
       if (document.body) document.body.appendChild(banner);

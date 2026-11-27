@@ -567,8 +567,14 @@ class MainActivity : AppCompatActivity() {
         }
         if (supportFragmentManager.backStackEntryCount > 0) {
             supportFragmentManager.popBackStack()
-        } else {
-            super.onBackPressed()
+            return
         }
+        val page = supportFragmentManager.findFragmentById(R.id.fragmentContainer) as? AgendaFragment
+        if (page != null) page.handleBackInPage { leaveApp() } else leaveApp()
+    }
+
+    private fun leaveApp() {
+        @Suppress("DEPRECATION")
+        super.onBackPressed()
     }
 }

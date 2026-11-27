@@ -42,6 +42,14 @@ class AgendaFragment : Fragment(), UcaSyncRequestListener {
     }
 
     private lateinit var webView: WebView
+
+    /** Bouton « retour » : la page ferme d'abord sa fenêtre ouverte (détail d'une note) ; sinon [otherwise] est appelé. */
+    fun handleBackInPage(otherwise: () -> Unit) {
+        if (!::webView.isInitialized) { otherwise(); return }
+        webView.evaluateJavascript("!!(window.ucaHandleBack && window.ucaHandleBack())") { handled ->
+            if (handled != "true" && isAdded) otherwise()
+        }
+    }
     private var bridgeScript: String = ""
 
     private val loginLauncher = registerForActivityResult(

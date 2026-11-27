@@ -248,7 +248,10 @@ object UcaSync {
         webView.evaluateJavascript(EXTRACT_JS) { raw ->
             val text = unquoteJs(raw)
             extractProfile(webView.context, text)
-            if (text.contains("absence", ignoreCase = true) || tries <= 1) {
+            val loaded = ABSENCE_LINE_RE.containsMatchIn(text)
+            if (loaded || tries <= 1) {
+                // Aucune ligne « Nombre d'absences … » : page non chargée. On garde les données connues au lieu d'écrire des zéros.
+                if (!loaded) { onResult(null); return@evaluateJavascript }
                 val counts = parseAbsencesText(text)
                 // Liste « Mes déclarations » (bloc caché d'Odin) : même lecture que l'extension.
                 webView.evaluateJavascript(DECLARATIONS_JS) { rawDecl ->

@@ -17,6 +17,9 @@ const SECTIONS = [
     { key: "designLight", type: "select", label: "Design en thème clair", optionsFrom: "designs", options: [] },
     { key: "designDark", type: "select", label: "Design en thème sombre", optionsFrom: "designs", options: [] },
   ] },
+  { title: "Coefficients des notes Moodle", fields: [
+    { key: "coeffPresets", type: "coeffs", label: "Coefficients souvent utilisés", hint: "Moodle ne donne pas les coefficients. Enregistre ici ceux qui reviennent souvent (3, 3,5, 10…) : ils sont proposés en un clic à côté de « Valider la note »." },
+  ] },
   { title: "Partage vers le téléphone", fields: [
     { ext: true, key: "shareLinkHours", type: "select", label: "Durée de validité d'un lien",
       hint: "Passé ce délai, l'app refuse le lien. Rien n'est stocké sur GitHub ni sur un serveur : les données voyagent chiffrées dans le lien lui-même.",
@@ -52,7 +55,7 @@ const SECTIONS = [
 // Réinitialiser l'agenda : vide les données synchronisées (cours, notes perso, absences, relevé,
 // changements d'EDT), jamais les réglages ni le design. Une sauvegarde est gardée 10 min pour
 // pouvoir annuler (uca_reset_backup, hors uca_settings : jamais exportée ni dans un lien de partage).
-const RESET_KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_absences", "uca_absences_sync",
+const RESET_KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_grade_notes", "uca_absences", "uca_absences_sync",
   "uca_releve_notes", "uca_releve_notes_sync", "uca_notes_seen", "uca_moodle", "uca_moodle_report", "uca_moodle_checkpoint", "uca_notes_history", "uca_tasks", "uca_absence_alert", "uca_edt_changes", "uca_activity", "uca_activity_seen", "uca_scales", "uca_app_imported_at", "uca_app_exported_at"];
 const UNDO_WINDOW_MS = 10 * 60 * 1000;
 
@@ -103,6 +106,7 @@ function codeControl() {
 
 function control(field, value) {
   if (field.type === "code") return codeControl();
+  if (field.type === "coeffs") { const w = UCA_coeffEditor(value, (list) => save(field.key, list)); w.id = "f-" + field.key; return w; }
   if (field.type === "pinNext") {
     const wrap = el("label", "switch");
     const input = el("input"); input.type = "checkbox"; input.checked = !!value && typeof Notification !== "undefined" && Notification.permission === "granted"; input.id = "f-" + field.key;

@@ -11,7 +11,7 @@ const APP_URL = "https://kiricoucou.github.io/uca-extension/";
 // Lien affiché/scanné pour « ouvrir ou installer l'app » (modale téléphone, bouton Télécharger) :
 // toujours le guide d'installation, peu importe l'état de l'appareil qui scanne.
 const DOWNLOAD_URL = "https://kiricoucou.github.io/uca-extension/install.html";
-const KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_releve_notes", "uca_releve_notes_sync", "uca_absences",
+const KEYS = ["uca_events", "uca_last_sync", "uca_notes", "uca_grade_notes", "uca_releve_notes", "uca_releve_notes_sync", "uca_absences",
   "uca_notes_seen", "uca_moodle", "uca_notes_history", "uca_subject_colors", "uca_tasks", "uca_edt_changes", "uca_activity", "uca_activity_seen", "uca_scales", "uca_settings", "uca_filters", "uca_design"];
 const CHUNK = 480;
 const PREFIX = "UCA1";
@@ -157,7 +157,7 @@ function validate(snap) {
   // Un fichier ou un lien vient de l'extérieur : ces champs sont repris tels quels dans le HTML de l'agenda.
   // Taille bornée et réglages/notes de la bonne forme (objet ou liste), jamais une valeur détournée.
   if (JSON.stringify(snap.data).length > 8 * 1024 * 1024) throw bad();
-  for (const k of ["uca_settings", "uca_scales", "uca_filters", "uca_notes_seen", "uca_subject_colors", "uca_releve_notes"]) {
+  for (const k of ["uca_settings", "uca_scales", "uca_filters", "uca_notes_seen", "uca_grade_notes", "uca_subject_colors", "uca_releve_notes"]) {
     const v = snap.data[k]; if (v !== undefined && v !== null && (typeof v !== "object" || Array.isArray(v))) throw bad();
   }
   for (const k of ["uca_absences", "uca_tasks", "uca_edt_changes", "uca_activity", "uca_notes_history"]) {
@@ -175,7 +175,16 @@ async function applyImport(snap) {
   validate(snap);
   const out = {};
   KEYS.forEach((k) => { if (snap.data[k] !== undefined) out[k] = snap.data[k]; });
-  const { uca_design, uca_moodle } = await chrome.storage.local.get(["uca_design", "uca_moodle"]);
+  const { uca_design, uca_moodle, uca_grade_notes } = await chrome.storage.local.get(["uca_design", "uca_moodle", "uca_grade_notes"]);
+  // Commentaires sur les notes : un import n'en fait jamais perdre ; pour une même note, le plus récent gagne.
+  if (uca_grade_notes || out.uca_grade_notes) {
+    const merged = Object.assign({}, uca_grade_notes);
+    Object.entries(out.uca_grade_notes || {}).forEach(([key, rec]) => {
+      if (!rec || typeof rec.text !== "string") return;
+      if (!merged[key] || (Number(rec.at) || 0) > (Number(merged[key].at) || 0)) merged[key] = { text: rec.text.slice(0, 2000), at: Number(rec.at) || 0, label: String(rec.label || "") };
+    });
+    out.uca_grade_notes = merged;
+  }
   if (uca_design) delete out.uca_design;
   // Notes Moodle : les décisions prises sur cet appareil ne sont jamais remplacées en bloc.
   if (uca_moodle && uca_moodle.items) {

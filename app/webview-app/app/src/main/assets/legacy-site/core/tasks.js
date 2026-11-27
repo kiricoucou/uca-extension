@@ -76,7 +76,7 @@ const STYLE = `
 .uca-tasks li:hover{background:var(--accent-light,rgba(127,127,127,.12));}
 .uca-tasks .tk-main{flex:1;min-width:0;}
 .uca-tasks .tk-name{font-weight:600;overflow-wrap:anywhere;}
-.uca-tasks .tk-note{font-size:12.5px;line-height:1.4;color:var(--text-dim);margin:8px 0 0;}
+.uca-tasks .tk-note{font-size:12.5px;line-height:1.4;color:var(--text-dim);margin:8px 16px 0;}
 .uca-tasks .tk-meta{font-size:12.5px;color:var(--text-dim);margin-top:1px;}
 .uca-tasks .tk-due.late{color:var(--danger,#b3261e);font-weight:700;}
 .uca-tasks .tk-due.today,.uca-tasks .tk-due.soon{color:#b06000;font-weight:700;}

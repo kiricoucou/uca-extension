@@ -164,11 +164,41 @@ function reconstructHistory(releve, notesSeen, history) {
   return out.filter((p, i) => i === 0 || p.avg !== out[i - 1].avg).slice(-HISTORY_MAX);
 }
 
+/* Évolution de la moyenne d'une UE, reconstruite comme la courbe générale : à chaque date où une note de l'UE est apparue,
+   seules les évaluations déjà connues comptent. La dernière valeur est la moyenne actuelle (at = now). [{ at, avg, before? }]
+   (before : état d'avant la première note datée, donc « avant le … »). */
+function ueHistory(releve, notesSeen, label, now) {
+  const ue = ((releve && releve.ue) || []).find((u) => u.label === label);
+  if (!ue) return [];
+  const seen = notesSeen || {};
+  const recOf = (m, e) => seen[m.label + "|" + (e.key || e.label)];
+  const times = [];
+  (ue.matieres || []).forEach((m) => (m.evals || []).forEach((e) => {
+    const rec = recOf(m, e);
+    if (e.note != null && rec && rec.at > 0 && times.indexOf(rec.at) < 0) times.push(rec.at);
+  }));
+  times.sort((a, b) => a - b);
+  const at = (t) => {
+    const v = ueNote({ label: ue.label, coeff: ue.coeff, note: null, matieres: (ue.matieres || []).map((m) => ({ label: m.label, coeff: m.coeff, note: null,
+      evals: (m.evals || []).map((e) => { const rec = recOf(m, e); return rec && rec.at > t ? Object.assign({}, e, { note: null }) : e; }) })) });
+    return v == null ? null : Math.round(v * 100) / 100;
+  };
+  const out = [];
+  if (times.length) {
+    const start = at(times[0] - 1);
+    if (start != null) out.push({ at: times[0], avg: start, before: true });
+    times.forEach((t) => { const avg = at(t); if (avg != null) out.push({ at: t, avg }); });
+  }
+  const cur = ueNote(ue);
+  if (cur != null) { const r = Math.round(cur * 100) / 100; if (!out.length || out[out.length - 1].avg !== r) out.push({ at: now, avg: r, now: true }); }
+  return out;
+}
+
 /* Séries du graphique d'une matière : une barre par évaluation notée (note, moyenne de la classe). */
 function matiereSeries(releve, label) {
   for (const ue of (releve && releve.ue) || []) {
     const m = (ue.matieres || []).find((x) => x.label === label);
-    if (m) return (m.evals || []).filter((e) => e.note != null).map((e) => ({ label: e.label.replace(/\s*\(sur[^)]*\)/i, ""), note: e.note, moy: e.moy == null ? null : e.moy, coeff: e.coeff, maxi: e.maxi, mini: e.mini }));
+    if (m) return (m.evals || []).filter((e) => e.note != null).map((e) => ({ key: e.key || e.label, label: e.label.replace(/\s*\(sur[^)]*\)/i, ""), note: e.note, moy: e.moy == null ? null : e.moy, coeff: e.coeff, maxi: e.maxi, mini: e.mini }));
   }
   return [];
 }
@@ -245,5 +275,5 @@ function competences(releve) {
   return { years, items };
 }
 
-root.UCA_GRADES = { reconstructHistory, competences, maxOf, scaleKey, applyScales, weightedAvg, matiereNote, ueNote, generalAvg, pendingEvals, scopes, simulate, projection, priorities, nextHistory, matiereSeries, gradedMatieres };
+root.UCA_GRADES = { ueHistory, reconstructHistory, competences, maxOf, scaleKey, applyScales, weightedAvg, matiereNote, ueNote, generalAvg, pendingEvals, scopes, simulate, projection, priorities, nextHistory, matiereSeries, gradedMatieres };
 })(self);
